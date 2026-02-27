@@ -1,0 +1,11 @@
+---
+description: UX copy standards for call-to-action elements
+globs: **/*.vue
+alwaysApply: false
+---
+
+# CTA and Button Copy
+
+- **Never use bracketed text** like `[ BUTTON ]` or `[ PROCEED ]` for call-to-action elements. It reads as gimmicky and unprofessional.
+- Use standard, professional phrasing: "Login", "Register", "Submit", "Continue", etc.
+- Prefer sentence case or title case for buttons; avoid all-caps unless it fits the design system.

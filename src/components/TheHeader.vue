@@ -6,19 +6,19 @@
       class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4"
       aria-label="Main navigation"
     >
-      <a
-        href="/"
+      <router-link
+        to="/"
         class="font-mono text-lg font-semibold text-apc-blue transition-colors hover:text-apc-gold"
       >
         eypi.cc
-      </a>
+      </router-link>
       <div class="flex items-center">
-        <a
-          href="#"
+        <router-link
+          to="/login"
           class="rounded-lg bg-apc-gold px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:brightness-110 hover:shadow-md"
         >
           Login
-        </a>
+        </router-link>
       </div>
     </nav>
   </header>

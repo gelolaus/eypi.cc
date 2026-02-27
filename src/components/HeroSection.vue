@@ -59,11 +59,12 @@
             <span class="font-mono text-2xl font-black tracking-tight text-[#34418F] md:text-3xl">
               eypi.cc/<span class="text-[#DEAC4B] transition-all">{{ previewSlug }}</span>
             </span>
-            <span
-              class="mt-3 cursor-pointer font-mono text-xs uppercase tracking-widest text-gray-500 transition-colors hover:text-gray-700 md:text-sm"
+            <router-link
+              to="/login"
+              class="mt-3 block font-mono text-xs uppercase tracking-widest text-gray-500 transition-colors hover:text-gray-700 md:text-sm"
             >
               Login to customize
-            </span>
+            </router-link>
           </div>
         </div>
       </div>
