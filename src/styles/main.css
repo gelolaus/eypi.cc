@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply font-sans text-gray-800;
+  }
+}
+
+@layer utilities {
+  .bg-dot-grid {
+    background-color: #F8F9FA;
+    background-image: radial-gradient(rgba(52, 65, 143, 0.15) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+  }
+
+  .mica-card {
+    background-color: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+}

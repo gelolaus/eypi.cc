@@ -1,0 +1,43 @@
+<template>
+  <footer class="shrink-0 border-t border-apc-blue/10 bg-apc-bg">
+    <div
+      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-4 sm:flex-row"
+    >
+      <div class="flex flex-wrap justify-center gap-6">
+        <a
+          href="#"
+          class="text-sm text-gray-600 transition-colors hover:text-apc-gold"
+        >
+          Privacy
+        </a>
+        <a
+          href="#"
+          class="text-sm text-gray-600 transition-colors hover:text-apc-gold"
+        >
+          Terms
+        </a>
+        <a
+          href="#"
+          class="text-sm text-gray-600 transition-colors hover:text-apc-gold"
+        >
+          Contact
+        </a>
+      </div>
+      <p class="text-center text-xs text-gray-500">
+        Created by
+        <a
+          href="https://gelolaus.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-apc-blue hover:text-apc-gold"
+        >
+          Angelo Laus
+        </a>
+      </p>
+    </div>
+  </footer>
+</template>
+
+<script setup lang="ts">
+// Minimal footer - no state needed
+</script>
