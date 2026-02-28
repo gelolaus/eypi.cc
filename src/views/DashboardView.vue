@@ -12,10 +12,12 @@
       />
       <button
         type="button"
-        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all hover:scale-105"
-        @click="openSidebar()"
+        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all"
+        :disabled="isShortening"
+        :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isShortening, 'hover:scale-105': !isShortening }"
+        @click="handleShorten"
       >
-        Shorten
+        {{ isShortening ? 'PROCESSING...' : 'SHORTEN' }}
       </button>
     </div>
 
@@ -33,63 +35,81 @@
       </div>
 
       <!-- Table Rows -->
+      <template v-if="mockLinks.length > 0">
+        <div
+          v-for="link in mockLinks"
+          :key="link.id"
+          class="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition-colors last:border-0 hover:bg-white/50"
+        >
+          <div class="flex flex-1 flex-col truncate pr-4">
+            <span class="font-mono text-lg font-bold text-[#34418F]">
+              {{ link.short }}
+            </span>
+            <span class="truncate font-mono text-sm text-gray-500">
+              {{ link.original }}
+            </span>
+          </div>
+          <div class="w-32 text-center font-mono text-sm text-gray-600">
+            {{ link.clicks ?? 0 }} clicks
+          </div>
+          <div class="flex w-24 items-center justify-center gap-2">
+            <button
+              type="button"
+              class="rounded-full p-2 text-blue-500 transition-colors hover:bg-gray-100 hover:text-blue-700"
+              aria-label="Edit"
+              @click="openSidebar(link)"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="rounded-full p-2 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700"
+              aria-label="Delete"
+              @click="confirmDelete(link)"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </template>
       <div
-        v-for="link in mockLinks"
-        :key="link.id"
-        class="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition-colors last:border-0 hover:bg-white/50"
+        v-else
+        class="flex flex-col items-center justify-center py-20 px-6 text-center"
       >
-        <div class="flex flex-1 flex-col truncate pr-4">
-          <span class="font-mono text-lg font-bold text-[#34418F]">
-            {{ link.short }}
-          </span>
-          <span class="truncate font-mono text-sm text-gray-500">
-            {{ link.original }}
-          </span>
+        <div class="w-16 h-16 mb-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 relative">
+          <div class="absolute w-2 h-[1px] bg-gray-400"></div>
+          <div class="absolute h-2 w-[1px] bg-gray-400"></div>
         </div>
-        <div class="w-32 text-center font-mono text-sm text-gray-600">
-          {{ link.clicks ?? 0 }} clicks
-        </div>
-        <div class="flex w-24 items-center justify-center gap-2">
-          <button
-            type="button"
-            class="rounded-full p-2 text-blue-500 transition-colors hover:bg-gray-100 hover:text-blue-700"
-            aria-label="Edit"
-            @click="openSidebar(link)"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="rounded-full p-2 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700"
-            aria-label="Delete"
-          >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
-        </div>
+        <h3 class="font-mono text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">
+          NO ACTIVE TRANSMISSIONS
+        </h3>
+        <p class="font-mono text-sm text-gray-400 max-w-md leading-relaxed">
+          The registry is currently empty. Enter a destination URL in the console above to establish a new routing sequence.
+        </p>
       </div>
     </div>
 
@@ -140,29 +160,82 @@
           <div class="mb-6 flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-[#34418F]">
             <span class="shrink-0 font-mono font-bold text-[#34418F]">eypi.cc/</span>
             <input
-              v-model="sidebarSlug"
+              :value="sidebarSlug"
               type="text"
               placeholder="custom-slug"
               class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none"
+              @input="sanitizeSlugInput"
             />
           </div>
 
           <!-- Save Button -->
           <button
             type="button"
-            class="mt-auto w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all hover:scale-[1.02]"
-            @click="onSave"
+            class="mt-auto w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all"
+            :disabled="isSaving"
+            :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
+            @click="handleSave"
           >
-            Save
+            {{ isSaving ? 'ENCRYPTING...' : 'SAVE' }}
           </button>
         </div>
       </div>
     </Transition>
   </div>
+
+  <!-- Delete Confirmation Modal -->
+  <Transition name="fade">
+    <div
+      v-if="isDeleteModalOpen"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      @click.self="cancelDelete"
+    >
+      <div
+        class="relative z-50 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      >
+        <div class="h-2 w-full shrink-0 bg-red-500" />
+        <div class="flex flex-col p-8">
+          <h3 class="mb-2 font-mono text-xl font-black uppercase tracking-widest text-red-500">
+            CONFIRM DELETION
+          </h3>
+          <p class="mb-8 font-mono text-sm leading-relaxed text-gray-800">
+            Are you sure you want to delete the short link
+            <span class="font-bold text-[#34418F]">{{ linkToDelete?.short }}</span>?
+            This will permanently break the redirect to
+            <span class="break-all text-gray-500">{{ linkToDelete?.original }}</span>
+            and cannot be undone.
+          </p>
+          <div class="flex w-full justify-end gap-4">
+            <button
+              type="button"
+              class="rounded-lg px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-gray-700 transition-colors hover:bg-gray-100 hover:text-black"
+              @click="cancelDelete"
+            >
+              Abort
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-red-500 px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-md transition-colors hover:bg-red-600"
+              @click="executeDelete"
+            >
+              Delete Link
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
+
+const isValidUrl = (url: string) =>
+  /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i.test(url)
+const isValidSlug = (slug: string) => /^[a-zA-Z0-9]+$/.test(slug)
 
 interface Link {
   id: number
@@ -173,9 +246,13 @@ interface Link {
 
 const longUrlInput = ref('')
 const isSidebarOpen = ref(false)
+const isDeleteModalOpen = ref(false)
+const linkToDelete = ref<Link | null>(null)
 const activeLink = ref<Link | null>(null)
 const sidebarOriginalUrl = ref('')
 const sidebarSlug = ref('')
+const isShortening = ref(false)
+const isSaving = ref(false)
 
 const mockLinks = ref<Link[]>([
   { id: 1, original: 'https://github.com/gelolaus', short: 'eypi.cc/gelo', clicks: 14 },
@@ -206,6 +283,11 @@ function extractSlug(short: string): string {
   return short.startsWith(prefix) ? short.slice(prefix.length) : short
 }
 
+function sanitizeSlugInput(e: Event) {
+  const target = e.target as HTMLInputElement
+  sidebarSlug.value = target.value.replace(/[^a-zA-Z0-9]/g, '')
+}
+
 function openSidebar(link?: Link): void {
   activeLink.value = link ?? null
   if (link) {
@@ -216,6 +298,22 @@ function openSidebar(link?: Link): void {
     sidebarSlug.value = hashToSlug(longUrlInput.value)
   }
   isSidebarOpen.value = true
+}
+
+function handleShorten() {
+  const url = longUrlInput.value.trim()
+  if (!url) return
+
+  if (!isValidUrl(url)) {
+    toast.error('Transmission failed: Invalid URL format')
+    return
+  }
+
+  isShortening.value = true
+  setTimeout(() => {
+    openSidebar()
+    isShortening.value = false
+  }, 600)
 }
 
 function onSave(): void {
@@ -230,6 +328,7 @@ function onSave(): void {
         original: sidebarOriginalUrl.value,
         short,
       }
+      toast.success('Link successfully updated')
     }
   } else {
     mockLinks.value.push({
@@ -238,8 +337,47 @@ function onSave(): void {
       short,
       clicks: 0,
     })
+    toast.success('New link successfully generated')
   }
   isSidebarOpen.value = false
+}
+
+function handleSave() {
+  const url = sidebarOriginalUrl.value.trim()
+  const slug = sidebarSlug.value.trim()
+
+  if (!isValidUrl(url)) {
+    toast.error('Cannot save: Invalid destination URL')
+    return
+  }
+
+  if (slug && !isValidSlug(slug)) {
+    toast.error('Slug must contain only letters and numbers')
+    return
+  }
+
+  isSaving.value = true
+  setTimeout(() => {
+    onSave()
+    isSaving.value = false
+  }, 800)
+}
+
+function confirmDelete(link: Link): void {
+  linkToDelete.value = link
+  isDeleteModalOpen.value = true
+}
+
+function cancelDelete(): void {
+  isDeleteModalOpen.value = false
+  linkToDelete.value = null
+}
+
+function executeDelete(): void {
+  if (!linkToDelete.value) return
+  mockLinks.value = mockLinks.value.filter((l) => l.id !== linkToDelete.value!.id)
+  toast.success('Link successfully deleted')
+  cancelDelete()
 }
 </script>
 

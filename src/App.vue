@@ -9,12 +9,14 @@
       </router-view>
     </main>
     <TheFooter />
+    <ToastContainer />
   </div>
 </template>
 
 <script setup lang="ts">
 import TheHeader from '@/components/TheHeader.vue'
 import TheFooter from '@/components/TheFooter.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 </script>
 
 <style>
