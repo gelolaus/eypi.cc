@@ -168,6 +168,66 @@
             />
           </div>
 
+          <!-- Optical Routing Matrix (QR Code Generator) -->
+          <div class="mt-8 mb-auto flex flex-col border-t border-gray-200 pt-8">
+            <h4 class="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+              Optical Routing Matrix
+            </h4>
+
+            <div class="flex justify-center mb-6">
+              <div class="p-2 bg-white border-2 border-gray-200 rounded-xl shadow-sm" ref="qrContainer"></div>
+            </div>
+
+            <div class="flex flex-col gap-4 mb-6 font-mono text-sm">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">Body Shape</label>
+                <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F]">
+                  <option value="square">Standard Square</option>
+                  <option value="dots">Dotted</option>
+                  <option value="rounded">Rounded</option>
+                  <option value="classy">Classy</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">Eye Frame</label>
+                  <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F]">
+                    <option value="square">Square</option>
+                    <option value="dot">Dot</option>
+                    <option value="extra-rounded">Rounded</option>
+                  </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">Eye Ball</label>
+                  <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F]">
+                    <option value="square">Square</option>
+                    <option value="dot">Dot</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">Matrix Color</label>
+                <div class="flex items-center gap-3">
+                  <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-[#34418F] transition-colors">
+                    <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
+                  </div>
+                  <input type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F] font-mono text-sm w-full uppercase transition-colors" placeholder="#34418F" maxlength="7" />
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">Center Logo</label>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-[#34418F] hover:file:bg-gray-200 transition-colors cursor-pointer" />
+              </div>
+            </div>
+
+            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-[#34418F] text-[#34418F] font-mono text-sm font-bold uppercase tracking-wider rounded-lg hover:bg-[#34418F] hover:text-white transition-colors">
+              Export PNG
+            </button>
+          </div>
+
           <!-- Save Button -->
           <button
             type="button"
@@ -228,7 +288,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
+import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
@@ -253,6 +314,63 @@ const sidebarOriginalUrl = ref('')
 const sidebarSlug = ref('')
 const isShortening = ref(false)
 const isSaving = ref(false)
+
+const qrContainer = ref<HTMLElement | null>(null)
+const qrConfig = ref({
+  dotType: 'square' as 'square' | 'dots' | 'rounded' | 'classy' | 'classy-rounded' | 'extra-rounded',
+  eyeFrameType: 'square' as 'square' | 'dot' | 'extra-rounded',
+  eyeBallType: 'square' as 'square' | 'dot',
+  logoUrl: '' as string,
+  color: '#34418F'
+})
+const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim() || 'preview'))
+
+const qrEngine = new QRCodeStyling({
+  width: 240,
+  height: 240,
+  type: 'canvas',
+  imageOptions: { crossOrigin: 'anonymous', margin: 8 }
+})
+
+const updateQR = () => {
+  qrEngine.update({
+    data: liveShortUrl.value,
+    image: qrConfig.value.logoUrl,
+    backgroundOptions: { color: 'transparent' },
+    dotsOptions: { color: qrConfig.value.color, type: qrConfig.value.dotType },
+    cornersSquareOptions: { color: qrConfig.value.color, type: qrConfig.value.eyeFrameType },
+    cornersDotOptions: { color: qrConfig.value.color, type: qrConfig.value.eyeBallType }
+  })
+}
+
+watch(liveShortUrl, updateQR)
+watch(qrConfig, updateQR, { deep: true })
+watch(isSidebarOpen, async (open) => {
+  if (open) {
+    await nextTick()
+    if (qrContainer.value) {
+      qrEngine.append(qrContainer.value)
+    }
+    updateQR()
+  }
+})
+
+const handleLogoUpload = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (file) {
+    if (qrConfig.value.logoUrl) {
+      URL.revokeObjectURL(qrConfig.value.logoUrl)
+    }
+    qrConfig.value.logoUrl = URL.createObjectURL(file)
+  }
+}
+
+const downloadQR = async () => {
+  qrEngine.update({ width: 1920, height: 1920 })
+  await qrEngine.download({ name: `eypi-qr-${sidebarSlug.value || 'link'}`, extension: 'png' })
+  qrEngine.update({ width: 240, height: 240 })
+  toast.success('High-Res QR Code exported successfully')
+}
 
 const mockLinks = ref<Link[]>([
   { id: 1, original: 'https://github.com/gelolaus', short: 'eypi.cc/gelo', clicks: 14 },
