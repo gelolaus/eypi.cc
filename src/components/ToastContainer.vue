@@ -4,7 +4,7 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="w-80 bg-white border border-gray-200 shadow-xl flex items-center p-4 relative overflow-hidden pointer-events-auto"
+        class="w-80 bg-white border border-gray-200 shadow-xl flex items-center p-4 relative overflow-hidden pointer-events-auto dark:bg-mica-navy-modal dark:border-slate-600 dark:backdrop-blur-xl"
       >
         <div
           class="absolute left-0 top-0 bottom-0 w-1"
@@ -14,7 +14,7 @@
             'bg-[#34418F]': toast.type === 'info'
           }"
         />
-        <p class="font-mono text-sm font-bold ml-2 uppercase tracking-wide text-gray-800">
+        <p class="font-mono text-sm font-bold ml-2 uppercase tracking-wide text-gray-800 dark:text-slate-200">
           {{ toast.message }}
         </p>
       </div>

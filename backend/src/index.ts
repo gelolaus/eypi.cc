@@ -361,11 +361,11 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ status: 'error', message: 'Invalid credentials.' }, 401)
     }
 
-    // Generate the JWT (include name when available for header display)
+    // Generate the JWT (include name for header display)
     const payload = {
       sub: user.id,
       email: user.email,
-      ...(user.name && { name: user.name }),
+      name: user.name?.trim() || null,
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // Token expires in 24 hours
     }
     const token = await sign(payload, c.env.JWT_SECRET)

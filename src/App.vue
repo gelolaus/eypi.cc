@@ -7,13 +7,13 @@
       style="z-index: -10;"
     >
       <!-- Corner registration marks -->
-      <div class="absolute left-4 top-4 h-8 w-8 border-l-2 border-t-2 border-gray-300 dark:border-gray-600" />
-      <div class="absolute right-4 top-4 h-8 w-8 border-r-2 border-t-2 border-gray-300 dark:border-gray-600" />
-      <div class="absolute bottom-4 left-4 h-8 w-8 border-b-2 border-l-2 border-gray-300 dark:border-gray-600" />
-      <div class="absolute bottom-4 right-4 h-8 w-8 border-b-2 border-r-2 border-gray-300 dark:border-gray-600" />
+      <div class="absolute left-4 top-4 h-8 w-8 border-l-2 border-t-2 border-gray-300 dark:border-slate-600" />
+      <div class="absolute right-4 top-4 h-8 w-8 border-r-2 border-t-2 border-gray-300 dark:border-slate-600" />
+      <div class="absolute bottom-4 left-4 h-8 w-8 border-b-2 border-l-2 border-gray-300 dark:border-slate-600" />
+      <div class="absolute bottom-4 right-4 h-8 w-8 border-b-2 border-r-2 border-gray-300 dark:border-slate-600" />
       <!-- Pasay coordinates -->
       <div
-        class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 font-mono text-xs text-gray-400 dark:text-gray-500"
+        class="absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 font-mono text-xs text-gray-400 dark:text-slate-500"
       >
         COORD. 14.531105 N // 121.021309 E
       </div>

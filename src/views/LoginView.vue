@@ -4,7 +4,7 @@
   >
     <!-- Auth Card -->
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-8"
+      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
     >
       <!-- Corner screws -->
       <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
@@ -19,8 +19,8 @@
           :class="[
             'flex-1 rounded-lg px-4 py-2 font-mono text-sm font-bold transition-colors',
             mode === 'login'
-              ? 'bg-[#34418F] text-white'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F]',
+              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
+              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
           ]"
           @click="mode = 'login'"
         >
@@ -31,8 +31,8 @@
           :class="[
             'flex-1 rounded-lg px-4 py-2 font-mono text-sm font-bold transition-colors',
             mode === 'register'
-              ? 'bg-[#34418F] text-white'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F]',
+              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
+              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
           ]"
           @click="mode = 'register'"
         >
@@ -41,7 +41,7 @@
       </div>
 
       <!-- Header -->
-      <h2 class="mb-6 text-center font-mono text-xl font-bold text-[#34418F]">
+      <h2 class="mb-6 text-center font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">
         {{ mode === 'login' ? 'LOGIN' : 'REGISTER' }}
       </h2>
 
@@ -51,20 +51,20 @@
           v-if="mode === 'register'"
           v-model="name"
           type="text"
-          placeholder="Name"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F]"
+          placeholder="Full Name"
+          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
         />
         <input
           v-model="email"
           type="email"
           placeholder="Email"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F]"
+          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
         />
         <input
           v-model="password"
           type="password"
           placeholder="Password"
-          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F]"
+          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
         />
 
         <!-- Submit button - use plain text, no bracketed formatting for CTAs -->
@@ -72,7 +72,7 @@
           type="submit"
           :disabled="isAuthenticating"
           :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200',
+            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
             isAuthenticating ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
           ]"
         >
@@ -81,7 +81,7 @@
         <router-link
           v-if="mode === 'login'"
           to="/reset-password"
-          class="mt-4 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F]"
+          class="mt-4 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
         >
           Forgot password?
         </router-link>
