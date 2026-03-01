@@ -91,9 +91,13 @@
         <!-- Submit button - use plain text, no bracketed formatting for CTAs -->
         <button
           type="submit"
-          class="w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110"
+          :disabled="isAuthenticating"
+          :class="[
+            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200',
+            isAuthenticating ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
+          ]"
         >
-          {{ mode === 'login' ? 'Login' : 'Register' }}
+          {{ isAuthenticating ? 'Processing...' : mode === 'login' ? 'Login' : 'Register' }}
         </button>
         <router-link
           v-if="mode === 'login'"
@@ -109,17 +113,77 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useToast } from '@/composables/useToast'
+
+const router = useRouter()
+const toast = useToast()
 
 const mode = ref<'login' | 'register'>('login')
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const isAuthenticating = ref(false)
+
+const handleLogin = async () => {
+  isAuthenticating.value = true
+
+  try {
+    const response = await fetch('http://localhost:8787/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Authentication failed')
+    }
+
+    localStorage.setItem('eypi_token', data.token)
+    toast.success('Access granted. Welcome back.')
+    router.push('/dashboard')
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : 'Authentication failed')
+    password.value = ''
+  } finally {
+    isAuthenticating.value = false
+  }
+}
+
+const handleRegister = async () => {
+  isAuthenticating.value = true
+
+  try {
+    const response = await fetch('http://localhost:8787/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Registration failed')
+    }
+
+    toast.success('Administrator account successfully encrypted and stored.')
+    mode.value = 'login'
+    password.value = ''
+  } catch (error: unknown) {
+    toast.error(error instanceof Error ? error.message : 'Registration failed')
+    password.value = ''
+  } finally {
+    isAuthenticating.value = false
+  }
+}
 
 function onSubmit(): void {
   if (mode.value === 'login') {
-    console.log('Login requested:', { email: email.value })
+    handleLogin()
   } else {
-    console.log('Register requested:', { name: name.value, email: email.value })
+    handleRegister()
   }
 }
 </script>

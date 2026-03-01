@@ -10,17 +10,25 @@
     />
     <button
       type="submit"
-      class="shrink-0 rounded-xl bg-[#DEAC4B] px-8 py-4 text-lg font-bold text-white transition-all duration-200 hover:brightness-110"
+      :disabled="props.loading"
+      :class="[
+        'shrink-0 rounded-xl bg-[#DEAC4B] px-8 py-4 text-lg font-bold text-white transition-all duration-200',
+        props.loading ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
+      ]"
     >
-      Shorten
+      {{ props.loading ? 'Processing...' : 'Shorten' }}
     </button>
   </form>
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  modelValue: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: string
+    loading?: boolean
+  }>(),
+  { loading: false }
+)
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void

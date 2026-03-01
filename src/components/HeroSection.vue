@@ -32,7 +32,7 @@
       <p class="mb-6 max-w-3xl text-xl text-gray-600 md:text-2xl">
         Built for student orgs and the college community to claim clean, custom links instantly. Free to use, zero ads.
       </p>
-      <ShortenForm v-model="longUrl" @submit="onShorten" />
+      <ShortenForm v-model="longUrl" :loading="isShortening" @submit="onShorten" />
 
       <!-- Visual connector (the flow) -->
       <div class="my-4 flex flex-col items-center justify-center text-[#34418F]/50 animate-bounce">
@@ -77,6 +77,7 @@ import { ref, computed } from 'vue'
 import ShortenForm from './ShortenForm.vue'
 
 const longUrl = ref('')
+const isShortening = ref(false)
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -101,7 +102,10 @@ const previewSlug = computed(() => hashToSlug(longUrl.value))
 
 function onShorten(): void {
   if (longUrl.value.trim()) {
+    isShortening.value = true
+    // TODO: Wire to shorten API when available
     console.log('Shorten requested:', longUrl.value)
+    setTimeout(() => { isShortening.value = false }, 800)
   }
 }
 </script>
