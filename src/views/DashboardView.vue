@@ -299,6 +299,15 @@ const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 
+const normalizeUrl = (url: string): string => {
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`
+  }
+  return trimmed
+}
+
 const isValidUrl = (url: string) => {
   const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
   return pattern.test(url.trim())
@@ -450,12 +459,8 @@ function openSidebar(link?: Link): void {
 }
 
 async function handleShorten() {
-  let urlToProcess = longUrlInput.value.trim()
+  const urlToProcess = normalizeUrl(longUrlInput.value)
   if (!urlToProcess) return
-
-  if (!/^https?:\/\//i.test(urlToProcess)) {
-    urlToProcess = `https://${urlToProcess}`
-  }
 
   if (!isValidUrl(urlToProcess)) {
     toast.error('Transmission failed: Invalid URL format')
@@ -603,7 +608,8 @@ onMounted(async () => {
   // Check for pending URL from Landing Page
   const routeUrl = route.query.url as string
   const savedUrl = localStorage.getItem('pending_url')
-  const urlToShorten = routeUrl || savedUrl
+  const rawUrl = routeUrl || savedUrl || ''
+  const urlToShorten = normalizeUrl(rawUrl)
 
   if (urlToShorten && isValidUrl(urlToShorten)) {
     longUrlInput.value = urlToShorten
