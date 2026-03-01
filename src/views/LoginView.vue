@@ -87,6 +87,43 @@
         </router-link>
       </form>
     </div>
+
+    <!-- Verification Modal -->
+    <div
+      v-if="showVerificationModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4"
+    >
+      <div class="mica-card max-w-md w-full p-8 text-center rounded-2xl border border-gray-200 dark:border-slate-600">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="mx-auto mb-4 w-12 h-12 text-sky-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+        </svg>
+        <h3 class="text-2xl font-bold dark:text-slate-100 mb-4">Check Your Inbox!</h3>
+        <p class="dark:text-slate-300 mb-4">
+          We've sent a verification link to your APC email. <strong>You must verify your account before you can log in.</strong>
+        </p>
+        <p class="text-sm dark:text-slate-400 mb-6">
+          Note: Enterprise email filters may delay the message by 1 to 5 minutes. Please check your Spam/Junk folder. <strong>If you still do not receive an email, please send a message to arlaus on Microsoft Teams.</strong>
+        </p>
+        <button
+          type="button"
+          @click="showVerificationModal = false"
+          class="w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+        >
+          Got it!
+        </button>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -104,6 +141,7 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
+const showVerificationModal = ref(false)
 
 onMounted(() => {
   if (route.query.verified === 'true') {
@@ -160,7 +198,7 @@ const handleRegister = async () => {
       throw new Error(data.message || 'Registration failed')
     }
 
-    toast.success(data.message || 'Registration successful.')
+    showVerificationModal.value = true
     mode.value = 'login'
     password.value = ''
   } catch (error: unknown) {

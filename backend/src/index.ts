@@ -31,9 +31,15 @@ app.use('/api/*', cors({
 // Explicit OPTIONS handler for preflight requests
 app.options('*', (c) => c.body(null, 204))
 
-// 3. Define the Strict Password Rules using Zod
+// 3. Allowed email domains (APC + admin whitelist)
+const ALLOWED_EMAIL_DOMAINS = ['@student.apc.edu.ph', '@apc.edu.ph', '@gelolaus.com', '@alias.gelolaus.com']
+
+// 4. Define the Strict Password Rules using Zod
 const registerSchema = z.object({
-  email: z.string().email().regex(/@(?:student\.)?apc\.edu\.ph$/, 'Only APC email addresses (@apc.edu.ph or @student.apc.edu.ph) are allowed.'),
+  email: z.string().email().refine(
+    (email) => ALLOWED_EMAIL_DOMAINS.some((domain) => email.endsWith(domain)),
+    'Only APC email addresses (@apc.edu.ph or @student.apc.edu.ph) or whitelisted admin domains are allowed.',
+  ),
   password: z.string()
     .min(8, 'Security violation: Password must be at least 8 characters.')
     .regex(/[A-Z]/, 'Security violation: Must contain at least one uppercase letter.')
