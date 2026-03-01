@@ -19,6 +19,7 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/privacy',
@@ -39,6 +40,7 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: () => import('@/views/SettingsView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/reset-password',
@@ -56,6 +58,18 @@ const router = createRouter({
       component: () => import('@/views/NotFoundView.vue'),
     },
   ],
+})
+
+router.beforeEach((to, _from, next) => {
+  const isAuthenticated = !!localStorage.getItem('eypi_token')
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next({ name: 'login' })
+  } else if (to.name === 'login' && isAuthenticated) {
+    next({ name: 'dashboard' })
+  } else {
+    next()
+  }
 })
 
 export default router

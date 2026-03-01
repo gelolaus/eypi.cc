@@ -142,8 +142,13 @@ const handleLogin = async () => {
     }
 
     localStorage.setItem('eypi_token', data.token)
-    toast.success('Access granted. Welcome back.')
-    router.push('/dashboard')
+    // Verify token is stored before navigation so the route guard allows access
+    if (localStorage.getItem('eypi_token')) {
+      toast.success('Access granted. Welcome back.')
+      router.push('/dashboard')
+    } else {
+      throw new Error('Failed to store authentication token')
+    }
   } catch (error: unknown) {
     toast.error(error instanceof Error ? error.message : 'Authentication failed')
     password.value = ''

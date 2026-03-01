@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { sign } from 'hono/jwt'
+import { sign, verify } from 'hono/jwt'
 import { cors } from 'hono/cors'
 import { createClient } from '@libsql/client/web'
 import * as bcrypt from 'bcryptjs'
@@ -31,8 +31,153 @@ const registerSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Security violation: Must contain at least one special symbol.')
 })
 
+const generateSlug = () => Math.random().toString(36).substring(2, 8)
+
+const normalizeUrl = (url: string) => {
+  let trimmed = url.trim()
+  if (!/^https?:\/\//i.test(trimmed)) trimmed = `https://${trimmed}`
+  return trimmed
+}
+
 app.get('/', (c) => c.text('eypi.cc API is online.'))
 app.get('/api/health', async (c) => { /* ... existing health check ... */ return c.text('OK') })
+
+// 6. Link Routes (require JWT)
+app.get('/api/links', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
+  }
+  const token = authHeader.split(' ')[1]
+  if (!token) return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
+  try {
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+    const result = await db.execute({
+      sql: 'SELECT id, original_url, slug, clicks FROM links WHERE user_id = ? ORDER BY created_at DESC',
+      args: [payload.sub],
+    })
+    const links = result.rows.map((row) => {
+      const r = row as unknown as { id: string; original_url: string; slug: string; clicks?: number }
+      return {
+        id: r.id,
+        original: r.original_url,
+        short: `eypi.cc/${r.slug}`,
+        clicks: r.clicks ?? 0,
+      }
+    })
+    return c.json({ status: 'success', links })
+  } catch {
+    return c.json({ error: 'Unauthorized', message: 'Invalid session' }, 401)
+  }
+})
+
+// Public redirect lookup (no auth required)
+app.get('/api/links/:slug', async (c) => {
+  const slug = c.req.param('slug')
+  const db = createClient({
+    url: c.env.TURSO_DATABASE_URL,
+    authToken: c.env.TURSO_AUTH_TOKEN,
+  })
+  const result = await db.execute({
+    sql: 'SELECT original_url FROM links WHERE slug = ?',
+    args: [slug],
+  })
+  if (result.rows.length === 0) return c.json({ error: 'Not Found' }, 404)
+  const row = result.rows[0] as unknown as { original_url: string }
+  await db.execute({
+    sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
+    args: [slug],
+  })
+  return c.json({ original_url: row.original_url })
+})
+
+app.put('/api/links/:id', async (c) => {
+  const id = c.req.param('id')
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const token = authHeader.split(' ')[1]
+    if (!token) return c.json({ error: 'Unauthorized' }, 401)
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const { original_url, slug } = await c.req.json() as { original_url?: string; slug?: string }
+    if (!original_url || typeof original_url !== 'string' || !slug || typeof slug !== 'string') {
+      return c.json({ error: 'original_url and slug are required' }, 400)
+    }
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+    const result = await db.execute({
+      sql: 'UPDATE links SET original_url = ?, slug = ? WHERE id = ? AND user_id = ?',
+      args: [normalizeUrl(original_url), slug.toLowerCase(), id, payload.sub],
+    })
+    if (result.rowsAffected === 0) {
+      return c.json({ error: 'Link not found or access denied' }, 404)
+    }
+    return c.json({ status: 'success', message: 'Link updated.' })
+  } catch {
+    return c.json({ error: 'Update failed' }, 400)
+  }
+})
+
+app.delete('/api/links/:id', async (c) => {
+  const id = c.req.param('id')
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const token = authHeader.split(' ')[1]
+    if (!token) return c.json({ error: 'Unauthorized' }, 401)
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+    const result = await db.execute({
+      sql: 'DELETE FROM links WHERE id = ? AND user_id = ?',
+      args: [id, payload.sub],
+    })
+    if (result.rowsAffected === 0) {
+      return c.json({ error: 'Link not found or access denied' }, 404)
+    }
+    return c.json({ status: 'success', message: 'Link deleted.' })
+  } catch {
+    return c.json({ error: 'Delete failed' }, 400)
+  }
+})
+
+app.post('/api/links', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const token = authHeader.split(' ')[1]
+    if (!token) return c.json({ error: 'Unauthorized' }, 401)
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const { original_url } = await c.req.json() as { original_url?: string }
+    if (!original_url || typeof original_url !== 'string') {
+      return c.json({ error: 'original_url is required' }, 400)
+    }
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+    const normalizedUrl = normalizeUrl(original_url)
+    let slug = generateSlug()
+    const existing = await db.execute({ sql: 'SELECT slug FROM links WHERE slug = ?', args: [slug] })
+    if (existing.rows.length > 0) slug = generateSlug()
+    const linkId = crypto.randomUUID()
+    await db.execute({
+      sql: 'INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
+      args: [linkId, payload.sub, normalizedUrl, slug],
+    })
+    return c.json({ status: 'success', link: { slug, original_url: normalizedUrl } })
+  } catch {
+    return c.json({ error: 'Invalid Session' }, 401)
+  }
+})
 
 // 4. The Registration Route
 app.post('/api/auth/register', async (c) => {

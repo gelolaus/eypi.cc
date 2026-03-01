@@ -36,9 +36,9 @@
       </div>
 
       <!-- Table Rows -->
-      <template v-if="mockLinks.length > 0">
+      <template v-if="links.length > 0">
         <div
-          v-for="link in mockLinks"
+          v-for="link in links"
           :key="link.id"
           class="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition-colors last:border-0 hover:bg-white/50"
         >
@@ -128,7 +128,7 @@
     <Transition name="slide-right">
       <div
         v-if="isSidebarOpen"
-        class="mica-card fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-gray-300 p-8 shadow-2xl"
+        class="mica-card fixed top-0 right-0 z-50 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-300 p-8 shadow-2xl"
       >
         <button
           type="button"
@@ -290,18 +290,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
+const router = useRouter()
 
-const isValidUrl = (url: string) =>
-  /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i.test(url)
+const isValidUrl = (url: string) => {
+  // Accepts "google.com", "https://google.com", "sub.domain.co/path"
+  const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
+  return pattern.test(url.trim())
+}
 const isValidSlug = (slug: string) => /^[a-zA-Z0-9]+$/.test(slug)
 
 interface Link {
-  id: number
+  id: string
   original: string
   short: string
   clicks?: number
@@ -374,10 +379,34 @@ const downloadQR = async () => {
   toast.success('High-Res QR Code exported successfully')
 }
 
-const mockLinks = ref<Link[]>([
-  { id: 1, original: 'https://github.com/gelolaus', short: 'eypi.cc/gelo', clicks: 14 },
-  { id: 2, original: 'https://google.com', short: 'eypi.cc/search', clicks: 0 },
-])
+const API_BASE = 'http://localhost:8787'
+const links = ref<Link[]>([])
+
+async function fetchLinks() {
+  const token = localStorage.getItem('eypi_token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+  try {
+    const response = await fetch(`${API_BASE}/api/links`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (response.status === 401) {
+      localStorage.removeItem('eypi_token')
+      router.push('/login')
+      return
+    }
+    const data = await response.json()
+    links.value = data.links || []
+  } catch (error) {
+    console.error('Fetch error:', error)
+  }
+}
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -420,7 +449,7 @@ function openSidebar(link?: Link): void {
   isSidebarOpen.value = true
 }
 
-function handleShorten() {
+async function handleShorten() {
   const url = longUrlInput.value.trim()
   if (!url) return
 
@@ -429,40 +458,83 @@ function handleShorten() {
     return
   }
 
-  isShortening.value = true
-  setTimeout(() => {
-    openSidebar()
-    isShortening.value = false
-  }, 600)
-}
-
-function onSave(): void {
-  const short = sidebarSlug.value.trim()
-    ? `eypi.cc/${sidebarSlug.value.trim()}`
-    : `eypi.cc/${hashToSlug(sidebarOriginalUrl.value)}`
-  if (activeLink.value) {
-    const idx = mockLinks.value.findIndex((l) => l.id === activeLink.value!.id)
-    if (idx !== -1) {
-      mockLinks.value[idx] = {
-        ...activeLink.value,
-        original: sidebarOriginalUrl.value,
-        short,
-      }
-      toast.success('Link successfully updated')
-    }
-  } else {
-    mockLinks.value.push({
-      id: Math.max(0, ...mockLinks.value.map((l) => l.id)) + 1,
-      original: sidebarOriginalUrl.value,
-      short,
-      clicks: 0,
-    })
-    toast.success('New link successfully generated')
+  const token = localStorage.getItem('eypi_token')
+  if (!token) {
+    toast.error('Please log in to create links')
+    return
   }
-  isSidebarOpen.value = false
+
+  isShortening.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/links`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ original_url: url }),
+    })
+    const data = await res.json()
+
+    if (res.status === 401) {
+      toast.error('Session expired. Please log in again.')
+      return
+    }
+
+    if (!res.ok) {
+      toast.error(data.error || 'Failed to create link')
+      return
+    }
+
+    if (data.status === 'success' && data.link) {
+      longUrlInput.value = ''
+      toast.success('New link successfully generated')
+      await fetchLinks()
+    }
+  } catch {
+    toast.error('Failed to create link')
+  } finally {
+    isShortening.value = false
+  }
 }
 
-function handleSave() {
+async function onSave(): Promise<void> {
+  if (!activeLink.value) {
+    isSidebarOpen.value = false
+    return
+  }
+  const slug = sidebarSlug.value.trim()
+    ? sidebarSlug.value.trim()
+    : hashToSlug(sidebarOriginalUrl.value)
+  const originalUrl = sidebarOriginalUrl.value.trim()
+  const token = localStorage.getItem('eypi_token')
+  if (!token) {
+    toast.error('Please log in to update links')
+    return
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/links/${activeLink.value.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ original_url: originalUrl, slug }),
+    })
+    const data = await res.json()
+    if (res.ok && data.status === 'success') {
+      toast.success('Link successfully updated')
+      isSidebarOpen.value = false
+      await fetchLinks()
+    } else {
+      toast.error(data.error || 'Failed to update link')
+    }
+  } catch {
+    toast.error('Failed to update link')
+  }
+}
+
+async function handleSave() {
   const url = sidebarOriginalUrl.value.trim()
   const slug = sidebarSlug.value.trim()
 
@@ -477,10 +549,11 @@ function handleSave() {
   }
 
   isSaving.value = true
-  setTimeout(() => {
-    onSave()
+  try {
+    await onSave()
+  } finally {
     isSaving.value = false
-  }, 800)
+  }
 }
 
 function confirmDelete(link: Link): void {
@@ -493,12 +566,36 @@ function cancelDelete(): void {
   linkToDelete.value = null
 }
 
-function executeDelete(): void {
+async function executeDelete(): Promise<void> {
   if (!linkToDelete.value) return
-  mockLinks.value = mockLinks.value.filter((l) => l.id !== linkToDelete.value!.id)
-  toast.success('Link successfully deleted')
-  cancelDelete()
+  const linkId = linkToDelete.value.id
+  const token = localStorage.getItem('eypi_token')
+  if (!token) {
+    toast.error('Please log in to delete links')
+    cancelDelete()
+    return
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/links/${linkId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await res.json()
+    if (res.ok && data.status === 'success') {
+      links.value = links.value.filter((l) => l.id !== linkId)
+      toast.success('Link successfully deleted')
+      cancelDelete()
+    } else {
+      toast.error(data.error || 'Failed to delete link')
+    }
+  } catch {
+    toast.error('Failed to delete link')
+  }
 }
+
+onMounted(() => {
+  fetchLinks()
+})
 </script>
 
 <style scoped>

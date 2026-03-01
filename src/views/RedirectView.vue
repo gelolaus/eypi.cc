@@ -53,29 +53,25 @@ const route = useRoute()
 const router = useRouter()
 const currentSlug = ref((route.params.slug as string) ?? '')
 
-// Temporary Mock DB for testing the frontend flow
-// We will replace this with Turso/SQLite later
-const mockDatabase: Record<string, string> = {
-  gelo: 'https://facebook.com/gelolaus',
-  apc: 'https://apc.edu.ph',
-}
+onMounted(async () => {
+  try {
+    const response = await fetch(`http://localhost:8787/api/links/${currentSlug.value}`)
+    const data = await response.json()
 
-onMounted(() => {
-  // Simulate network latency (800ms) for aesthetic effect
-  setTimeout(() => {
-    const destination = mockDatabase[currentSlug.value.toLowerCase()]
-
-    if (destination) {
-      // Link found: physically redirect the browser window
-      window.location.replace(destination)
+    if (response.ok && data.original_url) {
+      window.location.replace(data.original_url)
     } else {
-      // Link not found: push to the 404 page (pathMatch required for catch-all)
       router.replace({
         name: 'not-found',
         params: { pathMatch: [currentSlug.value] },
       })
     }
-  }, 800)
+  } catch {
+    router.replace({
+      name: 'not-found',
+      params: { pathMatch: [currentSlug.value] },
+    })
+  }
 })
 </script>
 
