@@ -118,7 +118,8 @@
     <Transition name="fade">
       <div
         v-if="isSidebarOpen"
-        class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+        class="fixed inset-0 bg-black/20 backdrop-blur-sm"
+        style="z-index: 9990 !important;"
         aria-hidden="true"
         @click="isSidebarOpen = false"
       />
@@ -128,7 +129,8 @@
     <Transition name="slide-right">
       <div
         v-if="isSidebarOpen"
-        class="mica-card fixed top-0 right-0 z-50 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-300 p-8 shadow-2xl"
+        class="mica-card fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-300 p-8 shadow-2xl"
+        style="z-index: 9991 !important;"
       >
         <button
           type="button"
@@ -248,7 +250,8 @@
   <Transition name="fade">
     <div
       v-if="isDeleteModalOpen"
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      style="z-index: 9999 !important;"
       @click.self="cancelDelete"
     >
       <div

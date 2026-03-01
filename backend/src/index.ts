@@ -223,18 +223,52 @@ app.post('/api/auth/register', async (c) => {
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
 
-    // Insert into the database
-    await db.execute({
-      sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token) VALUES (?, ?, ?, 0, ?)',
-      args: [userId, email, passwordHash, verificationToken]
+    // 1. Check for existing user before INSERT
+    const existing = await db.execute({
+      sql: 'SELECT id FROM users WHERE email = ?',
+      args: [email],
     })
+
+    if (existing.rows.length > 0) {
+      // 2. User exists: reset verification status, new password, new token (overwrites old token)
+      await db.execute({
+        sql: 'UPDATE users SET password_hash = ?, verification_token = ?, is_verified = 0 WHERE email = ?',
+        args: [passwordHash, verificationToken, email],
+      })
+    } else {
+      // 3. New user: insert
+      await db.execute({
+        sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token) VALUES (?, ?, ?, 0, ?)',
+        args: [userId, email, passwordHash, verificationToken]
+      })
+    }
+    console.log('Registration succeeded, verification token stored for email:', email)
 
     const resend = new Resend(c.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'eypicc@resend.gelolaus.com',
       to: email,
       subject: 'Verify your eypi.cc account',
-      html: `<p>Welcome to eypi.cc! Please verify your student account by clicking <a href="https://api.eypi.cc/api/auth/verify?token=${verificationToken}">this link</a>.</p>`,
+      html: `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; padding: 40px 20px; text-align: center;">
+  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 2px solid #34418F; border-radius: 16px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <h1 style="color: #34418F; font-size: 24px; font-weight: 900; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 2px;">eypi.cc</h1>
+    <p style="color: #555555; font-size: 14px; line-height: 1.6; letter-spacing: normal; margin-bottom: 32px;">
+      Welcome to eypi.cc, the link shortener for APC Rams! <br>To finalize your access to the edge, please verify your transmission.
+    </p>
+    <a href="https://eypi.cc/verify?token=${verificationToken}"
+       style="background-color: #DEAC4B; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
+      Verify Account
+    </a>
+    <p style="color: #999999; font-size: 12px; margin-top: 32px;">
+      If the button doesn't work, copy and paste this link:<br>
+      <span style="color: #34418F; word-break: break-all;">https://eypi.cc/verify?token=${verificationToken}</span>
+    </p>
+    <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 32px 0;">
+    <p style="color: #bbbbbb; font-size: 10px; text-transform: uppercase;">Created by Angelo Laus for the APC Community</p>
+  </div>
+</div>
+`,
     })
 
     return c.json({ 
@@ -253,22 +287,43 @@ app.post('/api/auth/register', async (c) => {
   }
 })
 
-app.get('/api/auth/verify', async (c) => {
-  const token = c.req.query('token')
-  if (!token) return c.text('Missing verification token.', 400)
+// POST only: prevents crawlers (Outlook Safelinks, etc.) from auto-clicking and consuming the token
+app.post('/api/auth/verify', async (c) => {
+  let body: { token?: string }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Invalid request body.' }, 400)
+  }
+
+  const rawToken = body?.token
+  console.log('Verifying token:', rawToken)
+
+  const token = (typeof rawToken === 'string' ? rawToken : '').trim()
+  if (!token) return c.json({ error: 'Missing verification token.' }, 400)
 
   const db = createClient({
     url: c.env.TURSO_DATABASE_URL,
     authToken: c.env.TURSO_AUTH_TOKEN,
   })
+
+  const check = await db.execute({
+    sql: 'SELECT id FROM users WHERE verification_token = ?',
+    args: [token],
+  })
+  if (check.rows.length === 0) {
+    console.log('Token not found or already used. Token length:', token.length)
+    return c.json({ error: 'Invalid or expired token.' }, 400)
+  }
+
   const result = await db.execute({
     sql: 'UPDATE users SET is_verified = 1, verification_token = NULL WHERE verification_token = ? RETURNING id',
     args: [token],
   })
 
-  if (result.rows.length === 0) return c.text('Invalid or expired token.', 400)
+  if (result.rows.length === 0) return c.json({ error: 'Invalid or expired token.' }, 400)
 
-  return c.redirect('https://eypi.cc/login?verified=true')
+  return c.json({ status: 'success', message: 'Account verified.' })
 })
 
 // 5. The Login Route

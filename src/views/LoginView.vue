@@ -2,27 +2,6 @@
   <section
     class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4"
   >
-    <!-- Corner registration marks -->
-    <div
-      class="pointer-events-none absolute left-4 top-4 h-8 w-8 border-l-2 border-t-2 border-gray-300"
-    />
-    <div
-      class="pointer-events-none absolute right-4 top-4 h-8 w-8 border-r-2 border-t-2 border-gray-300"
-    />
-    <div
-      class="pointer-events-none absolute bottom-4 left-4 h-8 w-8 border-b-2 border-l-2 border-gray-300"
-    />
-    <div
-      class="pointer-events-none absolute bottom-4 right-4 h-8 w-8 border-b-2 border-r-2 border-gray-300"
-    />
-
-    <!-- Pasay coordinates - left edge -->
-    <div
-      class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 -rotate-90 font-mono text-xs text-gray-400"
-    >
-      COORD. 14.531105 N // 121.021309 E
-    </div>
-
     <!-- Auth Card -->
     <div
       class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-8"
