@@ -16,12 +16,20 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-// 2. Enable CORS so Vue can talk to Hono
+// 2. Enable CORS so Vue can talk to Hono (must be first middleware)
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173', 'https://eypi.cc'],
+  origin: (origin) => {
+    const allowed = ['http://localhost:5173', 'https://eypi.cc']
+    return allowed.includes(origin) ? origin : 'https://eypi.cc'
+  },
   allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  maxAge: 86400, // Cache preflight for 24 hours
 }))
+
+// Explicit OPTIONS handler for preflight requests
+app.options('*', (c) => c.body(null, 204))
 
 // 3. Define the Strict Password Rules using Zod
 const registerSchema = z.object({
