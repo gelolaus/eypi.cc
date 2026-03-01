@@ -7,7 +7,7 @@
     @apply antialiased;
   }
   body {
-    @apply font-sans text-gray-800;
+    @apply font-sans text-gray-800 dark:text-gray-200;
   }
 }
 
@@ -15,6 +15,12 @@
   .bg-dot-grid {
     background-color: #F8F9FA;
     background-image: radial-gradient(rgba(52, 65, 143, 0.15) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+  }
+
+  .dark .bg-dot-grid {
+    background-color: #0f172a;
+    background-image: radial-gradient(rgba(52, 65, 143, 0.08) 1.5px, transparent 1.5px);
     background-size: 24px 24px;
   }
 

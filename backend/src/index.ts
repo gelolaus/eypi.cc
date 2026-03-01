@@ -39,7 +39,8 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, 'Security violation: Must contain at least one uppercase letter.')
     .regex(/[a-z]/, 'Security violation: Must contain at least one lowercase letter.')
     .regex(/[0-9]/, 'Security violation: Must contain at least one number.')
-    .regex(/[^A-Za-z0-9]/, 'Security violation: Must contain at least one special symbol.')
+    .regex(/[^A-Za-z0-9]/, 'Security violation: Must contain at least one special symbol.'),
+  name: z.string().trim().max(200).optional(),
 })
 
 const generateSlug = () => Math.random().toString(36).substring(2, 8)
@@ -208,7 +209,8 @@ app.post('/api/auth/register', async (c) => {
       }, 400)
     }
 
-    const { email, password } = validation.data
+    const { email, password, name } = validation.data
+    const nameValue = name?.trim() || null
 
     // Hash the password securely (10 rounds of salting)
     const passwordHash = bcrypt.hashSync(password, 10)
@@ -232,14 +234,14 @@ app.post('/api/auth/register', async (c) => {
     if (existing.rows.length > 0) {
       // 2. User exists: reset verification status, new password, new token (overwrites old token)
       await db.execute({
-        sql: 'UPDATE users SET password_hash = ?, verification_token = ?, is_verified = 0 WHERE email = ?',
-        args: [passwordHash, verificationToken, email],
+        sql: 'UPDATE users SET password_hash = ?, verification_token = ?, is_verified = 0, name = ? WHERE email = ?',
+        args: [passwordHash, verificationToken, nameValue, email],
       })
     } else {
       // 3. New user: insert
       await db.execute({
-        sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token) VALUES (?, ?, ?, 0, ?)',
-        args: [userId, email, passwordHash, verificationToken]
+        sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token, name) VALUES (?, ?, ?, 0, ?, ?)',
+        args: [userId, email, passwordHash, verificationToken, nameValue]
       })
     }
     console.log('Registration succeeded, verification token stored for email:', email)
@@ -347,7 +349,7 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ status: 'error', message: 'Invalid credentials.' }, 401)
     }
 
-    const user = result.rows[0] as unknown as { id: string; email: string; password_hash: string; is_verified?: number }
+    const user = result.rows[0] as unknown as { id: string; email: string; password_hash: string; is_verified?: number; name?: string }
 
     if (!user.is_verified) {
       return c.json({ status: 'error', message: 'Please verify your APC email address before logging in.' }, 403)
@@ -359,10 +361,11 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ status: 'error', message: 'Invalid credentials.' }, 401)
     }
 
-    // Generate the JWT
+    // Generate the JWT (include name when available for header display)
     const payload = {
       sub: user.id,
       email: user.email,
+      ...(user.name && { name: user.name }),
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // Token expires in 24 hours
     }
     const token = await sign(payload, c.env.JWT_SECRET)

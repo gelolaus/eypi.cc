@@ -1,10 +1,10 @@
 <template>
   <div class="relative w-full">
     <div
-      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-16"
+      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 md:pt-16"
     >
     <!-- Top Bar (Create Link) -->
-    <div class="mb-10 flex w-full gap-4">
+    <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">
       <input
         v-model="longUrlInput"
         type="url"
@@ -22,13 +22,14 @@
       </button>
     </div>
 
-    <!-- Unified Table -->
+    <!-- Unified Table (horizontal scroll on mobile) -->
+    <div class="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
     <div
-      class="mica-card w-full overflow-hidden rounded-2xl border border-gray-200 shadow-sm"
+      class="mica-card w-full min-w-[600px] overflow-hidden rounded-2xl border border-gray-200 shadow-sm"
     >
       <!-- Table Header -->
       <div
-        class="flex items-center justify-between border-b border-gray-200 bg-white/40 px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-gray-500"
+        class="flex items-center justify-between border-b border-gray-200 bg-white/40 px-4 md:px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-gray-500"
       >
         <span class="flex-1">Branded Link</span>
         <span class="w-32 text-center">Engagement</span>
@@ -40,7 +41,7 @@
         <div
           v-for="link in links"
           :key="link.id"
-          class="flex items-center justify-between border-b border-gray-100 px-6 py-5 transition-colors last:border-0 hover:bg-white/50"
+          class="flex items-center justify-between border-b border-gray-100 px-4 md:px-6 py-5 transition-colors last:border-0 hover:bg-white/50"
         >
           <div class="flex flex-1 flex-col truncate pr-4">
             <span class="font-mono text-lg font-bold text-[#34418F]">
@@ -132,6 +133,7 @@
           The registry is currently empty. Enter a destination URL in the console above to establish a new routing sequence.
         </p>
       </div>
+    </div>
     </div>
 
     <!-- Backdrop (separate fade transition) -->

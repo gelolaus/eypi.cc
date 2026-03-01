@@ -1,5 +1,5 @@
 <template>
-  <form @submit.prevent="handleSubmit" novalidate class="mb-8 flex w-full max-w-2xl flex-col gap-4 sm:flex-row">
+  <form @submit.prevent="handleSubmit" novalidate class="mb-8 flex w-full max-w-2xl flex-col gap-4 md:flex-row">
     <input
       id="url"
       :value="props.modelValue"

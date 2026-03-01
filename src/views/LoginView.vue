@@ -151,7 +151,7 @@ const handleRegister = async () => {
     const response = await fetch('https://api.eypi.cc/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.value, password: password.value }),
+      body: JSON.stringify({ email: email.value, password: password.value, name: name.value.trim() || undefined }),
     })
 
     const data = await response.json()
