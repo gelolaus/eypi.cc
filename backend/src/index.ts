@@ -57,6 +57,17 @@ const normalizeUrl = (url: string) => {
   return trimmed
 }
 
+function getOS(userAgent: string | null): string {
+  if (!userAgent) return 'Unknown'
+  const ua = userAgent.toLowerCase()
+  if (ua.includes('win')) return 'Windows'
+  if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS'
+  if (ua.includes('mac')) return 'macOS'
+  if (ua.includes('android')) return 'Android'
+  if (ua.includes('linux')) return 'Linux'
+  return 'Unknown'
+}
+
 app.get('/', (c) => c.text('eypi.cc API is online.'))
 app.get('/api/health', async (c) => { /* ... existing health check ... */ return c.text('OK') })
 
@@ -93,6 +104,76 @@ app.get('/api/links', async (c) => {
   }
 })
 
+// Analytics aggregation (auth required, must be placed before :slug route)
+app.get('/api/links/:id/analytics', async (c) => {
+  const id = c.req.param('id')
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
+  }
+  const token = authHeader.split(' ')[1]
+  if (!token) return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
+  try {
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+    const ownership = await db.execute({
+      sql: 'SELECT id FROM links WHERE id = ? AND user_id = ?',
+      args: [id, payload.sub],
+    })
+    if (ownership.rows.length === 0) {
+      return c.json({ error: 'Link not found or access denied' }, 404)
+    }
+    const [osResult, countryResult, referrerResult, timelineResult, peakResult] = await Promise.all([
+      db.execute({
+        sql: 'SELECT os, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY os',
+        args: [id],
+      }),
+      db.execute({
+        sql: 'SELECT country, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY country',
+        args: [id],
+      }),
+      db.execute({
+        sql: 'SELECT referrer, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY referrer',
+        args: [id],
+      }),
+      db.execute({
+        sql: "SELECT DATE(created_at) as date, COUNT(*) as count FROM analytics WHERE link_id = ? AND created_at >= date('now', '-30 days') GROUP BY DATE(created_at) ORDER BY date ASC",
+        args: [id],
+      }),
+      db.execute({
+        sql: "SELECT strftime('%w', datetime(created_at, '+8 hours')) as peakDay, strftime('%H', datetime(created_at, '+8 hours')) as peakHour, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY strftime('%w', datetime(created_at, '+8 hours')), strftime('%H', datetime(created_at, '+8 hours')) ORDER BY count DESC LIMIT 1",
+        args: [id],
+      }),
+    ])
+    const os = osResult.rows.map((r) => {
+      const row = r as unknown as { os: string; count: number }
+      return { os: row.os, count: row.count }
+    })
+    const country = countryResult.rows.map((r) => {
+      const row = r as unknown as { country: string; count: number }
+      return { country: row.country, count: row.count }
+    })
+    const referrer = referrerResult.rows.map((r) => {
+      const row = r as unknown as { referrer: string; count: number }
+      return { referrer: row.referrer, count: row.count }
+    })
+    const timeline = timelineResult.rows.map((r) => {
+      const row = r as unknown as { date: string; count: number }
+      return { date: row.date, count: row.count }
+    })
+    const peakEngagement =
+      peakResult.rows.length > 0
+        ? (peakResult.rows[0] as unknown as { peakDay: string; peakHour: string; count: number })
+        : null
+    return c.json({ os, country, referrer, timeline, peakEngagement })
+  } catch {
+    return c.json({ error: 'Unauthorized', message: 'Invalid session' }, 401)
+  }
+})
+
 // Public redirect lookup (no auth required)
 app.get('/api/links/:slug', async (c) => {
   const slug = c.req.param('slug')
@@ -101,17 +182,35 @@ app.get('/api/links/:slug', async (c) => {
     authToken: c.env.TURSO_AUTH_TOKEN,
   })
   const result = await db.execute({
-    sql: 'SELECT original_url FROM links WHERE slug = ?',
+    sql: 'SELECT id, original_url FROM links WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ error: 'Not Found' }, 404)
 
-  await db.execute({
-    sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
-    args: [slug],
-  })
+  const row = result.rows[0] as unknown as { id: string; original_url: string }
+  const userAgent = c.req.header('User-Agent')
+  const referrer = c.req.header('Referer') ?? 'Direct'
+  const country = (c.req.raw as Request & { cf?: { country?: string } }).cf?.country ?? 'Unknown'
+  const os = getOS(userAgent)
+  const linkId = row.id
 
-  const row = result.rows[0] as unknown as { original_url: string }
+  try {
+    c.executionCtx?.waitUntil(
+      Promise.all([
+        db.execute({
+          sql: 'INSERT INTO analytics (link_id, os, country, referrer) VALUES (?, ?, ?, ?)',
+          args: [linkId, os, country, referrer],
+        }),
+        db.execute({
+          sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
+          args: [slug],
+        }),
+      ])
+    )
+  } catch {
+    // executionCtx not available (e.g. local dev / non-CF runtime)
+  }
+
   return c.json({ original_url: row.original_url })
 })
 

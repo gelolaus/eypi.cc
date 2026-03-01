@@ -33,7 +33,7 @@
       >
         <span class="flex-1">Branded Link</span>
         <span class="w-32 text-center">Engagement</span>
-        <span class="w-32 text-center">Actions</span>
+        <span class="w-40 text-center">Actions</span>
       </div>
 
       <!-- Table Rows -->
@@ -54,7 +54,7 @@
           <div class="w-32 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
             {{ link.clicks ?? 0 }} clicks
           </div>
-          <div class="flex w-32 items-center justify-center gap-2">
+          <div class="flex w-40 items-center justify-center gap-2">
             <button
               type="button"
               class="rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
@@ -72,6 +72,26 @@
                   stroke-linejoin="round"
                   stroke-width="2"
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="rounded-full p-2 text-emerald-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-slate-600/30"
+              aria-label="Analytics"
+              @click="activeAnalyticsLinkId = link.id; activeAnalyticsShortUrl = link.short; isAnalyticsOpen = true"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 />
               </svg>
             </button>
@@ -136,12 +156,13 @@
     </div>
     </div>
 
-    <!-- Backdrop (separate fade transition) -->
+    <!-- Backdrop (separate fade transition) - Teleported to body to elevate above header/footer -->
+    <Teleport to="body">
     <Transition name="fade">
       <div
         v-if="isSidebarOpen"
         class="fixed inset-0 bg-black/20 backdrop-blur-sm"
-        style="z-index: 9990 !important;"
+        style="z-index: 99990"
         aria-hidden="true"
         @click="isSidebarOpen = false"
       />
@@ -152,7 +173,7 @@
       <div
         v-if="isSidebarOpen"
         class="mica-card fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-300 p-8 shadow-2xl dark:bg-mica-navy-panel dark:border-slate-600 dark:backdrop-blur-xl"
-        style="z-index: 9991 !important;"
+        style="z-index: 99991"
       >
         <button
           type="button"
@@ -268,6 +289,7 @@
         </div>
       </div>
     </Transition>
+    </Teleport>
   </div>
 
   <!-- Delete Confirmation Modal -->
@@ -314,6 +336,13 @@
     </div>
     </Transition>
   </div>
+
+  <AnalyticsPanel
+    :link-id="activeAnalyticsLinkId"
+    :is-open="isAnalyticsOpen"
+    :short-url="activeAnalyticsShortUrl"
+    @close="isAnalyticsOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -321,6 +350,7 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
+import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
 
 const toast = useToast()
 const router = useRouter()
@@ -361,6 +391,9 @@ interface Link {
 const longUrlInput = ref('')
 const isSidebarOpen = ref(false)
 const isDeleteModalOpen = ref(false)
+const activeAnalyticsLinkId = ref<string | number | null>(null)
+const activeAnalyticsShortUrl = ref('')
+const isAnalyticsOpen = ref(false)
 const linkToDelete = ref<Link | null>(null)
 const activeLink = ref<Link | null>(null)
 const sidebarOriginalUrl = ref('')
