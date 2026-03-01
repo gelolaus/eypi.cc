@@ -299,7 +299,6 @@ const toast = useToast()
 const router = useRouter()
 
 const isValidUrl = (url: string) => {
-  // Accepts "google.com", "https://google.com", "sub.domain.co/path"
   const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
   return pattern.test(url.trim())
 }

@@ -87,11 +87,13 @@ app.get('/api/links/:slug', async (c) => {
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ error: 'Not Found' }, 404)
-  const row = result.rows[0] as unknown as { original_url: string }
+
   await db.execute({
     sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
     args: [slug],
   })
+
+  const row = result.rows[0] as unknown as { original_url: string }
   return c.json({ original_url: row.original_url })
 })
 
@@ -107,13 +109,14 @@ app.put('/api/links/:id', async (c) => {
     if (!original_url || typeof original_url !== 'string' || !slug || typeof slug !== 'string') {
       return c.json({ error: 'original_url and slug are required' }, 400)
     }
+    const normalizedUrl = normalizeUrl(original_url)
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     const result = await db.execute({
       sql: 'UPDATE links SET original_url = ?, slug = ? WHERE id = ? AND user_id = ?',
-      args: [normalizeUrl(original_url), slug.toLowerCase(), id, payload.sub],
+      args: [normalizedUrl, slug.toLowerCase(), id, payload.sub],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -160,11 +163,11 @@ app.post('/api/links', async (c) => {
     if (!original_url || typeof original_url !== 'string') {
       return c.json({ error: 'original_url is required' }, 400)
     }
+    const normalizedUrl = normalizeUrl(original_url)
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
-    const normalizedUrl = normalizeUrl(original_url)
     let slug = generateSlug()
     const existing = await db.execute({ sql: 'SELECT slug FROM links WHERE slug = ?', args: [slug] })
     if (existing.rows.length > 0) slug = generateSlug()
@@ -275,6 +278,76 @@ app.post('/api/auth/login', async (c) => {
   } catch (error) {
     console.error('Login failed:', error)
     return c.json({ status: 'error', message: 'Internal server error.' }, 500)
+  }
+})
+
+// 6. Change Password Route (requires JWT)
+app.put('/api/auth/password', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    const token = authHeader.split(' ')[1]
+    if (!token) return c.json({ error: 'Unauthorized' }, 401)
+
+    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
+    const { currentPassword, newPassword } = await c.req.json() as { currentPassword?: string; newPassword?: string }
+
+    if (!currentPassword || !newPassword) {
+      return c.json({ error: 'currentPassword and newPassword are required' }, 400)
+    }
+
+    // Re-use our strict Zod password rules
+    const passwordValidation = z.string()
+      .min(8, 'Password must be at least 8 characters.')
+      .regex(/[A-Z]/, 'Must contain at least one uppercase letter.')
+      .regex(/[a-z]/, 'Must contain at least one lowercase letter.')
+      .regex(/[0-9]/, 'Must contain at least one number.')
+      .regex(/[^A-Za-z0-9]/, 'Must contain at least one special symbol.')
+      .safeParse(newPassword)
+
+    if (!passwordValidation.success) {
+      return c.json({
+        error: passwordValidation.error.issues.map((i) => i.message).join(', '),
+      }, 400)
+    }
+
+    const db = createClient({
+      url: c.env.TURSO_DATABASE_URL,
+      authToken: c.env.TURSO_AUTH_TOKEN,
+    })
+
+    // Fetch current user to check old password
+    const userResult = await db.execute({
+      sql: 'SELECT password_hash FROM users WHERE id = ?',
+      args: [payload.sub],
+    })
+
+    if (userResult.rows.length === 0) {
+      return c.json({ error: 'User not found.' }, 404)
+    }
+
+    const row = userResult.rows[0] as unknown as { password_hash: string }
+
+    // Verify old password
+    const isValid = bcrypt.compareSync(currentPassword, row.password_hash)
+    if (!isValid) {
+      return c.json({ error: 'Incorrect current password.' }, 401)
+    }
+
+    // Hash new password and update DB
+    const newHash = bcrypt.hashSync(newPassword, 10)
+    await db.execute({
+      sql: 'UPDATE users SET password_hash = ? WHERE id = ?',
+      args: [newHash, payload.sub],
+    })
+
+    return c.json({ status: 'success', message: 'Security credentials updated successfully.' })
+  } catch (error) {
+    console.error('Password update failed:', error)
+    return c.json({ error: 'Failed to update password.' }, 500)
   }
 })
 

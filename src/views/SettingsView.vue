@@ -45,22 +45,41 @@ const toast = useToast()
 const isSaving = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
 
-const handleUpdatePassword = () => {
+const handleUpdatePassword = async () => {
   if (passwords.new !== passwords.confirm) {
-    toast.error('Cryptographic mismatch: New passwords do not match')
+    toast.error('New passwords do not match.')
     return
   }
-  if (passwords.new.length < 8) {
-    toast.error('Security violation: Password must be at least 8 characters')
-    return
-  }
+
   isSaving.value = true
-  setTimeout(() => {
-    isSaving.value = false
+  try {
+    const response = await fetch('http://localhost:8787/api/auth/password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('eypi_token')}`,
+      },
+      body: JSON.stringify({
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      toast.error(data.error || data.message || 'Failed to update password.')
+      return
+    }
+
+    toast.success('Password successfully updated')
     passwords.current = ''
     passwords.new = ''
     passwords.confirm = ''
-    toast.success('Password successfully updated')
-  }, 1000)
+  } catch {
+    toast.error('Failed to update password.')
+  } finally {
+    isSaving.value = false
+  }
 }
 </script>
