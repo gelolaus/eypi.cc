@@ -21,6 +21,36 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
     },
     {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/PrivacyView.vue'),
+    },
+    {
+      path: '/terms',
+      name: 'terms',
+      component: () => import('@/views/TermsView.vue'),
+    },
+    {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('@/views/ContactView.vue'),
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
+    },
+    {
+      path: '/:slug',
+      name: 'redirect',
+      component: () => import('@/views/RedirectView.vue'),
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

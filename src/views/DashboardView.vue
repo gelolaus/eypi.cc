@@ -1,7 +1,8 @@
 <template>
-  <div
-    class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-16"
-  >
+  <div class="relative w-full">
+    <div
+      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-16"
+    >
     <!-- Top Bar (Create Link) -->
     <div class="mb-10 flex w-full gap-4">
       <input
@@ -284,7 +285,8 @@
         </div>
       </div>
     </div>
-  </Transition>
+    </Transition>
+  </div>
 </template>
 
 <script setup lang="ts">

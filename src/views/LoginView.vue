@@ -95,6 +95,13 @@
         >
           {{ mode === 'login' ? 'Login' : 'Register' }}
         </button>
+        <router-link
+          v-if="mode === 'login'"
+          to="/reset-password"
+          class="mt-4 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F]"
+        >
+          Forgot password?
+        </router-link>
       </form>
     </div>
   </section>
