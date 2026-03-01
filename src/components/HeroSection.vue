@@ -110,19 +110,23 @@ function hashToSlug(str: string): string {
 const previewSlug = computed(() => hashToSlug(longUrl.value))
 
 function handleShorten(): void {
-  const url = longUrl.value.trim()
-  if (!url) return
+  let urlToProcess = longUrl.value.trim()
+  if (!urlToProcess) return
 
-  if (!isValidUrl(url)) {
+  if (!/^https?:\/\//i.test(urlToProcess)) {
+    urlToProcess = `https://${urlToProcess}`
+  }
+
+  if (!isValidUrl(urlToProcess)) {
     toast.error('Please enter a valid URL')
     return
   }
 
   const token = localStorage.getItem('eypi_token')
   if (token) {
-    router.push({ path: '/dashboard', query: { url } })
+    router.push({ path: '/dashboard', query: { url: urlToProcess } })
   } else {
-    localStorage.setItem('pending_url', url)
+    localStorage.setItem('pending_url', urlToProcess)
     toast.error('Please log in to shorten your link!')
     router.push('/login')
   }

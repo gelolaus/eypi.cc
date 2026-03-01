@@ -450,10 +450,14 @@ function openSidebar(link?: Link): void {
 }
 
 async function handleShorten() {
-  const url = longUrlInput.value.trim()
-  if (!url) return
+  let urlToProcess = longUrlInput.value.trim()
+  if (!urlToProcess) return
 
-  if (!isValidUrl(url)) {
+  if (!/^https?:\/\//i.test(urlToProcess)) {
+    urlToProcess = `https://${urlToProcess}`
+  }
+
+  if (!isValidUrl(urlToProcess)) {
     toast.error('Transmission failed: Invalid URL format')
     return
   }
@@ -472,7 +476,7 @@ async function handleShorten() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ original_url: url }),
+      body: JSON.stringify({ original_url: urlToProcess }),
     })
     const data = await res.json()
 
