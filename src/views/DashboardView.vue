@@ -32,7 +32,7 @@
       >
         <span class="flex-1">Branded Link</span>
         <span class="w-32 text-center">Engagement</span>
-        <span class="w-24 text-center">Actions</span>
+        <span class="w-32 text-center">Actions</span>
       </div>
 
       <!-- Table Rows -->
@@ -53,7 +53,27 @@
           <div class="w-32 text-center font-mono text-sm text-gray-600">
             {{ link.clicks ?? 0 }} clicks
           </div>
-          <div class="flex w-24 items-center justify-center gap-2">
+          <div class="flex w-32 items-center justify-center gap-2">
+            <button
+              type="button"
+              class="rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800"
+              aria-label="Copy link"
+              @click="copyToClipboard(link.short)"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            </button>
             <button
               type="button"
               class="rounded-full p-2 text-blue-500 transition-colors hover:bg-gray-100 hover:text-blue-700"
@@ -232,15 +252,17 @@
           </div>
 
           <!-- Save Button -->
-          <button
-            type="button"
-            class="mt-auto w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all"
-            :disabled="isSaving"
-            :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
-            @click="handleSave"
-          >
-            {{ isSaving ? 'ENCRYPTING...' : 'SAVE' }}
-          </button>
+          <div class="mt-6">
+            <button
+              type="button"
+              class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all"
+              :disabled="isSaving"
+              :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
+              @click="handleSave"
+            >
+              {{ isSaving ? 'ENCRYPTING...' : 'SAVE' }}
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
@@ -316,6 +338,16 @@ const isValidUrl = (url: string) => {
   return pattern.test(url.trim())
 }
 const isValidSlug = (slug: string) => /^[a-zA-Z0-9]+$/.test(slug)
+
+const copyToClipboard = async (text: string) => {
+  try {
+    const url = text.startsWith('http') ? text : `https://${text}`
+    await navigator.clipboard.writeText(url)
+    toast.success('Link copied to clipboard!')
+  } catch {
+    toast.error('Failed to copy link')
+  }
+}
 
 interface Link {
   id: string
@@ -502,6 +534,10 @@ async function handleShorten() {
       longUrlInput.value = ''
       toast.success('New link successfully generated')
       await fetchLinks()
+      const newLink = links.value.find((l) => l.original === urlToProcess || normalizeUrl(l.original) === urlToProcess)
+      if (newLink) {
+        openSidebar(newLink)
+      }
     }
   } catch {
     toast.error('Failed to create link')
