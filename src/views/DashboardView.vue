@@ -378,7 +378,7 @@ const downloadQR = async () => {
   toast.success('High-Res QR Code exported successfully')
 }
 
-const API_BASE = 'http://localhost:8787'
+const API_BASE = 'https://api.eypi.cc'
 const links = ref<Link[]>([])
 
 async function fetchLinks() {

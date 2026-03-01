@@ -137,7 +137,7 @@ const handleLogin = async () => {
   isAuthenticating.value = true
 
   try {
-    const response = await fetch('http://localhost:8787/api/auth/login', {
+    const response = await fetch('https://api.eypi.cc/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value }),
@@ -169,7 +169,7 @@ const handleRegister = async () => {
   isAuthenticating.value = true
 
   try {
-    const response = await fetch('http://localhost:8787/api/auth/register', {
+    const response = await fetch('https://api.eypi.cc/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value }),

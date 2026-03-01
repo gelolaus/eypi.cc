@@ -55,7 +55,7 @@ const currentSlug = ref((route.params.slug as string) ?? '')
 
 onMounted(async () => {
   try {
-    const response = await fetch(`http://localhost:8787/api/links/${currentSlug.value}`)
+    const response = await fetch(`https://api.eypi.cc/api/links/${currentSlug.value}`)
     const data = await response.json()
 
     if (response.ok && data.original_url) {

@@ -53,7 +53,7 @@ const handleUpdatePassword = async () => {
 
   isSaving.value = true
   try {
-    const response = await fetch('http://localhost:8787/api/auth/password', {
+    const response = await fetch('https://api.eypi.cc/api/auth/password', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

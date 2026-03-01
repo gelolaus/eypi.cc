@@ -18,8 +18,9 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 // 2. Enable CORS so Vue can talk to Hono
 app.use('/api/*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:4173'], // Allow local Vue dev & preview ports
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: ['http://localhost:5173', 'https://eypi.cc'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['POST', 'GET', 'OPTIONS', 'PUT', 'DELETE'],
 }))
 
 // 3. Define the Strict Password Rules using Zod
@@ -225,7 +226,7 @@ app.post('/api/auth/register', async (c) => {
       from: 'eypicc@resend.gelolaus.com',
       to: email,
       subject: 'Verify your eypi.cc account',
-      html: `<p>Welcome to eypi.cc! Please verify your student account by clicking <a href="http://localhost:8787/api/auth/verify?token=${verificationToken}">this link</a>.</p>`,
+      html: `<p>Welcome to eypi.cc! Please verify your student account by clicking <a href="https://api.eypi.cc/api/auth/verify?token=${verificationToken}">this link</a>.</p>`,
     })
 
     return c.json({ 
@@ -259,7 +260,7 @@ app.get('/api/auth/verify', async (c) => {
 
   if (result.rows.length === 0) return c.text('Invalid or expired token.', 400)
 
-  return c.redirect('http://localhost:5173/login?verified=true')
+  return c.redirect('https://eypi.cc/login?verified=true')
 })
 
 // 5. The Login Route
