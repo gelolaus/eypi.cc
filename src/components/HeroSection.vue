@@ -32,7 +32,7 @@
       <p class="mb-6 max-w-3xl text-xl text-gray-600 md:text-2xl">
         Built for student orgs and the college community to claim clean, custom links instantly. Free to use, zero ads.
       </p>
-      <ShortenForm v-model="longUrl" :loading="isShortening" @submit="onShorten" />
+      <ShortenForm v-model="longUrl" :loading="isShortening" @submit="handleShorten" />
 
       <!-- Visual connector (the flow) -->
       <div class="my-4 flex flex-col items-center justify-center text-[#34418F]/50 animate-bounce">
@@ -74,10 +74,19 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import ShortenForm from './ShortenForm.vue'
+import { useToast } from '@/composables/useToast'
 
+const router = useRouter()
+const toast = useToast()
 const longUrl = ref('')
 const isShortening = ref(false)
+
+const isValidUrl = (url: string) => {
+  const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
+  return pattern.test(url.trim())
+}
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -100,12 +109,22 @@ function hashToSlug(str: string): string {
 
 const previewSlug = computed(() => hashToSlug(longUrl.value))
 
-function onShorten(): void {
-  if (longUrl.value.trim()) {
-    isShortening.value = true
-    // TODO: Wire to shorten API when available
-    console.log('Shorten requested:', longUrl.value)
-    setTimeout(() => { isShortening.value = false }, 800)
+function handleShorten(): void {
+  const url = longUrl.value.trim()
+  if (!url) return
+
+  if (!isValidUrl(url)) {
+    toast.error('Please enter a valid URL')
+    return
+  }
+
+  const token = localStorage.getItem('eypi_token')
+  if (token) {
+    router.push({ path: '/dashboard', query: { url } })
+  } else {
+    localStorage.setItem('pending_url', url)
+    toast.error('Please log in to shorten your link!')
+    router.push('/login')
   }
 }
 </script>

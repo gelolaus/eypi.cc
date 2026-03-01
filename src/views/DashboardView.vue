@@ -291,12 +291,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
 const router = useRouter()
+const route = useRoute()
 
 const isValidUrl = (url: string) => {
   const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
@@ -592,8 +593,20 @@ async function executeDelete(): Promise<void> {
   }
 }
 
-onMounted(() => {
-  fetchLinks()
+onMounted(async () => {
+  await fetchLinks()
+
+  // Check for pending URL from Landing Page
+  const routeUrl = route.query.url as string
+  const savedUrl = localStorage.getItem('pending_url')
+  const urlToShorten = routeUrl || savedUrl
+
+  if (urlToShorten && isValidUrl(urlToShorten)) {
+    longUrlInput.value = urlToShorten
+    localStorage.removeItem('pending_url')
+    await handleShorten()
+    router.replace({ path: '/dashboard', query: {} })
+  }
 })
 </script>
 
