@@ -3,6 +3,7 @@ import { sign, verify } from 'hono/jwt'
 import { cors } from 'hono/cors'
 import { createClient } from '@libsql/client/web'
 import * as bcrypt from 'bcryptjs'
+import { Resend } from 'resend'
 import { z } from 'zod'
 
 // 1. Environment Bindings
@@ -10,6 +11,7 @@ type Bindings = {
   TURSO_DATABASE_URL: string
   TURSO_AUTH_TOKEN: string
   JWT_SECRET: string
+  RESEND_API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -22,7 +24,7 @@ app.use('/api/*', cors({
 
 // 3. Define the Strict Password Rules using Zod
 const registerSchema = z.object({
-  email: z.string().email('Invalid email address structure.'),
+  email: z.string().email().regex(/@(?:student\.)?apc\.edu\.ph$/, 'Only APC email addresses (@apc.edu.ph or @student.apc.edu.ph) are allowed.'),
   password: z.string()
     .min(8, 'Security violation: Password must be at least 8 characters.')
     .regex(/[A-Z]/, 'Security violation: Must contain at least one uppercase letter.')
@@ -204,6 +206,7 @@ app.post('/api/auth/register', async (c) => {
     
     // Generate a secure, random ID for the database
     const userId = crypto.randomUUID()
+    const verificationToken = crypto.randomUUID()
 
     // Connect to Turso
     const db = createClient({
@@ -213,13 +216,21 @@ app.post('/api/auth/register', async (c) => {
 
     // Insert into the database
     await db.execute({
-      sql: 'INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)',
-      args: [userId, email, passwordHash]
+      sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token) VALUES (?, ?, ?, 0, ?)',
+      args: [userId, email, passwordHash, verificationToken]
+    })
+
+    const resend = new Resend(c.env.RESEND_API_KEY)
+    await resend.emails.send({
+      from: 'eypicc@resend.gelolaus.com',
+      to: email,
+      subject: 'Verify your eypi.cc account',
+      html: `<p>Welcome to eypi.cc! Please verify your student account by clicking <a href="http://localhost:8787/api/auth/verify?token=${verificationToken}">this link</a>.</p>`,
     })
 
     return c.json({ 
       status: 'success', 
-      message: 'Administrator account successfully encrypted and stored.' 
+      message: 'Registration successful. Please check your APC email to verify your account.' 
     }, 201)
 
   } catch (error: any) {
@@ -231,6 +242,24 @@ app.post('/api/auth/register', async (c) => {
     console.error('Registration failed:', error)
     return c.json({ status: 'error', message: 'Internal server error.' }, 500)
   }
+})
+
+app.get('/api/auth/verify', async (c) => {
+  const token = c.req.query('token')
+  if (!token) return c.text('Missing verification token.', 400)
+
+  const db = createClient({
+    url: c.env.TURSO_DATABASE_URL,
+    authToken: c.env.TURSO_AUTH_TOKEN,
+  })
+  const result = await db.execute({
+    sql: 'UPDATE users SET is_verified = 1, verification_token = NULL WHERE verification_token = ? RETURNING id',
+    args: [token],
+  })
+
+  if (result.rows.length === 0) return c.text('Invalid or expired token.', 400)
+
+  return c.redirect('http://localhost:5173/login?verified=true')
 })
 
 // 5. The Login Route
@@ -254,7 +283,11 @@ app.post('/api/auth/login', async (c) => {
       return c.json({ status: 'error', message: 'Invalid credentials.' }, 401)
     }
 
-    const user = result.rows[0] as unknown as { id: string; email: string; password_hash: string }
+    const user = result.rows[0] as unknown as { id: string; email: string; password_hash: string; is_verified?: number }
+
+    if (!user.is_verified) {
+      return c.json({ status: 'error', message: 'Please verify your APC email address before logging in.' }, 403)
+    }
 
     // Verify the bcrypt hash
     const isValid = bcrypt.compareSync(password, user.password_hash)

@@ -112,11 +112,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 
 const mode = ref<'login' | 'register'>('login')
@@ -124,6 +125,13 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
+
+onMounted(() => {
+  if (route.query.verified === 'true') {
+    toast.success('Email verified! You can now log in.')
+    router.replace({ path: '/login', query: {} })
+  }
+})
 
 const handleLogin = async () => {
   isAuthenticating.value = true
@@ -173,7 +181,7 @@ const handleRegister = async () => {
       throw new Error(data.message || 'Registration failed')
     }
 
-    toast.success('Administrator account successfully encrypted and stored.')
+    toast.success(data.message || 'Registration successful.')
     mode.value = 'login'
     password.value = ''
   } catch (error: unknown) {
