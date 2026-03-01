@@ -19,15 +19,15 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            <span>Angelo Laus</span>
+            <span>{{ userName }}</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-200 text-gray-400" :class="isMenuOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           <div v-if="isMenuOpen" class="absolute right-0 mt-4 w-56 bg-white border-2 border-gray-200 shadow-2xl z-50 flex flex-col font-mono">
             <div class="px-5 py-4 border-b-2 border-gray-100 bg-gray-50">
-              <div class="text-sm font-black text-[#34418F] uppercase tracking-wider">Angelo Laus</div>
-              <div class="text-xs text-gray-500 mt-1">angelo@eypi.cc</div>
+              <div class="text-sm font-black text-[#34418F] uppercase tracking-wider">{{ userName }}</div>
+              <div class="text-xs text-gray-500 mt-1">{{ userEmail }}</div>
             </div>
             <div class="py-2">
               <router-link to="/settings" @click="isMenuOpen = false" class="px-5 py-3 text-xs font-bold text-gray-600 hover:text-[#34418F] hover:bg-gray-50 uppercase tracking-wider transition-colors flex items-center gap-3">
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 
@@ -67,6 +67,21 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const isMenuOpen = ref(false)
+const userName = ref('Guest User')
+const userEmail = ref('')
+
+onMounted(() => {
+  const token = localStorage.getItem('eypi_token')
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      userName.value = payload.name || (payload.email ? payload.email.split('@')[0].charAt(0).toUpperCase() + payload.email.split('@')[0].slice(1) : 'Student')
+      userEmail.value = payload.email || ''
+    } catch (e) {
+      console.error('Failed to parse user token', e)
+    }
+  }
+})
 
 const handleLogout = () => {
   localStorage.removeItem('eypi_token')
