@@ -9,7 +9,7 @@
       </div>
 
       <div class="font-mono text-sm leading-relaxed text-gray-700 text-justify">
-        <p class="mb-6">For inquiries or support, email Angelo Laus at: <a href="mailto:hello@gelolaus.com" class="text-[#34418F] font-bold hover:text-black underline transition-colors">support@eypi.cc</a></p>
+        <p class="mb-6">For inquiries or support, email Angelo Laus at: <a href="mailto:hello@gelolaus.com" class="text-[#34418F] font-bold hover:text-black underline transition-colors">hello@gelolaus.com</a></p>
       </div>
     </div>
   </div>
