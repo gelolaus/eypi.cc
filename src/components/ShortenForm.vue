@@ -1,9 +1,9 @@
 <template>
-  <form @submit.prevent="handleSubmit" class="mb-8 flex w-full max-w-2xl flex-col gap-4 sm:flex-row">
+  <form @submit.prevent="handleSubmit" novalidate class="mb-8 flex w-full max-w-2xl flex-col gap-4 sm:flex-row">
     <input
       id="url"
       :value="props.modelValue"
-      type="url"
+      type="text"
       placeholder="Paste your long link here..."
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       class="w-full rounded-xl border-2 border-gray-300 px-6 py-4 text-lg outline-none transition-colors focus:border-[#34418F]"

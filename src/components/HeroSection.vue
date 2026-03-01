@@ -83,6 +83,15 @@ const toast = useToast()
 const longUrl = ref('')
 const isShortening = ref(false)
 
+const normalizeUrl = (url: string): string => {
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`
+  }
+  return trimmed
+}
+
 const isValidUrl = (url: string) => {
   const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
   return pattern.test(url.trim())
@@ -110,12 +119,8 @@ function hashToSlug(str: string): string {
 const previewSlug = computed(() => hashToSlug(longUrl.value))
 
 function handleShorten(): void {
-  let urlToProcess = longUrl.value.trim()
+  const urlToProcess = normalizeUrl(longUrl.value)
   if (!urlToProcess) return
-
-  if (!/^https?:\/\//i.test(urlToProcess)) {
-    urlToProcess = `https://${urlToProcess}`
-  }
 
   if (!isValidUrl(urlToProcess)) {
     toast.error('Please enter a valid URL')
