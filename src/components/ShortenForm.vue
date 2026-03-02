@@ -1,12 +1,12 @@
 <template>
-  <form @submit.prevent="handleSubmit" novalidate class="mb-8 flex w-full max-w-2xl flex-col gap-4 md:flex-row">
+  <form @submit.prevent="handleSubmit" novalidate class="mb-4 flex w-full max-w-2xl flex-col gap-4 md:mb-8 md:flex-row">
     <input
       id="url"
       :value="props.modelValue"
       type="text"
       placeholder="Paste your long link here..."
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-      class="w-full rounded-xl border-2 border-gray-300 px-6 py-4 text-lg outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+      class="w-full rounded-xl border-2 border-gray-300 bg-white px-6 py-4 text-lg text-slate-900 outline-none transition-colors placeholder-slate-500 focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
     />
     <button
       type="submit"

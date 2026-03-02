@@ -9,7 +9,7 @@
         v-model="longUrlInput"
         type="url"
         placeholder="Paste your long link here..."
-        class="flex-1 rounded-xl border-2 border-gray-200 bg-white/40 px-6 py-4 font-mono shadow-inner outline-none backdrop-blur-md transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+        class="flex-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
       />
       <button
         type="button"

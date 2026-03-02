@@ -85,6 +85,24 @@
         >
           Forgot password?
         </router-link>
+        <p v-if="mode === 'login'" class="mt-4 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
+          Don't have an account yet?
+          <span
+            class="text-eypi-gold hover:underline cursor-pointer font-semibold"
+            @click="mode = 'register'"
+          >
+            Register here
+          </span>
+        </p>
+        <p v-else class="mt-4 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
+          Already have an account?
+          <span
+            class="text-eypi-gold hover:underline cursor-pointer font-semibold"
+            @click="mode = 'login'"
+          >
+            Log in
+          </span>
+        </p>
       </form>
     </div>
 
@@ -128,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 
@@ -142,6 +160,18 @@ const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
 const showVerificationModal = ref(false)
+
+watch(
+  () => route.query.tab,
+  (newTab) => {
+    if (newTab === 'register') {
+      mode.value = 'register'
+    } else {
+      mode.value = 'login'
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   if (route.query.verified === 'true') {

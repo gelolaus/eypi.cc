@@ -1,20 +1,20 @@
 <template>
   <section
-    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4"
+    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center px-4 py-10 md:py-20"
   >
-    <div class="mx-auto flex max-w-4xl flex-col items-center text-center">
+    <div class="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
       <h1
-        class="mb-6 font-mono text-5xl font-black tracking-tight text-[#34418F] dark:text-slate-200 md:text-7xl"
+        class="mb-4 font-mono text-5xl font-black tracking-tight text-[#34418F] dark:text-slate-200 md:mb-6 md:text-7xl"
       >
         Short links for the <span class="text-[#DEAC4B]">APC</span> community.
       </h1>
-      <p class="mb-6 max-w-3xl text-xl text-gray-600 dark:text-slate-400 md:text-2xl">
+      <p class="mb-4 max-w-3xl text-xl text-gray-600 dark:text-slate-400 md:mb-6 md:text-2xl">
         Built for student orgs and the college community to claim clean, custom links instantly. Free to use, zero ads.
       </p>
       <ShortenForm v-model="longUrl" :loading="isShortening" @submit="handleShorten" />
 
       <!-- Visual connector (the flow) -->
-      <div class="my-4 flex flex-col items-center justify-center text-[#34418F]/50 dark:text-slate-400 animate-bounce">
+      <div class="my-2 flex flex-col items-center justify-center text-[#34418F]/50 dark:text-slate-400 animate-bounce md:my-4">
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
@@ -22,7 +22,7 @@
 
       <!-- Live Preview Monitor -->
       <div
-        class="relative h-32 w-full max-w-3xl rounded-3xl border-2 border-gray-300 bg-gray-50/50 p-3 shadow-2xl md:h-40 dark:border-slate-600 dark:bg-slate-900/30"
+        class="relative h-24 w-full max-w-3xl rounded-3xl border-2 border-gray-300 bg-gray-50/50 p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900/30 md:h-32 lg:h-40"
       >
         <div
           class="mica-card relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl p-4"
