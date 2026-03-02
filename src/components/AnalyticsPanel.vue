@@ -4,7 +4,7 @@
   <Transition name="fade">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm"
+      class="fixed inset-0 bg-slate-900/20 dark:bg-slate-900/80 backdrop-blur-sm"
       style="z-index: 99990"
       aria-hidden="true"
       @click="$emit('close')"
@@ -15,33 +15,33 @@
   <Transition name="slide-right">
     <div
       v-if="isOpen"
-      class="fixed top-0 right-0 flex h-full max-h-screen w-[95vw] md:max-w-2xl flex-col overflow-y-auto bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/50 p-8 shadow-2xl"
+      class="fixed top-0 right-0 flex h-full max-h-screen w-[95vw] md:max-w-2xl flex-col overflow-y-auto bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border-l border-gray-200 dark:border-slate-700/50 p-8 shadow-2xl"
       style="z-index: 99991"
     >
       <button
         type="button"
-        class="absolute right-6 top-6 font-mono text-2xl text-slate-400 transition-colors hover:text-slate-200"
+        class="absolute right-6 top-6 font-mono text-2xl text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
         aria-label="Close"
         @click="$emit('close')"
       >
         &times;
       </button>
 
-      <h2 class="mb-2 font-mono text-2xl font-black uppercase tracking-widest text-slate-200">
+      <h2 class="mb-2 font-mono text-2xl font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
         Analytics
       </h2>
-      <p class="mb-8 font-mono text-sm text-slate-400 truncate">
+      <p class="mb-8 font-mono text-sm text-slate-600 dark:text-slate-400 truncate">
         {{ shortUrl }}
       </p>
 
       <!-- Loading State -->
       <template v-if="isLoading">
         <div class="space-y-6">
-          <div class="h-48 rounded-xl bg-slate-800/60 animate-pulse" />
+          <div class="h-48 rounded-xl bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
           <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div class="h-32 rounded-lg bg-slate-800/60 animate-pulse" />
-            <div class="h-32 rounded-lg bg-slate-800/60 animate-pulse" />
-            <div class="h-32 rounded-lg bg-slate-800/60 animate-pulse" />
+            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
+            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
+            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
           </div>
         </div>
       </template>
@@ -53,7 +53,7 @@
           v-if="formattedPeak"
           class="mica-card mb-6 rounded-xl border border-eypi-gold/30 bg-eypi-gold/10 p-4"
         >
-          <p class="font-mono text-sm text-slate-200">
+          <p class="font-mono text-sm text-slate-900 dark:text-slate-200">
             <span class="text-eypi-gold">&#128293;</span>
             <strong>Peak Engagement:</strong> Most clicks happen on <strong>{{ formattedPeak.day }}</strong> at <strong>{{ formattedPeak.time }}</strong>.
           </p>
@@ -61,7 +61,7 @@
 
         <!-- Timeline Line Chart -->
         <div class="mb-8">
-          <h4 class="mb-4 font-mono text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <h4 class="mb-4 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
             Clicks (Last 30 Days)
           </h4>
           <div class="h-48">
@@ -77,7 +77,7 @@
         <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
           <!-- Top OS -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
               Top OS
             </h4>
             <ul v-if="displayOs.length" class="space-y-2">
@@ -87,10 +87,10 @@
                 class="flex flex-col gap-1"
               >
                 <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-300 min-w-0 break-words">{{ item.os || 'Unknown' }}</span>
-                  <span class="text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.os || 'Unknown' }}</span>
+                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
                   <div
                     class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
@@ -98,12 +98,12 @@
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500">No data</p>
+            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
           </div>
 
           <!-- Top Country -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
               Top Country
             </h4>
             <ul v-if="displayCountry.length" class="space-y-2">
@@ -113,10 +113,10 @@
                 class="flex flex-col gap-1"
               >
                 <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-300 min-w-0 break-words">{{ item.country || 'Unknown' }}</span>
-                  <span class="text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.country || 'Unknown' }}</span>
+                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
                   <div
                     class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
@@ -124,12 +124,12 @@
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500">No data</p>
+            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
           </div>
 
           <!-- Top Referrers -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
               Top Referrers
             </h4>
             <ul v-if="displayReferrer.length" class="space-y-2">
@@ -139,10 +139,10 @@
                 class="flex flex-col gap-1"
               >
                 <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-300 min-w-0 break-words">{{ item.display }}</span>
-                  <span class="text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.display }}</span>
+                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
                   <div
                     class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
@@ -150,7 +150,7 @@
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500">No data</p>
+            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
           </div>
         </div>
       </template>
@@ -173,6 +173,7 @@ import {
   Filler,
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import { useDarkMode } from '@/composables/useDarkMode'
 
 ChartJS.register(
   Title,
@@ -184,7 +185,8 @@ ChartJS.register(
   LinearScale,
   Filler
 )
-ChartJS.defaults.color = '#cbd5e1'
+
+const { isDark } = useDarkMode()
 
 const props = defineProps<{
   linkId: string | number | null
@@ -280,31 +282,38 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: 'rgba(15, 23, 42, 0.95)',
-      titleColor: '#cbd5e1',
-      bodyColor: '#cbd5e1',
-      borderColor: 'rgba(148, 163, 184, 0.3)',
-      borderWidth: 1,
+const chartOptions = computed(() => {
+  const textColor = isDark.value ? '#cbd5e1' : '#64748b'
+  const gridColor = isDark.value ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const tooltipBg = isDark.value ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'
+  const tooltipText = isDark.value ? '#cbd5e1' : '#334155'
+  const tooltipBorder = isDark.value ? 'rgba(148, 163, 184, 0.3)' : 'rgba(148, 163, 184, 0.5)'
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: tooltipBg,
+        titleColor: tooltipText,
+        bodyColor: tooltipText,
+        borderColor: tooltipBorder,
+        borderWidth: 1,
+      },
     },
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { maxTicksLimit: 8, color: '#cbd5e1' },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { maxTicksLimit: 8, color: textColor },
+      },
+      y: {
+        grid: { color: gridColor },
+        ticks: { color: textColor },
+        beginAtZero: true,
+      },
     },
-    y: {
-      grid: { color: 'rgba(255,255,255,0.05)' },
-      ticks: { color: '#cbd5e1' },
-      beginAtZero: true,
-    },
-  },
-}
+  }
+})
 
 const displayOs = computed(() => {
   const data = analyticsData.value?.os ?? []
