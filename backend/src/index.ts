@@ -19,8 +19,14 @@ const app = new Hono<{ Bindings: Bindings }>()
 // 2. Enable CORS so Vue can talk to Hono (must be first middleware)
 app.use('/api/*', cors({
   origin: (origin) => {
-    const allowed = ['http://localhost:5173', 'https://eypi.cc']
-    return allowed.includes(origin) ? origin : 'https://eypi.cc'
+    const allowed = [
+      'http://localhost:5173', 
+      'https://eypi.cc', 
+      'https://forms.eypi.cc'
+    ]
+    // If the request comes from an allowed origin, let it through. 
+    // Otherwise, default to the main site.
+    return origin && allowed.includes(origin) ? origin : 'https://eypi.cc'
   },
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
