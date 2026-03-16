@@ -436,7 +436,20 @@ app.post('/api/auth/verify', async (c) => {
 // 5. The Login Route
 app.post('/api/auth/login', async (c) => {
   try {
-    const { email, password } = await c.req.json()
+    const { email, password } = await c.req.json() as { email?: string; password?: string }
+
+    const normalizedEmail = (typeof email === 'string' ? email : '').trim().toLowerCase()
+
+    // Enforce APC / allowed domains on the backend to block direct API abuse
+    if (!normalizedEmail || !ALLOWED_EMAIL_DOMAINS.some((domain) => normalizedEmail.endsWith(domain))) {
+      return c.json(
+        {
+          success: false,
+          message: 'Access restricted: Only APC emails are permitted.',
+        },
+        403,
+      )
+    }
 
     // Connect to Turso
     const db = createClient({
@@ -447,7 +460,7 @@ app.post('/api/auth/login', async (c) => {
     // Fetch user from DB
     const result = await db.execute({
       sql: 'SELECT * FROM users WHERE email = ?',
-      args: [email],
+      args: [normalizedEmail],
     })
 
     if (result.rows.length === 0) {
