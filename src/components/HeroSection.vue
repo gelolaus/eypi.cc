@@ -1,20 +1,28 @@
 <template>
   <section
-    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center px-4 py-10 md:py-20"
+    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center px-6 py-12 md:py-24"
   >
-    <div class="mx-auto flex max-w-4xl flex-col items-center justify-center text-center">
+    <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
       <h1
-        class="mb-4 font-mono text-5xl font-black tracking-tight text-[#34418F] dark:text-slate-200 md:mb-6 md:text-7xl"
+        class="reveal mb-6 font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+        style="font-size: clamp(2.6rem, 6vw, 5.5rem); line-height: 1.05; letter-spacing: -0.03em;"
+        data-cursor="text"
       >
         Short links for the <span class="text-[#DEAC4B]">APC</span> community.
       </h1>
-      <p class="mb-4 max-w-3xl text-xl text-gray-600 dark:text-slate-400 md:mb-6 md:text-2xl">
+      <p
+        class="reveal delay-1 mb-8 max-w-2xl text-gray-600 dark:text-slate-400"
+        style="font-size: clamp(1.1rem, 2vw, 1.4rem); line-height: 1.65;"
+        data-cursor="text"
+      >
         Built for student orgs and the college community to claim clean, custom links instantly. Free to use, zero ads.
       </p>
-      <ShortenForm v-model="longUrl" :loading="isShortening" @submit="handleShorten" />
+      <div class="reveal delay-2 w-full max-w-3xl">
+        <ShortenForm v-model="longUrl" :loading="isShortening" @submit="handleShorten" />
+      </div>
 
-      <!-- Visual connector (the flow) -->
-      <div class="my-2 flex flex-col items-center justify-center text-[#34418F]/50 dark:text-slate-400 animate-bounce md:my-4">
+      <!-- Visual connector -->
+      <div class="reveal delay-3 my-4 flex flex-col items-center justify-center text-[#34418F]/50 dark:text-slate-400 animate-bounce">
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
@@ -22,7 +30,8 @@
 
       <!-- Live Preview Monitor -->
       <div
-        class="relative h-24 w-full max-w-3xl rounded-3xl border-2 border-gray-300 bg-gray-50/50 p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900/30 md:h-32 lg:h-40"
+        class="reveal delay-4 relative h-28 w-full max-w-3xl rounded-3xl border-2 border-gray-300 bg-gray-50/50 p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900/30 md:h-36 lg:h-44"
+        data-cursor="card"
       >
         <div
           class="mica-card relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl p-4"
@@ -35,14 +44,15 @@
 
           <!-- Single output monitor -->
           <div class="flex flex-col items-center justify-center w-full h-full">
-            <span class="font-mono text-2xl font-black tracking-tight text-[#34418F] dark:text-slate-200 md:text-3xl">
+            <span class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.5rem, 3vw, 2.5rem);">
               eypi.cc/<span class="text-[#DEAC4B] transition-all">{{ previewSlug }}</span>
             </span>
             <router-link
               to="/login"
-              class="mt-3 block font-mono text-xs uppercase tracking-widest text-gray-500 transition-colors hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 md:text-sm"
+              class="mt-3 block font-mono text-xs uppercase tracking-widest text-gray-500 transition-colors hover:text-[#DEAC4B] dark:text-slate-400 dark:hover:text-slate-200"
+              data-cursor="nav"
             >
-              Login to customize
+              Login to customize →
             </router-link>
           </div>
         </div>
@@ -56,6 +66,9 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import ShortenForm from './ShortenForm.vue'
 import { useToast } from '@/composables/useToast'
+import { useReveal } from '@/composables/useReveal'
+
+useReveal()
 
 const router = useRouter()
 const toast = useToast()
