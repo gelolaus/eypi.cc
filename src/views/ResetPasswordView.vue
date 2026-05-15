@@ -1,36 +1,57 @@
 <template>
-    <div class="min-h-[calc(100vh-140px)] bg-[#E5E5E5] dark:bg-slate-950 text-gray-800 dark:text-slate-200 flex flex-col items-center justify-center py-12 px-6 relative z-10">
-      <div class="w-full max-w-md bg-white dark:bg-mica-navy-card border border-gray-300 dark:border-slate-600 p-10 shadow-2xl relative dark:backdrop-blur-xl">
-      <div class="absolute top-0 left-0 w-full h-2 bg-[#34418F]"></div>
+  <section
+    class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
+  >
+    <div
+      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
+    >
+      <!-- Corner screws -->
+      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <div class="mb-8 text-center">
-        <div class="w-12 h-12 mx-auto mb-4 border-2 border-[#34418F] dark:border-slate-400 flex items-center justify-center text-[#34418F] dark:text-slate-300">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h1 class="font-mono text-xl font-black text-gray-900 dark:text-slate-200 uppercase tracking-widest mb-1">RESET PASSWORD</h1>
-        <p class="font-mono text-xs text-gray-500 dark:text-slate-400 uppercase tracking-widest">Account Recovery</p>
-      </div>
+      <!-- Header -->
+      <h2 class="mb-2 text-center font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">
+        RESET PASSWORD
+      </h2>
+      <p class="mb-8 text-center font-mono text-xs text-gray-500 dark:text-slate-400">
+        Enter your email and we'll send a recovery link.
+      </p>
 
-      <form @submit.prevent="handleRecovery" class="space-y-6">
-        <div class="flex flex-col gap-2 font-mono">
-          <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Email Address</label>
-          <input v-model="email" type="email" required placeholder="name@example.com" class="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 outline-none focus:border-[#34418F] focus:bg-white transition-colors text-sm text-center dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500" />
-        </div>
+      <!-- Form -->
+      <form @submit.prevent="handleRecovery" class="flex flex-col">
+        <input
+          v-model="email"
+          type="email"
+          required
+          placeholder="Email"
+          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+          data-cursor="text"
+        />
 
-        <button type="submit" :disabled="isSending" :class="{'opacity-70 cursor-not-allowed animate-pulse': isSending, 'hover:bg-[#2a3575]': !isSending}" class="w-full bg-[#34418F] text-white font-mono text-sm font-bold uppercase tracking-widest py-4 rounded-lg transition-colors dark:bg-slate-700 dark:hover:bg-slate-600">
-          {{ isSending ? 'SENDING...' : 'SEND RECOVERY LINK' }}
+        <button
+          type="submit"
+          :disabled="isSending"
+          :class="[
+            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+            isSending ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
+          ]"
+          data-cursor="cta"
+        >
+          {{ isSending ? 'Sending...' : 'Send Recovery Link' }}
         </button>
-      </form>
 
-      <div class="mt-8 text-center border-t border-gray-100 pt-6">
-        <router-link to="/login" class="font-mono text-xs font-bold text-gray-400 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-wider transition-colors">
+        <router-link
+          to="/login"
+          class="mt-6 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
+          data-cursor="nav"
+        >
           ← Back to Login
         </router-link>
-      </div>
+      </form>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

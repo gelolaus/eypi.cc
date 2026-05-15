@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full">
     <div
-      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 md:pt-16"
+      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 pb-24 md:pt-16 md:pb-32"
     >
     <!-- Top Bar (Create Link) -->
     <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">

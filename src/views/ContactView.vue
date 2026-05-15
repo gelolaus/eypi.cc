@@ -1,18 +1,76 @@
 <template>
-    <div class="min-h-screen bg-[#E5E5E5] dark:bg-slate-950 text-gray-800 dark:text-slate-200 flex justify-center py-24 px-6 relative z-10">
-      <div class="w-full max-w-3xl bg-white dark:bg-mica-navy-card border border-gray-300 dark:border-slate-600 p-12 md:p-16 shadow-2xl relative dark:backdrop-blur-xl">
-      <div class="absolute top-0 left-0 w-full h-2 bg-[#34418F]"></div>
+  <section class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-28">
+    <div class="mica-card relative w-full max-w-3xl rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-14">
+      <!-- Corner screws -->
+      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <div class="border-b-2 border-gray-200 dark:border-slate-600 pb-8 mb-12">
-        <h1 class="font-mono text-3xl font-black text-[#34418F] dark:text-slate-200 uppercase tracking-widest mb-2">CONTACT US</h1>
-        <p class="font-mono text-xs text-gray-500 dark:text-slate-400 uppercase tracking-widest">Last Updated: March 1, 2026</p>
+      <!-- Header -->
+      <div class="mb-10 border-b border-gray-200 dark:border-slate-700 pb-8">
+        <h1 class="font-mono text-2xl font-bold text-[#34418F] dark:text-slate-200 uppercase tracking-widest mb-1">
+          Contact
+        </h1>
+        <p class="font-mono text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+          Last Updated: May 16, 2026
+        </p>
       </div>
 
-      <div class="font-mono text-sm leading-relaxed text-gray-700 dark:text-slate-300 text-justify">
-        <p class="mb-6">For inquiries or support, email Angelo Laus at: <a href="mailto:hello@gelolaus.com" class="text-[#34418F] font-bold hover:text-black dark:text-sky-400 dark:hover:text-sky-300 underline transition-colors">hello@gelolaus.com</a></p>
+      <div class="space-y-10 font-mono text-sm leading-relaxed">
+
+        <!-- General Support -->
+        <div>
+          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+            General Support
+          </h3>
+          <p class="text-gray-600 dark:text-slate-400 mb-3">
+            For inquiries, bug reports, or anything related to eypi.cc, reach out directly to the maintainer:
+          </p>
+          <a
+            href="mailto:hello@gelolaus.com"
+            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
+            data-cursor="cta"
+          >
+            hello@gelolaus.com
+          </a>
+        </div>
+
+        <!-- Build with Eypi -->
+        <div>
+          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+            Build with Eypi
+          </h3>
+          <p class="text-gray-600 dark:text-slate-400 mb-4">
+            Are you an APC student, org officer, or faculty member with an idea that could benefit the broader college community? Eypi is open to collaboration.
+          </p>
+          <p class="text-gray-600 dark:text-slate-400 mb-4">
+            Whether you want to build a personal project on top of the Eypi infrastructure, propose a new feature, or partner on a community tool — send an email <strong class="text-gray-800 dark:text-slate-200">from your APC-provided email address</strong> with the subject line <strong class="text-gray-800 dark:text-slate-200">"Build with Eypi"</strong>.
+          </p>
+          <a
+            href="mailto:hello@gelolaus.com?subject=Build%20with%20Eypi"
+            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
+            data-cursor="cta"
+          >
+            hello@gelolaus.com
+          </a>
+        </div>
+
+        <!-- What to Include -->
+        <div>
+          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+            What to Include
+          </h3>
+          <ul class="list-disc pl-5 space-y-2 text-gray-600 dark:text-slate-400">
+            <li>Your organization, school, department, or role</li>
+            <li>A brief description of the project or feature idea</li>
+            <li>How it would serve the APC community</li>
+          </ul>
+        </div>
+
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

@@ -2,28 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   DESIGN TOKENS — gelolaus design language + eypi branding
+   ============================================================ */
 @layer base {
+  :root {
+    --color-bg:         #F5F5F5;
+    --color-surface:    #ffffff;
+    --color-border:     #E8E8E8;
+    --color-text:       #0A0A0A;
+    --color-text-muted: #6B6B6B;
+    --color-accent:     #DEAC4B;  /* APC Gold */
+    --color-primary:    #34418F;  /* APC Blue */
+    --color-dot:        #000000;
+  }
+
+  html.dark {
+    --color-bg:         #000000;
+    --color-surface:    #161616;
+    --color-border:     #262626;
+    --color-text:       #F5F5F5;
+    --color-text-muted: #AAAAAA;
+    --color-accent:     #DEAC4B;  /* gold never changes */
+    --color-primary:    #34418F;
+    --color-dot:        #ffffff;
+  }
+
   html {
     @apply antialiased;
+    scroll-behavior: smooth;
   }
+
   body {
-    @apply font-sans text-gray-800 dark:text-gray-200;
+    font-family: 'Geist', system-ui, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Hide system cursor globally — AppCursor provides the custom one */
+  * {
+    cursor: none !important;
   }
 }
 
+/* ============================================================
+   DOT GRID UTILITIES
+   ============================================================ */
 @layer utilities {
+  /* Theme-aware dot grid (body background) */
   .bg-dot-grid {
-    background-color: #F8F9FA;
-    background-image: radial-gradient(rgba(52, 65, 143, 0.15) 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
+    background-color: var(--color-bg);
+    background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
+    background-size: 120px 120px;
+    background-attachment: fixed;
   }
 
-  .dark .bg-dot-grid {
-    background-color: #0f172a;
-    background-image: radial-gradient(rgba(52, 65, 143, 0.08) 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
+  /* Always-dark dot grid (footer only) */
+  .bg-dot-grid-dark {
+    background-color: #040d1f;
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
+    background-size: 120px 120px;
+    background-attachment: fixed;
   }
 
+  /* Glassmorphism card — preserved for dashboard/settings/auth views */
   .mica-card {
     background-color: rgba(255, 255, 255, 0.35);
     backdrop-filter: blur(16px) saturate(150%);
@@ -37,4 +80,387 @@
     border: 1px solid rgba(51, 65, 85, 0.5);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   }
+}
+
+/* ============================================================
+   SCROLL-REVEAL ANIMATION CLASSES
+   ============================================================ */
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.delay-1 { transition-delay: 0.12s; }
+  .reveal.delay-2 { transition-delay: 0.24s; }
+  .reveal.delay-3 { transition-delay: 0.36s; }
+  .reveal.delay-4 { transition-delay: 0.48s; }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   PILL NAVBAR
+   ============================================================ */
+@layer components {
+  .pill-nav-wrapper {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9990;
+    width: min(92vw, 1100px);
+    transition:
+      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.35s ease;
+  }
+
+  .pill-nav-wrapper.pill-nav--hidden {
+    transform: translateX(-50%) translateY(-80px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pill-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    /* Always frosted — never transparent */
+    background: rgba(245, 245, 245, 0.82);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+    width: 100%;
+    white-space: nowrap;
+    transition:
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  html.dark .pill-nav {
+    background: rgba(22, 22, 22, 0.88);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .pill-nav-wrapper.pill-nav--scrolled .pill-nav {
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.1);
+  }
+
+  html.dark .pill-nav-wrapper.pill-nav--scrolled .pill-nav {
+    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+  }
+
+  .pill-nav__logo {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: color 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  html.dark .pill-nav__logo {
+    color: var(--color-text);
+  }
+
+  .pill-nav__logo:hover {
+    color: var(--color-accent);
+  }
+
+  .pill-nav__sep {
+    width: 1px;
+    height: 16px;
+    background: var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .pill-nav__link {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .pill-nav__link:hover {
+    color: var(--color-text);
+  }
+
+  .pill-nav__cta {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.35rem 0.875rem;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: #fff;
+    text-decoration: none;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .pill-nav__cta:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+  }
+
+  .pill-nav__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+
+  .pill-nav__toggle:hover {
+    border-color: var(--color-text);
+    color: var(--color-text);
+    background: var(--color-surface);
+  }
+
+  .pill-nav__user-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.325rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    flex-shrink: 0;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .pill-nav__user-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-surface);
+  }
+
+  .pill-nav__dropdown {
+    position: absolute;
+    top: calc(100% + 0.625rem);
+    right: 0;
+    min-width: 210px;
+    border-radius: 1rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    z-index: 50;
+  }
+
+  html.dark .pill-nav__dropdown {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  }
+
+  .pill-nav__dropdown-header {
+    padding: 0.875rem 1.125rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .pill-nav__dropdown-name {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .pill-nav__dropdown-email {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+    font-family: 'Geist Mono', monospace;
+  }
+
+  .pill-nav__dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.7rem 1.125rem;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .pill-nav__dropdown-item:hover {
+    color: var(--color-primary);
+    background: var(--color-bg);
+  }
+
+  .pill-nav__dropdown-item--danger {
+    color: #dc2626;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .pill-nav__dropdown-item--danger:hover {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.06);
+  }
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+@layer components {
+  .footer-dark {
+    color: #F5F5F5;
+    border-top: 1px solid #1a1a1a;
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer-inner {
+    max-width: 87.5rem;
+    margin: 0 auto;
+    padding: clamp(4rem, 8vw, 6rem) clamp(1.5rem, 6vw, 6rem) clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .footer-heading {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: clamp(2.8rem, 8vw, 7rem);
+    font-weight: 700;
+    line-height: 0.95;
+    color: #F5F5F5;
+    letter-spacing: -0.04em;
+    margin-bottom: clamp(3rem, 6vw, 5rem);
+    max-width: 900px;
+  }
+
+  /* Full-width stacked link rows — gelolaus style */
+  .footer-links-full {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .footer-link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(1.1rem, 2.5vw, 1.75rem) 0;
+    border-top: 1px solid #1f1f1f;
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: clamp(1.2rem, 3vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: #F5F5F5;
+    text-decoration: none;
+    transition: color 0.22s ease;
+  }
+
+  .footer-link-row:last-child {
+    border-bottom: 1px solid #1f1f1f;
+  }
+
+  .footer-link-row:hover {
+    color: #DEAC4B;
+  }
+
+  .footer-arrow {
+    display: inline-block;
+    font-size: 0.85em;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+  }
+
+  .footer-link-row:hover .footer-arrow {
+    transform: translate(4px, -4px);
+  }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: clamp(2rem, 4vw, 3rem);
+    border-top: 1px solid #1f1f1f;
+    margin-top: clamp(2rem, 4vw, 3rem);
+  }
+
+  .footer-label {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+    font-weight: 500;
+    color: #444;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .footer-year {
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+    font-weight: 500;
+    color: #444;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+/* ============================================================
+   CUSTOM SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #333333;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+::selection {
+  background-color: #DEAC4B;
+  color: #000000;
 }

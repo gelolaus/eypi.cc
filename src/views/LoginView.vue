@@ -1,6 +1,6 @@
 <template>
   <section
-    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4"
+    class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
   >
     <!-- Auth Card -->
     <div
@@ -146,13 +146,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, inject, onMounted, watch, type Ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import type AppTransition from '@/components/AppTransition.vue'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
 
 const mode = ref<'login' | 'register'>('login')
 const name = ref('')
@@ -200,6 +202,9 @@ const handleLogin = async () => {
     // Verify token is stored before navigation so the route guard allows access
     if (localStorage.getItem('eypi_token')) {
       toast.success('Access granted. Welcome back.')
+      if (appTransition?.value?.trigger) {
+        await appTransition.value.trigger()
+      }
       router.push('/dashboard')
     } else {
       throw new Error('Failed to store authentication token')

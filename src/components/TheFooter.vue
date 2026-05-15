@@ -1,43 +1,46 @@
 <template>
-  <footer class="shrink-0 border-t border-apc-blue/10 bg-apc-bg dark:border-slate-800 dark:bg-slate-950/80">
-    <div
-      class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-4 sm:flex-row"
-    >
-      <div class="flex flex-wrap justify-center gap-6">
-        <router-link
-          to="/privacy"
-          class="text-sm text-gray-600 transition-colors hover:text-apc-gold dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          Privacy
+  <footer id="footer" data-section class="footer-dark bg-dot-grid-dark">
+    <div class="footer-inner">
+
+      <!-- Heading -->
+      <h2 class="footer-heading">Build with<br />Eypi.</h2>
+
+      <!-- Full-width stacked link rows -->
+      <nav class="footer-links-full" aria-label="Footer navigation">
+        <router-link to="/contact" class="footer-link-row" data-cursor="nav">
+          <span>Contact</span>
+          <span class="footer-arrow">↗</span>
         </router-link>
-        <router-link
-          to="/terms"
-          class="text-sm text-gray-600 transition-colors hover:text-apc-gold dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          Terms
+        <router-link to="/privacy" class="footer-link-row" data-cursor="nav">
+          <span>Privacy</span>
+          <span class="footer-arrow">↗</span>
         </router-link>
-        <router-link
-          to="/contact"
-          class="text-sm text-gray-600 transition-colors hover:text-apc-gold dark:text-slate-400 dark:hover:text-slate-200"
-        >
-          Contact
+        <router-link to="/terms" class="footer-link-row" data-cursor="nav">
+          <span>Terms</span>
+          <span class="footer-arrow">↗</span>
         </router-link>
-      </div>
-      <p class="text-center text-xs text-gray-500 dark:text-slate-500">
-        Created by
         <a
           href="https://gelolaus.com"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-apc-blue hover:text-apc-gold dark:text-slate-300 dark:hover:text-slate-100"
+          class="footer-link-row"
+          data-cursor="nav"
         >
-          Angelo Laus
+          <span>Creator: gelolaus.com</span>
+          <span class="footer-arrow">↗</span>
         </a>
-      </p>
+      </nav>
+
+      <!-- Bottom bar -->
+      <div class="footer-bottom">
+        <span class="footer-label">EYPI.CC</span>
+        <span class="footer-year">ANGELO LAUS · {{ currentYear }}</span>
+      </div>
+
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-// Minimal footer - no state needed
+const currentYear = new Date().getFullYear()
 </script>
