@@ -246,21 +246,106 @@ function formatPeakEngagement(peak: { peakDay: string; peakHour: string; count: 
   return { day, time }
 }
 
-/** Clean referrer: strip protocol, www, path -> root domain only. Empty/null -> (Direct) */
+const REFERRER_LABELS: Record<string, string> = {
+  // Normalized names stored by backend (new data)
+  'localhost': 'Localhost',
+  'eypi': 'Eypi',
+  'facebook': 'Facebook',
+  'instagram': 'Instagram',
+  'twitter / x': 'Twitter / X',
+  'tiktok': 'TikTok',
+  'youtube': 'YouTube',
+  'reddit': 'Reddit',
+  'linkedin': 'LinkedIn',
+  'pinterest': 'Pinterest',
+  'snapchat': 'Snapchat',
+  'whatsapp': 'WhatsApp',
+  'telegram': 'Telegram',
+  'discord': 'Discord',
+  'threads': 'Threads',
+  'google': 'Google',
+  'gmail': 'Gmail',
+  'viber': 'Viber',
+  'twitch': 'Twitch',
+  'github': 'GitHub',
+  'medium': 'Medium',
+  'substack': 'Substack',
+  'notion': 'Notion',
+  'bereal': 'BeReal',
+  // Legacy raw hostnames in old DB rows
+  'localhost:5173': 'Localhost',
+  'eypi.cc': 'Eypi',
+  'facebook.com': 'Facebook',
+  'm.facebook.com': 'Facebook',
+  'l.facebook.com': 'Facebook',
+  'lm.facebook.com': 'Facebook',
+  'fb.me': 'Facebook',
+  'fb.com': 'Facebook',
+  'web.facebook.com': 'Facebook',
+  'instagram.com': 'Instagram',
+  'l.instagram.com': 'Instagram',
+  'twitter.com': 'Twitter / X',
+  'x.com': 'Twitter / X',
+  't.co': 'Twitter / X',
+  'tiktok.com': 'TikTok',
+  'vm.tiktok.com': 'TikTok',
+  'vt.tiktok.com': 'TikTok',
+  'youtube.com': 'YouTube',
+  'youtu.be': 'YouTube',
+  'm.youtube.com': 'YouTube',
+  'reddit.com': 'Reddit',
+  'redd.it': 'Reddit',
+  'old.reddit.com': 'Reddit',
+  'linkedin.com': 'LinkedIn',
+  'lnkd.in': 'LinkedIn',
+  'pinterest.com': 'Pinterest',
+  'pin.it': 'Pinterest',
+  'pinterest.ph': 'Pinterest',
+  'snapchat.com': 'Snapchat',
+  't.snapchat.com': 'Snapchat',
+  'whatsapp.com': 'WhatsApp',
+  'wa.me': 'WhatsApp',
+  'web.whatsapp.com': 'WhatsApp',
+  'telegram.org': 'Telegram',
+  't.me': 'Telegram',
+  'web.telegram.org': 'Telegram',
+  'discord.com': 'Discord',
+  'discord.gg': 'Discord',
+  'ptb.discord.com': 'Discord',
+  'threads.net': 'Threads',
+  'l.threads.net': 'Threads',
+  'google.com': 'Google',
+  'google.com.ph': 'Google',
+  'google.co': 'Google',
+  'mail.google.com': 'Gmail',
+  'viber.com': 'Viber',
+  'twitch.tv': 'Twitch',
+  'github.com': 'GitHub',
+  'medium.com': 'Medium',
+  'substack.com': 'Substack',
+  'notion.so': 'Notion',
+  'notion.site': 'Notion',
+  'bere.al': 'BeReal',
+  'bereal.com': 'BeReal',
+}
+
+/** Map a stored referrer value to a human-readable label. Handles backend friendly
+ *  names, legacy raw hostnames, and accidental full URLs stored in old DB rows. */
 function cleanReferrer(ref: string | null | undefined): string {
-  if (ref == null || ref === '') return '(Direct)'
-  try {
-    let s = ref.trim()
-    s = s.replace(/^https?:\/\//i, '')
-    s = s.replace(/^www\./i, '')
-    const slash = s.indexOf('/')
-    if (slash !== -1) s = s.slice(0, slash)
-    const q = s.indexOf('?')
-    if (q !== -1) s = s.slice(0, q)
-    return s || '(Direct)'
-  } catch {
-    return '(Direct)'
+  if (ref == null || ref === '' || ref === 'Direct') return '(Direct)'
+  let key = ref.trim()
+  // If an old DB row stored a full URL, extract just the hostname
+  if (/^https?:\/\//i.test(key)) {
+    try {
+      key = new URL(key).hostname.toLowerCase().replace(/^www\./, '')
+    } catch { /* fall through */ }
   }
+  const lower = key.toLowerCase()
+  if (REFERRER_LABELS[lower]) return REFERRER_LABELS[lower]
+  // localhost with any port
+  if (lower.startsWith('localhost')) return 'Localhost'
+  // Strip www. for any unrecognized hostname and return as-is
+  return key.replace(/^www\./i, '') || '(Direct)'
 }
 
 const chartData = computed(() => {

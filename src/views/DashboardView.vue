@@ -441,14 +441,24 @@ watch(isSidebarOpen, async (open) => {
   }
 })
 
+const LOGO_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+const LOGO_MAX_BYTES = 2 * 1024 * 1024
+
 const handleLogoUpload = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) {
-    if (qrConfig.value.logoUrl) {
-      URL.revokeObjectURL(qrConfig.value.logoUrl)
-    }
-    qrConfig.value.logoUrl = URL.createObjectURL(file)
+  if (!file) return
+  if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
+    toast.error('Logo must be PNG, JPEG, WebP, or GIF.')
+    return
   }
+  if (file.size > LOGO_MAX_BYTES) {
+    toast.error('Logo must be smaller than 2 MB.')
+    return
+  }
+  if (qrConfig.value.logoUrl) {
+    URL.revokeObjectURL(qrConfig.value.logoUrl)
+  }
+  qrConfig.value.logoUrl = URL.createObjectURL(file)
 }
 
 const downloadQR = async () => {

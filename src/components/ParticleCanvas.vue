@@ -5,85 +5,49 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
-interface Particle {
+type Particle = {
   x: number
   y: number
   vx: number
   vy: number
   size: number
-  color: string
   alpha: number
   rotation: number
   rotationSpeed: number
+  color: string
+}
+
+const MAX_PARTICLES = 100
+const SPAWN_PER_FRAME = 3
+
+const PALETTE = [
+  '#FF3B30', '#FF9500', '#FFCC00', '#30D158',
+  '#007AFF', '#BF5AF2', '#FF375F', '#00C7BE',
+]
+
+function createParticle(x: number, y: number): Particle {
+  const angle = Math.random() * Math.PI * 2
+  const speed = 1.5 + Math.random() * 2
+  return {
+    x,
+    y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    size: [4, 6, 8, 10][Math.floor(Math.random() * 4)],
+    alpha: 1,
+    rotation: Math.random() * Math.PI * 2,
+    rotationSpeed: (Math.random() - 0.5) * 0.18,
+    color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+  }
 }
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 let ctx: CanvasRenderingContext2D | null = null
 let particles: Particle[] = []
-let rafId = 0
 let isDown = false
-
-const COLORS = [
-  '#DEAC4B', // APC Gold
-  '#FF9500', // orange
-  '#FFCC00', // yellow
-  '#34C759', // green
-  '#007AFF', // blue
-  '#34418F', // APC Blue
-  '#FF2D55', // pink
-  '#5AC8FA', // teal
-]
-const SIZES = [4, 6, 8, 10]
-
-function rand(min: number, max: number) {
-  return Math.random() * (max - min) + min
-}
-
-function spawnParticles(x: number, y: number, count = 6) {
-  for (let i = 0; i < count; i++) {
-    const angle = rand(0, Math.PI * 2)
-    const speed = rand(1.5, 5)
-    particles.push({
-      x,
-      y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - rand(1, 3),
-      size: SIZES[Math.floor(Math.random() * SIZES.length)],
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      alpha: 1,
-      rotation: rand(0, Math.PI * 2),
-      rotationSpeed: rand(-0.09, 0.09),
-    })
-  }
-  if (particles.length > 120) {
-    particles.splice(0, particles.length - 120)
-  }
-}
-
-function draw() {
-  if (!ctx || !canvas.value) { rafId = requestAnimationFrame(draw); return }
-  ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-
-  particles = particles.filter(p => p.alpha > 0.01)
-
-  for (const p of particles) {
-    p.x += p.vx
-    p.y += p.vy
-    p.vy += 0.22
-    p.alpha -= 0.016
-    p.rotation += p.rotationSpeed
-
-    ctx.save()
-    ctx.globalAlpha = Math.max(0, p.alpha)
-    ctx.translate(p.x, p.y)
-    ctx.rotate(p.rotation)
-    ctx.fillStyle = p.color
-    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size)
-    ctx.restore()
-  }
-
-  rafId = requestAnimationFrame(draw)
-}
+let mouseX = 0
+let mouseY = 0
+let rafId = 0
 
 function resize() {
   if (!canvas.value) return
@@ -91,13 +55,52 @@ function resize() {
   canvas.value.height = window.innerHeight
 }
 
+function tick() {
+  if (!ctx || !canvas.value) { rafId = requestAnimationFrame(tick); return }
+  const c = ctx
+  const cv = canvas.value
+
+  c.clearRect(0, 0, cv.width, cv.height)
+
+  if (isDown) {
+    for (let i = 0; i < SPAWN_PER_FRAME; i++) {
+      particles.push(createParticle(mouseX, mouseY))
+      if (particles.length > MAX_PARTICLES) particles.shift()
+    }
+  }
+
+  particles = particles.filter((p) => {
+    p.x += p.vx
+    p.y += p.vy
+    p.alpha -= 0.016
+    p.rotation += p.rotationSpeed
+
+    if (p.alpha <= 0) return false
+
+    c.save()
+    c.globalAlpha = p.alpha
+    c.fillStyle = p.color
+    c.translate(p.x, p.y)
+    c.rotate(p.rotation)
+    c.fillRect(-p.size / 2, -p.size / 2, p.size, p.size)
+    c.restore()
+    return true
+  })
+
+  rafId = requestAnimationFrame(tick)
+}
+
 function onMouseDown(e: MouseEvent) {
   isDown = true
-  spawnParticles(e.clientX, e.clientY, 8)
+  mouseX = e.clientX
+  mouseY = e.clientY
 }
 
 function onMouseMove(e: MouseEvent) {
-  if (isDown) spawnParticles(e.clientX, e.clientY, 4)
+  // Auto-correct isDown if mouseup was missed (e.g. during native drag-and-drop)
+  if (e.buttons === 0) isDown = false
+  mouseX = e.clientX
+  mouseY = e.clientY
 }
 
 function onMouseUp() {
@@ -107,12 +110,18 @@ function onMouseUp() {
 onMounted(() => {
   if (!canvas.value) return
   ctx = canvas.value.getContext('2d')
+  const isTouch = window.matchMedia('(pointer: coarse)').matches
+
   resize()
-  window.addEventListener('resize', resize, { passive: true })
-  window.addEventListener('mousedown', onMouseDown, { passive: true })
-  window.addEventListener('mousemove', onMouseMove, { passive: true })
-  window.addEventListener('mouseup', onMouseUp, { passive: true })
-  rafId = requestAnimationFrame(draw)
+  window.addEventListener('resize', resize)
+  rafId = requestAnimationFrame(tick)
+
+  // Confetti is a mouse-only feature — skip event listeners on touch devices
+  if (isTouch) return
+
+  window.addEventListener('mousedown', onMouseDown)
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', onMouseUp)
 })
 
 onUnmounted(() => {
@@ -128,7 +137,7 @@ onUnmounted(() => {
 .particle-canvas {
   position: fixed;
   inset: 0;
-  pointer-events: none;
   z-index: 9997;
+  pointer-events: none;
 }
 </style>

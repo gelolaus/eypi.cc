@@ -45,7 +45,17 @@ const toast = useToast()
 const isSaving = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
 
+const PW_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
+
 const handleUpdatePassword = async () => {
+  if (!passwords.current) {
+    toast.error('Please enter your current password.')
+    return
+  }
+  if (!PW_PATTERN.test(passwords.new)) {
+    toast.error('New password must be 8+ chars with uppercase, lowercase, a number, and a symbol.')
+    return
+  }
   if (passwords.new !== passwords.confirm) {
     toast.error('New passwords do not match.')
     return
