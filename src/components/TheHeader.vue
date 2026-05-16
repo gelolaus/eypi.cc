@@ -160,15 +160,27 @@ function formatDisplayName(payload: { name?: string | null; email?: string }): s
 
 function loadUserFromToken() {
   const token = localStorage.getItem('eypi_token')
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      userName.value = formatDisplayName(payload)
-      userEmail.value = payload.email || ''
-    } catch (e) {
-      console.error('Failed to parse user token', e)
+  if (!token) {
+    userName.value = 'Guest User'
+    userEmail.value = ''
+    return
+  }
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) throw new Error('malformed')
+    // base64url → base64 before decoding
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    if (payload.exp && Date.now() / 1000 > payload.exp) {
+      localStorage.removeItem('eypi_token')
+      userName.value = 'Guest User'
+      userEmail.value = ''
+      return
     }
-  } else {
+    // Decoded only for display — never used for access-control decisions
+    userName.value = formatDisplayName(payload)
+    userEmail.value = payload.email || ''
+  } catch {
+    localStorage.removeItem('eypi_token')
     userName.value = 'Guest User'
     userEmail.value = ''
   }

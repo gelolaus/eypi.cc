@@ -2,7 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "backend",
   "main": "src/index.ts",
-  "compatibility_date": "2026-03-01"
+  "compatibility_date": "2026-03-01",
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "5859d48ee495460aad9d806e0e3c1523"
+    }
+  ]
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],

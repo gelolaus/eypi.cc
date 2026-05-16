@@ -183,6 +183,14 @@ onMounted(() => {
 })
 
 const handleLogin = async () => {
+  if (!email.value.trim() || !email.value.includes('@')) {
+    toast.error('Please enter a valid email address.')
+    return
+  }
+  if (password.value.length < 8) {
+    toast.error('Password must be at least 8 characters.')
+    return
+  }
   isAuthenticating.value = true
 
   try {
@@ -217,7 +225,21 @@ const handleLogin = async () => {
   }
 }
 
+const PW_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
+
 const handleRegister = async () => {
+  if (!email.value.trim() || !email.value.includes('@')) {
+    toast.error('Please enter a valid email address.')
+    return
+  }
+  if (!PW_PATTERN.test(password.value)) {
+    toast.error('Password must be 8+ chars with uppercase, lowercase, a number, and a symbol.')
+    return
+  }
+  if (name.value.trim().length > 200) {
+    toast.error('Name is too long.')
+    return
+  }
   isAuthenticating.value = true
 
   try {

@@ -12,6 +12,7 @@ type Bindings = {
   TURSO_AUTH_TOKEN: string
   JWT_SECRET: string
   RESEND_API_KEY: string
+  RATE_LIMIT_KV: KVNamespace
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -20,22 +21,31 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors({
   origin: (origin) => {
     const allowed = [
-      'http://localhost:5173', 
-      'https://eypi.cc', 
-      'https://forms.eypi.cc'
+      'http://localhost:5173',
+      'https://eypi.cc',
+      'https://forms.eypi.cc',
     ]
-    // If the request comes from an allowed origin, let it through. 
-    // Otherwise, default to the main site.
-    return origin && allowed.includes(origin) ? origin : 'https://eypi.cc'
+    return allowed.includes(origin ?? '') ? origin! : null
   },
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Client-Referrer'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
-  maxAge: 86400, // Cache preflight for 24 hours
+  maxAge: 86400,
 }))
 
 // Explicit OPTIONS handler for preflight requests
 app.options('*', (c) => c.body(null, 204))
+
+// Security headers on every response
+app.use('*', async (c, next) => {
+  await next()
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('X-Frame-Options', 'DENY')
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+})
 
 // 3. Allowed email domains (APC + admin whitelist)
 const ALLOWED_EMAIL_DOMAINS = ['@student.apc.edu.ph', '@apc.edu.ph', '@gelolaus.com', '@alias.gelolaus.com']
@@ -61,6 +71,120 @@ const normalizeUrl = (url: string) => {
   let trimmed = url.trim()
   if (!/^https?:\/\//i.test(trimmed)) trimmed = `https://${trimmed}`
   return trimmed
+}
+
+const REFERRER_MAP: Record<string, string> = {
+  // Own properties
+  'localhost': 'Localhost',
+  'eypi.cc': 'Eypi',
+  // Facebook
+  'facebook.com': 'Facebook',
+  'm.facebook.com': 'Facebook',
+  'l.facebook.com': 'Facebook',
+  'lm.facebook.com': 'Facebook',
+  'fb.me': 'Facebook',
+  'fb.com': 'Facebook',
+  'web.facebook.com': 'Facebook',
+  // Instagram
+  'instagram.com': 'Instagram',
+  'l.instagram.com': 'Instagram',
+  // Twitter / X
+  'twitter.com': 'Twitter / X',
+  'x.com': 'Twitter / X',
+  't.co': 'Twitter / X',
+  // TikTok
+  'tiktok.com': 'TikTok',
+  'vm.tiktok.com': 'TikTok',
+  'vt.tiktok.com': 'TikTok',
+  // YouTube
+  'youtube.com': 'YouTube',
+  'youtu.be': 'YouTube',
+  'm.youtube.com': 'YouTube',
+  // Reddit
+  'reddit.com': 'Reddit',
+  'redd.it': 'Reddit',
+  'old.reddit.com': 'Reddit',
+  // LinkedIn
+  'linkedin.com': 'LinkedIn',
+  'lnkd.in': 'LinkedIn',
+  // Pinterest
+  'pinterest.com': 'Pinterest',
+  'pin.it': 'Pinterest',
+  'pinterest.ph': 'Pinterest',
+  // Snapchat
+  'snapchat.com': 'Snapchat',
+  't.snapchat.com': 'Snapchat',
+  // WhatsApp
+  'whatsapp.com': 'WhatsApp',
+  'wa.me': 'WhatsApp',
+  'web.whatsapp.com': 'WhatsApp',
+  // Telegram
+  'telegram.org': 'Telegram',
+  't.me': 'Telegram',
+  'web.telegram.org': 'Telegram',
+  // Discord
+  'discord.com': 'Discord',
+  'discord.gg': 'Discord',
+  'ptb.discord.com': 'Discord',
+  // Threads
+  'threads.net': 'Threads',
+  'l.threads.net': 'Threads',
+  // Google
+  'google.com': 'Google',
+  'google.com.ph': 'Google',
+  'google.co': 'Google',
+  // Gmail
+  'mail.google.com': 'Gmail',
+  // Viber
+  'viber.com': 'Viber',
+  // Twitch
+  'twitch.tv': 'Twitch',
+  // GitHub
+  'github.com': 'GitHub',
+  // Medium
+  'medium.com': 'Medium',
+  // Substack
+  'substack.com': 'Substack',
+  // Notion
+  'notion.so': 'Notion',
+  'notion.site': 'Notion',
+  // Bereal
+  'bere.al': 'BeReal',
+  'bereal.com': 'BeReal',
+}
+
+function sanitizeReferrer(raw: string | undefined): string {
+  if (!raw) return 'Direct'
+  try {
+    // Handle bare hostnames (no protocol) by prepending https://
+    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+    const hostname = new URL(url).hostname.toLowerCase()
+    if (REFERRER_MAP[hostname]) return REFERRER_MAP[hostname]
+    const withoutWww = hostname.replace(/^www\./, '')
+    if (REFERRER_MAP[withoutWww]) return REFERRER_MAP[withoutWww]
+    // Check if it's localhost with a port (e.g. localhost:5173)
+    if (withoutWww.startsWith('localhost')) return 'Localhost'
+    return withoutWww || 'Direct'
+  } catch {
+    return 'Direct'
+  }
+}
+
+async function checkRateLimit(
+  kv: KVNamespace,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean> {
+  const raw = await kv.get(key)
+  const count = raw !== null ? parseInt(raw, 10) : 0
+  if (count >= limit) return false
+  if (count === 0) {
+    await kv.put(key, '1', { expirationTtl: windowSeconds })
+  } else {
+    await kv.put(key, String(count + 1))
+  }
+  return true
 }
 
 function getOS(userAgent: string | null): string {
@@ -195,9 +319,9 @@ app.get('/api/links/:slug', async (c) => {
 
   const row = result.rows[0] as unknown as { id: string; original_url: string }
   const userAgent = c.req.header('User-Agent')
-  const referrer = c.req.header('Referer') ?? 'Direct'
+  const referrer = sanitizeReferrer(c.req.header('X-Client-Referrer') || c.req.header('Referer'))
   const country = (c.req.raw as Request & { cf?: { country?: string } }).cf?.country ?? 'Unknown'
-  const os = getOS(userAgent)
+  const os = getOS(userAgent ?? null)
   const linkId = row.id
 
   try {
@@ -292,8 +416,11 @@ app.post('/api/links', async (c) => {
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     let slug = generateSlug()
-    const existing = await db.execute({ sql: 'SELECT slug FROM links WHERE slug = ?', args: [slug] })
-    if (existing.rows.length > 0) slug = generateSlug()
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const existing = await db.execute({ sql: 'SELECT slug FROM links WHERE slug = ?', args: [slug] })
+      if (existing.rows.length === 0) break
+      slug = generateSlug()
+    }
     const linkId = crypto.randomUUID()
     await db.execute({
       sql: 'INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
@@ -307,16 +434,20 @@ app.post('/api/links', async (c) => {
 
 // 4. The Registration Route
 app.post('/api/auth/register', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const registerAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, `rl:register:${ip}`, 3, 3600)
+  if (!registerAllowed) {
+    return c.json({ status: 'error', message: 'Too many registration attempts. Please try again later.' }, 429)
+  }
   try {
     const body = await c.req.json()
     
     // Validate incoming data against our strict rules
     const validation = registerSchema.safeParse(body)
     if (!validation.success) {
-      // If it fails, send back the exact rules they broke
-      return c.json({ 
-        status: 'error', 
-        message: validation.error.issues.map((i) => i.message).join(', ') 
+      return c.json({
+        status: 'error',
+        message: 'Password must be at least 8 characters and contain uppercase, lowercase, a number, and a symbol.',
       }, 400)
     }
 
@@ -355,8 +486,6 @@ app.post('/api/auth/register', async (c) => {
         args: [userId, email, passwordHash, verificationToken, nameValue]
       })
     }
-    console.log('Registration succeeded, verification token stored for email:', email)
-
     const resend = new Resend(c.env.RESEND_API_KEY)
     await resend.emails.send({
       from: 'eypicc@resend.gelolaus.com',
@@ -390,18 +519,18 @@ app.post('/api/auth/register', async (c) => {
     }, 201)
 
   } catch (error: any) {
-    // Catch the UNIQUE constraint error if you try to register the same email twice
-    if (error.message.includes('UNIQUE constraint failed')) {
-      return c.json({ status: 'error', message: 'Identity already exists in the registry.' }, 409)
-    }
-    
     console.error('Registration failed:', error)
-    return c.json({ status: 'error', message: 'Internal server error.' }, 500)
+    return c.json({ status: 'error', message: 'Registration failed. Please try again.' }, 500)
   }
 })
 
 // POST only: prevents crawlers (Outlook Safelinks, etc.) from auto-clicking and consuming the token
 app.post('/api/auth/verify', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const verifyAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, `rl:verify:${ip}`, 15, 3600)
+  if (!verifyAllowed) {
+    return c.json({ status: 'error', message: 'Too many verification attempts. Please try again later.' }, 429)
+  }
   let body: { token?: string }
   try {
     body = await c.req.json()
@@ -410,7 +539,6 @@ app.post('/api/auth/verify', async (c) => {
   }
 
   const rawToken = body?.token
-  console.log('Verifying token:', rawToken)
 
   const token = (typeof rawToken === 'string' ? rawToken : '').trim()
   if (!token) return c.json({ error: 'Missing verification token.' }, 400)
@@ -425,7 +553,6 @@ app.post('/api/auth/verify', async (c) => {
     args: [token],
   })
   if (check.rows.length === 0) {
-    console.log('Token not found or already used. Token length:', token.length)
     return c.json({ error: 'Invalid or expired token.' }, 400)
   }
 
@@ -441,6 +568,11 @@ app.post('/api/auth/verify', async (c) => {
 
 // 5. The Login Route
 app.post('/api/auth/login', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const loginAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, `rl:login:${ip}`, 10, 900)
+  if (!loginAllowed) {
+    return c.json({ status: 'error', message: 'Too many login attempts. Please try again in 15 minutes.' }, 429)
+  }
   try {
     const { email, password } = await c.req.json() as { email?: string; password?: string }
 
@@ -480,7 +612,7 @@ app.post('/api/auth/login', async (c) => {
     }
 
     // Verify the bcrypt hash
-    const isValid = bcrypt.compareSync(password, user.password_hash)
+    const isValid = bcrypt.compareSync(password ?? '', user.password_hash)
     if (!isValid) {
       return c.json({ status: 'error', message: 'Invalid credentials.' }, 401)
     }

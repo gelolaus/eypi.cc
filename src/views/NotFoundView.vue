@@ -1,10 +1,10 @@
 <template>
   <section
-    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4"
+    class="relative flex min-h-screen w-full flex-col items-center justify-center px-6 py-20"
   >
     <!-- Error Hardware Card -->
     <div
-      class="mica-card relative flex w-full max-w-lg flex-col items-center rounded-3xl border border-gray-200 p-12 text-center shadow-xl"
+      class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-8 text-center shadow-xl sm:p-12"
     >
       <!-- Corner screws -->
       <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
@@ -14,21 +14,21 @@
 
       <!-- Error Code -->
       <h1
-        class="mb-2 font-mono text-8xl font-black leading-none tracking-tighter text-[#34418F] md:text-9xl"
+        class="mb-2 font-mono text-7xl font-black leading-none tracking-tighter text-[#34418F] sm:text-8xl md:text-9xl"
       >
         404
       </h1>
 
       <!-- Subtitle -->
       <h2
-        class="mb-6 font-mono text-lg font-bold uppercase tracking-widest text-[#DEAC4B] md:text-xl"
+        class="mb-4 font-mono text-base font-bold uppercase tracking-widest text-[#DEAC4B] sm:mb-6 sm:text-lg md:text-xl"
       >
         Transmission Failed
       </h2>
 
       <!-- Body -->
       <p
-        class="mb-10 font-mono text-sm leading-relaxed text-gray-500 md:text-base"
+        class="mb-8 font-mono text-sm leading-relaxed text-gray-500 sm:mb-10 md:text-base"
       >
         The requested destination could not be located in the registry. The
         link may have expired, been deleted, or never existed.
@@ -37,7 +37,7 @@
       <!-- CTA -->
       <router-link
         to="/"
-        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-mono font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105"
+        class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
       >
         Return to System
       </router-link>
