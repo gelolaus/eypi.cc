@@ -22,8 +22,11 @@ app.use('/api/*', cors({
   origin: (origin) => {
     const allowed = [
       'http://localhost:5173',
+      'http://localhost:5174',
       'https://eypi.cc',
       'https://forms.eypi.cc',
+      'https://tix.eypi.cc',
+      'https://eypicc-tix.pages.dev',
     ]
     return allowed.includes(origin ?? '') ? origin! : null
   },
@@ -177,13 +180,22 @@ async function checkRateLimit(
   windowSeconds: number,
 ): Promise<boolean> {
   const raw = await kv.get(key)
-  const count = raw !== null ? parseInt(raw, 10) : 0
-  if (count >= limit) return false
-  if (count === 0) {
-    await kv.put(key, '1', { expirationTtl: windowSeconds })
-  } else {
-    await kv.put(key, String(count + 1))
+  const now = Math.floor(Date.now() / 1000)
+  let count = 0
+  let windowExpiry = now + windowSeconds
+
+  if (raw !== null) {
+    const parts = raw.split(':')
+    count = parseInt(parts[0], 10)
+    if (parts[1]) windowExpiry = parseInt(parts[1], 10)
   }
+
+  if (count >= limit) return false
+
+  // Preserve the original window expiry so the TTL doesn't slide forward on
+  // each request — without this, any attempt resets the 15-minute clock.
+  const ttl = Math.max(windowExpiry - now, 60)
+  await kv.put(key, `${count + 1}:${windowExpiry}`, { expirationTtl: ttl })
   return true
 }
 
