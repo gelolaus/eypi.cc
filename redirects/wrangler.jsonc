@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "eypi-subdomain-redirects",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-27",
+  // Bind the retired subdomains to this Worker. Requires the eypi.cc zone in
+  // your Cloudflare account. Deploy with: npx wrangler deploy
+  "routes": [
+    { "pattern": "tix.eypi.cc/*", "zone_name": "eypi.cc" },
+    { "pattern": "forms.eypi.cc/*", "zone_name": "eypi.cc" }
+  ]
+}
