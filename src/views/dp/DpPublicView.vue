@@ -36,10 +36,13 @@
 
       <!-- Canvas card -->
       <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
-        <div class="dp-checker overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700">
+        <div
+          class="dp-checker aspect-square w-full overflow-hidden border border-gray-200 dark:border-slate-700 relative transition-all duration-300"
+          :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
+        >
           <canvas
             ref="canvasRef"
-            class="block h-auto w-full select-none"
+            class="absolute inset-0 h-full w-full select-none"
             style="touch-action: none;"
             @pointerdown="onPointerDown"
             @pointermove="onPointerMove"
@@ -105,6 +108,30 @@
             >Reset</button>
           </div>
 
+          <!-- Preview shape toggler -->
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="rounded-xl border py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-all"
+              :class="previewShape === 'square'
+                ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
+                : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
+              @click="previewShape = 'square'"
+            >
+              Square Preview
+            </button>
+            <button
+              type="button"
+              class="rounded-xl border py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-all"
+              :class="previewShape === 'circle'
+                ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
+                : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
+              @click="previewShape = 'circle'"
+            >
+              Circle Preview
+            </button>
+          </div>
+
           <button
             type="button"
             :disabled="!headshot || exporting"
@@ -168,6 +195,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const frameImgs = ref<HTMLImageElement[]>([])
 const selectedIndex = ref(0)
 const headshot = ref<HTMLImageElement | null>(null)
+const previewShape = ref<'square' | 'circle'>('square')
 
 const { scale, offsetX, offsetY, onPointerDown, onPointerMove, onPointerUp, onWheel, reset } = useDpCanvas(canvasRef)
 
@@ -289,10 +317,10 @@ onMounted(async () => {
     const canvas = canvasRef.value
     const first = frameImgs.value[0]
     if (canvas && first) {
-      // Fixed at the first frame's native resolution so the headshot stays put
-      // while switching frames, and the export is crisp.
-      canvas.width = first.naturalWidth || first.width
-      canvas.height = first.naturalHeight || first.height
+      // Force the backing store to be a perfect 1:1 square based on the maximum dimension
+      const size = Math.max(first.naturalWidth || first.width, first.naturalHeight || first.height || 1080)
+      canvas.width = size
+      canvas.height = size
     }
     scheduleDraw()
   } catch (err: unknown) {
