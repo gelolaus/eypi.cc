@@ -45,7 +45,7 @@
       @dragleave.prevent="dragging = false"
       @drop.prevent="onDrop"
     >
-      <input ref="fileInput" type="file" accept="image/png" multiple class="hidden" @change="onPicked" />
+      <input ref="fileInput" type="file" accept="image/png, image/x-png, .png" multiple class="hidden" @change="onPicked" />
       <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 dark:border-slate-600 dark:text-slate-500">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
       </div>
@@ -109,7 +109,12 @@ function readFiles(files: FileList | File[]) {
   let remaining = max - props.frames.length
   for (const file of list) {
     if (remaining <= 0) { toast.error(`Up to ${max} frames per campaign.`); break }
-    if (file.type !== 'image/png') { toast.error(`"${file.name}" must be a transparent PNG.`); continue }
+    const fileType = file.type.toLowerCase()
+    const isPng = fileType === 'image/png' || fileType === 'image/x-png' || (!fileType && file.name.toLowerCase().endsWith('.png'))
+    if (!isPng) {
+      toast.error(`"${file.name}" must be a transparent PNG.`)
+      continue
+    }
     if (file.size > DP_FRAME_MAX_BYTES) { toast.error(`"${file.name}" must be under 2 MB.`); continue }
     remaining--
     const reader = new FileReader()

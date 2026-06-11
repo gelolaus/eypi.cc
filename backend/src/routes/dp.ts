@@ -19,13 +19,16 @@ const DESCRIPTION_MAX = 1000
 const CAPTION_MAX = 2000
 const LABEL_MAX = 80
 const SLUG_MAX = 60
-const FRAME_PREFIX = 'data:image/png;base64,'
 const FRAME_MAX_CHARS = 2_800_000
 const MAX_FRAMES = 10
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 function validateFrame(frame: unknown): string | null {
-  if (typeof frame !== 'string' || !frame.startsWith(FRAME_PREFIX)) {
+  if (typeof frame !== 'string') {
+    return 'Each frame must be a PNG data-URL (data:image/png;base64,…).'
+  }
+  const prefix = frame.slice(0, 30).toLowerCase()
+  if (!prefix.startsWith('data:image/png;base64,') && !prefix.startsWith('data:image/x-png;base64,')) {
     return 'Each frame must be a PNG data-URL (data:image/png;base64,…).'
   }
   if (frame.length > FRAME_MAX_CHARS) {
