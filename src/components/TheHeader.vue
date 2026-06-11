@@ -57,6 +57,17 @@
             </div>
             <div class="py-1.5">
               <router-link
+                to="/dashboard"
+                class="pill-nav__dropdown-item"
+                data-cursor="nav"
+                @click="isMenuOpen = false"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                Dashboard
+              </router-link>
+              <router-link
                 to="/settings"
                 class="pill-nav__dropdown-item"
                 data-cursor="nav"
@@ -129,6 +140,7 @@ const { isDark, toggle: toggleDark } = useDarkMode()
 const isMenuOpen = ref(false)
 const userName = ref('Guest User')
 const userEmail = ref('')
+const isAuthenticated = ref(false)
 
 // Scroll-reactive pill nav state
 const isScrolled = ref(false)
@@ -142,10 +154,9 @@ function onScroll() {
   lastScrollY = y
 }
 
-// Whether we're on an authenticated page
-const isAuthPage = computed(() =>
-  route.path === '/dashboard' || route.path === '/settings',
-)
+// Show the authenticated UI (user menu) whenever a valid session token exists,
+// across every suite module — not just specific paths.
+const isAuthPage = computed(() => isAuthenticated.value)
 
 function formatDisplayName(payload: { name?: string | null; email?: string }): string {
   const emailPrefix = payload.email ? payload.email.split('@')[0] : ''
@@ -163,6 +174,7 @@ function loadUserFromToken() {
   if (!token) {
     userName.value = 'Guest User'
     userEmail.value = ''
+    isAuthenticated.value = false
     return
   }
   try {
@@ -174,15 +186,18 @@ function loadUserFromToken() {
       localStorage.removeItem('eypi_token')
       userName.value = 'Guest User'
       userEmail.value = ''
+      isAuthenticated.value = false
       return
     }
     // Decoded only for display — never used for access-control decisions
     userName.value = formatDisplayName(payload)
     userEmail.value = payload.email || ''
+    isAuthenticated.value = true
   } catch {
     localStorage.removeItem('eypi_token')
     userName.value = 'Guest User'
     userEmail.value = ''
+    isAuthenticated.value = false
   }
 }
 
@@ -197,10 +212,10 @@ onUnmounted(() => {
 
 watch(
   () => route.path,
-  (path) => {
-    if (path === '/dashboard' || path === '/settings') {
-      loadUserFromToken()
-    }
+  () => {
+    // Re-evaluate session on every navigation so the user menu stays correct
+    // across all suite modules (links, forms, events, manage, …).
+    loadUserFromToken()
   },
 )
 

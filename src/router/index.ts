@@ -8,20 +8,89 @@ const router = createRouter({
     return { top: 0, behavior: 'smooth' }
   },
   routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-    },
+    { path: '/', name: 'home', component: HomeView },
+    { path: '/login', name: 'login', component: LoginView },
+
+    // ── Suite hub ────────────────────────────────────────────────────────────
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ── Links module ─────────────────────────────────────────────────────────
+    {
+      path: '/links',
+      name: 'links',
+      component: () => import('@/views/links/LinksView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ── Forms module ─────────────────────────────────────────────────────────
+    {
+      path: '/forms',
+      name: 'forms',
+      component: () => import('@/views/forms/FormsHomeView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/forms/concessionaire',
+      name: 'forms-concessionaire',
+      component: () => import('@/views/forms/generators/ConcessionaireView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/forms/visitors-pass',
+      name: 'forms-visitors-pass',
+      component: () => import('@/views/forms/generators/VisitorsPassView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/forms/letter-of-intent',
+      name: 'forms-letter-of-intent',
+      component: () => import('@/views/forms/generators/LetterOfIntentView.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ── Ticketing module (management) ────────────────────────────────────────
+    {
+      path: '/events',
+      name: 'events',
+      component: () => import('@/views/tix/EventsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/events/new',
+      name: 'event-new',
+      component: () => import('@/views/tix/NewEventView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/events/:id/select',
+      name: 'event-select',
+      component: () => import('@/views/tix/AttendeeSelectionView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Internal event management (auth required)
+      path: '/manage/:id',
+      name: 'event-manage',
+      component: () => import('@/views/tix/EventDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public attendee ticket lookup — STRICTLY NO auth
+      path: '/event/:eventId',
+      name: 'ticket-lookup',
+      component: () => import('@/views/tix/TicketLookupView.vue'),
+    },
+
+    // ── Account & legal ──────────────────────────────────────────────────────
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/views/SettingsView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -40,12 +109,6 @@ const router = createRouter({
       component: () => import('@/views/ContactView.vue'),
     },
     {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('@/views/SettingsView.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('@/views/ResetPasswordView.vue'),
@@ -55,6 +118,8 @@ const router = createRouter({
       name: 'verify',
       component: () => import('@/views/VerifyView.vue'),
     },
+
+    // ── Link shortener redirect — MUST stay second-to-last ───────────────────
     {
       path: '/:slug',
       name: 'redirect',

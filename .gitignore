@@ -32,3 +32,6 @@ dist-ssr
 !.dev.vars.example
 .env*
 !.env.example
+
+# Database migrations — keep schema out of the (to-be-public) repo
+*.sql

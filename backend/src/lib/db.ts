@@ -1,0 +1,38 @@
+import { verify } from 'hono/jwt'
+import { createClient } from '@libsql/client/web'
+
+// Shared Cloudflare Worker bindings for the unified eypi.cc backend.
+export type Bindings = {
+  TURSO_DATABASE_URL: string
+  TURSO_AUTH_TOKEN: string
+  JWT_SECRET: string
+  RESEND_API_KEY: string
+  RATE_LIMIT_KV: KVNamespace
+}
+
+export type JWTPayload = {
+  sub: string
+  email: string
+  name?: string
+  exp: number
+}
+
+// Single Turso/libSQL client factory shared across all route modules.
+export function db(env: Bindings) {
+  return createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN })
+}
+
+// Verify the shared HS256 JWT (issued by /api/auth/login) and return its payload.
+export async function getUser(
+  c: { req: { header: (k: string) => string | undefined }; env: Bindings },
+): Promise<JWTPayload | null> {
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return null
+  try {
+    const payload = await verify(auth.slice(7), c.env.JWT_SECRET, 'HS256') as JWTPayload
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null
+    return payload
+  } catch {
+    return null
+  }
+}
