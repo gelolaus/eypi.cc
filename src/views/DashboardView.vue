@@ -80,5 +80,12 @@ const modules = [
     description: 'Create events, manage guest lists, and run QR-code check-in.',
     route: '/events',
   },
+  {
+    id: 'dp-blast',
+    tag: 'Profile Frames',
+    title: 'DP Blast',
+    description: 'Upload a frame and share a link so anyone can make a matching profile picture.',
+    route: '/manage/dp-blast',
+  },
 ]
 </script>

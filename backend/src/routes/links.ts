@@ -18,7 +18,7 @@ const normalizeUrl = (url: string) => {
 const RESERVED_SLUGS = new Set([
   'dashboard', 'links', 'forms', 'event', 'events', 'manage', 'login',
   'settings', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
-  'api', 'home',
+  'api', 'home', 'dp',
 ])
 const isReservedSlug = (slug: string) => RESERVED_SLUGS.has(slug.toLowerCase())
 

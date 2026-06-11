@@ -53,6 +53,28 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
+    // ── DP Blast module (profile frames) ─────────────────────────────────────
+    // Static /manage/dp-blast routes are declared BEFORE the dynamic /manage/:id
+    // (ticketing) route so they always win the match.
+    {
+      path: '/manage/dp-blast',
+      name: 'dp-campaigns',
+      component: () => import('@/views/dp/DpCampaignsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manage/dp-blast/new',
+      name: 'dp-new',
+      component: () => import('@/views/dp/DpNewCampaignView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public profile-frame editor — STRICTLY NO auth
+      path: '/dp/:campaignId',
+      name: 'dp-public',
+      component: () => import('@/views/dp/DpPublicView.vue'),
+    },
+
     // ── Ticketing module (management) ────────────────────────────────────────
     {
       path: '/events',
