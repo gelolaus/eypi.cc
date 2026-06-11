@@ -68,7 +68,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/manage/frames/:id/edit',
+      path: '/manage/frames/:slug/edit',
       name: 'dp-edit',
       component: () => import('@/views/dp/DpEditCampaignView.vue'),
       meta: { requiresAuth: true },

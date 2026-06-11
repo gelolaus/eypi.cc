@@ -168,24 +168,23 @@ app.get('/api/dp', async (c) => {
   })
 })
 
-// ── GET /api/dp/:id/edit ──────────────────────────────────────────────────────
-// Owner-only full payload (incl. frames) for the editor. Declared before the
-// public /:slug route is irrelevant to Hono (segment counts differ), but kept
-// here for readability.
-app.get('/api/dp/:id/edit', async (c) => {
+// ── GET /api/dp/:slug/edit ────────────────────────────────────────────────────
+// Owner-only full payload (incl. frames) for the editor.
+app.get('/api/dp/:slug/edit', async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
+  const slug = c.req.param('slug')
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
-  if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
-  const [camp, frames] = await Promise.all([
-    client.execute({ sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE id = ?', args: [id] }),
-    client.execute({ sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at', args: [id] }),
-  ])
+  const camp = await client.execute({ sql: 'SELECT id, creator_id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?', args: [slug] })
+  if (camp.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
   const row = camp.rows[0]
+
+  if (row.creator_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+
+  const frames = await client.execute({ sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at', args: [row.id] })
+
   return c.json({
     status: 'ok',
     campaign: {

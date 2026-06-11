@@ -67,7 +67,7 @@
             @click="copyLink(c.slug)"
           >Copy Link</button>
           <router-link
-            :to="`/manage/frames/${c.id}/edit`"
+            :to="`/manage/frames/${c.slug}/edit`"
             class="rounded-lg border border-gray-200 px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
             data-cursor="nav"
           >Edit</router-link>
