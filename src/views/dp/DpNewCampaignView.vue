@@ -9,7 +9,7 @@
         New DP Blast
       </h1>
       <p class="reveal delay-1 mb-8 text-center font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
-        Upload a frame · share a link
+        Upload frames · share a link
       </p>
 
       <!-- Success state -->
@@ -31,7 +31,7 @@
 
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <router-link
-            :to="`/dp/${createdId}`"
+            :to="`/dp/${createdSlug}`"
             class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100"
             data-cursor="cta"
           >Open Public Page →</router-link>
@@ -61,6 +61,23 @@
           />
         </div>
 
+        <!-- Slug -->
+        <div>
+          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
+          <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
+            <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/dp/</span>
+            <input
+              v-model="form.slug"
+              type="text"
+              maxlength="60"
+              placeholder="compsci-week"
+              class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 placeholder-gray-400 dark:text-slate-200 dark:placeholder-slate-500"
+              @input="sanitizeSlug"
+            />
+          </div>
+          <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Lowercase letters, numbers, and hyphens.</p>
+        </div>
+
         <!-- Description -->
         <div>
           <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
@@ -78,41 +95,17 @@
           <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
           <textarea
             v-model="form.captionTemplate"
-            rows="4"
+            rows="3"
             maxlength="2000"
             placeholder="The suggested caption people copy when they share…"
             class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
         </div>
 
-        <!-- Frame upload drop-zone -->
+        <!-- Frames -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Frame <span class="text-gray-400 dark:text-slate-500">(transparent PNG, ≤2 MB)</span></label>
-
-          <div
-            class="dp-dropzone relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-colors"
-            :class="dragging ? 'dp-dropzone--active' : ''"
-            @click="fileInput?.click()"
-            @dragover.prevent="dragging = true"
-            @dragleave.prevent="dragging = false"
-            @drop.prevent="onDrop"
-          >
-            <input ref="fileInput" type="file" accept="image/png" class="hidden" @change="onFilePicked" />
-
-            <template v-if="framePreview">
-              <div class="dp-checker mb-3 overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700">
-                <img :src="framePreview" alt="Frame preview" class="mx-auto block max-h-48 w-auto" />
-              </div>
-              <p class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Click to replace</p>
-            </template>
-            <template v-else>
-              <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 dark:border-slate-600 dark:text-slate-500">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.9A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-              </div>
-              <p class="font-mono text-sm font-bold text-gray-500 dark:text-slate-400">Drop your PNG frame here</p>
-              <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">or click to browse</p>
-            </template>
-          </div>
+          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></label>
+          <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
         </div>
 
         <!-- Submit -->
@@ -135,53 +128,44 @@ import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
+import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
+import type { DpUploaderFrame } from '@/types/dp'
 
 const toast = useToast()
 const { authHeaders } = useAuth()
 useReveal()
 
-const FRAME_MAX_BYTES = 2 * 1024 * 1024
-
 const form = reactive({
   title: '',
+  slug: '',
   description: '',
   captionTemplate: '',
 })
 
-const fileInput = ref<HTMLInputElement | null>(null)
-const framePreview = ref('') // data:image/png;base64,…
-const dragging = ref(false)
+const frames = ref<DpUploaderFrame[]>([])
 const submitting = ref(false)
 const created = ref(false)
-const createdId = ref('')
+const createdSlug = ref('')
 
-const canSubmit = computed(() => !!form.title.trim() && !!framePreview.value)
-const shareDisplay = computed(() => `eypi.cc/dp/${createdId.value}`)
+const canSubmit = computed(() => !!form.title.trim() && frames.value.length > 0)
+const shareDisplay = computed(() => `eypi.cc/dp/${createdSlug.value}`)
 
-function readFrame(file: File) {
-  if (file.type !== 'image/png') {
-    toast.error('Frame must be a transparent PNG.')
-    return
-  }
-  if (file.size > FRAME_MAX_BYTES) {
-    toast.error('Frame must be smaller than 2 MB.')
-    return
-  }
-  const reader = new FileReader()
-  reader.onload = () => { framePreview.value = reader.result as string }
-  reader.onerror = () => toast.error('Could not read that file.')
-  reader.readAsDataURL(file)
+function sanitizeSlug(e: Event) {
+  const t = e.target as HTMLInputElement
+  form.slug = t.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-{2,}/g, '-')
 }
 
-function onFilePicked(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) readFrame(file)
+function onAddFrame(dataUrl: string) {
+  frames.value.push({ src: dataUrl })
 }
-
-function onDrop(e: DragEvent) {
-  dragging.value = false
-  const file = e.dataTransfer?.files?.[0]
-  if (file) readFrame(file)
+function onRemoveFrame(index: number) {
+  frames.value.splice(index, 1)
+}
+function onReorderFrame(from: number, to: number) {
+  if (from === to) return
+  const arr = frames.value
+  const [moved] = arr.splice(from, 1)
+  arr.splice(to, 0, moved)
 }
 
 async function submit() {
@@ -193,14 +177,15 @@ async function submit() {
       headers: authHeaders(),
       body: JSON.stringify({
         title: form.title.trim(),
+        slug: form.slug.trim().replace(/^-+|-+$/g, ''),
         description: form.description.trim(),
         captionTemplate: form.captionTemplate.trim(),
-        frameImage: framePreview.value,
+        frames: frames.value.map(f => ({ imageData: f.src })),
       }),
     })
-    const data = await res.json() as { status: string; message?: string; campaign?: { id: string } }
+    const data = await res.json() as { status: string; message?: string; campaign?: { id: string; slug: string } }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Failed to create campaign.')
-    createdId.value = data.campaign.id
+    createdSlug.value = data.campaign.slug
     created.value = true
     toast.success('Campaign created!')
   } catch (err: unknown) {
@@ -212,39 +197,10 @@ async function submit() {
 
 async function copyShare() {
   try {
-    await navigator.clipboard.writeText(`https://eypi.cc/dp/${createdId.value}`)
+    await navigator.clipboard.writeText(`https://eypi.cc/dp/${createdSlug.value}`)
     toast.success('Link copied to clipboard!')
   } catch {
     toast.error('Could not copy the link.')
   }
 }
 </script>
-
-<style scoped>
-.dp-dropzone {
-  border-color: var(--color-border);
-  cursor: pointer;
-}
-.dp-dropzone:hover,
-.dp-dropzone--active {
-  border-color: #DEAC4B;
-}
-.dp-checker {
-  background-color: #ffffff;
-  background-image:
-    linear-gradient(45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(-45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e9e9e9 75%),
-    linear-gradient(-45deg, transparent 75%, #e9e9e9 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-}
-:global(html.dark) .dp-checker {
-  background-color: #0d0d0d;
-  background-image:
-    linear-gradient(45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(-45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1c1c1c 75%),
-    linear-gradient(-45deg, transparent 75%, #1c1c1c 75%);
-}
-</style>

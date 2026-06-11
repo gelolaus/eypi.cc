@@ -69,8 +69,14 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/manage/dp-blast/:id/edit',
+      name: 'dp-edit',
+      component: () => import('@/views/dp/DpEditCampaignView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       // Public profile-frame editor — STRICTLY NO auth
-      path: '/dp/:campaignId',
+      path: '/dp/:slug',
       name: 'dp-public',
       component: () => import('@/views/dp/DpPublicView.vue'),
     },

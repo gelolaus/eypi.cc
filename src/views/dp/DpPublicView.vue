@@ -21,28 +21,21 @@
     <!-- Editor -->
     <template v-else>
       <header class="mb-8 text-center reveal">
-        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em]" style="color: var(--color-text-muted);">
-          DP Blast
-        </p>
+        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em]" style="color: var(--color-text-muted);">DP Blast</p>
         <h1
           class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
           style="font-size: clamp(1.75rem, 5vw, 3rem); letter-spacing: -0.03em;"
           data-cursor="text"
-        >
-          {{ campaign.title }}
-        </h1>
+        >{{ campaign.title }}</h1>
         <p
           v-if="campaign.description"
           class="mx-auto mt-3 max-w-xl font-mono text-sm leading-relaxed"
           style="color: var(--color-text-muted);"
-        >
-          {{ campaign.description }}
-        </p>
+        >{{ campaign.description }}</p>
       </header>
 
       <!-- Canvas card -->
       <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
-        <!-- Checkerboard backdrop so frame transparency is visible -->
         <div class="dp-checker overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700">
           <canvas
             ref="canvasRef"
@@ -57,21 +50,44 @@
           />
         </div>
 
+        <!-- Frame switcher -->
+        <div v-if="frameImgs.length > 1" class="mt-4 flex items-center justify-center gap-4">
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            aria-label="Previous frame"
+            @click="prevFrame"
+          >‹</button>
+          <div class="flex items-center gap-1.5">
+            <button
+              v-for="(_, i) in frameImgs"
+              :key="i"
+              type="button"
+              class="h-2.5 w-2.5 rounded-full transition-colors"
+              :class="i === selectedIndex ? 'bg-[#DEAC4B]' : 'bg-gray-300 dark:bg-slate-600'"
+              :aria-label="`Frame ${i + 1}`"
+              @click="selectedIndex = i"
+            />
+          </div>
+          <button
+            type="button"
+            class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            aria-label="Next frame"
+            @click="nextFrame"
+          >›</button>
+        </div>
+
         <p class="mt-3 text-center font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">
-          Drag to reposition · scroll or pinch to zoom
+          {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
         </p>
 
         <!-- Controls -->
         <div class="mt-6 flex flex-col gap-4">
-          <!-- Upload headshot -->
-          <label
-            class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-          >
+          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
             {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
             <input type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
           </label>
 
-          <!-- Zoom + reset (only meaningful once a photo is loaded) -->
           <div v-if="headshot" class="flex items-center gap-4">
             <span class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</span>
             <input
@@ -89,16 +105,13 @@
             >Reset</button>
           </div>
 
-          <!-- Download -->
           <button
             type="button"
             :disabled="!headshot || exporting"
             class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
             :class="(!headshot || exporting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
             @click="download"
-          >
-            {{ exporting ? 'Rendering…' : 'Download' }}
-          </button>
+          >{{ exporting ? 'Rendering…' : 'Download' }}</button>
         </div>
       </div>
 
@@ -129,28 +142,31 @@ import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
 import { useDpCanvas } from '@/composables/useDpCanvas'
+import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
 const toast = useToast()
 useReveal()
 
-const campaignId = route.params.campaignId as string
+const slug = route.params.slug as string
 
 interface Campaign {
   id: string
   title: string
+  slug: string
   description: string | null
-  frameImageUrl: string
   captionTemplate: string | null
+  frames: DpFrame[]
 }
 
 const loading = ref(true)
 const error = ref('')
 const exporting = ref(false)
-const campaign = reactive<Campaign>({ id: '', title: '', description: null, frameImageUrl: '', captionTemplate: null })
+const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, frames: [] })
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const frameImg = ref<HTMLImageElement | null>(null)
+const frameImgs = ref<HTMLImageElement[]>([])
+const selectedIndex = ref(0)
 const headshot = ref<HTMLImageElement | null>(null)
 
 const { scale, offsetX, offsetY, onPointerDown, onPointerMove, onPointerUp, onWheel, reset } = useDpCanvas(canvasRef)
@@ -162,33 +178,31 @@ const zoomPercent = computed({
   set: (v: number) => {
     const target = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v / 100))
     const k = target / scale.value
-    // Zoom about the canvas centre (see useDpCanvas: focal == centre ⇒ offset *= k).
     offsetX.value *= k
     offsetY.value *= k
     scale.value = target
   },
 })
 
+function prevFrame() { selectedIndex.value = (selectedIndex.value - 1 + frameImgs.value.length) % frameImgs.value.length }
+function nextFrame() { selectedIndex.value = (selectedIndex.value + 1) % frameImgs.value.length }
+
 // ── Rendering ────────────────────────────────────────────────────────────────
 let rafId = 0
 function scheduleDraw() {
   if (rafId) return
-  rafId = requestAnimationFrame(() => {
-    rafId = 0
-    draw()
-  })
+  rafId = requestAnimationFrame(() => { rafId = 0; draw() })
 }
 
 function draw() {
   const canvas = canvasRef.value
-  const frame = frameImg.value
+  const frame = frameImgs.value[selectedIndex.value]
   if (!canvas || !frame) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Layer 1 — the user's headshot, cover-fit then transformed by scale/offset.
   const photo = headshot.value
   if (photo) {
     const base = Math.max(canvas.width / photo.width, canvas.height / photo.height)
@@ -199,28 +213,21 @@ function draw() {
     ctx.drawImage(photo, cx - drawW / 2, cy - drawH / 2, drawW, drawH)
   }
 
-  // Layer 2 — the frame on top at full canvas size.
+  // Selected frame on top, stretched to the (fixed) canvas size.
   ctx.drawImage(frame, 0, 0, canvas.width, canvas.height)
 }
 
-watch([scale, offsetX, offsetY], scheduleDraw)
+watch([scale, offsetX, offsetY, selectedIndex], scheduleDraw)
 
 // ── Headshot input (never uploaded anywhere) ─────────────────────────────────
 function onHeadshotPicked(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) {
-    toast.error('Please choose an image file.')
-    return
-  }
+  if (!file.type.startsWith('image/')) { toast.error('Please choose an image file.'); return }
   const reader = new FileReader()
   reader.onload = () => {
     const img = new Image()
-    img.onload = () => {
-      headshot.value = img
-      reset()
-      scheduleDraw()
-    }
+    img.onload = () => { headshot.value = img; reset(); scheduleDraw() }
     img.src = reader.result as string
   }
   reader.readAsDataURL(file)
@@ -233,16 +240,12 @@ async function download() {
   exporting.value = true
   try {
     const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
-    if (!blob) {
-      toast.error('Could not render the image. Try again.')
-      return
-    }
-    const safeTitle = (campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
-    saveAs(blob, `eypi-dp-${safeTitle}.png`)
+    if (!blob) { toast.error('Could not render the image. Try again.'); return }
+    const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
+    const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
+    saveAs(blob, `eypi-dp-${safe}${suffix}.png`)
     toast.success('Downloaded! Share your new profile picture 🎉')
-
-    // Best-effort, non-blocking counter bump.
-    fetch(`${API_BASE_URL}/api/dp/${campaignId}/download`, { method: 'POST' }).catch(() => {})
+    fetch(`${API_BASE_URL}/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')
   } finally {
@@ -260,34 +263,36 @@ async function copyCaption() {
   }
 }
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('A frame image failed to load.'))
+    img.src = src
+  })
+}
+
 // ── Load campaign ─────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId}`)
-    // Parse defensively: a non-JSON body (gateway error, route not deployed)
-    // should still degrade to a clean "not found" rather than a parser error.
+    const res = await fetch(`${API_BASE_URL}/api/dp/${slug}`)
     let data: { status?: string; message?: string; campaign?: Campaign } = {}
-    try { data = await res.json() } catch { /* leave data empty */ }
+    try { data = await res.json() } catch { /* non-JSON */ }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Campaign not found.')
 
     Object.assign(campaign, data.campaign)
+    if (!campaign.frames.length) throw new Error('This campaign has no frames yet.')
 
-    await new Promise<void>((resolve, rejectFrame) => {
-      const img = new Image()
-      img.onload = () => {
-        frameImg.value = img
-        resolve()
-      }
-      img.onerror = () => rejectFrame(new Error('Frame image failed to load.'))
-      img.src = campaign.frameImageUrl
-    })
+    frameImgs.value = await Promise.all(campaign.frames.map(f => loadImage(f.imageUrl)))
 
     await nextTick()
     const canvas = canvasRef.value
-    if (canvas && frameImg.value) {
-      // Native frame resolution → a crisp, high-quality export.
-      canvas.width = frameImg.value.naturalWidth || frameImg.value.width
-      canvas.height = frameImg.value.naturalHeight || frameImg.value.height
+    const first = frameImgs.value[0]
+    if (canvas && first) {
+      // Fixed at the first frame's native resolution so the headshot stays put
+      // while switching frames, and the export is crisp.
+      canvas.width = first.naturalWidth || first.width
+      canvas.height = first.naturalHeight || first.height
     }
     scheduleDraw()
   } catch (err: unknown) {
@@ -299,7 +304,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Checkerboard so transparent frame regions read as "see-through". */
 .dp-checker {
   background-color: #ffffff;
   background-image:
