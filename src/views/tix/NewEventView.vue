@@ -86,7 +86,7 @@
           <div>
             <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link Slug</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">tix.eypi.cc/</span>
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
               <input
                 v-model="form.slug"
                 type="text"
@@ -326,7 +326,7 @@ async function submit() {
       const data = await res.json() as { status: string; message?: string; event?: { slug: string } }
       if (!res.ok) throw new Error(data.message ?? 'Failed to create event.')
       toast.success('Event created — proceeding to attendee selection.')
-      router.push(`/events/${data.event!.slug}/select`)
+      router.push(`/manage/tix/${data.event!.slug}/select`)
       return
     }
 

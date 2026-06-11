@@ -13,7 +13,7 @@
     <div v-else-if="!event" class="py-24 text-center">
       <p class="font-mono text-4xl font-black text-[#34418F] dark:text-slate-200">404</p>
       <p class="mt-2 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Event not found</p>
-      <router-link to="/events" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#DEAC4B] hover:underline">← My events</router-link>
+      <router-link to="/manage/tix" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#DEAC4B] hover:underline">← My events</router-link>
     </div>
 
     <template v-else>
@@ -85,7 +85,7 @@
         <!-- Header right buttons -->
         <div class="flex flex-wrap gap-2">
           <a
-            :href="`/event/${slug}`"
+            :href="`/tix/${slug}`"
             target="_blank"
             class="rounded-lg border border-gray-200 px-4 py-2 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
             data-cursor="nav"
@@ -959,10 +959,10 @@ onMounted(async () => {
     const data = await res.json() as { status: string; message?: string; event?: EventInfo }
     if (!res.ok) throw new Error(data.message ?? 'Event not found.')
 
-    if (!data.event!.isLead) { router.replace(`/event/${slug}`); return }
+    if (!data.event!.isLead) { router.replace(`/tix/${slug}`); return }
 
     // Redirect to selection wizard if not yet finalized
-    if (!data.event!.selectionLocked) { router.replace(`/events/${slug}/select`); return }
+    if (!data.event!.selectionLocked) { router.replace(`/manage/tix/${slug}/select`); return }
 
     event.value = data.event!
   } catch {
@@ -1086,7 +1086,7 @@ async function confirmDeleteEvent() {
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     toast.success('Event deleted.')
-    router.push('/events')
+    router.push('/manage/tix')
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
   } finally {

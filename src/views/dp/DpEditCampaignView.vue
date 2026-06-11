@@ -13,17 +13,17 @@
         class="mica-card rounded-3xl border border-gray-200 p-12 text-center dark:border-slate-600"
       >
         <p class="font-mono text-sm uppercase tracking-widest text-red-500">{{ error }}</p>
-        <router-link to="/manage/dp-blast" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300">← All campaigns</router-link>
+        <router-link to="/manage/frames" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300">← All campaigns</router-link>
       </div>
 
       <template v-else>
         <div class="reveal mb-8 flex items-center justify-between">
           <div>
             <h1 class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.03em;" data-cursor="text">Edit Campaign</h1>
-            <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">eypi.cc/dp/{{ form.slug }}</p>
+            <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">eypi.cc/frames/{{ form.slug }}</p>
           </div>
           <router-link
-            :to="`/dp/${form.slug}`"
+            :to="`/frames/${form.slug}`"
             class="shrink-0 rounded-lg border-2 border-gray-200 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
           >View →</router-link>
         </div>
@@ -39,7 +39,7 @@
           <div>
             <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/dp/</span>
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
               <input v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
             </div>
           </div>
@@ -206,7 +206,7 @@ async function removeCampaign() {
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     toast.success('Campaign deleted.')
-    router.push('/manage/dp-blast')
+    router.push('/manage/frames')
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
   }

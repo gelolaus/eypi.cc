@@ -78,14 +78,14 @@ const modules = [
     tag: 'Event Ticketing',
     title: 'Tix',
     description: 'Create events, manage guest lists, and run QR-code check-in.',
-    route: '/events',
+    route: '/manage/tix',
   },
   {
     id: 'dp-blast',
     tag: 'Profile Frames',
     title: 'frames',
     description: 'Upload a frame and share a link so anyone can make a matching profile picture.',
-    route: '/manage/dp-blast',
+    route: '/manage/frames',
   },
 ]
 </script>

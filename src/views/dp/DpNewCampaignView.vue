@@ -31,12 +31,12 @@
 
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <router-link
-            :to="`/dp/${createdSlug}`"
+            :to="`/frames/${createdSlug}`"
             class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100"
             data-cursor="cta"
           >Open Public Page →</router-link>
           <router-link
-            to="/manage/dp-blast"
+            to="/manage/frames"
             class="rounded-xl border-2 border-gray-200 px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
           >All Campaigns</router-link>
         </div>
@@ -65,7 +65,7 @@
         <div>
           <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
           <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
-            <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/dp/</span>
+            <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
             <input
               v-model="form.slug"
               type="text"
@@ -148,7 +148,7 @@ const created = ref(false)
 const createdSlug = ref('')
 
 const canSubmit = computed(() => !!form.title.trim() && frames.value.length > 0)
-const shareDisplay = computed(() => `eypi.cc/dp/${createdSlug.value}`)
+const shareDisplay = computed(() => `eypi.cc/frames/${createdSlug.value}`)
 
 function sanitizeSlug(e: Event) {
   const t = e.target as HTMLInputElement
@@ -197,7 +197,7 @@ async function submit() {
 
 async function copyShare() {
   try {
-    await navigator.clipboard.writeText(`https://eypi.cc/dp/${createdSlug.value}`)
+    await navigator.clipboard.writeText(`https://eypi.cc/frames/${createdSlug.value}`)
     toast.success('Link copied to clipboard!')
   } catch {
     toast.error('Could not copy the link.')

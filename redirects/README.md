@@ -7,8 +7,8 @@ links keep working.
 | From | To |
 |------|----|
 | `forms.eypi.cc/*` | `https://eypi.cc/forms` |
-| `tix.eypi.cc/<slug>` (shared public ticket link) | `https://eypi.cc/event/<slug>` |
-| `tix.eypi.cc/` and deeper management paths | `https://eypi.cc/events` |
+| `tix.eypi.cc/<slug>` (shared public ticket link) | `https://eypi.cc/tix/<slug>` |
+| `tix.eypi.cc/` and deeper management paths | `https://eypi.cc/manage/tix` |
 
 ## Deploy
 

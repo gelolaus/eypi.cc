@@ -10,7 +10,7 @@
         <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Profile-frame campaigns</p>
       </div>
       <router-link
-        to="/manage/dp-blast/new"
+        to="/manage/frames/new"
         class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
       >New Campaign</router-link>
@@ -58,7 +58,7 @@
           </div>
         </div>
 
-        <p class="truncate font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">eypi.cc/dp/{{ c.slug }}</p>
+        <p class="truncate font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">eypi.cc/frames/{{ c.slug }}</p>
 
         <div class="mt-auto flex items-center gap-2 pt-2">
           <button
@@ -67,7 +67,7 @@
             @click="copyLink(c.slug)"
           >Copy Link</button>
           <router-link
-            :to="`/manage/dp-blast/${c.id}/edit`"
+            :to="`/manage/frames/${c.id}/edit`"
             class="rounded-lg border border-gray-200 px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
             data-cursor="nav"
           >Edit</router-link>
@@ -99,7 +99,7 @@ const deletingId = ref<string | null>(null)
 
 async function copyLink(slug: string) {
   try {
-    await navigator.clipboard.writeText(`https://eypi.cc/dp/${slug}`)
+    await navigator.clipboard.writeText(`https://eypi.cc/frames/${slug}`)
     toast.success('Link copied to clipboard!')
   } catch {
     toast.error('Could not copy the link.')

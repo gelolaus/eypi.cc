@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="mb-8">
-      <router-link to="/events" class="mb-4 inline-block font-mono text-xs uppercase tracking-widest text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
+      <router-link to="/manage/tix" class="mb-4 inline-block font-mono text-xs uppercase tracking-widest text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
       <h1
         class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
         style="font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -0.03em;"

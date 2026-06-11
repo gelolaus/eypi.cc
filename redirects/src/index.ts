@@ -3,8 +3,8 @@
 // (especially already-shared public ticket URLs) keep working.
 //
 //   forms.eypi.cc/*            -> https://eypi.cc/forms
-//   tix.eypi.cc/<slug>         -> https://eypi.cc/event/<slug>   (public ticket link)
-//   tix.eypi.cc/ (and deeper)  -> https://eypi.cc/events         (management; re-auth on suite)
+//   tix.eypi.cc/<slug>         -> https://eypi.cc/tix/<slug>   (public ticket link)
+//   tix.eypi.cc/ (and deeper)  -> https://eypi.cc/manage/tix         (management; re-auth on suite)
 
 export default {
   fetch(req: Request): Response {
@@ -18,8 +18,8 @@ export default {
       const segments = url.pathname.split('/').filter(Boolean)
       // A single path segment is a shared public ticket link (formerly tix.eypi.cc/<slug>).
       target = segments.length === 1
-        ? `https://eypi.cc/event/${segments[0]}`
-        : 'https://eypi.cc/events'
+        ? `https://eypi.cc/tix/${segments[0]}`
+        : 'https://eypi.cc/manage/tix'
     } else {
       target = 'https://eypi.cc/'
     }
