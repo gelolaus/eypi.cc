@@ -315,12 +315,10 @@ onMounted(async () => {
 
     await nextTick()
     const canvas = canvasRef.value
-    const first = frameImgs.value[0]
-    if (canvas && first) {
-      // Force the backing store to be a perfect 1:1 square based on the maximum dimension
-      const size = Math.max(first.naturalWidth || first.width, first.naturalHeight || first.height || 1080)
-      canvas.width = size
-      canvas.height = size
+    if (canvas) {
+      // Force canvas backing store to be exactly 1080x1080 for high quality 1:1 exports
+      canvas.width = 1080
+      canvas.height = 1080
     }
     scheduleDraw()
   } catch (err: unknown) {
