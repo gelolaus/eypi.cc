@@ -14,7 +14,7 @@
         </p>
       </div>
       <router-link
-        to="/events/new"
+        to="/manage/tix/new"
         class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
       >
@@ -63,7 +63,7 @@
       >
         <div class="col-span-8 sm:col-span-5">
           <p class="font-mono text-base font-bold text-gray-900 dark:text-slate-100">{{ event.name }}</p>
-          <p class="mt-0.5 font-mono text-xs text-gray-400 dark:text-slate-500">tix.eypi.cc/{{ event.slug }}</p>
+          <p class="mt-0.5 font-mono text-xs text-gray-400 dark:text-slate-500">eypi.cc/tix/{{ event.slug }}</p>
         </div>
         <div class="col-span-4 hidden sm:block">
           <p class="font-mono text-sm text-gray-600 dark:text-slate-300">{{ formatDate(event.event_date as string) }}</p>
@@ -71,7 +71,7 @@
         </div>
         <div class="col-span-4 sm:col-span-3 flex items-center justify-end gap-1.5">
           <router-link
-            :to="`/manage/${event.slug}`"
+            :to="`/manage/tix/${event.slug}`"
             class="rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
             data-cursor="nav"
           >

@@ -4,6 +4,7 @@ import type { Bindings } from './lib/db'
 import authRoutes from './routes/auth'
 import linkRoutes from './routes/links'
 import eventRoutes from './routes/events'
+import dpRoutes from './routes/dp'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -45,5 +46,6 @@ app.get('/api/health', (c) => c.text('OK'))
 app.route('/', authRoutes)
 app.route('/', linkRoutes)
 app.route('/', eventRoutes)
+app.route('/', dpRoutes)
 
 export default app

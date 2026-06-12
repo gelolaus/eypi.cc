@@ -53,35 +53,64 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
 
-    // ── Ticketing module (management) ────────────────────────────────────────
+    // ── Frames module (profile frames) ───────────────────────────────────────
+    // Admin under /manage/frames; public at /frames/:slug.
     {
-      path: '/events',
+      path: '/manage/frames',
+      name: 'dp-campaigns',
+      component: () => import('@/views/dp/DpCampaignsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manage/frames/new',
+      name: 'dp-new',
+      component: () => import('@/views/dp/DpNewCampaignView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/manage/frames/:slug/edit',
+      name: 'dp-edit',
+      component: () => import('@/views/dp/DpEditCampaignView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // Public profile-frame editor — STRICTLY NO auth
+      path: '/frames/:slug',
+      name: 'dp-public',
+      component: () => import('@/views/dp/DpPublicView.vue'),
+    },
+
+    // ── Tix module (ticketing) ───────────────────────────────────────────────
+    // Admin under /manage/tix (static segments declared before the dynamic
+    // /manage/tix/:id so they always win the match); public at /tix/:slug.
+    {
+      path: '/manage/tix',
       name: 'events',
       component: () => import('@/views/tix/EventsView.vue'),
       meta: { requiresAuth: true },
     },
     {
-      path: '/events/new',
+      path: '/manage/tix/new',
       name: 'event-new',
       component: () => import('@/views/tix/NewEventView.vue'),
       meta: { requiresAuth: true },
     },
     {
-      path: '/events/:id/select',
+      path: '/manage/tix/:id/select',
       name: 'event-select',
       component: () => import('@/views/tix/AttendeeSelectionView.vue'),
       meta: { requiresAuth: true },
     },
     {
       // Internal event management (auth required)
-      path: '/manage/:id',
+      path: '/manage/tix/:id',
       name: 'event-manage',
       component: () => import('@/views/tix/EventDetailView.vue'),
       meta: { requiresAuth: true },
     },
     {
       // Public attendee ticket lookup — STRICTLY NO auth
-      path: '/event/:eventId',
+      path: '/tix/:eventId',
       name: 'ticket-lookup',
       component: () => import('@/views/tix/TicketLookupView.vue'),
     },
