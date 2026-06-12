@@ -27,7 +27,7 @@
           QR ZIP downloaded. Share tickets manually with your attendees.
         </p>
         <router-link
-          :to="`/manage/${form.slug}`"
+          :to="`/manage/tix/${form.slug}`"
           class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
           data-cursor="cta"
         >

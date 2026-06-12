@@ -10,6 +10,7 @@
         <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Profile-frame campaigns</p>
       </div>
       <router-link
+        v-if="!isLocked"
         to="/manage/frames/new"
         class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
@@ -19,6 +20,11 @@
     <!-- Loading skeleton -->
     <div v-if="loading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="i in 3" :key="i" class="h-44 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+    </div>
+
+    <!-- Lockout state -->
+    <div v-else-if="isLocked">
+      <OrgLockout />
     </div>
 
     <!-- Error -->
@@ -88,6 +94,7 @@ import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
+import OrgLockout from '@/components/OrgLockout.vue'
 
 const toast = useToast()
 const { authHeaders } = useAuth()
@@ -95,6 +102,7 @@ const { authHeaders } = useAuth()
 const campaigns = ref<DpCampaignSummary[]>([])
 const loading = ref(true)
 const error = ref('')
+const isLocked = ref(false)
 const deletingId = ref<string | null>(null)
 
 async function copyLink(slug: string) {
@@ -125,6 +133,10 @@ async function remove(id: string, title: string) {
 onMounted(async () => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/dp`, { headers: authHeaders() })
+    if (res.status === 403) {
+      isLocked.value = true
+      return
+    }
     const data = await res.json() as { status: string; message?: string; campaigns?: DpCampaignSummary[] }
     if (!res.ok) throw new Error(data.message ?? 'Failed to load campaigns.')
     campaigns.value = data.campaigns ?? []

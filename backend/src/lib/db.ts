@@ -1,5 +1,39 @@
 import { verify } from 'hono/jwt'
 import { createClient } from '@libsql/client/web'
+import type { Client } from '@libsql/client/web'
+
+export async function getUserOrgId(
+  client: Client,
+  userId: string,
+  requestedOrgId?: string,
+): Promise<string | null> {
+  if (requestedOrgId) {
+    const r = await client.execute({
+      sql: `
+        SELECT id FROM (
+          SELECT id FROM organizations WHERE id = ? AND owner_id = ?
+          UNION
+          SELECT org_id AS id FROM org_members WHERE org_id = ? AND user_id = ? AND activated_at IS NOT NULL
+        ) LIMIT 1
+      `,
+      args: [requestedOrgId, userId, requestedOrgId, userId],
+    })
+    if (r.rows.length > 0) return r.rows[0].id as string
+  }
+
+  const r = await client.execute({
+    sql: `
+      SELECT id FROM (
+        SELECT id FROM organizations WHERE owner_id = ?
+        UNION
+        SELECT org_id AS id FROM org_members WHERE user_id = ? AND activated_at IS NOT NULL
+      ) LIMIT 1
+    `,
+    args: [userId, userId],
+  })
+  if (r.rows.length === 0) return null
+  return r.rows[0].id as string
+}
 
 // Shared Cloudflare Worker bindings for the unified eypi.cc backend.
 export type Bindings = {

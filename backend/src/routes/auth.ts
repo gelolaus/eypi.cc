@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import type { Bindings } from '../lib/db'
+import { handleUserOnboarding } from '../lib/onboarding'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -183,6 +184,13 @@ app.post('/api/auth/verify', async (c) => {
 
   if (result.rows.length === 0) return c.json({ error: 'Invalid or expired token.' }, 400)
 
+  // Fire-and-forget the onboarding hook for pre-provisioned orgs
+  const userRowResult = await db.execute({ sql: 'SELECT id, email FROM users WHERE id = ?', args: [result.rows[0].id] })
+  if (userRowResult.rows.length > 0) {
+    const user = userRowResult.rows[0] as unknown as { id: string, email: string }
+    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, c.env))
+  }
+
   return c.json({ status: 'success', message: 'Account verified.' })
 })
 
@@ -245,6 +253,9 @@ app.post('/api/auth/login', async (c) => {
       exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // Token expires in 24 hours
     }
     const token = await sign(payload, c.env.JWT_SECRET)
+
+    // Fire-and-forget the onboarding hook
+    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, c.env))
 
     return c.json({
       status: 'success',

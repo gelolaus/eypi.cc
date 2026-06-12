@@ -1,10 +1,23 @@
 import { Hono } from 'hono'
-import { db, getUser, type Bindings } from '../lib/db'
+import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import type { Client } from '@libsql/client/web'
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
 // centrally there, so this module only declares the /api/events/* handlers.
 const app = new Hono<{ Bindings: Bindings }>()
+async function requireEventLead(client: Client, slug: string, userId: string, requestedOrgId?: string): Promise<{ ok: true, event: any } | { ok: false, status: 403 | 404, message: string }> {
+  const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees FROM events WHERE slug = ?', args: [slug] })
+  if (evRes.rows.length === 0) return { ok: false, status: 404, message: 'Event not found.' }
+  const event = evRes.rows[0]
+
+  const userOrgId = await getUserOrgId(client, userId, requestedOrgId)
+  if (!userOrgId || event.org_id !== userOrgId) {
+    return { ok: false, status: 403, message: 'Forbidden.' }
+  }
+  return { ok: true, event }
+}
+
 
 // ── POST /api/events ─────────────────────────────────────────────────────────
 // Create event. When attendees is absent/empty, creates in selection mode
@@ -39,6 +52,9 @@ app.post('/api/events', async (c) => {
   }
 
   const client = db(c.env)
+  const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+
   const existing = await client.execute({ sql: 'SELECT id FROM events WHERE slug = ?', args: [body.slug] })
   if (existing.rows.length > 0) {
     return c.json({ status: 'error', message: 'Slug already taken — choose another.' }, 409)
@@ -49,8 +65,8 @@ app.post('/api/events', async (c) => {
   const maxAttendees = body.maxAttendees ?? null
 
   await client.execute({
-    sql: 'INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [eventId, body.slug, user.sub, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
+    sql: 'INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    args: [eventId, body.slug, user.sub, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
   })
 
   if (!hasAttendees) {
@@ -104,9 +120,13 @@ app.get('/api/events', async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const result = await db(c.env).execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, created_at FROM events WHERE lead_user_id = ? ORDER BY created_at DESC',
-    args: [user.sub],
+  const client = db(c.env)
+  const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+
+  const result = await client.execute({
+    sql: 'SELECT id, slug, name, event_date, event_time, location, created_at FROM events WHERE org_id = ? ORDER BY created_at DESC',
+    args: [orgId],
   })
 
   return c.json({ status: 'ok', events: result.rows })
@@ -118,7 +138,7 @@ app.get('/api/events/:slug', async (c) => {
   const client = db(c.env)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, max_attendees, selection_locked FROM events WHERE slug = ?',
+    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked FROM events WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
@@ -141,7 +161,7 @@ app.get('/api/events/:slug', async (c) => {
       eventDate: event.event_date,
       eventTime: event.event_time,
       location: event.location,
-      isLead: user?.sub === event.lead_user_id,
+      isLead: user ? (await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))) === event.org_id : false,
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,
       attendeeCount,
@@ -157,10 +177,9 @@ app.get('/api/events/:slug/attendees', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const result = await client.execute({
     sql: `
@@ -190,10 +209,9 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const body = await c.req.json() as {
     rows: Record<string, string>[]
@@ -262,10 +280,9 @@ app.patch('/api/events/:slug/column-mapping', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const body = await c.req.json() as {
     emailCol: string
@@ -304,10 +321,9 @@ app.get('/api/events/:slug/csv-data', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const [mappingRes, rowsRes, clustersRes] = await Promise.all([
     client.execute({ sql: 'SELECT * FROM event_column_mappings WHERE event_id = ?', args: [event.id] }),
@@ -349,10 +365,9 @@ app.post('/api/events/:slug/clusters', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id, selection_locked FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
   if (event.selection_locked === 1) return c.json({ status: 'error', message: 'Event is already finalized.' }, 409)
 
   const body = await c.req.json() as {
@@ -387,10 +402,9 @@ app.get('/api/events/:slug/clusters', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const clustersRes = await client.execute({
     sql: 'SELECT id, cluster_col, value, max_count, filters FROM event_clusters WHERE event_id = ? ORDER BY rowid',
@@ -459,10 +473,9 @@ app.post('/api/events/:slug/finalize', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id, selection_locked FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
   if (event.selection_locked === 1) return c.json({ status: 'error', message: 'Event is already finalized.' }, 409)
 
   const body = await c.req.json() as {
@@ -583,10 +596,9 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   const clusterValue = decodeURIComponent(c.req.param('value'))
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id, selection_locked FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
   if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event is not finalized yet.' }, 409)
 
   const clusterRes = await client.execute({
@@ -702,10 +714,9 @@ app.delete('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const eventId = event.id as string
   await client.batch([
@@ -728,10 +739,9 @@ app.patch('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const body = await c.req.json() as { maxAttendees?: number | null; name?: string; date?: string; time?: string; location?: string }
 
@@ -760,10 +770,9 @@ app.get('/api/events/:slug/csv-rows/search', async (c) => {
   const q = (c.req.query('q') ?? '').trim()
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const rows = await client.execute({
     sql: 'SELECT id, row_index, raw_data, is_selected FROM event_csv_rows WHERE event_id = ? AND raw_data LIKE ? LIMIT 20',
@@ -936,10 +945,9 @@ app.post('/api/events/:slug/checkin', async (c) => {
   if (!qrToken) return c.json({ status: 'error', message: 'qrToken required.' }, 400)
 
   const client = db(c.env)
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const aRes = await client.execute({
     sql: 'SELECT id, first_name, last_name FROM attendees WHERE qr_token = ? AND event_id = ?',
@@ -981,10 +989,9 @@ app.post('/api/events/:slug/checkin-manual', async (c) => {
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
   const client = db(c.env)
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const aRes = await client.execute({
     sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
@@ -1021,10 +1028,9 @@ app.post('/api/events/:slug/checkout', async (c) => {
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
   const client = db(c.env)
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const aRes = await client.execute({
     sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
@@ -1050,10 +1056,9 @@ app.post('/api/events/:slug/remove', async (c) => {
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
   const client = db(c.env)
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const aRes = await client.execute({
     sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
@@ -1079,10 +1084,9 @@ app.patch('/api/events/:slug/attendees/:id', async (c) => {
   const attendeeId = c.req.param('id')
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const body = await c.req.json() as { clusterValue?: string | null }
   if (!('clusterValue' in body)) return c.json({ status: 'error', message: 'Nothing to update.' }, 400)
@@ -1105,10 +1109,9 @@ app.patch('/api/events/:slug/clusters/:value/max-count', async (c) => {
   const value = decodeURIComponent(c.req.param('value'))
   const client = db(c.env)
 
-  const evRes = await client.execute({ sql: 'SELECT id, lead_user_id FROM events WHERE slug = ?', args: [slug] })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
 
   const body = await c.req.json() as { maxCount: number | null }
 

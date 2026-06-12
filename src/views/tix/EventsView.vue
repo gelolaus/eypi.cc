@@ -14,6 +14,7 @@
         </p>
       </div>
       <router-link
+        v-if="!isLocked"
         to="/manage/tix/new"
         class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
@@ -25,6 +26,11 @@
     <!-- Loading skeleton -->
     <div v-if="loading" class="space-y-3">
       <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
+    </div>
+
+    <!-- Lockout state -->
+    <div v-else-if="isLocked">
+      <OrgLockout />
     </div>
 
     <!-- Error -->
@@ -95,6 +101,7 @@ import { ref, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
+import OrgLockout from '@/components/OrgLockout.vue'
 
 const toast = useToast()
 const { authHeaders } = useAuth()
@@ -112,6 +119,7 @@ interface Event {
 const events     = ref<Event[]>([])
 const loading    = ref(true)
 const error      = ref('')
+const isLocked   = ref(false)
 const deletingSlug = ref<string | null>(null)
 
 function formatDate(d: string) {
@@ -147,6 +155,10 @@ async function deleteEvent(slug: string, name: string) {
 onMounted(async () => {
   try {
     const res = await fetch(`${TIX_API_URL}/api/events`, { headers: authHeaders() })
+    if (res.status === 403) {
+      isLocked.value = true
+      return
+    }
     const data = await res.json() as { status: string; message?: string; events?: Event[] }
     if (!res.ok) throw new Error(data.message ?? 'Failed to load events.')
     events.value = data.events ?? []

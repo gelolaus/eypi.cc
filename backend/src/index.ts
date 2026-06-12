@@ -5,6 +5,7 @@ import authRoutes from './routes/auth'
 import linkRoutes from './routes/links'
 import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
+import orgsRoutes from './routes/orgs'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -19,7 +20,7 @@ app.use('/api/*', cors({
     ]
     return allowed.includes(origin ?? '') ? origin! : null
   },
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Client-Referrer'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Client-Referrer', 'X-Active-Org-Id'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
   maxAge: 86400,
@@ -47,5 +48,6 @@ app.route('/', authRoutes)
 app.route('/', linkRoutes)
 app.route('/', eventRoutes)
 app.route('/', dpRoutes)
+app.route('/api/orgs', orgsRoutes)
 
 export default app

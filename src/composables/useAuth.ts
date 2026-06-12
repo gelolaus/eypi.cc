@@ -26,9 +26,11 @@ export function useAuth() {
 
   function authHeaders(): Record<string, string> {
     const token = getToken()
+    const activeOrgId = localStorage.getItem('active_org_id')
     return {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(activeOrgId ? { 'X-Active-Org-Id': activeOrgId } : {}),
     }
   }
 

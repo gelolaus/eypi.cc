@@ -1001,7 +1001,7 @@ async function finalize() {
     URL.revokeObjectURL(url)
 
     toast.success(`${attendees.length} tickets generated. Redirecting to event…`)
-    router.push(`/manage/${slug}`)
+    router.push(`/manage/tix/${slug}`)
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Finalization failed.')
     finalizingLabel.value = 'Finalize & Generate QR Codes'
@@ -1018,8 +1018,8 @@ onMounted(async () => {
     const data = await res.json() as { status: string; event?: { name: string; isLead: boolean; selectionLocked: boolean } }
     if (res.ok && data.event) {
       eventName.value = data.event.name
-      if (!data.event.isLead) { router.replace(`/manage/${slug}`); return }
-      if (data.event.selectionLocked) { router.replace(`/manage/${slug}`); return }
+      if (!data.event.isLead) { router.replace(`/manage/tix/${slug}`); return }
+      if (data.event.selectionLocked) { router.replace(`/manage/tix/${slug}`); return }
     }
   } catch { /* ignore */ }
 

@@ -123,6 +123,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/orgs',
+      name: 'organizations',
+      component: () => import('@/views/OrganizationsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/views/PrivacyView.vue'),

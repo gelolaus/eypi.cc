@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
-import { db, getUser, type Bindings } from '../lib/db'
+import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
 import type { Client } from '@libsql/client/web'
+import { isOrgFeature } from '../middleware/orgGuard'
 
 // DP Blast — Twibbonize-style profile-frame campaigns. Mounted into the unified
 // eypi.cc Worker in index.ts; CORS, preflight, and security headers are applied
@@ -80,16 +81,19 @@ async function resolveSlug(
 }
 
 // Shared owner guard: returns the campaign row id or a typed failure.
-async function requireOwner(client: Client, id: string, userSub: string): Promise<{ ok: true } | { ok: false; status: 403 | 404; message: string }> {
-  const existing = await client.execute({ sql: 'SELECT creator_id FROM dp_campaigns WHERE id = ?', args: [id] })
+async function requireOwner(client: Client, id: string, userId: string, requestedOrgId?: string): Promise<{ ok: true } | { ok: false; status: 403 | 404; message: string }> {
+  const existing = await client.execute({ sql: 'SELECT org_id FROM dp_campaigns WHERE id = ?', args: [id] })
   if (existing.rows.length === 0) return { ok: false, status: 404, message: 'Campaign not found.' }
-  if (existing.rows[0].creator_id !== userSub) return { ok: false, status: 403, message: 'Forbidden.' }
+  const campaignOrgId = existing.rows[0].org_id
+  
+  const userOrgId = await getUserOrgId(client, userId, requestedOrgId)
+  if (!userOrgId || campaignOrgId !== userOrgId) return { ok: false, status: 403, message: 'Forbidden.' }
   return { ok: true }
 }
 
 // ── POST /api/dp ──────────────────────────────────────────────────────────────
 // Create a campaign with one or more frames.
-app.post('/api/dp', async (c) => {
+app.post('/api/dp', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
@@ -127,9 +131,12 @@ app.post('/api/dp', async (c) => {
   const id = crypto.randomUUID()
   // frame_image_url is a vestigial NOT NULL column from 0003; '' satisfies it
   // while frames now live in dp_frames.
+  const orgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
+  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+
   await client.execute({
-    sql: 'INSERT INTO dp_campaigns (id, creator_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    args: [id, user.sub, title, slug, description || null, '', captionTemplate || null],
+    sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    args: [id, user.sub!, orgId, title, slug, description || null, '', captionTemplate || null],
   })
   await client.batch(
     frames.map((f, i) => ({
@@ -143,15 +150,19 @@ app.post('/api/dp', async (c) => {
 
 // ── GET /api/dp ───────────────────────────────────────────────────────────────
 // List the creator's campaigns with frame + download counts (no heavy images).
-app.get('/api/dp', async (c) => {
+app.get('/api/dp', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const result = await db(c.env).execute({
+  const client = db(c.env)
+  const orgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
+  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+
+  const result = await client.execute({
     sql: `SELECT c.id, c.title, c.slug, c.description, c.download_count, c.created_at,
                  (SELECT COUNT(*) FROM dp_frames f WHERE f.campaign_id = c.id) AS frame_count
-          FROM dp_campaigns c WHERE c.creator_id = ? ORDER BY c.created_at DESC`,
-    args: [user.sub],
+          FROM dp_campaigns c WHERE c.org_id = ? ORDER BY c.created_at DESC`,
+    args: [orgId],
   })
 
   return c.json({
@@ -170,18 +181,19 @@ app.get('/api/dp', async (c) => {
 
 // ── GET /api/dp/:slug/edit ────────────────────────────────────────────────────
 // Owner-only full payload (incl. frames) for the editor.
-app.get('/api/dp/:slug/edit', async (c) => {
+app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const slug = c.req.param('slug')
+  const slug = c.req.param('slug')!
   const client = db(c.env)
 
-  const camp = await client.execute({ sql: 'SELECT id, creator_id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?', args: [slug] })
+  const camp = await client.execute({ sql: 'SELECT id, org_id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?', args: [slug] })
   if (camp.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
   const row = camp.rows[0]
 
-  if (row.creator_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  const userOrgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
+  if (!userOrgId || row.org_id !== userOrgId) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
 
   const frames = await client.execute({ sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at', args: [row.id] })
 
@@ -199,13 +211,13 @@ app.get('/api/dp/:slug/edit', async (c) => {
 })
 
 // ── POST /api/dp/:id/frames ───────────────────────────────────────────────────
-app.post('/api/dp/:id/frames', async (c) => {
+app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
+  const id = c.req.param('id')!
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
+  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as { imageData?: string; label?: string }
@@ -228,14 +240,14 @@ app.post('/api/dp/:id/frames', async (c) => {
 })
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────
-app.delete('/api/dp/:id/frames/:frameId', async (c) => {
+app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
-  const frameId = c.req.param('frameId')
+  const id = c.req.param('id')!
+  const frameId = c.req.param('frameId')!
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
+  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const countRes = await client.execute({ sql: 'SELECT COUNT(*) AS cnt FROM dp_frames WHERE campaign_id = ?', args: [id] })
@@ -253,13 +265,13 @@ app.delete('/api/dp/:id/frames/:frameId', async (c) => {
 // ── PATCH /api/dp/:id/frames/order ────────────────────────────────────────────
 // Owner-only reorder. Body { orderedIds } must be exactly this campaign's frame
 // ids; positions are rewritten to match the given order.
-app.patch('/api/dp/:id/frames/order', async (c) => {
+app.patch('/api/dp/:id/frames/order', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
+  const id = c.req.param('id')!
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
+  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as { orderedIds?: string[] }
@@ -288,13 +300,13 @@ app.patch('/api/dp/:id/frames/order', async (c) => {
 
 // ── PATCH /api/dp/:id ─────────────────────────────────────────────────────────
 // Owner-only edit of title/description/caption/slug; bumps updated_at.
-app.patch('/api/dp/:id', async (c) => {
+app.patch('/api/dp/:id', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
+  const id = c.req.param('id')!
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
+  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as {
@@ -344,13 +356,13 @@ app.patch('/api/dp/:id', async (c) => {
 })
 
 // ── DELETE /api/dp/:id ────────────────────────────────────────────────────────
-app.delete('/api/dp/:id', async (c) => {
+app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const id = c.req.param('id')
+  const id = c.req.param('id')!
   const client = db(c.env)
-  const owner = await requireOwner(client, id, user.sub)
+  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   await client.batch([
@@ -364,7 +376,7 @@ app.delete('/api/dp/:id', async (c) => {
 // ── POST /api/dp/:id/download ─────────────────────────────────────────────────
 // Public, best-effort counter bump fired after a successful client-side export.
 app.post('/api/dp/:id/download', async (c) => {
-  const id = c.req.param('id')
+  const id = c.req.param('id')!
   const result = await db(c.env).execute({
     sql: 'UPDATE dp_campaigns SET download_count = download_count + 1 WHERE id = ?',
     args: [id],
@@ -378,7 +390,7 @@ app.post('/api/dp/:id/download', async (c) => {
 // specific /:id/* routes above are matched first by segment count (Hono matches
 // on segment count, so order is not strictly required, but this reads clearly).
 app.get('/api/dp/:slug', async (c) => {
-  const slug = c.req.param('slug')
+  const slug = c.req.param('slug')!
   const client = db(c.env)
   const result = await client.execute({
     sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
