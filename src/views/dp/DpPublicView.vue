@@ -313,6 +313,7 @@ onMounted(async () => {
 
     frameImgs.value = await Promise.all(campaign.frames.map(f => loadImage(f.imageUrl)))
 
+    loading.value = false
     await nextTick()
     const canvas = canvasRef.value
     if (canvas) {
@@ -323,7 +324,6 @@ onMounted(async () => {
     scheduleDraw()
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
-  } finally {
     loading.value = false
   }
 })
