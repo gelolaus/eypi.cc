@@ -1,15 +1,30 @@
-<template>
+﻿<template>
   <div class="relative w-full">
     <div
       class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 pb-24 md:pt-16 md:pb-32"
     >
+    <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1
+          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
+          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+          data-cursor="text"
+        >
+          Links
+        </h1>
+        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
+          Shorten links and monitor engagement
+        </p>
+      </div>
+    </header>
+
     <!-- Top Bar (Create Link) -->
     <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">
       <input
         v-model="longUrlInput"
         type="url"
         placeholder="Paste your long link here..."
-        class="flex-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
+        class="flex-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
       />
       <button
         type="button"
@@ -22,14 +37,21 @@
       </button>
     </div>
 
+    <input
+      v-model="searchQuery"
+      type="search"
+      placeholder="Search links..."
+      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+    />
+
     <!-- Unified Table (horizontal scroll on mobile) -->
     <div class="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
     <div
-      class="mica-card w-full min-w-[600px] overflow-hidden rounded-2xl border border-gray-200 shadow-sm dark:border-slate-600"
+      class="mica-card w-full min-w-[600px] overflow-hidden rounded-2xl border border-g-border shadow-sm"
     >
       <!-- Table Header -->
       <div
-        class="flex items-center justify-between border-b border-gray-200 bg-white/40 px-4 md:px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-gray-500 dark:bg-mica-navy-header dark:border-slate-600 dark:text-slate-300"
+        class="flex items-center justify-between border-b border-g-border bg-white/40 px-4 md:px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-g-muted dark:bg-mica-navy-header"
       >
         <span class="flex-1">Branded Link</span>
         <span class="w-32 text-center">Engagement</span>
@@ -37,14 +59,14 @@
       </div>
 
       <!-- Table Rows -->
-      <template v-if="links.length > 0">
+      <template v-if="filteredLinks.length > 0">
         <div
-          v-for="link in links"
+          v-for="link in filteredLinks"
           :key="link.id"
-          class="flex items-center justify-between border-b border-gray-100 px-4 md:px-6 py-5 transition-colors last:border-0 hover:bg-white/50 dark:border-slate-700/30 dark:bg-mica-navy-row dark:backdrop-blur-md dark:hover:bg-mica-navy-row-hover"
+          class="flex items-center justify-between border-b border-g-border px-4 md:px-6 py-5 transition-colors last:border-0 hover:bg-white/50 dark:border-slate-700/30 dark:bg-mica-navy-row dark:backdrop-blur-md dark:hover:bg-mica-navy-row-hover"
         >
           <div class="flex flex-1 flex-col truncate pr-4">
-            <span class="font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">
+            <span class="font-mono text-lg font-bold text-g-primary dark:text-slate-200">
               {{ link.short }}
             </span>
             <span class="truncate font-mono text-sm text-gray-500 dark:text-slate-400">
@@ -97,7 +119,7 @@
             </button>
             <button
               type="button"
-              class="rounded-full p-2 text-blue-500 transition-colors hover:bg-gray-100 hover:text-blue-700 dark:text-sky-400 dark:hover:text-sky-300 dark:hover:bg-slate-600/30"
+              class="rounded-full p-2 text-g-muted transition-colors hover:bg-gray-100 hover:text-g-text dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
               aria-label="Edit"
               @click="openSidebar(link)"
             >
@@ -147,10 +169,10 @@
           <div class="absolute h-2 w-[1px] bg-gray-400"></div>
         </div>
         <h3 class="font-mono text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-2">
-          NO ACTIVE TRANSMISSIONS
+          {{ links.length ? 'NO MATCHING LINKS' : 'NO ACTIVE TRANSMISSIONS' }}
         </h3>
         <p class="font-mono text-sm text-gray-400 dark:text-slate-500 max-w-md leading-relaxed">
-          The registry is currently empty. Enter a destination URL in the console above to establish a new routing sequence.
+          {{ links.length ? 'No links match the current search.' : 'The registry is currently empty. Enter a destination URL in the console above to establish a new routing sequence.' }}
         </p>
       </div>
     </div>
@@ -184,7 +206,7 @@
           &times;
         </button>
 
-        <h2 class="mb-8 font-mono text-2xl font-black uppercase tracking-widest text-[#34418F] dark:text-slate-200">
+        <h2 class="mb-8 font-mono text-2xl font-black uppercase tracking-widest text-g-primary dark:text-slate-200">
           Link Configuration
         </h2>
 
@@ -194,17 +216,17 @@
             v-model="sidebarOriginalUrl"
             type="url"
             placeholder="Original URL"
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
 
           <!-- Arrow -->
-          <div class="my-4 text-center font-black text-[#34418F] dark:text-slate-300 text-4xl">
+          <div class="my-4 text-center font-black text-g-text dark:text-slate-300 text-4xl">
             &darr;
           </div>
 
           <!-- Custom Slug Input (eypi.cc/ prefix + slug) -->
-          <div class="mb-6 flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-            <span class="shrink-0 font-mono font-bold text-[#34418F] dark:text-slate-200">eypi.cc/</span>
+          <div class="mb-6 flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
+            <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
             <input
               :value="sidebarSlug"
               type="text"
@@ -227,7 +249,7 @@
             <div class="flex flex-col gap-4 mb-6 font-mono text-sm">
               <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Body Shape</label>
-                <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                   <option value="square">Standard Square</option>
                   <option value="dots">Dotted</option>
                   <option value="rounded">Rounded</option>
@@ -238,7 +260,7 @@
               <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
                   <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Eye Frame</label>
-                  <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                  <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
                     <option value="extra-rounded">Rounded</option>
@@ -246,7 +268,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                   <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Eye Ball</label>
-                  <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                  <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
                   </select>
@@ -256,20 +278,20 @@
               <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Matrix Color</label>
                 <div class="flex items-center gap-3">
-                  <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-[#34418F] transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
+                  <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-g-accent transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
                     <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
                   </div>
-                  <input type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-[#34418F] font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#34418F" maxlength="7" />
+                  <input type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#DEAC4B" maxlength="7" />
                 </div>
               </div>
 
               <div class="flex flex-col gap-1">
                 <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Center Logo</label>
-                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-[#34418F] hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" />
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" />
               </div>
             </div>
 
-            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-[#34418F] text-[#34418F] font-mono text-sm font-bold uppercase tracking-wider rounded-lg hover:bg-[#34418F] hover:text-white transition-colors dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary font-mono text-sm font-bold uppercase tracking-wider rounded-lg hover:border-g-accent hover:text-g-accent transition-colors dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
               Export PNG
             </button>
           </div>
@@ -310,7 +332,7 @@
           </h3>
           <p class="mb-8 font-mono text-sm leading-relaxed text-gray-800 dark:text-slate-200">
             Are you sure you want to delete the short link
-            <span class="font-bold text-[#34418F] dark:text-slate-100">{{ linkToDelete?.short }}</span>?
+            <span class="font-bold text-g-text dark:text-slate-100">{{ linkToDelete?.short }}</span>?
             This will permanently break the redirect to
             <span class="break-all text-gray-500 dark:text-slate-400">{{ linkToDelete?.original }}</span>
             and cannot be undone.
@@ -414,7 +436,7 @@ const qrConfig = ref({
   eyeFrameType: 'square' as 'square' | 'dot' | 'extra-rounded',
   eyeBallType: 'square' as 'square' | 'dot',
   logoUrl: '' as string,
-  color: '#34418F'
+  color: '#DEAC4B'
 })
 const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim() || 'preview'))
 
@@ -477,6 +499,15 @@ const downloadQR = async () => {
 
 const API_BASE = 'https://api.eypi.cc'
 const links = ref<Link[]>([])
+const searchQuery = ref('')
+const filteredLinks = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return links.value
+  return links.value.filter((link) =>
+    link.short.toLowerCase().includes(q) ||
+    link.original.toLowerCase().includes(q)
+  )
+})
 
 async function fetchLinks() {
   const token = localStorage.getItem('eypi_token')
@@ -735,3 +766,7 @@ onMounted(async () => {
   transform: translateX(100%);
 }
 </style>
+
+
+
+

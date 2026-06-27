@@ -1,47 +1,116 @@
-<template>
-  <div class="w-full min-h-full">
-    <div class="min-h-screen bg-[#E5E5E5] dark:bg-slate-950 text-gray-800 dark:text-slate-200 flex flex-col items-center py-24 px-6 relative z-10">
-      <div class="w-full max-w-xl bg-white dark:bg-mica-navy-card border border-gray-300 dark:border-slate-600 p-10 md:p-12 shadow-2xl relative dark:backdrop-blur-xl">
-      <div class="absolute top-0 left-0 w-full h-2 bg-[#34418F]"></div>
-
-      <div class="border-b-2 border-gray-200 dark:border-slate-600 pb-6 mb-8 flex justify-between items-end">
-        <div>
-          <h1 class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200 uppercase tracking-widest mb-1">ACCOUNT SETTINGS</h1>
-          <p class="font-mono text-xs text-gray-500 dark:text-slate-400 uppercase tracking-widest">Security & Credentials</p>
-        </div>
-        <router-link to="/dashboard" class="font-mono text-xs font-bold text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200 uppercase tracking-wider transition-colors">
-          ← RETURN TO DASHBOARD
-        </router-link>
+﻿<template>
+  <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-8 sm:px-6 md:pt-16 md:pb-32 lg:px-8">
+    <header class="reveal mb-10 flex flex-col gap-5 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+      <div>
+        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-g-muted">
+          account console
+        </p>
+        <h1 class="font-mono text-3xl font-semibold tracking-tight text-g-text sm:text-4xl">
+          Security settings.
+        </h1>
+        <p class="mt-3 max-w-2xl font-mono text-sm leading-relaxed text-g-muted">
+          Update your password credentials for the eypi.cc suite.
+        </p>
       </div>
 
-      <form @submit.prevent="handleUpdatePassword" class="space-y-6">
-        <div class="flex flex-col gap-2 font-mono">
-          <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Current Password</label>
-          <input v-model="passwords.current" type="password" required class="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 outline-none focus:border-[#34418F] focus:bg-white transition-colors text-sm dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
-        </div>
-        <div class="flex flex-col gap-2 font-mono">
-          <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">New Password</label>
-          <input v-model="passwords.new" type="password" required class="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 outline-none focus:border-[#34418F] focus:bg-white transition-colors text-sm dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
-        </div>
-        <div class="flex flex-col gap-2 font-mono">
-          <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Confirm New Password</label>
-          <input v-model="passwords.confirm" type="password" required class="bg-gray-50 border-2 border-gray-200 rounded-lg p-3 outline-none focus:border-[#34418F] focus:bg-white transition-colors text-sm dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+      <router-link
+        to="/dashboard"
+        class="inline-flex items-center justify-center rounded-full border border-g-border px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.12em] text-g-muted transition-all hover:-translate-y-0.5 hover:border-g-accent hover:text-g-text"
+        data-cursor="nav"
+      >
+        Dashboard
+      </router-link>
+    </header>
+
+    <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+      <aside class="reveal delay-1 mica-card rounded-3xl p-7 shadow-sm">
+        <p class="mb-3 font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">
+          credential policy
+        </p>
+        <h2 class="mb-4 font-mono text-xl font-semibold uppercase tracking-[0.1em] text-g-primary dark:text-white">
+          Password requirements
+        </h2>
+        <ul class="space-y-3 font-mono text-sm leading-relaxed text-g-muted">
+          <li class="border-t border-g-border pt-3">At least 8 characters</li>
+          <li class="border-t border-g-border pt-3">One uppercase and one lowercase letter</li>
+          <li class="border-t border-g-border pt-3">One number and one symbol</li>
+        </ul>
+      </aside>
+
+      <form
+        class="reveal delay-2 mica-card rounded-3xl p-6 shadow-sm sm:p-8"
+        @submit.prevent="handleUpdatePassword"
+      >
+        <div class="mb-8">
+          <p class="mb-2 font-mono text-xs font-bold uppercase tracking-[0.22em] text-g-muted">
+            Security action
+          </p>
+          <h2 class="font-mono text-2xl font-semibold uppercase tracking-[0.08em] text-g-text">
+            Update password
+          </h2>
         </div>
 
-        <button type="submit" :disabled="isSaving" :class="{'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving}" class="w-full mt-4 bg-[#DEAC4B] text-white font-mono text-sm font-bold uppercase tracking-widest py-4 rounded-lg transition-colors dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover">
+        <div class="space-y-5">
+          <div class="flex flex-col gap-2 font-mono">
+            <label for="current-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Current Password</label>
+            <input
+              id="current-password"
+              v-model="passwords.current"
+              type="password"
+              required
+              autocomplete="current-password"
+              class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+            />
+          </div>
+
+          <div class="grid gap-5 md:grid-cols-2">
+            <div class="flex flex-col gap-2 font-mono">
+              <label for="new-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">New Password</label>
+              <input
+                id="new-password"
+                v-model="passwords.new"
+                type="password"
+                required
+                autocomplete="new-password"
+                class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+              />
+            </div>
+
+            <div class="flex flex-col gap-2 font-mono">
+              <label for="confirm-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Confirm New Password</label>
+              <input
+                id="confirm-password"
+                v-model="passwords.confirm"
+                type="password"
+                required
+                autocomplete="new-password"
+                class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          :disabled="isSaving"
+          :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:-translate-y-0.5 hover:opacity-90': !isSaving }"
+          class="mt-8 w-full rounded-xl bg-g-accent px-6 py-4 font-mono text-sm font-bold uppercase tracking-[0.16em] text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          data-cursor="cta"
+        >
           {{ isSaving ? 'SAVING...' : 'UPDATE PASSWORD' }}
         </button>
       </form>
-      </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
+import { useReveal } from '@/composables/useReveal'
 
 const toast = useToast()
+useReveal()
 const isSaving = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
 

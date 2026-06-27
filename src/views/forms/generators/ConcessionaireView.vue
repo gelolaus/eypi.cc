@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col min-h-[calc(100vh-5rem)]">
     <div class="w-full flex-1">
       <div
-        class="mica-card w-full flex-1 rounded-2xl border border-slate-200/50 dark:border-slate-600/50 p-8 shadow-xl"
+        class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"
       >
-        <h1 class="font-mono text-2xl font-black uppercase tracking-[0.1em] mb-6" style="color: var(--color-primary);">
+        <h1 class="mb-6 font-mono text-2xl font-black uppercase tracking-[0.1em] text-g-text">
           Concessionaire Document Generator
         </h1>
         <form
@@ -19,7 +19,7 @@
               id="COMPANY_NAME"
               v-model="formData.COMPANY_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Notion @ APC"
             />
           </div>
@@ -31,7 +31,7 @@
               id="COMPANY_ADDRESS"
               v-model="formData.COMPANY_ADDRESS"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., #3 Humabon Place, Magallanes, Makati City"
             />
           </div>
@@ -43,7 +43,7 @@
               id="COMPANY_REPRESENTATIVE"
               v-model="formData.COMPANY_REPRESENTATIVE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Angelo Laus"
             />
           </div>
@@ -55,7 +55,7 @@
               id="COMPANY_REPRESENTATIVE_POSITION"
               v-model="formData.COMPANY_REPRESENTATIVE_POSITION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Campus Leader"
             />
           </div>
@@ -67,7 +67,7 @@
               id="COMPANY_PHONE"
               v-model="formData.COMPANY_PHONE"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., +63 912 345 6789"
             />
           </div>
@@ -79,7 +79,7 @@
               id="COMPANY_EMAIL"
               v-model="formData.COMPANY_EMAIL"
               type="email"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., hello@gelolaus.com"
             />
           </div>
@@ -91,7 +91,7 @@
               id="EVENT_NAME"
               v-model="formData.EVENT_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., SoCIT Fest 2025"
             />
           </div>
@@ -103,7 +103,7 @@
               id="EVENT_DATE"
               v-model="formData.EVENT_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 15, 2025"
             />
           </div>
@@ -115,7 +115,7 @@
               id="EVENT_LOCATION"
               v-model="formData.EVENT_LOCATION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 12/F Auditorium, 7/F Library Lobby"
             />
           </div>
@@ -127,7 +127,7 @@
               id="DEADLINE_DATE"
               v-model="formData.DEADLINE_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 1, 2025"
             />
           </div>
@@ -139,7 +139,7 @@
               id="ORGANIZATION_NAME"
               v-model="formData.ORGANIZATION_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Junior Philippine Computer Society"
             />
           </div>
@@ -151,7 +151,7 @@
               id="ORGANIZATION_ADVISER"
               v-model="formData.ORGANIZATION_ADVISER"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Roselle Wednesday Gardon"
             />
           </div>
@@ -285,3 +285,4 @@ async function generateDocuments() {
   }
 }
 </script>
+

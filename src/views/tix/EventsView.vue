@@ -1,84 +1,86 @@
-<template>
+﻿<template>
   <section class="relative mx-auto w-full max-w-5xl px-6 py-16">
-    <div class="mb-10 flex items-end justify-between">
+    <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1
-          class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
           style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
           data-cursor="text"
         >
-          Your Events
+          Event Tickets
         </h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
+        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
           Manage tickets &amp; check-in
         </p>
       </div>
       <router-link
         v-if="!isLocked"
         to="/manage/tix/new"
-        class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+        class="rounded-xl bg-g-accent px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
       >
         New Event
       </router-link>
     </div>
 
-    <!-- Loading skeleton -->
+    <input
+      v-if="!isLocked"
+      v-model="searchQuery"
+      type="search"
+      placeholder="Search events..."
+      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+    />
+
     <div v-if="loading" class="space-y-3">
       <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
     </div>
 
-    <!-- Lockout state -->
     <div v-else-if="isLocked">
       <OrgLockout />
     </div>
 
-    <!-- Error -->
     <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center font-mono text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">
       {{ error }}
     </div>
 
-    <!-- Empty state -->
     <div
-      v-else-if="!events.length"
-      class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-12 text-center"
+      v-else-if="!filteredEvents.length"
+      class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
       <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <p class="font-mono text-sm uppercase tracking-widest text-gray-500 dark:text-slate-400">No events yet</p>
-      <p class="mt-3 font-mono text-xs leading-relaxed text-gray-400 dark:text-slate-500">
-        Create your first event to generate attendee QR tickets.
+      <p class="font-mono text-sm uppercase tracking-widest text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
+      <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
+        {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
       </p>
     </div>
 
-    <!-- Event list -->
-    <div v-else class="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-600">
-      <!-- Header row -->
-      <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
+    <div v-else class="overflow-hidden rounded-2xl border border-g-border">
+      <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest text-g-muted dark:bg-mica-navy-header">
         <div class="col-span-8 sm:col-span-5">Event</div>
         <div class="col-span-4 hidden sm:block">Date &amp; Time</div>
         <div class="col-span-4 sm:col-span-3 text-right">Actions</div>
       </div>
 
       <div
-        v-for="event in events"
+        v-for="event in filteredEvents"
         :key="event.id as string"
-        class="grid grid-cols-12 items-center border-b border-gray-100 px-4 py-4 transition-colors hover:bg-white/50 dark:border-slate-700/60 dark:hover:bg-mica-navy-row-hover last:border-0"
+        class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 transition-colors hover:bg-white/40 dark:hover:bg-mica-navy-row-hover last:border-0"
       >
         <div class="col-span-8 sm:col-span-5">
-          <p class="font-mono text-base font-bold text-gray-900 dark:text-slate-100">{{ event.name }}</p>
-          <p class="mt-0.5 font-mono text-xs text-gray-400 dark:text-slate-500">eypi.cc/tix/{{ event.slug }}</p>
+          <p class="font-mono text-base font-bold text-g-text">{{ event.name }}</p>
+          <p class="mt-0.5 font-mono text-xs text-g-muted">eypi.cc/tix/{{ event.slug }}</p>
         </div>
         <div class="col-span-4 hidden sm:block">
-          <p class="font-mono text-sm text-gray-600 dark:text-slate-300">{{ formatDate(event.event_date as string) }}</p>
-          <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ event.event_time }}</p>
+          <p class="font-mono text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
+          <p class="font-mono text-xs text-g-muted">{{ event.event_time }}</p>
         </div>
         <div class="col-span-4 sm:col-span-3 flex items-center justify-end gap-1.5">
           <router-link
             :to="`/manage/tix/${event.slug}`"
-            class="rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
+            class="rounded-lg border border-g-border px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
             data-cursor="nav"
           >
             Manage
@@ -88,7 +90,7 @@
             class="rounded-lg border border-red-200 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
             @click="deleteEvent(event.slug as string, event.name as string)"
           >
-            {{ deletingSlug === (event.slug as string) ? '…' : 'Delete' }}
+            {{ deletingSlug === (event.slug as string) ? '...' : 'Delete' }}
           </button>
         </div>
       </div>
@@ -97,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
@@ -116,11 +118,22 @@ interface Event {
   created_at: unknown
 }
 
-const events     = ref<Event[]>([])
-const loading    = ref(true)
-const error      = ref('')
-const isLocked   = ref(false)
+const events = ref<Event[]>([])
+const loading = ref(true)
+const error = ref('')
+const isLocked = ref(false)
 const deletingSlug = ref<string | null>(null)
+const searchQuery = ref('')
+
+const filteredEvents = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return events.value
+  return events.value.filter((event) =>
+    String(event.name ?? '').toLowerCase().includes(q) ||
+    String(event.slug ?? '').toLowerCase().includes(q) ||
+    String(event.location ?? '').toLowerCase().includes(q)
+  )
+})
 
 function formatDate(d: string) {
   if (!d) return ''
@@ -170,3 +183,4 @@ onMounted(async () => {
   }
 })
 </script>
+

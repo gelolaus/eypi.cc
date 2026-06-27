@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col min-h-[calc(100vh-5rem)]">
     <div class="w-full flex-1">
       <div
-        class="mica-card w-full flex-1 rounded-2xl border border-slate-200/50 dark:border-slate-600/50 p-8 shadow-xl"
+        class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"
       >
-        <h1 class="font-mono text-2xl font-black uppercase tracking-[0.1em] mb-6" style="color: var(--color-primary);">
+        <h1 class="mb-6 font-mono text-2xl font-black uppercase tracking-[0.1em] text-g-text">
           Visitors Pass Generator
         </h1>
         <form
@@ -19,7 +19,7 @@
               id="submissionDate"
               v-model="formData.submissionDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., December 31, 2025"
             />
           </div>
@@ -31,7 +31,7 @@
               id="orgName"
               v-model="formData.orgName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Junior Philippine Computer Society"
             />
           </div>
@@ -43,7 +43,7 @@
               id="eventName"
               v-model="formData.eventName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., SoCIT Fest 2025"
             />
           </div>
@@ -55,7 +55,7 @@
               id="eventDate"
               v-model="formData.eventDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 21, 2026 at 10:00 AM - 10:00 PM"
             />
           </div>
@@ -67,7 +67,7 @@
               id="eventLocation"
               v-model="formData.eventLocation"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 12/F Auditorium"
             />
           </div>
@@ -79,7 +79,7 @@
               id="repName"
               v-model="formData.repName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Angelo Laus"
             />
           </div>
@@ -91,7 +91,7 @@
               id="repPosition"
               v-model="formData.repPosition"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Director of External Relations"
             />
           </div>
@@ -103,7 +103,7 @@
               id="repNumber"
               v-model="formData.repNumber"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., (+63) 912 345 6789"
             />
           </div>
@@ -116,7 +116,7 @@
               v-model="formData.walkInCount"
               type="number"
               min="0"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-[#34418F] focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 10"
             />
           </div>
@@ -127,7 +127,7 @@
             </label>
             <label
               for="csvFile"
-              class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-apc-gold dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-apc-gold"
+              class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-g-accent"
             >
               <svg class="mb-2 h-8 w-8 text-slate-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -135,7 +135,7 @@
               <span v-if="!csvFileName" class="font-mono text-sm text-slate-500 dark:text-slate-400">
                 Click to upload a .csv file
               </span>
-              <span v-else class="font-mono text-sm text-apc-blue dark:text-slate-200">
+              <span v-else class="font-mono text-sm text-g-text dark:text-slate-200">
                 {{ csvFileName }}
                 <span class="text-slate-400 dark:text-slate-500">&mdash; {{ parsedNames.length }} name(s)</span>
               </span>
@@ -294,3 +294,4 @@ async function generateDocument() {
   }
 }
 </script>
+

@@ -1,49 +1,48 @@
-<template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col min-h-[calc(100vh-5rem)]">
-    <!-- Loading skeleton -->
+﻿<template>
+  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div v-for="i in 2" :key="i" class="h-32 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
     </div>
 
-    <!-- Lockout state -->
     <div v-else-if="isLocked" class="flex-1 flex items-center justify-center">
       <OrgLockout />
     </div>
 
     <template v-else>
-      <!-- Search input -->
+      <header class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1
+            class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
+            style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+            data-cursor="text"
+          >
+            Forms
+          </h1>
+          <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
+            Generate organization documents
+          </p>
+        </div>
+      </header>
+
       <input
         v-model="searchQuery"
         type="search"
         placeholder="Search forms..."
-        class="w-full rounded-2xl px-6 py-4 font-mono text-sm mb-6 outline-none transition-colors duration-200"
-        :style="{
-          border: '2px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          color: 'var(--color-text)',
-        }"
-        @focus="(e) => (e.target as HTMLInputElement).style.borderColor = '#34418F'"
-        @blur="(e) => (e.target as HTMLInputElement).style.borderColor = 'var(--color-border)'"
+        class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
       />
 
-      <!-- Grid of form cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <button
           v-for="form in filteredForms"
           :key="form.id"
           type="button"
           @click="router.push(form.route)"
-          class="mica-card rounded-2xl p-6 text-left transition-all duration-200 focus:outline-none hover:-translate-y-0.5"
-          :style="{
-            border: '1px solid var(--color-border)',
-          }"
-          @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(222,172,75,0.5)'"
-          @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'"
+          class="mica-card rounded-2xl border border-g-border p-6 text-left transition-all duration-200 focus:outline-none hover:-translate-y-0.5 hover:border-g-accent/50"
         >
-          <h2 class="font-mono text-xl font-semibold uppercase tracking-[0.1em] mb-2 text-[#34418F] dark:text-white">
+          <h2 class="mb-2 font-mono text-xl font-semibold uppercase tracking-[0.1em] text-g-primary dark:text-white">
             {{ form.title }}
           </h2>
-          <p class="font-mono text-sm" style="color: var(--color-text-muted);">
+          <p class="font-mono text-sm text-g-muted">
             {{ form.description }}
           </p>
         </button>
@@ -121,3 +120,5 @@ onMounted(async () => {
   }
 })
 </script>
+
+
