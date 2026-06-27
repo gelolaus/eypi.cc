@@ -2,7 +2,7 @@
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
     <header class="mb-10 reveal border-b border-g-border pb-8">
       <h1 class="font-mono text-3xl sm:text-4xl font-semibold tracking-tight text-g-primary dark:text-slate-200">
-        Dashboard<span v-if="userName">, {{ userName }}</span>.
+        {{ userName ? `Hi, ${userName}` : 'Hi' }}.
       </h1>
       <p class="font-mono text-sm mt-3 text-g-muted">
         Choose a module to launch.

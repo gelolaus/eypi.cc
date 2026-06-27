@@ -1,5 +1,5 @@
 ﻿<template>
-  <section class="relative mx-auto w-full max-w-5xl px-6 py-16">
+  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
     <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1
@@ -7,7 +7,7 @@
           style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
           data-cursor="text"
         >Frames</h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">Profile-frame campaigns</p>
+        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">Start DP-frame campaigns</p>
       </div>
       <router-link
         v-if="!isLocked"
