@@ -205,14 +205,30 @@
             </div>
             <div class="relative w-full max-w-sm overflow-hidden rounded-xl bg-black" style="aspect-ratio: 4/3;">
               <video ref="videoRef" class="h-full w-full object-cover" muted playsinline />
+
+              <!-- Viewfinder mask + center crop guide -->
+              <div class="pointer-events-none absolute inset-0">
+                <div
+                  class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-white/90"
+                  style="width: 72%; aspect-ratio: 1; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);"
+                />
+              </div>
+
+              <!-- Phase HUD badge -->
               <div
-                v-if="lastScan"
-                :class="[
-                  'absolute inset-x-0 bottom-0 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-white',
-                  lastScan.ok ? 'bg-emerald-600/90' : 'bg-red-600/90',
-                ]"
+                :class="hudClass"
+                class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 font-mono text-xs font-bold uppercase tracking-widest text-white"
               >
-                {{ lastScan.message }}
+                {{ hudLabel }}
+              </div>
+
+              <!-- Detail message banner -->
+              <div
+                v-if="scanMessage"
+                :class="hudBannerClass"
+                class="pointer-events-none absolute inset-x-0 bottom-0 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-white"
+              >
+                {{ scanMessage }}
               </div>
             </div>
           </div>
@@ -492,6 +508,16 @@ import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
 import type { ClusterConfig } from '@/types/selection'
+import {
+  SCAN_COOLDOWN_MS,
+  SCAN_FPS,
+  SCAN_INTERVAL_MS,
+  computeScanRegion,
+  drawCropToCanvas,
+  isValidQrToken,
+  playScanFeedback,
+  type ScanStatus,
+} from '@/utils/tix-scanner'
 
 const toast = useToast()
 const { authHeaders } = useAuth()
@@ -761,21 +787,137 @@ async function reRaffle(clusterValue: string) {
 }
 
 // ── scanner ───────────────────────────────────────────────────────────────────
-const videoRef    = ref<HTMLVideoElement | null>(null)
+const videoRef = ref<HTMLVideoElement | null>(null)
 const scannerError = ref('')
-const lastScan    = ref<{ ok: boolean; message: string } | null>(null)
+const scanStatus = ref<ScanStatus>('idle')
+const scanMessage = ref('')
+
 let qrScanner: { start: () => Promise<void>; stop: () => void; destroy: () => void } | null = null
 let nativeStream: MediaStream | null = null
-let rafId: number | null = null
+let scanTimer: ReturnType<typeof setInterval> | null = null
+let cropCanvas: HTMLCanvasElement | null = null
+let resetTimer: ReturnType<typeof setTimeout> | null = null
 let scanCooldown = false
-let detecting    = false
+let detecting = false
+
+const hudLabel = computed(() => {
+  const labels: Record<ScanStatus, string> = {
+    idle: 'Starting camera…',
+    ready: 'Ready',
+    decoding: 'Decoding',
+    submitting: 'Submitting check-in',
+    success: 'Success',
+    invalid: 'Invalid token',
+  }
+  return labels[scanStatus.value]
+})
+
+const hudClass = computed(() => {
+  const classes: Record<ScanStatus, string> = {
+    idle: 'bg-gray-600',
+    ready: 'bg-emerald-600',
+    decoding: 'bg-amber-500',
+    submitting: 'bg-blue-600',
+    success: 'bg-emerald-600',
+    invalid: 'bg-red-600',
+  }
+  return classes[scanStatus.value]
+})
+
+const hudBannerClass = computed(() => {
+  if (scanStatus.value === 'success') return 'bg-emerald-600'
+  if (scanStatus.value === 'invalid') return 'bg-red-600'
+  if (scanStatus.value === 'submitting') return 'bg-blue-600'
+  return 'bg-gray-700'
+})
+
+function scheduleReset(ms: number) {
+  if (resetTimer) clearTimeout(resetTimer)
+  resetTimer = setTimeout(() => {
+    scanCooldown = false
+    scanStatus.value = 'ready'
+    scanMessage.value = ''
+    resetTimer = null
+  }, ms)
+}
+
+function onDecoded(raw: string | null) {
+  if (!raw || scanCooldown) return
+
+  if (!isValidQrToken(raw)) {
+    scanCooldown = true
+    scanStatus.value = 'invalid'
+    scanMessage.value = 'Invalid token format'
+    scheduleReset(SCAN_COOLDOWN_MS)
+    return
+  }
+
+  scanCooldown = true
+  playScanFeedback()
+  scanStatus.value = 'submitting'
+  scanMessage.value = 'Submitting check-in…'
+  submitScan(raw.trim())
+}
+
+function submitScan(qrToken: string) {
+  fetch(`${TIX_API_URL}/api/events/${slug}/checkin`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ qrToken }),
+  })
+    .then(async (res) => {
+      const data = await res.json() as { message: string }
+      if (res.ok) {
+        scanStatus.value = 'success'
+        scanMessage.value = data.message
+        fetchAttendees()
+      } else {
+        scanStatus.value = 'invalid'
+        scanMessage.value = data.message
+      }
+    })
+    .catch(() => {
+      scanStatus.value = 'invalid'
+      scanMessage.value = 'Network error'
+    })
+    .finally(() => scheduleReset(SCAN_COOLDOWN_MS))
+}
+
+function tickNativeDetect(
+  detector: { detect: (source: HTMLCanvasElement) => Promise<{ rawValue: string }[]> },
+  video: HTMLVideoElement,
+) {
+  if (scanCooldown || detecting || video.readyState < 2) return
+  detecting = true
+  scanStatus.value = 'decoding'
+  try {
+    if (!cropCanvas) cropCanvas = document.createElement('canvas')
+    drawCropToCanvas(video, cropCanvas)
+    detector.detect(cropCanvas)
+      .then((barcodes) => {
+        onDecoded(barcodes[0]?.rawValue ?? null)
+      })
+      .catch(() => {
+        if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
+      })
+      .finally(() => {
+        detecting = false
+        if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
+      })
+  } catch {
+    detecting = false
+    if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
+  }
+}
 
 async function startScanner() {
   if (!videoRef.value) return
   scannerError.value = ''
+  scanStatus.value = 'idle'
+  scanMessage.value = ''
   try {
     if ('BarcodeDetector' in window) {
-      // @ts-ignore
+      // @ts-expect-error BarcodeDetector is not in all TS lib targets
       const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
       nativeStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -783,74 +925,44 @@ async function startScanner() {
       videoRef.value.srcObject = nativeStream
       await videoRef.value.play()
       const video = videoRef.value
-      // Poll at ~15fps — fast enough to feel instant, not so fast we queue detect calls
-      const loop = async () => {
-        if (!detecting && !scanCooldown && video.readyState >= 2) {
-          detecting = true
-          try {
-            const [barcode] = await detector.detect(video)
-            if (barcode && !scanCooldown) {
-              scanCooldown = true
-              await handleScan(barcode.rawValue)
-              setTimeout(() => { scanCooldown = false }, 1500)
-            }
-          } catch { /* frame decode failed */ }
-          detecting = false
-        }
-        rafId = requestAnimationFrame(loop)
-      }
-      rafId = requestAnimationFrame(loop)
+      scanStatus.value = 'ready'
+      scanTimer = setInterval(() => tickNativeDetect(detector, video), SCAN_INTERVAL_MS)
     } else {
       const QrScanner = (await import('qr-scanner')).default
       qrScanner = new QrScanner(
         videoRef.value,
-        async (result: { data: string }) => {
-          if (scanCooldown) return
-          scanCooldown = true
-          await handleScan(result.data)
-          setTimeout(() => { scanCooldown = false }, 1500)
-        },
+        (result: { data: string }) => onDecoded(result.data),
         {
           preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          maxScansPerSecond: 25,
+          highlightScanRegion: false,
+          highlightCodeOutline: false,
+          maxScansPerSecond: SCAN_FPS,
           returnDetailedScanResult: true,
-          // Downscale large frames before decode — biggest speed win on high-res cameras
-          calculateScanRegion: (v: HTMLVideoElement) => {
-            const s = Math.min(v.videoWidth, v.videoHeight, 400)
-            const x = (v.videoWidth - s) / 2
-            const y = (v.videoHeight - s) / 2
-            return { x, y, width: s, height: s, downScaledWidth: 400, downScaledHeight: 400 }
-          },
+          calculateScanRegion: computeScanRegion,
         },
       )
       await qrScanner.start()
+      scanStatus.value = 'ready'
     }
   } catch (err: unknown) {
     scannerError.value = err instanceof Error ? err.message : 'Camera unavailable.'
+    scanStatus.value = 'idle'
   }
 }
 
 function stopScanner() {
-  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
+  if (scanTimer) { clearInterval(scanTimer); scanTimer = null }
+  if (resetTimer) { clearTimeout(resetTimer); resetTimer = null }
   nativeStream?.getTracks().forEach(t => t.stop())
   nativeStream = null
-  qrScanner?.stop(); qrScanner?.destroy(); qrScanner = null
-  detecting = false; scanCooldown = false
-}
-
-async function handleScan(qrToken: string) {
-  try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/checkin`, {
-      method: 'POST', headers: authHeaders(), body: JSON.stringify({ qrToken }),
-    })
-    const data = await res.json() as { status: string; message: string }
-    lastScan.value = { ok: res.ok, message: data.message }
-    if (res.ok) fetchAttendees()
-  } catch {
-    lastScan.value = { ok: false, message: 'Check-in failed — network error.' }
-  }
+  qrScanner?.stop()
+  qrScanner?.destroy()
+  qrScanner = null
+  cropCanvas = null
+  detecting = false
+  scanCooldown = false
+  scanStatus.value = 'idle'
+  scanMessage.value = ''
 }
 
 watch(activeTab, (tab, prev) => {
