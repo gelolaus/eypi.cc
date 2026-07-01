@@ -511,9 +511,9 @@ import type { ClusterConfig } from '@/types/selection'
 import {
   SCAN_COOLDOWN_MS,
   SCAN_FPS,
-  SCAN_INTERVAL_MS,
   computeScanRegion,
-  drawCropToCanvas,
+  formatScannerError,
+  isCameraHardwareError,
   isValidQrToken,
   playScanFeedback,
   type ScanStatus,
@@ -792,22 +792,19 @@ const scannerError = ref('')
 const scanStatus = ref<ScanStatus>('idle')
 const scanMessage = ref('')
 
-let qrScanner: { start: () => Promise<void>; stop: () => void; destroy: () => void } | null = null
-let nativeStream: MediaStream | null = null
-let scanTimer: ReturnType<typeof setInterval> | null = null
-let cropCanvas: HTMLCanvasElement | null = null
+type QrScannerInstance = InstanceType<typeof import('qr-scanner').default>
+let qrScanner: QrScannerInstance | null = null
 let resetTimer: ReturnType<typeof setTimeout> | null = null
 let scanCooldown = false
-let detecting = false
 
 const hudLabel = computed(() => {
   const labels: Record<ScanStatus, string> = {
-    idle: 'Starting camera…',
+    idle: 'Idle',
     ready: 'Ready',
     decoding: 'Decoding',
-    submitting: 'Submitting check-in',
+    submitting: 'Checking In',
     success: 'Success',
-    invalid: 'Invalid token',
+    error: 'Error',
   }
   return labels[scanStatus.value]
 })
@@ -819,14 +816,14 @@ const hudClass = computed(() => {
     decoding: 'bg-amber-500',
     submitting: 'bg-blue-600',
     success: 'bg-emerald-600',
-    invalid: 'bg-red-600',
+    error: 'bg-red-600',
   }
   return classes[scanStatus.value]
 })
 
 const hudBannerClass = computed(() => {
   if (scanStatus.value === 'success') return 'bg-emerald-600'
-  if (scanStatus.value === 'invalid') return 'bg-red-600'
+  if (scanStatus.value === 'error') return 'bg-red-600'
   if (scanStatus.value === 'submitting') return 'bg-blue-600'
   return 'bg-gray-700'
 })
@@ -835,7 +832,7 @@ function scheduleReset(ms: number) {
   if (resetTimer) clearTimeout(resetTimer)
   resetTimer = setTimeout(() => {
     scanCooldown = false
-    scanStatus.value = 'ready'
+    scanStatus.value = 'decoding'
     scanMessage.value = ''
     resetTimer = null
   }, ms)
@@ -846,7 +843,7 @@ function onDecoded(raw: string | null) {
 
   if (!isValidQrToken(raw)) {
     scanCooldown = true
-    scanStatus.value = 'invalid'
+    scanStatus.value = 'error'
     scanMessage.value = 'Invalid token format'
     scheduleReset(SCAN_COOLDOWN_MS)
     return
@@ -872,103 +869,89 @@ function submitScan(qrToken: string) {
         scanMessage.value = data.message
         fetchAttendees()
       } else {
-        scanStatus.value = 'invalid'
+        scanStatus.value = 'error'
         scanMessage.value = data.message
       }
     })
     .catch(() => {
-      scanStatus.value = 'invalid'
+      scanStatus.value = 'error'
       scanMessage.value = 'Network error'
     })
     .finally(() => scheduleReset(SCAN_COOLDOWN_MS))
 }
 
-function tickNativeDetect(
-  detector: { detect: (source: HTMLCanvasElement) => Promise<{ rawValue: string }[]> },
+function destroyQrScanner() {
+  if (!qrScanner) return
+  qrScanner.stop()
+  qrScanner.destroy()
+  qrScanner = null
+}
+
+function createQrScanner(
+  QrScanner: typeof import('qr-scanner').default,
   video: HTMLVideoElement,
+  preferredCamera: 'environment' | 'user',
 ) {
-  if (scanCooldown || detecting || video.readyState < 2) return
-  detecting = true
-  scanStatus.value = 'decoding'
-  try {
-    if (!cropCanvas) cropCanvas = document.createElement('canvas')
-    drawCropToCanvas(video, cropCanvas)
-    detector.detect(cropCanvas)
-      .then((barcodes) => {
-        onDecoded(barcodes[0]?.rawValue ?? null)
-      })
-      .catch(() => {
-        if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
-      })
-      .finally(() => {
-        detecting = false
-        if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
-      })
-  } catch {
-    detecting = false
-    if (scanStatus.value === 'decoding') scanStatus.value = 'ready'
-  }
+  return new QrScanner(
+    video,
+    (result) => onDecoded(result.data),
+    {
+      preferredCamera,
+      highlightScanRegion: false,
+      highlightCodeOutline: false,
+      maxScansPerSecond: SCAN_FPS,
+      returnDetailedScanResult: true,
+      calculateScanRegion: computeScanRegion,
+    },
+  )
+}
+
+async function startQrScannerWithCamera(preferredCamera: 'environment' | 'user') {
+  const { default: QrScanner } = await import('qr-scanner')
+  if (!videoRef.value) throw new DOMException('Video element not mounted', 'NotFoundError')
+  destroyQrScanner()
+  qrScanner = createQrScanner(QrScanner, videoRef.value, preferredCamera)
+  await qrScanner.start()
 }
 
 async function startScanner() {
-  if (!videoRef.value) return
   scannerError.value = ''
   scanStatus.value = 'idle'
   scanMessage.value = ''
+
+  if (!videoRef.value) {
+    scanStatus.value = 'error'
+    scanMessage.value = 'NotFoundError: Video element not mounted'
+    return
+  }
+
   try {
-    if ('BarcodeDetector' in window) {
-      // @ts-expect-error BarcodeDetector is not in all TS lib targets
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-      nativeStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
-      })
-      videoRef.value.srcObject = nativeStream
-      await videoRef.value.play()
-      const video = videoRef.value
-      scanStatus.value = 'ready'
-      scanTimer = setInterval(() => tickNativeDetect(detector, video), SCAN_INTERVAL_MS)
-    } else {
-      const QrScanner = (await import('qr-scanner')).default
-      qrScanner = new QrScanner(
-        videoRef.value,
-        (result: { data: string }) => onDecoded(result.data),
-        {
-          preferredCamera: 'environment',
-          highlightScanRegion: false,
-          highlightCodeOutline: false,
-          maxScansPerSecond: SCAN_FPS,
-          returnDetailedScanResult: true,
-          calculateScanRegion: computeScanRegion,
-        },
-      )
-      await qrScanner.start()
-      scanStatus.value = 'ready'
+    try {
+      await startQrScannerWithCamera('environment')
+    } catch (err) {
+      if (isCameraHardwareError(err)) {
+        destroyQrScanner()
+        await startQrScannerWithCamera('user')
+      } else {
+        throw err
+      }
     }
+    scanStatus.value = 'decoding'
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      scannerError.value = `${err.name}: ${err.message}`
-    } else if (err && typeof err === 'object' && 'name' in err && 'message' in err) {
-      scannerError.value = `${String((err as { name: unknown }).name)}: ${String((err as { message: unknown }).message)}`
-    } else {
-      scannerError.value = String(err ?? 'Unknown camera error')
-    }
-    scanStatus.value = 'idle'
+    const message = formatScannerError(err)
+    scannerError.value = message
+    scanStatus.value = 'error'
+    scanMessage.value = message
   }
 }
 
 function stopScanner() {
-  if (scanTimer) { clearInterval(scanTimer); scanTimer = null }
   if (resetTimer) { clearTimeout(resetTimer); resetTimer = null }
-  nativeStream?.getTracks().forEach(t => t.stop())
-  nativeStream = null
-  qrScanner?.stop()
-  qrScanner?.destroy()
-  qrScanner = null
-  cropCanvas = null
-  detecting = false
+  destroyQrScanner()
   scanCooldown = false
   scanStatus.value = 'idle'
   scanMessage.value = ''
+  scannerError.value = ''
 }
 
 watch(activeTab, (tab, prev) => {

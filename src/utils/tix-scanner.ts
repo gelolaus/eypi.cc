@@ -1,5 +1,4 @@
 export const SCAN_FPS = 18
-export const SCAN_INTERVAL_MS = Math.round(1000 / SCAN_FPS)
 export const SCAN_COOLDOWN_MS = 1500
 export const CROP_DOWNSCALE = 400
 
@@ -9,7 +8,7 @@ export type ScanStatus =
   | 'decoding'
   | 'submitting'
   | 'success'
-  | 'invalid'
+  | 'error'
 
 export const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -32,23 +31,22 @@ export function computeScanRegion(video: HTMLVideoElement) {
   }
 }
 
-export function drawCropToCanvas(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
-  const region = computeScanRegion(video)
-  canvas.width = region.downScaledWidth
-  canvas.height = region.downScaledHeight
-  const ctx = canvas.getContext('2d')!
-  ctx.drawImage(
-    video,
-    region.x,
-    region.y,
-    region.width,
-    region.height,
-    0,
-    0,
-    canvas.width,
-    canvas.height,
-  )
-  return canvas
+export function formatScannerError(err: unknown): string {
+  if (err instanceof Error) return `${err.name}: ${err.message}`
+  if (err && typeof err === 'object' && 'name' in err && 'message' in err) {
+    return `${String((err as { name: unknown }).name)}: ${String((err as { message: unknown }).message)}`
+  }
+  return String(err ?? 'Unknown camera error')
+}
+
+export function isCameraHardwareError(err: unknown): boolean {
+  if (err instanceof DOMException) {
+    return err.name === 'NotFoundError'
+      || err.name === 'NotReadableError'
+      || err.name === 'OverconstrainedError'
+  }
+  if (typeof err === 'string') return err.toLowerCase().includes('camera not found')
+  return false
 }
 
 export function playScanFeedback() {
