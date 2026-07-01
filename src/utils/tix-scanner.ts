@@ -56,6 +56,21 @@ export function isRetriableCameraError(err: unknown): boolean {
   return false
 }
 
+export function isPermissionDeniedError(err: unknown): boolean {
+  if (err instanceof DOMException) {
+    return err.name === 'NotAllowedError' || err.name === 'SecurityError'
+  }
+  return false
+}
+
+export function scannerPermissionHint(err: unknown): string | null {
+  if (!isPermissionDeniedError(err)) return null
+  if (typeof window !== 'undefined' && !window.isSecureContext) {
+    return 'Camera requires HTTPS. Open this page over a secure connection.'
+  }
+  return 'Camera blocked. Tap Enable Camera and allow access when prompted, or check site permissions in your browser settings.'
+}
+
 /**
  * Progressively looser getUserMedia() constraints. We acquire the stream
  * ourselves — rather than letting qr-scanner manage its own camera

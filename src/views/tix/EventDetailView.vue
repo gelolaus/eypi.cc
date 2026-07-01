@@ -206,6 +206,25 @@
             <div class="relative w-full max-w-sm overflow-hidden rounded-xl bg-black" style="aspect-ratio: 4/3;">
               <video ref="videoRef" class="h-full w-full object-cover" muted playsinline />
 
+              <!-- Tap-to-enable: getUserMedia MUST run inside a user gesture (click).
+                   Auto-starting from a tab watcher loses Chrome's user-activation and
+                   yields NotAllowedError with no permission prompt. -->
+              <div
+                v-if="needsCameraPrompt"
+                class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6"
+              >
+                <p class="text-center font-mono text-xs uppercase tracking-wide text-white/80">
+                  Camera access is required to scan QR codes.
+                </p>
+                <button
+                  type="button"
+                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
+                  @click="onEnableCameraClick"
+                >
+                  {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry Camera' : 'Enable Camera' }}
+                </button>
+              </div>
+
               <!-- Viewfinder mask + center crop guide -->
               <div class="pointer-events-none absolute inset-0">
                 <div
@@ -517,6 +536,7 @@ import {
   isRetriableCameraError,
   isValidQrToken,
   playScanFeedback,
+  scannerPermissionHint,
   type ScanStatus,
 } from '@/utils/tix-scanner'
 
@@ -800,10 +820,14 @@ let qrScanner: QrScannerInstance | null = null
 let activeStream: MediaStream | null = null
 let resetTimer: ReturnType<typeof setTimeout> | null = null
 let scanCooldown = false
-// Bumped every time startScanner()/stopScanner() runs so an in-flight (async)
-// startScanner() call from a previous tab visit can detect it was superseded
-// and bail out cleanly instead of leaving a zombie stream/scanner running.
+const cameraStarting = ref(false)
 let startToken = 0
+
+const needsCameraPrompt = computed(() =>
+  activeTab.value === 5
+  && (scanStatus.value === 'idle' || scanStatus.value === 'error')
+  && !cameraStarting.value,
+)
 
 const QR_SCANNER_OPTIONS = {
   highlightScanRegion: false,
@@ -918,29 +942,12 @@ function destroyQrScanner() {
   releaseActiveStream()
 }
 
-/**
- * Waits for the <video> ref to be mounted AND attached to the live DOM.
- * Vue's `watch()` runs in the 'pre' flush queue — i.e. *before* the pending
- * v-if="activeTab === 5" DOM patch is applied — so the ref can still be null
- * on the very first tick. `nextTick()` resolves once that patch lands; the
- * short rAF poll afterwards is a safety net for slower devices/layouts.
- */
-async function waitForVideoElement(maxAttempts = 20): Promise<HTMLVideoElement | null> {
-  await nextTick()
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const el = videoRef.value
-    if (el?.isConnected) return el
-    await new Promise(resolve => requestAnimationFrame(resolve))
-  }
-  return videoRef.value
-}
-
-/** Tries each constraint set in order; only retries on camera-selection errors. */
-async function acquireCameraStream(): Promise<MediaStream> {
+/** Tries constraint sets from `fromIndex` onward (async fallbacks after the first). */
+async function acquireCameraStreamFrom(fromIndex: number): Promise<MediaStream> {
   let lastError: unknown = null
-  for (const constraints of CAMERA_CONSTRAINTS) {
+  for (let i = fromIndex; i < CAMERA_CONSTRAINTS.length; i++) {
     try {
-      return await navigator.mediaDevices.getUserMedia(constraints)
+      return await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS[i])
     } catch (err) {
       lastError = err
       if (!isRetriableCameraError(err)) throw err
@@ -949,80 +956,108 @@ async function acquireCameraStream(): Promise<MediaStream> {
   throw lastError ?? new DOMException('No camera could be acquired', 'NotFoundError')
 }
 
+/**
+ * Begin getUserMedia synchronously inside a user-gesture handler (button click).
+ * Must NOT await anything before the first getUserMedia call — Chrome revokes
+ * user activation across awaits and will reject with NotAllowedError silently.
+ */
+function beginCameraStreamRequest(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return Promise.reject(new DOMException('Camera API unavailable', 'NotSupportedError'))
+  }
+  return navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS[0]).catch((err) => {
+    if (!isRetriableCameraError(err)) throw err
+    return acquireCameraStreamFrom(1)
+  })
+}
+
 async function loadQrScannerModule(): Promise<QrScannerModule> {
   const { default: QrScanner } = await import('qr-scanner')
   return QrScanner
 }
 
 function reportScannerError(err: unknown) {
-  const message = formatScannerError(err)
+  const base = formatScannerError(err)
+  const hint = scannerPermissionHint(err)
+  const message = hint ? `${base} — ${hint}` : base
   scannerError.value = message
   scanStatus.value = 'error'
   scanMessage.value = message
 }
 
-async function startScanner() {
+function onEnableCameraClick() {
+  void startScannerFromUserGesture()
+}
+
+async function startScannerFromUserGesture() {
   const token = ++startToken
   scannerError.value = ''
-  scanStatus.value = 'idle'
   scanMessage.value = ''
+  scanStatus.value = 'idle'
+  cameraStarting.value = true
 
-  if (!navigator.mediaDevices?.getUserMedia) {
-    reportScannerError('NotSupportedError: Camera API unavailable in this browser')
+  if (!window.isSecureContext) {
+    cameraStarting.value = false
+    reportScannerError(new DOMException('Camera requires HTTPS', 'SecurityError'))
     return
   }
 
-  const video = await waitForVideoElement()
-  if (token !== startToken) return // superseded by a newer startScanner()/stopScanner() call
-  if (!video) {
-    reportScannerError(new DOMException('Video element failed to mount', 'NotFoundError'))
+  // Fire getUserMedia NOW — still inside the click's user-activation window.
+  const streamPromise = beginCameraStreamRequest()
+
+  await nextTick()
+  if (token !== startToken) return
+
+  const video = videoRef.value
+  if (!video?.isConnected) {
+    cameraStarting.value = false
+    reportScannerError(new DOMException('Video element not mounted', 'NotFoundError'))
     return
   }
 
   let stream: MediaStream
   try {
-    stream = await acquireCameraStream()
+    stream = await streamPromise
   } catch (err) {
+    cameraStarting.value = false
     if (token === startToken) reportScannerError(err)
     return
   }
-  if (token !== startToken) { stopStream(stream); return }
+  if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
 
   try {
-    // Construct the scanner BEFORE binding the stream so its internal
-    // 'loadedmetadata'/'play' listeners are attached in time to catch the
-    // real transition-to-playing event. (Pre-playing the video ourselves
-    // would make that second play() a no-op, and qr-scanner's decode loop —
-    // which only starts from those event handlers — would never begin.)
     const QrScanner = await loadQrScannerModule()
-    if (token !== startToken) { stopStream(stream); return }
+    if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
 
+    destroyQrScanner()
     qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
     activeStream = stream
     video.srcObject = stream
     await qrScanner.start()
 
-    if (token !== startToken) { destroyQrScanner(); return }
+    if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }
+    cameraStarting.value = false
     scanStatus.value = 'decoding'
   } catch (err) {
     stopStream(stream)
+    cameraStarting.value = false
     if (token === startToken) reportScannerError(err)
   }
 }
 
 function stopScanner() {
-  startToken++ // invalidate any in-flight startScanner() call
+  startToken++
   if (resetTimer) { clearTimeout(resetTimer); resetTimer = null }
   destroyQrScanner()
   scanCooldown = false
+  cameraStarting.value = false
   scanStatus.value = 'idle'
   scanMessage.value = ''
   scannerError.value = ''
 }
 
 watch(activeTab, (tab, prev) => {
-  if (tab === 5) startScanner()
-  else if (prev === 5) stopScanner()
+  if (prev === 5) stopScanner()
 })
 
 function switchTab(i: number) { activeTab.value = i; currentPage.value = 1; searchQuery.value = '' }
