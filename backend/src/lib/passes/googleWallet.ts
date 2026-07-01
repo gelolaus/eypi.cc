@@ -6,22 +6,23 @@ function sanitizeSlug(slug: string): string {
   return slug.replace(/[^a-z0-9]/g, '_')
 }
 
-function assertGoogleConfig(env: Bindings): void {
-  if (!env.GOOGLE_WALLET_ISSUER_ID
-    || !env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL
-    || !env.GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY) {
-    throw new Error('Google Wallet credentials are not configured.')
-  }
+function sanitizeModuleId(label: string, index: number): string {
+  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  return `field_${base || index}`
 }
 
-function normalizePrivateKey(pem: string): string {
-  return pem.includes('\\n') ? pem.replace(/\\n/g, '\n') : pem
+function buildEventDateTime(ctx: PassContext): { start: string } | undefined {
+  if (!ctx.event.eventDate) return undefined
+  const time = ctx.event.eventTime || '00:00'
+  return { start: `${ctx.event.eventDate}T${time}:00` }
 }
 
 function buildEventTicketClass(ctx: PassContext, issuerId: string) {
   const classId = `${issuerId}.eypi_event_${sanitizeSlug(ctx.event.slug)}`
-  return {
+  const location = ctx.event.location?.trim() || 'TBA'
+  const eventTicketClass: Record<string, unknown> = {
     id: classId,
+    eventId: classId,
     issuerName: 'eypi.cc',
     reviewStatus: 'UNDER_REVIEW',
     eventName: {
@@ -29,28 +30,26 @@ function buildEventTicketClass(ctx: PassContext, issuerId: string) {
     },
     venue: {
       name: {
-        defaultValue: { language: 'en-US', value: ctx.event.location || 'TBA' },
+        defaultValue: { language: 'en-US', value: location },
       },
-    },
-    dateTime: {
-      start: ctx.event.eventDate
-        ? `${ctx.event.eventDate}T${ctx.event.eventTime || '00:00'}:00`
-        : undefined,
+      address: {
+        defaultValue: { language: 'en-US', value: location },
+      },
     },
     hexBackgroundColor: '#FFFFFF',
-    logo: {
-      sourceUri: {
-        uri: 'https://eypi.cc/favicon.svg',
-      },
-    },
   }
+
+  const dateTime = buildEventDateTime(ctx)
+  if (dateTime) eventTicketClass.dateTime = dateTime
+
+  return eventTicketClass
 }
 
 function buildEventTicketObject(ctx: PassContext, issuerId: string) {
   const classId = `${issuerId}.eypi_event_${sanitizeSlug(ctx.event.slug)}`
-  const objectId = `${issuerId}.eypi_${ctx.attendee.id}`
+  const objectId = `${issuerId}.eypi_${ctx.attendee.id.replace(/-/g, '_')}`
   const attendeeName = `${ctx.attendee.firstName} ${ctx.attendee.lastName}`.trim()
-  const clusterLabel = ctx.attendee.clusterValue?.trim() || '—'
+  const clusterLabel = ctx.attendee.clusterValue?.trim() || 'General'
   const backFields = buildBackFields(ctx.customFields)
 
   const textModulesData = [
@@ -60,13 +59,13 @@ function buildEventTicketObject(ctx: PassContext, issuerId: string) {
       body: clusterLabel,
     },
     ...backFields.map((field, index) => ({
-      id: `custom_${index}`,
-      header: field.label,
-      body: field.value,
+      id: sanitizeModuleId(field.label, index),
+      header: field.label.slice(0, 200),
+      body: field.value.slice(0, 2000),
     })),
   ]
 
-  return {
+  const eventTicketObject: Record<string, unknown> = {
     id: objectId,
     classId,
     state: 'ACTIVE',
@@ -86,14 +85,31 @@ function buildEventTicketObject(ctx: PassContext, issuerId: string) {
       uris: [{
         uri: `https://eypi.cc/tix/${ctx.event.slug}`,
         description: 'View ticket online',
+        id: 'ticket_link',
       }],
     },
-    validTimeInterval: {
-      start: {
-        date: ctx.event.eventDate || new Date().toISOString().slice(0, 10),
-      },
-    },
   }
+
+  const dateTime = buildEventDateTime(ctx)
+  if (dateTime) {
+    eventTicketObject.validTimeInterval = {
+      start: { date: dateTime.start },
+    }
+  }
+
+  return eventTicketObject
+}
+
+function assertGoogleConfig(env: Bindings): void {
+  if (!env.GOOGLE_WALLET_ISSUER_ID
+    || !env.GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL
+    || !env.GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    throw new Error('Google Wallet credentials are not configured.')
+  }
+}
+
+function normalizePrivateKey(pem: string): string {
+  return pem.includes('\\n') ? pem.replace(/\\n/g, '\n') : pem
 }
 
 export async function buildGoogleWalletSaveUrl(
@@ -112,7 +128,7 @@ export async function buildGoogleWalletSaveUrl(
 
     const jwt = await new SignJWT({
       typ: 'savetowallet',
-      origins: ['https://eypi.cc'],
+      origins: ['eypi.cc'],
       payload: {
         eventTicketClasses: [eventTicketClass],
         eventTicketObjects: [eventTicketObject],
