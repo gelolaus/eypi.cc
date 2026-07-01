@@ -83,8 +83,14 @@
           to="/reset-password"
           class="mt-4 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
         >
-          Forgot password?
+          Need password help?
         </router-link>
+        <p
+          v-if="mode === 'login'"
+          class="mt-2 text-center font-mono text-[0.65rem] text-gray-400 dark:text-slate-500"
+        >
+          Self-service reset coming soon — contact admin if locked out.
+        </p>
         <p v-if="mode === 'login'" class="mt-4 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
           Don't have an account yet?
           <span

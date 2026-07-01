@@ -15,61 +15,42 @@
       <h2 class="mb-2 text-center font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">
         RESET PASSWORD
       </h2>
-      <p class="mb-8 text-center font-mono text-xs text-gray-500 dark:text-slate-400">
-        Enter your email and we'll send a recovery link.
+      <p class="mb-6 text-center font-mono text-xs font-bold uppercase tracking-wider text-[#DEAC4B] dark:text-eypi-gold-dark">
+        Coming soon
+      </p>
+      <p class="mb-6 text-center font-mono text-xs leading-relaxed text-gray-500 dark:text-slate-400">
+        Self-service password recovery is not available yet.
       </p>
 
-      <!-- Form -->
-      <form @submit.prevent="handleRecovery" class="flex flex-col">
-        <input
-          v-model="email"
-          type="email"
-          required
-          placeholder="Email"
-          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-          data-cursor="text"
-        />
+      <div class="mb-8 space-y-4 font-mono text-xs leading-relaxed text-gray-600 dark:text-slate-400">
+        <p>
+          If you are already signed in, you can update your password from
+          <router-link
+            to="/settings"
+            class="text-[#34418F] underline transition-colors hover:text-[#DEAC4B] dark:text-slate-200 dark:hover:text-eypi-gold-dark"
+          >
+            Settings
+          </router-link>.
+        </p>
+        <p>
+          For account access issues, contact the admin via the
+          <router-link
+            to="/contact"
+            class="text-[#34418F] underline transition-colors hover:text-[#DEAC4B] dark:text-slate-200 dark:hover:text-eypi-gold-dark"
+          >
+            Contact
+          </router-link>
+          page.
+        </p>
+      </div>
 
-        <button
-          type="submit"
-          :disabled="isSending"
-          :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
-            isSending ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
-          ]"
-          data-cursor="cta"
-        >
-          {{ isSending ? 'Sending...' : 'Send Recovery Link' }}
-        </button>
-
-        <router-link
-          to="/login"
-          class="mt-6 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
-          data-cursor="nav"
-        >
-          ← Back to Login
-        </router-link>
-      </form>
+      <router-link
+        to="/login"
+        class="block text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
+        data-cursor="nav"
+      >
+        ← Back to Login
+      </router-link>
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useToast } from '@/composables/useToast'
-
-const toast = useToast()
-const router = useRouter()
-const isSending = ref(false)
-const email = ref('')
-
-const handleRecovery = () => {
-  isSending.value = true
-  setTimeout(() => {
-    isSending.value = false
-    toast.success('If an account exists with that email, you will receive a recovery link.')
-    router.push('/login')
-  }, 1200)
-}
-</script>

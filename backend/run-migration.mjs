@@ -2,6 +2,7 @@
 //
 // Usage (from the backend/ folder):
 //   node run-migration.mjs migrations/0002_tix_tables.sql
+//   node run-migration.mjs migrations/0005_add_performance_indexes.sql
 //
 // Credentials are read from environment variables, or from a local `.dev.vars`
 // file (KEY=value lines) if present. You need:
