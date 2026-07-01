@@ -1,4 +1,4 @@
-/// <reference types="vue-router" />
+import 'vue-router'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -6,5 +6,3 @@ declare module 'vue-router' {
     requiresOrg?: boolean
   }
 }
-
-export {}
