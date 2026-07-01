@@ -42,6 +42,7 @@ export type Bindings = {
   JWT_SECRET: string
   RESEND_API_KEY: string
   RATE_LIMIT_KV: KVNamespace
+  LINKS_KV: KVNamespace
   ASSETS: Fetcher
 }
 

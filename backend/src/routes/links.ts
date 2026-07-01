@@ -4,6 +4,8 @@ import { createClient } from '@libsql/client/web'
 import type { Bindings } from '../lib/db'
 import { validateDestinationUrl } from '../lib/validateDestinationUrl'
 import { isReservedSlug } from '../../../shared/reservedSlugs'
+import { logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
+import { encodeLinkKvEntry } from '../../../shared/linksKv'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -13,114 +15,6 @@ const normalizeUrl = (url: string) => {
   let trimmed = url.trim()
   if (!/^https?:\/\//i.test(trimmed)) trimmed = `https://${trimmed}`
   return trimmed
-}
-
-const REFERRER_MAP: Record<string, string> = {
-  // Own properties
-  'localhost': 'Localhost',
-  'eypi.cc': 'Eypi',
-  // Facebook
-  'facebook.com': 'Facebook',
-  'm.facebook.com': 'Facebook',
-  'l.facebook.com': 'Facebook',
-  'lm.facebook.com': 'Facebook',
-  'fb.me': 'Facebook',
-  'fb.com': 'Facebook',
-  'web.facebook.com': 'Facebook',
-  // Instagram
-  'instagram.com': 'Instagram',
-  'l.instagram.com': 'Instagram',
-  // Twitter / X
-  'twitter.com': 'Twitter / X',
-  'x.com': 'Twitter / X',
-  't.co': 'Twitter / X',
-  // TikTok
-  'tiktok.com': 'TikTok',
-  'vm.tiktok.com': 'TikTok',
-  'vt.tiktok.com': 'TikTok',
-  // YouTube
-  'youtube.com': 'YouTube',
-  'youtu.be': 'YouTube',
-  'm.youtube.com': 'YouTube',
-  // Reddit
-  'reddit.com': 'Reddit',
-  'redd.it': 'Reddit',
-  'old.reddit.com': 'Reddit',
-  // LinkedIn
-  'linkedin.com': 'LinkedIn',
-  'lnkd.in': 'LinkedIn',
-  // Pinterest
-  'pinterest.com': 'Pinterest',
-  'pin.it': 'Pinterest',
-  'pinterest.ph': 'Pinterest',
-  // Snapchat
-  'snapchat.com': 'Snapchat',
-  't.snapchat.com': 'Snapchat',
-  // WhatsApp
-  'whatsapp.com': 'WhatsApp',
-  'wa.me': 'WhatsApp',
-  'web.whatsapp.com': 'WhatsApp',
-  // Telegram
-  'telegram.org': 'Telegram',
-  't.me': 'Telegram',
-  'web.telegram.org': 'Telegram',
-  // Discord
-  'discord.com': 'Discord',
-  'discord.gg': 'Discord',
-  'ptb.discord.com': 'Discord',
-  // Threads
-  'threads.net': 'Threads',
-  'l.threads.net': 'Threads',
-  // Google
-  'google.com': 'Google',
-  'google.com.ph': 'Google',
-  'google.co': 'Google',
-  // Gmail
-  'mail.google.com': 'Gmail',
-  // Viber
-  'viber.com': 'Viber',
-  // Twitch
-  'twitch.tv': 'Twitch',
-  // GitHub
-  'github.com': 'GitHub',
-  // Medium
-  'medium.com': 'Medium',
-  // Substack
-  'substack.com': 'Substack',
-  // Notion
-  'notion.so': 'Notion',
-  'notion.site': 'Notion',
-  // Bereal
-  'bere.al': 'BeReal',
-  'bereal.com': 'BeReal',
-}
-
-function sanitizeReferrer(raw: string | undefined): string {
-  if (!raw) return 'Direct'
-  try {
-    // Handle bare hostnames (no protocol) by prepending https://
-    const url = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
-    const hostname = new URL(url).hostname.toLowerCase()
-    if (REFERRER_MAP[hostname]) return REFERRER_MAP[hostname]
-    const withoutWww = hostname.replace(/^www\./, '')
-    if (REFERRER_MAP[withoutWww]) return REFERRER_MAP[withoutWww]
-    // Check if it's localhost with a port (e.g. localhost:5173)
-    if (withoutWww.startsWith('localhost')) return 'Localhost'
-    return withoutWww || 'Direct'
-  } catch {
-    return 'Direct'
-  }
-}
-
-function getOS(userAgent: string | null): string {
-  if (!userAgent) return 'Unknown'
-  const ua = userAgent.toLowerCase()
-  if (ua.includes('win')) return 'Windows'
-  if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS'
-  if (ua.includes('mac')) return 'macOS'
-  if (ua.includes('android')) return 'Android'
-  if (ua.includes('linux')) return 'Linux'
-  return 'Unknown'
 }
 
 // Link Routes (require JWT)
@@ -226,7 +120,7 @@ app.get('/api/links/:id/analytics', async (c) => {
   }
 })
 
-// Public redirect lookup (no auth required)
+// Public redirect lookup (no auth required) — SPA fallback when edge KV misses
 app.get('/api/links/:slug', async (c) => {
   const slug = c.req.param('slug')
   const db = createClient({
@@ -243,21 +137,16 @@ app.get('/api/links/:slug', async (c) => {
   const userAgent = c.req.header('User-Agent')
   const referrer = sanitizeReferrer(c.req.header('X-Client-Referrer') || c.req.header('Referer'))
   const country = (c.req.raw as Request & { cf?: { country?: string } }).cf?.country ?? 'Unknown'
-  const os = getOS(userAgent ?? null)
-  const linkId = row.id
 
   try {
     c.executionCtx?.waitUntil(
-      Promise.all([
-        db.execute({
-          sql: 'INSERT INTO analytics (link_id, os, country, referrer) VALUES (?, ?, ?, ?)',
-          args: [linkId, os, country, referrer],
-        }),
-        db.execute({
-          sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
-          args: [slug],
-        }),
-      ])
+      logLinkClick(db, {
+        linkId: row.id,
+        slug,
+        userAgent: userAgent ?? null,
+        referrer,
+        country,
+      })
     )
   } catch {
     // executionCtx not available (e.g. local dev / non-CF runtime)
@@ -285,17 +174,40 @@ app.put('/api/links/:id', async (c) => {
     if (!validateDestinationUrl(normalizedUrl)) {
       return c.json({ error: 'Destination URL is not allowed.' }, 400)
     }
+    const normalizedSlug = slug.toLowerCase()
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
+    const existing = await db.execute({
+      sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
+      args: [id, payload.sub],
+    })
+    if (existing.rows.length === 0) {
+      return c.json({ error: 'Link not found or access denied' }, 404)
+    }
+    const oldSlug = (existing.rows[0] as unknown as { slug: string }).slug.toLowerCase()
+
     const result = await db.execute({
       sql: 'UPDATE links SET original_url = ?, slug = ? WHERE id = ? AND user_id = ?',
-      args: [normalizedUrl, slug.toLowerCase(), id, payload.sub],
+      args: [normalizedUrl, normalizedSlug, id, payload.sub],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
     }
+
+    try {
+      await c.env.LINKS_KV.put(
+        normalizedSlug,
+        encodeLinkKvEntry({ id, url: normalizedUrl }),
+      )
+      if (oldSlug !== normalizedSlug) {
+        await c.env.LINKS_KV.delete(oldSlug)
+      }
+    } catch {
+      return c.json({ error: 'Link updated in database but edge cache sync failed.' }, 500)
+    }
+
     return c.json({ status: 'success', message: 'Link updated.' })
   } catch {
     return c.json({ error: 'Update failed' }, 400)
@@ -314,6 +226,15 @@ app.delete('/api/links/:id', async (c) => {
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
+    const existing = await db.execute({
+      sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
+      args: [id, payload.sub],
+    })
+    if (existing.rows.length === 0) {
+      return c.json({ error: 'Link not found or access denied' }, 404)
+    }
+    const slug = (existing.rows[0] as unknown as { slug: string }).slug.toLowerCase()
+
     const result = await db.execute({
       sql: 'DELETE FROM links WHERE id = ? AND user_id = ?',
       args: [id, payload.sub],
@@ -321,6 +242,13 @@ app.delete('/api/links/:id', async (c) => {
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
     }
+
+    try {
+      await c.env.LINKS_KV.delete(slug)
+    } catch {
+      // DB row is gone; stale KV entry may redirect briefly until manual cleanup
+    }
+
     return c.json({ status: 'success', message: 'Link deleted.' })
   } catch {
     return c.json({ error: 'Delete failed' }, 400)
@@ -348,8 +276,6 @@ app.post('/api/links', async (c) => {
     })
     let slug = generateSlug()
     for (let attempt = 0; attempt < 10; attempt++) {
-      // Skip reserved words and collisions so an auto-generated slug never
-      // shadows a suite route.
       if (!isReservedSlug(slug)) {
         const existing = await db.execute({ sql: 'SELECT slug FROM links WHERE slug = ?', args: [slug] })
         if (existing.rows.length === 0) break
@@ -361,6 +287,16 @@ app.post('/api/links', async (c) => {
       sql: 'INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
       args: [linkId, payload.sub, normalizedUrl, slug],
     })
+
+    try {
+      await c.env.LINKS_KV.put(
+        slug.toLowerCase(),
+        encodeLinkKvEntry({ id: linkId, url: normalizedUrl }),
+      )
+    } catch {
+      return c.json({ error: 'Link created in database but edge cache sync failed.' }, 500)
+    }
+
     return c.json({ status: 'success', link: { slug, original_url: normalizedUrl } })
   } catch {
     return c.json({ error: 'Invalid Session' }, 401)

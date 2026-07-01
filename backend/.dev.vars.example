@@ -1,0 +1,11 @@
+# Copy this file to backend/.dev.vars and fill in your values.
+# Used by: wrangler dev, npm run backfill-kv, node run-migration.mjs
+#
+# Turso dashboard → your database → Connect:
+#   TURSO_DATABASE_URL = the libsql://... URL shown there
+#   TURSO_AUTH_TOKEN   = a database token (same one you set on Cloudflare Workers)
+
+# Do not wrap values in quotes — wrangler and local scripts expect plain values.
+
+TURSO_DATABASE_URL=libsql://your-database-name-your-org.turso.io
+TURSO_AUTH_TOKEN=your-turso-database-token
