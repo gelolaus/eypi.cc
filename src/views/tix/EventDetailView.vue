@@ -509,11 +509,12 @@ import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
 import type { ClusterConfig } from '@/types/selection'
 import {
+  CAMERA_CONSTRAINTS,
   SCAN_COOLDOWN_MS,
   SCAN_FPS,
   computeScanRegion,
   formatScannerError,
-  isScannerInitFallbackError,
+  isRetriableCameraError,
   isValidQrToken,
   playScanFeedback,
   type ScanStatus,
@@ -794,12 +795,15 @@ const scanMessage = ref('')
 
 type QrScannerInstance = InstanceType<typeof import('qr-scanner').default>
 type QrScannerModule = typeof import('qr-scanner').default
-type PreferredCamera = 'environment' | 'user'
 
 let qrScanner: QrScannerInstance | null = null
-let manualStream: MediaStream | null = null
+let activeStream: MediaStream | null = null
 let resetTimer: ReturnType<typeof setTimeout> | null = null
 let scanCooldown = false
+// Bumped every time startScanner()/stopScanner() runs so an in-flight (async)
+// startScanner() call from a previous tab visit can detect it was superseded
+// and bail out cleanly instead of leaving a zombie stream/scanner running.
+let startToken = 0
 
 const QR_SCANNER_OPTIONS = {
   highlightScanRegion: false,
@@ -892,35 +896,57 @@ function submitScan(qrToken: string) {
     .finally(() => scheduleReset(SCAN_COOLDOWN_MS))
 }
 
-function releaseManualStream() {
-  manualStream?.getTracks().forEach(t => t.stop())
-  manualStream = null
+function stopStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach(t => t.stop())
+}
+
+function releaseActiveStream() {
+  stopStream(activeStream)
+  activeStream = null
   if (videoRef.value?.srcObject instanceof MediaStream) {
-    videoRef.value.srcObject.getTracks().forEach(t => t.stop())
+    stopStream(videoRef.value.srcObject)
     videoRef.value.srcObject = null
   }
 }
 
 function destroyQrScanner() {
-  if (!qrScanner) return
-  qrScanner.stop()
-  qrScanner.destroy()
-  qrScanner = null
-  releaseManualStream()
+  if (qrScanner) {
+    qrScanner.stop()
+    qrScanner.destroy()
+    qrScanner = null
+  }
+  releaseActiveStream()
 }
 
-function createQrScanner(
-  QrScanner: QrScannerModule,
-  video: HTMLVideoElement,
-  preferredCamera?: PreferredCamera,
-) {
-  return new QrScanner(
-    video,
-    (result) => onDecoded(result.data),
-    preferredCamera
-      ? { ...QR_SCANNER_OPTIONS, preferredCamera }
-      : { ...QR_SCANNER_OPTIONS },
-  )
+/**
+ * Waits for the <video> ref to be mounted AND attached to the live DOM.
+ * Vue's `watch()` runs in the 'pre' flush queue — i.e. *before* the pending
+ * v-if="activeTab === 5" DOM patch is applied — so the ref can still be null
+ * on the very first tick. `nextTick()` resolves once that patch lands; the
+ * short rAF poll afterwards is a safety net for slower devices/layouts.
+ */
+async function waitForVideoElement(maxAttempts = 20): Promise<HTMLVideoElement | null> {
+  await nextTick()
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const el = videoRef.value
+    if (el?.isConnected) return el
+    await new Promise(resolve => requestAnimationFrame(resolve))
+  }
+  return videoRef.value
+}
+
+/** Tries each constraint set in order; only retries on camera-selection errors. */
+async function acquireCameraStream(): Promise<MediaStream> {
+  let lastError: unknown = null
+  for (const constraints of CAMERA_CONSTRAINTS) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints)
+    } catch (err) {
+      lastError = err
+      if (!isRetriableCameraError(err)) throw err
+    }
+  }
+  throw lastError ?? new DOMException('No camera could be acquired', 'NotFoundError')
 }
 
 async function loadQrScannerModule(): Promise<QrScannerModule> {
@@ -928,90 +954,64 @@ async function loadQrScannerModule(): Promise<QrScannerModule> {
   return QrScanner
 }
 
-function requireVideoElement(): HTMLVideoElement {
-  if (!videoRef.value) throw new DOMException('Video element not mounted', 'NotFoundError')
-  return videoRef.value
-}
-
-/** Library-managed stream; tries a specific facing mode. */
-async function startQrScannerWithPreferredCamera(preferredCamera: PreferredCamera) {
-  const QrScanner = await loadQrScannerModule()
-  const video = requireVideoElement()
-  destroyQrScanner()
-  qrScanner = createQrScanner(QrScanner, video, preferredCamera)
-  await qrScanner.start()
-}
-
-/** Library-managed stream; browser picks default camera profile. */
-async function startQrScannerWithDefaultCamera() {
-  const QrScanner = await loadQrScannerModule()
-  const video = requireVideoElement()
-  destroyQrScanner()
-  qrScanner = createQrScanner(QrScanner, video)
-  await qrScanner.start()
-}
-
-/** Pre-acquire an unrestricted stream, bind to video, then start scanner on that feed. */
-async function startQrScannerWithManualStream() {
-  const QrScanner = await loadQrScannerModule()
-  const video = requireVideoElement()
-  destroyQrScanner()
-
-  manualStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-  video.srcObject = manualStream
-  await video.play()
-
-  qrScanner = createQrScanner(QrScanner, video)
-  await qrScanner.start()
-}
-
-async function startScanner() {
-  scannerError.value = ''
-  scanStatus.value = 'idle'
-  scanMessage.value = ''
-
-  if (!videoRef.value) {
-    scanStatus.value = 'error'
-    scanMessage.value = 'NotFoundError: Video element not mounted'
-    return
-  }
-
-  if (!navigator.mediaDevices?.getUserMedia) {
-    const message = 'NotSupportedError: Camera API unavailable in this browser'
-    scannerError.value = message
-    scanStatus.value = 'error'
-    scanMessage.value = message
-    return
-  }
-
-  const strategies: Array<() => Promise<void>> = [
-    () => startQrScannerWithPreferredCamera('environment'),
-    () => startQrScannerWithPreferredCamera('user'),
-    () => startQrScannerWithDefaultCamera(),
-    () => startQrScannerWithManualStream(),
-  ]
-
-  let lastError: unknown = null
-
-  for (const run of strategies) {
-    try {
-      await run()
-      scanStatus.value = 'decoding'
-      return
-    } catch (err) {
-      lastError = err
-      destroyQrScanner()
-      if (!isScannerInitFallbackError(err)) break
-    }
-  }
-
-  const message = formatScannerError(lastError)
+function reportScannerError(err: unknown) {
+  const message = formatScannerError(err)
   scannerError.value = message
   scanStatus.value = 'error'
   scanMessage.value = message
 }
 
+async function startScanner() {
+  const token = ++startToken
+  scannerError.value = ''
+  scanStatus.value = 'idle'
+  scanMessage.value = ''
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    reportScannerError('NotSupportedError: Camera API unavailable in this browser')
+    return
+  }
+
+  const video = await waitForVideoElement()
+  if (token !== startToken) return // superseded by a newer startScanner()/stopScanner() call
+  if (!video) {
+    reportScannerError(new DOMException('Video element failed to mount', 'NotFoundError'))
+    return
+  }
+
+  let stream: MediaStream
+  try {
+    stream = await acquireCameraStream()
+  } catch (err) {
+    if (token === startToken) reportScannerError(err)
+    return
+  }
+  if (token !== startToken) { stopStream(stream); return }
+
+  try {
+    // Construct the scanner BEFORE binding the stream so its internal
+    // 'loadedmetadata'/'play' listeners are attached in time to catch the
+    // real transition-to-playing event. (Pre-playing the video ourselves
+    // would make that second play() a no-op, and qr-scanner's decode loop —
+    // which only starts from those event handlers — would never begin.)
+    const QrScanner = await loadQrScannerModule()
+    if (token !== startToken) { stopStream(stream); return }
+
+    qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
+    activeStream = stream
+    video.srcObject = stream
+    await qrScanner.start()
+
+    if (token !== startToken) { destroyQrScanner(); return }
+    scanStatus.value = 'decoding'
+  } catch (err) {
+    stopStream(stream)
+    if (token === startToken) reportScannerError(err)
+  }
+}
+
 function stopScanner() {
+  startToken++ // invalidate any in-flight startScanner() call
   if (resetTimer) { clearTimeout(resetTimer); resetTimer = null }
   destroyQrScanner()
   scanCooldown = false
@@ -1021,7 +1021,7 @@ function stopScanner() {
 }
 
 watch(activeTab, (tab, prev) => {
-  if (tab === 5) setTimeout(startScanner, 100)
+  if (tab === 5) startScanner()
   else if (prev === 5) stopScanner()
 })
 

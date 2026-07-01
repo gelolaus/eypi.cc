@@ -39,7 +39,13 @@ export function formatScannerError(err: unknown): string {
   return String(err ?? 'Unknown camera error')
 }
 
-export function isCameraHardwareError(err: unknown): boolean {
+/**
+ * True when a getUserMedia() failure is about *camera selection* (wrong facing
+ * mode, unsupported resolution, device momentarily busy) rather than a hard
+ * stop (permission denied, insecure context). Selection failures are worth
+ * retrying with looser constraints; hard stops are not.
+ */
+export function isRetriableCameraError(err: unknown): boolean {
   if (err instanceof DOMException) {
     return err.name === 'NotFoundError'
       || err.name === 'NotReadableError'
@@ -50,10 +56,21 @@ export function isCameraHardwareError(err: unknown): boolean {
   return false
 }
 
-/** True when the next camera profile / stream strategy should be attempted. */
-export function isScannerInitFallbackError(err: unknown): boolean {
-  return isCameraHardwareError(err)
-}
+/**
+ * Progressively looser getUserMedia() constraints. We acquire the stream
+ * ourselves — rather than letting qr-scanner manage its own camera
+ * acquisition — because qr-scanner's internal implementation catches every
+ * per-constraint DOMException silently and always rethrows the same generic
+ * "Camera not found." string, making it impossible to tell a permission
+ * block (NotAllowedError) apart from a missing rear camera (NotFoundError)
+ * or a device already in use (NotReadableError).
+ */
+export const CAMERA_CONSTRAINTS: MediaStreamConstraints[] = [
+  { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+  { video: { facingMode: 'environment' }, audio: false },
+  { video: { facingMode: 'user' }, audio: false },
+  { video: true, audio: false },
+]
 
 export function playScanFeedback() {
   if (navigator.vibrate) {
