@@ -7,7 +7,7 @@
           style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
           data-cursor="text"
         >
-          Event Tickets
+          Tix
         </h1>
         <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
           Manage tickets &amp; check-in

@@ -1,14 +1,29 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "eypicc-frontend",
+  "main": "worker/index.ts",
   "compatibility_date": "2025-09-27",
   "observability": {
     "enabled": true
   },
   "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "LINKS_KV",
+      "id": "4634074c1831474fbb18209665da5165"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "eypi.cc/*",
+      "zone_name": "eypi.cc"
+    }
   ]
 }

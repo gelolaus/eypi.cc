@@ -1,11 +1,7 @@
-﻿<template>
+<template>
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div v-for="i in 2" :key="i" class="h-32 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
-    </div>
-
-    <div v-else-if="isLocked" class="flex-1 flex items-center justify-center">
-      <OrgLockout />
     </div>
 
     <template v-else>
@@ -56,15 +52,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
-import OrgLockout from '@/components/OrgLockout.vue'
 
-const router = useRouter()
-const { authHeaders } = useAuth()
+interface FormCatalogItem {
+  id: string
+  title: string
+  description: string
+  route: string
+}
 
-const loading = ref(true)
-const isLocked = ref(false)
-
-const availableForms = [
+const FALLBACK_FORMS: FormCatalogItem[] = [
   {
     id: 'concessionaire',
     title: 'Concessionaire Form',
@@ -85,12 +81,18 @@ const availableForms = [
   },
 ]
 
+const router = useRouter()
+const { authHeaders } = useAuth()
+
+const loading = ref(true)
+const availableForms = ref<FormCatalogItem[]>(FALLBACK_FORMS)
+
 const searchQuery = ref('')
 
 const filteredForms = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return availableForms
-  return availableForms.filter(
+  if (!q) return availableForms.value
+  return availableForms.value.filter(
     (f) =>
       f.title.toLowerCase().includes(q) ||
       f.description.toLowerCase().includes(q)
@@ -99,26 +101,17 @@ const filteredForms = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs`, { headers: authHeaders() })
-    if (res.status === 403) {
-      isLocked.value = true
-      return
-    }
-    const data = await res.json()
+    const res = await fetch(`${API_BASE_URL}/api/forms`, { headers: authHeaders() })
     if (res.ok) {
-      const orgsList = data.orgs || []
-      if (orgsList.length === 0) {
-        isLocked.value = true
+      const data = await res.json() as { forms?: FormCatalogItem[] }
+      if (data.forms?.length) {
+        availableForms.value = data.forms
       }
-    } else {
-      isLocked.value = true
     }
   } catch {
-    isLocked.value = true
+    // Keep static fallback catalog; org access is enforced by FormsLayout
   } finally {
     loading.value = false
   }
 })
 </script>
-
-

@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
+import { useOrgMembership } from '@/composables/useOrgMembership'
+
+const { checkOrgMembership } = useOrgMembership()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,27 +33,30 @@ const router = createRouter({
     // ── Forms module ─────────────────────────────────────────────────────────
     {
       path: '/forms',
-      name: 'forms',
-      component: () => import('@/views/forms/FormsHomeView.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/forms/concessionaire',
-      name: 'forms-concessionaire',
-      component: () => import('@/views/forms/generators/ConcessionaireView.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/forms/visitors-pass',
-      name: 'forms-visitors-pass',
-      component: () => import('@/views/forms/generators/VisitorsPassView.vue'),
-      meta: { requiresAuth: true },
-    },
-    {
-      path: '/forms/letter-of-intent',
-      name: 'forms-letter-of-intent',
-      component: () => import('@/views/forms/generators/LetterOfIntentView.vue'),
-      meta: { requiresAuth: true },
+      component: () => import('@/views/forms/FormsLayout.vue'),
+      meta: { requiresAuth: true, requiresOrg: true },
+      children: [
+        {
+          path: '',
+          name: 'forms',
+          component: () => import('@/views/forms/FormsHomeView.vue'),
+        },
+        {
+          path: 'concessionaire',
+          name: 'forms-concessionaire',
+          component: () => import('@/views/forms/generators/ConcessionaireView.vue'),
+        },
+        {
+          path: 'visitors-pass',
+          name: 'forms-visitors-pass',
+          component: () => import('@/views/forms/generators/VisitorsPassView.vue'),
+        },
+        {
+          path: 'letter-of-intent',
+          name: 'forms-letter-of-intent',
+          component: () => import('@/views/forms/generators/LetterOfIntentView.vue'),
+        },
+      ],
     },
 
     // ── Frames module (profile frames) ───────────────────────────────────────
@@ -168,16 +174,34 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const isAuthenticated = !!localStorage.getItem('eypi_token')
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({ name: 'login' })
-  } else if (to.name === 'login' && isAuthenticated) {
-    next({ name: 'dashboard' })
-  } else {
-    next()
+    return
   }
+
+  if (to.name === 'login' && isAuthenticated) {
+    next({ name: 'dashboard' })
+    return
+  }
+
+  const requiresOrg = to.matched.some((record) => record.meta.requiresOrg)
+
+  if (requiresOrg) {
+    const hasOrg = await checkOrgMembership()
+    if (!hasOrg) {
+      if (to.name === 'forms') {
+        next()
+        return
+      }
+      next({ name: 'forms', replace: true })
+      return
+    }
+  }
+
+  next()
 })
 
 export default router

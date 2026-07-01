@@ -7,9 +7,10 @@
                     "dev":  "vite",
                     "build":  "vue-tsc -b \u0026\u0026 vite build",
                     "preview":  "npm run build \u0026\u0026 wrangler dev",
-                    "deploy":  "npm run build \u0026\u0026 wrangler pages deploy dist --project-name eypicc-frontend --branch main --commit-dirty=true"
+                    "deploy":  "vite build \u0026\u0026 wrangler deploy --config dist/eypicc_frontend/wrangler.json"
                 },
     "dependencies":  {
+                         "@libsql/client":  "^0.17.0",
                          "chart.js":  "^4.5.1",
                          "docxtemplater":  "^3.68.3",
                          "file-saver":  "^2.0.5",
