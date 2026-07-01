@@ -44,9 +44,15 @@ export function isCameraHardwareError(err: unknown): boolean {
     return err.name === 'NotFoundError'
       || err.name === 'NotReadableError'
       || err.name === 'OverconstrainedError'
+      || err.name === 'ConstraintNotSatisfiedError'
   }
   if (typeof err === 'string') return err.toLowerCase().includes('camera not found')
   return false
+}
+
+/** True when the next camera profile / stream strategy should be attempted. */
+export function isScannerInitFallbackError(err: unknown): boolean {
+  return isCameraHardwareError(err)
 }
 
 export function playScanFeedback() {

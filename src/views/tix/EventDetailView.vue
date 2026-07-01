@@ -513,7 +513,7 @@ import {
   SCAN_FPS,
   computeScanRegion,
   formatScannerError,
-  isCameraHardwareError,
+  isScannerInitFallbackError,
   isValidQrToken,
   playScanFeedback,
   type ScanStatus,
@@ -793,9 +793,21 @@ const scanStatus = ref<ScanStatus>('idle')
 const scanMessage = ref('')
 
 type QrScannerInstance = InstanceType<typeof import('qr-scanner').default>
+type QrScannerModule = typeof import('qr-scanner').default
+type PreferredCamera = 'environment' | 'user'
+
 let qrScanner: QrScannerInstance | null = null
+let manualStream: MediaStream | null = null
 let resetTimer: ReturnType<typeof setTimeout> | null = null
 let scanCooldown = false
+
+const QR_SCANNER_OPTIONS = {
+  highlightScanRegion: false,
+  highlightCodeOutline: false,
+  maxScansPerSecond: SCAN_FPS,
+  returnDetailedScanResult: true as const,
+  calculateScanRegion: computeScanRegion,
+}
 
 const hudLabel = computed(() => {
   const labels: Record<ScanStatus, string> = {
@@ -880,37 +892,76 @@ function submitScan(qrToken: string) {
     .finally(() => scheduleReset(SCAN_COOLDOWN_MS))
 }
 
+function releaseManualStream() {
+  manualStream?.getTracks().forEach(t => t.stop())
+  manualStream = null
+  if (videoRef.value?.srcObject instanceof MediaStream) {
+    videoRef.value.srcObject.getTracks().forEach(t => t.stop())
+    videoRef.value.srcObject = null
+  }
+}
+
 function destroyQrScanner() {
   if (!qrScanner) return
   qrScanner.stop()
   qrScanner.destroy()
   qrScanner = null
+  releaseManualStream()
 }
 
 function createQrScanner(
-  QrScanner: typeof import('qr-scanner').default,
+  QrScanner: QrScannerModule,
   video: HTMLVideoElement,
-  preferredCamera: 'environment' | 'user',
+  preferredCamera?: PreferredCamera,
 ) {
   return new QrScanner(
     video,
     (result) => onDecoded(result.data),
-    {
-      preferredCamera,
-      highlightScanRegion: false,
-      highlightCodeOutline: false,
-      maxScansPerSecond: SCAN_FPS,
-      returnDetailedScanResult: true,
-      calculateScanRegion: computeScanRegion,
-    },
+    preferredCamera
+      ? { ...QR_SCANNER_OPTIONS, preferredCamera }
+      : { ...QR_SCANNER_OPTIONS },
   )
 }
 
-async function startQrScannerWithCamera(preferredCamera: 'environment' | 'user') {
+async function loadQrScannerModule(): Promise<QrScannerModule> {
   const { default: QrScanner } = await import('qr-scanner')
+  return QrScanner
+}
+
+function requireVideoElement(): HTMLVideoElement {
   if (!videoRef.value) throw new DOMException('Video element not mounted', 'NotFoundError')
+  return videoRef.value
+}
+
+/** Library-managed stream; tries a specific facing mode. */
+async function startQrScannerWithPreferredCamera(preferredCamera: PreferredCamera) {
+  const QrScanner = await loadQrScannerModule()
+  const video = requireVideoElement()
   destroyQrScanner()
-  qrScanner = createQrScanner(QrScanner, videoRef.value, preferredCamera)
+  qrScanner = createQrScanner(QrScanner, video, preferredCamera)
+  await qrScanner.start()
+}
+
+/** Library-managed stream; browser picks default camera profile. */
+async function startQrScannerWithDefaultCamera() {
+  const QrScanner = await loadQrScannerModule()
+  const video = requireVideoElement()
+  destroyQrScanner()
+  qrScanner = createQrScanner(QrScanner, video)
+  await qrScanner.start()
+}
+
+/** Pre-acquire an unrestricted stream, bind to video, then start scanner on that feed. */
+async function startQrScannerWithManualStream() {
+  const QrScanner = await loadQrScannerModule()
+  const video = requireVideoElement()
+  destroyQrScanner()
+
+  manualStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+  video.srcObject = manualStream
+  await video.play()
+
+  qrScanner = createQrScanner(QrScanner, video)
   await qrScanner.start()
 }
 
@@ -925,24 +976,39 @@ async function startScanner() {
     return
   }
 
-  try {
-    try {
-      await startQrScannerWithCamera('environment')
-    } catch (err) {
-      if (isCameraHardwareError(err)) {
-        destroyQrScanner()
-        await startQrScannerWithCamera('user')
-      } else {
-        throw err
-      }
-    }
-    scanStatus.value = 'decoding'
-  } catch (err: unknown) {
-    const message = formatScannerError(err)
+  if (!navigator.mediaDevices?.getUserMedia) {
+    const message = 'NotSupportedError: Camera API unavailable in this browser'
     scannerError.value = message
     scanStatus.value = 'error'
     scanMessage.value = message
+    return
   }
+
+  const strategies: Array<() => Promise<void>> = [
+    () => startQrScannerWithPreferredCamera('environment'),
+    () => startQrScannerWithPreferredCamera('user'),
+    () => startQrScannerWithDefaultCamera(),
+    () => startQrScannerWithManualStream(),
+  ]
+
+  let lastError: unknown = null
+
+  for (const run of strategies) {
+    try {
+      await run()
+      scanStatus.value = 'decoding'
+      return
+    } catch (err) {
+      lastError = err
+      destroyQrScanner()
+      if (!isScannerInitFallbackError(err)) break
+    }
+  }
+
+  const message = formatScannerError(lastError)
+  scannerError.value = message
+  scanStatus.value = 'error'
+  scanMessage.value = message
 }
 
 function stopScanner() {
