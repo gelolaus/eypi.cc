@@ -225,7 +225,8 @@
                 </button>
               </div>
 
-              <!-- Viewfinder mask + center crop guide -->
+              <!-- Purely visual aiming guide — CSS only, never touches the
+                   pixels handed to the detection engines. -->
               <div class="pointer-events-none absolute inset-0">
                 <div
                   class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-white/90"
@@ -531,7 +532,6 @@ import {
   CAMERA_CONSTRAINTS,
   SCAN_COOLDOWN_MS,
   SCAN_FPS,
-  computeScanRegion,
   formatScannerError,
   isRetriableCameraError,
   isValidQrToken,
@@ -774,7 +774,7 @@ async function downloadGuestQr(a: { firstName: string; lastName: string; qrToken
   const blob = await qr.getRawData('png')
   if (blob) {
     const name = `${a.firstName}_${a.lastName}`.replace(/[^a-zA-Z0-9_]/g, '_')
-    const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(blob as Blob)
     const link = document.createElement('a')
     link.href = url; link.download = `${name}-qr.png`; link.click()
     URL.revokeObjectURL(url)
@@ -816,6 +816,11 @@ const scanMessage = ref('')
 type QrScannerInstance = InstanceType<typeof import('qr-scanner').default>
 type QrScannerModule = typeof import('qr-scanner').default
 
+/** Minimal shape of the native BarcodeDetector API (not yet in all TS lib targets). */
+type NativeBarcodeDetector = {
+  detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>
+}
+
 let qrScanner: QrScannerInstance | null = null
 let activeStream: MediaStream | null = null
 let resetTimer: ReturnType<typeof setTimeout> | null = null
@@ -823,18 +828,28 @@ let scanCooldown = false
 const cameraStarting = ref(false)
 let startToken = 0
 
+// Native GPU-accelerated path (Chrome/Android/Windows). Runs on raw
+// requestAnimationFrame ticks against the full, uncropped video element —
+// modern hardware decodes an entire frame in sub-millisecond time, so there
+// is nothing to gain (and latency to lose) by cropping or throttling it.
+let nativeDetector: NativeBarcodeDetector | null = null
+let nativeRafId: number | null = null
+let detecting = false
+
 const needsCameraPrompt = computed(() =>
   activeTab.value === 5
   && (scanStatus.value === 'idle' || scanStatus.value === 'error')
   && !cameraStarting.value,
 )
 
+// Fallback engine (iOS/Safari and any browser without BarcodeDetector).
+// No calculateScanRegion — the worker processes the full native frame size
+// so nothing is destructively clipped before jsQR ever sees it.
 const QR_SCANNER_OPTIONS = {
   highlightScanRegion: false,
   highlightCodeOutline: false,
   maxScansPerSecond: SCAN_FPS,
   returnDetailedScanResult: true as const,
-  calculateScanRegion: computeScanRegion,
 }
 
 const hudLabel = computed(() => {
@@ -933,7 +948,38 @@ function releaseActiveStream() {
   }
 }
 
+/**
+ * Drives the native BarcodeDetector against raw rAF ticks. detect() runs
+ * fully async and the next frame is always scheduled immediately — the
+ * `detecting` mutex only prevents two overlapping detect() calls from
+ * queueing up, it never delays or skips the rAF loop itself, so the camera
+ * preview and detection cadence stay perfectly real-time.
+ */
+function startNativeDetectionLoop(detector: NativeBarcodeDetector, video: HTMLVideoElement) {
+  const tick = () => {
+    if (!detecting && !scanCooldown && video.readyState >= video.HAVE_CURRENT_DATA) {
+      detecting = true
+      detector.detect(video)
+        .then((codes) => { onDecoded(codes[0]?.rawValue ?? null) })
+        .catch(() => { /* transient frame miss (e.g. mid-resize) — next tick retries */ })
+        .finally(() => { detecting = false })
+    }
+    nativeRafId = requestAnimationFrame(tick)
+  }
+  nativeRafId = requestAnimationFrame(tick)
+}
+
+function stopNativeDetectionLoop() {
+  if (nativeRafId !== null) {
+    cancelAnimationFrame(nativeRafId)
+    nativeRafId = null
+  }
+  nativeDetector = null
+  detecting = false
+}
+
 function destroyQrScanner() {
+  stopNativeDetectionLoop()
   if (qrScanner) {
     qrScanner.stop()
     qrScanner.destroy()
@@ -1026,20 +1072,35 @@ async function startScannerFromUserGesture() {
   if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
 
   try {
-    const QrScanner = await loadQrScannerModule()
-    if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
+    if ('BarcodeDetector' in window) {
+      // Native GPU path — feed the full, raw, uncropped stream directly.
+      destroyQrScanner()
+      activeStream = stream
+      video.srcObject = stream
+      await video.play()
+      if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }
 
-    destroyQrScanner()
-    qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
-    activeStream = stream
-    video.srcObject = stream
-    await qrScanner.start()
+      // @ts-expect-error BarcodeDetector is not yet in all TS lib targets
+      nativeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) as NativeBarcodeDetector
+      startNativeDetectionLoop(nativeDetector, video)
+    } else {
+      // Fallback engine — qr-scanner's Web Worker + jsQR, full frame size.
+      const QrScanner = await loadQrScannerModule()
+      if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
+
+      destroyQrScanner()
+      qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
+      activeStream = stream
+      video.srcObject = stream
+      await qrScanner.start()
+    }
 
     if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }
     cameraStarting.value = false
     scanStatus.value = 'decoding'
   } catch (err) {
     stopStream(stream)
+    destroyQrScanner()
     cameraStarting.value = false
     if (token === startToken) reportScannerError(err)
   }
@@ -1056,7 +1117,7 @@ function stopScanner() {
   scannerError.value = ''
 }
 
-watch(activeTab, (tab, prev) => {
+watch(activeTab, (_tab, prev) => {
   if (prev === 5) stopScanner()
 })
 

@@ -1,6 +1,10 @@
-export const SCAN_FPS = 18
+// qr-scanner's own decode throughput cap (Web Worker / jsQR fallback path).
+// The native BarcodeDetector path is not throttled by this constant — it runs
+// on every animation frame the GPU/OS hands us, since modern hardware decodes
+// a full frame in well under a millisecond and any artificial cap only adds
+// latency for zero benefit.
+export const SCAN_FPS = 25
 export const SCAN_COOLDOWN_MS = 1500
-export const CROP_DOWNSCALE = 400
 
 export type ScanStatus =
   | 'idle'
@@ -15,20 +19,6 @@ export const UUID_RE =
 
 export function isValidQrToken(s: string): boolean {
   return UUID_RE.test(s.trim())
-}
-
-export function computeScanRegion(video: HTMLVideoElement) {
-  const s = Math.min(video.videoWidth, video.videoHeight)
-  const x = (video.videoWidth - s) / 2
-  const y = (video.videoHeight - s) / 2
-  return {
-    x,
-    y,
-    width: s,
-    height: s,
-    downScaledWidth: CROP_DOWNSCALE,
-    downScaledHeight: CROP_DOWNSCALE,
-  }
 }
 
 export function formatScannerError(err: unknown): string {
