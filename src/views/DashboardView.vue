@@ -65,7 +65,7 @@ const modules = [
   },
   {
     id: 'ticketing',
-    title: 'Event Tickets',
+    title: 'Tix',
     description: 'Create events, manage guest lists, and run QR-code check-in.',
     route: '/manage/tix',
   },

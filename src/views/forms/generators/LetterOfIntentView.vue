@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col min-h-[calc(100vh-5rem)]">
     <div class="w-full flex-1">
       <div
@@ -142,6 +142,10 @@ import { reactive, ref } from 'vue'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
+import { API_BASE_URL } from '@/config/api'
+import { useAuth } from '@/composables/useAuth'
+
+const { authHeaders } = useAuth()
 
 const formData = reactive({
   submissionDate: '',
@@ -183,7 +187,9 @@ async function generateDocuments() {
 
   isGenerating.value = true
   try {
-    const response = await fetch('/forms/templates/letter_of_intent_and_waiver.docx')
+    const response = await fetch(`${API_BASE_URL}/api/forms/templates/letter_of_intent_and_waiver.docx`, {
+      headers: authHeaders(),
+    })
     if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)
     const buffer = await response.arrayBuffer()
 

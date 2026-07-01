@@ -35,3 +35,4 @@ dist-ssr
 
 # Database migrations — keep schema out of the (to-be-public) repo
 *.sql
+backend/assets/forms/templates/*.docx

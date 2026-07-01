@@ -8,7 +8,11 @@
       "binding": "RATE_LIMIT_KV",
       "id": "5859d48ee495460aad9d806e0e3c1523"
     }
-  ]
+  ],
+  "assets": {
+    "directory": "./assets",
+    "binding": "ASSETS"
+  }
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],

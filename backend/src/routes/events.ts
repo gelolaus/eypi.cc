@@ -1,11 +1,17 @@
 import { Hono } from 'hono'
 import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import { checkRateLimit } from '../lib/rateLimit'
 import type { Client } from '@libsql/client/web'
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
 // centrally there, so this module only declares the /api/events/* handlers.
 const app = new Hono<{ Bindings: Bindings }>()
+
+const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
+const LOOKUP_RL_KEY = (ip: string) => `rl:tix-lookup:${ip}`
+const LOOKUP_RL_LIMIT = 10
+const LOOKUP_RL_WINDOW = 900
 async function requireEventLead(client: Client, slug: string, userId: string, requestedOrgId?: string): Promise<{ ok: true, event: any } | { ok: false, status: 403 | 404, message: string }> {
   const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees FROM events WHERE slug = ?', args: [slug] })
   if (evRes.rows.length === 0) return { ok: false, status: 404, message: 'Event not found.' }
@@ -135,6 +141,22 @@ app.get('/api/events', async (c) => {
 // ── GET /api/events/:slug ─────────────────────────────────────────────────────
 app.get('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
+  const user = await getUser(c)
+
+  if (!user) {
+    const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+    const allowed = await checkRateLimit(
+      c.env.RATE_LIMIT_KV,
+      LOOKUP_RL_KEY(ip),
+      LOOKUP_RL_LIMIT,
+      LOOKUP_RL_WINDOW,
+    )
+    if (!allowed) {
+      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
+    }
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+  }
+
   const client = db(c.env)
 
   const result = await client.execute({
@@ -144,7 +166,6 @@ app.get('/api/events/:slug', async (c) => {
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
 
   const event = result.rows[0]
-  const user = await getUser(c)
 
   const countRes = await client.execute({
     sql: 'SELECT COUNT(*) as cnt FROM attendees WHERE event_id = ?',
@@ -161,7 +182,7 @@ app.get('/api/events/:slug', async (c) => {
       eventDate: event.event_date,
       eventTime: event.event_time,
       location: event.location,
-      isLead: user ? (await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))) === event.org_id : false,
+      isLead: (await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))) === event.org_id,
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,
       attendeeCount,
@@ -898,6 +919,17 @@ app.post('/api/events/:slug/add-guest', async (c) => {
 
 // ── POST /api/events/:slug/lookup ─────────────────────────────────────────────
 app.post('/api/events/:slug/lookup', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const allowed = await checkRateLimit(
+    c.env.RATE_LIMIT_KV,
+    LOOKUP_RL_KEY(ip),
+    LOOKUP_RL_LIMIT,
+    LOOKUP_RL_WINDOW,
+  )
+  if (!allowed) {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
+  }
+
   const slug = c.req.param('slug')
   const body = await c.req.json() as { firstName: string; lastName: string; email: string }
 
@@ -910,7 +942,9 @@ app.post('/api/events/:slug/lookup', async (c) => {
     sql: 'SELECT id, name, event_date, event_time, location FROM events WHERE slug = ?',
     args: [slug],
   })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
+  if (evRes.rows.length === 0) {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+  }
   const event = evRes.rows[0]
 
   const aRes = await client.execute({
@@ -919,7 +953,7 @@ app.post('/api/events/:slug/lookup', async (c) => {
     args: [event.id, body.email.trim(), body.firstName.trim(), body.lastName.trim()],
   })
   if (aRes.rows.length === 0) {
-    return c.json({ status: 'error', message: 'No ticket found. Check your details and try again.' }, 404)
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
 
   const a = aRes.rows[0]
