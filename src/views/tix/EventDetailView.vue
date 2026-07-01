@@ -945,7 +945,13 @@ async function startScanner() {
       scanStatus.value = 'ready'
     }
   } catch (err: unknown) {
-    scannerError.value = err instanceof Error ? err.message : 'Camera unavailable.'
+    if (err instanceof Error) {
+      scannerError.value = `${err.name}: ${err.message}`
+    } else if (err && typeof err === 'object' && 'name' in err && 'message' in err) {
+      scannerError.value = `${String((err as { name: unknown }).name)}: ${String((err as { message: unknown }).message)}`
+    } else {
+      scannerError.value = String(err ?? 'Unknown camera error')
+    }
     scanStatus.value = 'idle'
   }
 }
