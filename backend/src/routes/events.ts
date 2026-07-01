@@ -1,6 +1,10 @@
 import { Hono } from 'hono'
+import { sign } from 'hono/jwt'
 import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
 import { checkRateLimit } from '../lib/rateLimit'
+import { buildApplePass } from '../lib/passes/applePass'
+import { PASS_TOKEN_TTL_SEC, loadPassContext, verifyPassToken } from '../lib/passes/context'
+import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
 import type { Client } from '@libsql/client/web'
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
@@ -948,7 +952,7 @@ app.post('/api/events/:slug/lookup', async (c) => {
   const event = evRes.rows[0]
 
   const aRes = await client.execute({
-    sql: `SELECT id, first_name, last_name, email, qr_token FROM attendees
+    sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value FROM attendees
           WHERE event_id = ? AND LOWER(email) = LOWER(?) AND LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)`,
     args: [event.id, body.email.trim(), body.firstName.trim(), body.lastName.trim()],
   })
@@ -957,16 +961,116 @@ app.post('/api/events/:slug/lookup', async (c) => {
   }
 
   const a = aRes.rows[0]
+  const exp = Math.floor(Date.now() / 1000) + PASS_TOKEN_TTL_SEC
+  const passToken = await sign({
+    typ: 'pass',
+    sub: a.id as string,
+    eventId: event.id as string,
+    slug,
+    exp,
+  }, c.env.JWT_SECRET)
+
   return c.json({
     status: 'ok',
+    passToken,
     ticket: {
       firstName: a.first_name,
       lastName: a.last_name,
       email: a.email,
       qrToken: a.qr_token,
+      clusterValue: a.cluster_value ?? null,
       event: { slug, name: event.name, eventDate: event.event_date, eventTime: event.event_time, location: event.location },
     },
   })
+})
+
+// ── GET /api/events/:slug/passes/apple ─────────────────────────────────────────
+app.get('/api/events/:slug/passes/apple', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const allowed = await checkRateLimit(
+    c.env.RATE_LIMIT_KV,
+    LOOKUP_RL_KEY(ip),
+    LOOKUP_RL_LIMIT,
+    LOOKUP_RL_WINDOW,
+  )
+  if (!allowed) {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
+  }
+
+  const slug = c.req.param('slug')
+  const token = (c.req.query('token') ?? '').trim()
+  if (!token) {
+    return c.json({ status: 'error', message: 'Pass token is required.' }, 400)
+  }
+
+  try {
+    const claims = await verifyPassToken(c.env, token, slug)
+    if (!claims) {
+      return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
+    }
+
+    const client = db(c.env)
+    const ctx = await loadPassContext(client, slug, claims.sub)
+    if (!ctx || ctx.event.id !== claims.eventId) {
+      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+    }
+
+    const pkpass = await buildApplePass(ctx, c.env)
+    return new Response(pkpass, {
+      headers: {
+        'Content-Type': 'application/vnd.apple.pkpass',
+        'Content-Disposition': 'attachment; filename="ticket.pkpass"',
+      },
+    })
+  } catch (err) {
+    console.error('GET /passes/apple error:', err instanceof Error ? err.message : err)
+    const message = err instanceof Error && err.message.includes('not configured')
+      ? 'Wallet passes are not available right now.'
+      : LOOKUP_FAIL_MSG
+    return c.json({ status: 'error', message }, 503)
+  }
+})
+
+// ── GET /api/events/:slug/passes/google ────────────────────────────────────────
+app.get('/api/events/:slug/passes/google', async (c) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const allowed = await checkRateLimit(
+    c.env.RATE_LIMIT_KV,
+    LOOKUP_RL_KEY(ip),
+    LOOKUP_RL_LIMIT,
+    LOOKUP_RL_WINDOW,
+  )
+  if (!allowed) {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
+  }
+
+  const slug = c.req.param('slug')
+  const token = (c.req.query('token') ?? '').trim()
+  if (!token) {
+    return c.json({ status: 'error', message: 'Pass token is required.' }, 400)
+  }
+
+  try {
+    const claims = await verifyPassToken(c.env, token, slug)
+    if (!claims) {
+      return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
+    }
+
+    const client = db(c.env)
+    const ctx = await loadPassContext(client, slug, claims.sub)
+    if (!ctx || ctx.event.id !== claims.eventId) {
+      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+    }
+
+    const url = await buildGoogleWalletSaveUrl(ctx, c.env)
+    return c.json({ status: 'ok', url })
+  } catch (err) {
+    console.error('GET /passes/google error:', err instanceof Error ? err.message : err)
+    const message = err instanceof Error && err.message.includes('not configured')
+      ? 'Wallet passes are not available right now.'
+      : LOOKUP_FAIL_MSG
+    return c.json({ status: 'error', message }, 503)
+  }
 })
 
 // ── POST /api/events/:slug/checkin ────────────────────────────────────────────

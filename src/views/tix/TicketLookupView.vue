@@ -34,6 +34,27 @@
         <p class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">
           Screenshot this QR — it is not saved on your device.
         </p>
+
+        <div v-if="passToken" class="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            :disabled="savingGoogleWallet"
+            :class="[
+              'w-full rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-slate-600',
+              savingGoogleWallet ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
+            ]"
+            @click="saveToGoogleWallet"
+          >
+            {{ savingGoogleWallet ? 'Opening...' : 'Save to Google Wallet' }}
+          </button>
+          <p
+            v-if="walletError"
+            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center font-mono text-xs font-bold text-red-600 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
+          >
+            {{ walletError }}
+          </p>
+        </div>
+
         <button
           type="button"
           class="mt-4 font-mono text-xs uppercase tracking-widest text-gray-400 underline hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
@@ -123,12 +144,16 @@ interface Ticket {
   lastName: string
   email: string
   qrToken: string
+  clusterValue?: string | null
   event?: EventInfo
 }
 
 const lookingUp = ref(false)
 const ticket = ref<Ticket | null>(null)
+const passToken = ref('')
 const qrContainer = ref<HTMLElement | null>(null)
+const savingGoogleWallet = ref(false)
+const walletError = ref('')
 
 const form = ref({ firstName: '', lastName: '', email: '' })
 const lookupError = ref('')
@@ -158,9 +183,11 @@ async function lookup() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value),
     })
-    const data = await res.json() as { status: string; message?: string; ticket?: Ticket }
+    const data = await res.json() as { status: string; message?: string; ticket?: Ticket; passToken?: string }
     if (!res.ok) throw new Error(data.message ?? 'No ticket found. Check your details and try again.')
     ticket.value = data.ticket!
+    passToken.value = data.passToken ?? ''
+    walletError.value = ''
 
     await nextTick()
     await renderQR(data.ticket!.qrToken)
@@ -187,7 +214,29 @@ async function renderQR(token: string) {
 
 function reset() {
   ticket.value = null
+  passToken.value = ''
+  walletError.value = ''
   form.value = { firstName: '', lastName: '', email: '' }
   lookupError.value = ''
+}
+
+async function saveToGoogleWallet() {
+  if (!passToken.value) return
+  walletError.value = ''
+  savingGoogleWallet.value = true
+  try {
+    const res = await fetch(
+      `${TIX_API_URL}/api/events/${slug}/passes/google?token=${encodeURIComponent(passToken.value)}`,
+    )
+    const data = await res.json() as { status: string; message?: string; url?: string }
+    if (!res.ok || !data.url) {
+      throw new Error(data.message ?? 'Could not open Google Wallet. Try again later.')
+    }
+    window.location.href = data.url
+  } catch (err: unknown) {
+    walletError.value = err instanceof Error ? err.message : 'Could not open Google Wallet. Try again later.'
+  } finally {
+    savingGoogleWallet.value = false
+  }
 }
 </script>
