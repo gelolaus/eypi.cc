@@ -71,11 +71,22 @@ export function scannerPermissionHint(err: unknown): string | null {
  * or a device already in use (NotReadableError).
  */
 export const CAMERA_CONSTRAINTS: MediaStreamConstraints[] = [
-  { video: { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+  { video: { facingMode: { exact: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
   { video: { facingMode: 'environment' }, audio: false },
   { video: { facingMode: 'user' }, audio: false },
   { video: true, audio: false },
 ]
+
+export async function canUseNativeBarcodeDetector(): Promise<boolean> {
+  if (!('BarcodeDetector' in window)) return false
+  try {
+    // @ts-expect-error BarcodeDetector is not yet in all TS lib targets
+    const formats: string[] = await window.BarcodeDetector.getSupportedFormats()
+    return formats.includes('qr_code')
+  } catch {
+    return false
+  }
+}
 
 export function playScanFeedback() {
   if (navigator.vibrate) {

@@ -527,11 +527,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
+import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { ClusterConfig } from '@/types/selection'
 import {
   CAMERA_CONSTRAINTS,
   SCAN_COOLDOWN_MS,
   SCAN_FPS,
+  canUseNativeBarcodeDetector,
   formatScannerError,
   isRetriableCameraError,
   isValidQrToken,
@@ -767,9 +769,7 @@ async function downloadGuestQr(a: { firstName: string; lastName: string; qrToken
   const qr = new QRCodeStyling({
     width: 400, height: 400, type: 'canvas',
     data: a.qrToken,
-    dotsOptions:          { color: '#34418F', type: 'rounded' },
-    cornersSquareOptions: { color: '#DEAC4B', type: 'extra-rounded' },
-    backgroundOptions:    { color: '#ffffff' },
+    ...TIX_QR_RENDER_OPTIONS,
   })
   const blob = await qr.getRawData('png')
   if (blob) {
@@ -1018,8 +1018,46 @@ function beginCameraStreamRequest(): Promise<MediaStream> {
 }
 
 async function loadQrScannerModule(): Promise<QrScannerModule> {
-  const { default: QrScanner } = await import('qr-scanner')
+  const [{ default: QrScanner }, { default: workerUrl }] = await Promise.all([
+    import('qr-scanner'),
+    import('qr-scanner/qr-scanner-worker.min.js?url'),
+  ])
+  // Same-origin worker URL satisfies CSP worker-src 'self' (blob: workers are blocked).
+  QrScanner.WORKER_PATH = workerUrl
   return QrScanner
+}
+
+async function startQrScannerEngine(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  token: number,
+): Promise<boolean> {
+  const QrScanner = await loadQrScannerModule()
+  if (token !== startToken) return false
+
+  destroyQrScanner()
+  qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
+  activeStream = stream
+  video.srcObject = stream
+  await qrScanner.start()
+  return token === startToken
+}
+
+async function startNativeScannerEngine(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  token: number,
+): Promise<boolean> {
+  destroyQrScanner()
+  activeStream = stream
+  video.srcObject = stream
+  await video.play()
+  if (token !== startToken) return false
+
+  // @ts-expect-error BarcodeDetector is not yet in all TS lib targets
+  nativeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) as NativeBarcodeDetector
+  startNativeDetectionLoop(nativeDetector, video)
+  return token === startToken
 }
 
 function reportScannerError(err: unknown) {
@@ -1072,27 +1110,17 @@ async function startScannerFromUserGesture() {
   if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
 
   try {
-    if ('BarcodeDetector' in window) {
-      // Native GPU path — feed the full, raw, uncropped stream directly.
-      destroyQrScanner()
-      activeStream = stream
-      video.srcObject = stream
-      await video.play()
-      if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }
-
-      // @ts-expect-error BarcodeDetector is not yet in all TS lib targets
-      nativeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) as NativeBarcodeDetector
-      startNativeDetectionLoop(nativeDetector, video)
+    if (await canUseNativeBarcodeDetector()) {
+      try {
+        const started = await startNativeScannerEngine(video, stream, token)
+        if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
+      } catch {
+        const started = await startQrScannerEngine(video, stream, token)
+        if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
+      }
     } else {
-      // Fallback engine — qr-scanner's Web Worker + jsQR, full frame size.
-      const QrScanner = await loadQrScannerModule()
-      if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
-
-      destroyQrScanner()
-      qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
-      activeStream = stream
-      video.srcObject = stream
-      await qrScanner.start()
+      const started = await startQrScannerEngine(video, stream, token)
+      if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
     }
 
     if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }

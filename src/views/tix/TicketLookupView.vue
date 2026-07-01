@@ -113,6 +113,7 @@
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { TIX_API_URL } from '@/config/tix-api'
+import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 
 const route = useRoute()
 
@@ -179,9 +180,7 @@ async function renderQR(token: string) {
     height: 260,
     type: 'canvas',
     data: token,
-    dotsOptions:          { color: '#34418F', type: 'rounded' },
-    cornersSquareOptions: { color: '#DEAC4B', type: 'extra-rounded' },
-    backgroundOptions:    { color: '#ffffff' },
+    ...TIX_QR_RENDER_OPTIONS,
   })
   qr.append(qrContainer.value)
 }
