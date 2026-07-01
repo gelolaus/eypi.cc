@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { verify } from 'hono/jwt'
 import { createClient } from '@libsql/client/web'
 import type { Bindings } from '../lib/db'
+import { validateDestinationUrl } from '../lib/validateDestinationUrl'
+import { isReservedSlug } from '../../../shared/reservedSlugs'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -12,15 +14,6 @@ const normalizeUrl = (url: string) => {
   if (!/^https?:\/\//i.test(trimmed)) trimmed = `https://${trimmed}`
   return trimmed
 }
-
-// Reserved slugs that collide with first-level suite routes. A short link can
-// never use one of these, or it would shadow a real page in the SPA router.
-const RESERVED_SLUGS = new Set([
-  'dashboard', 'links', 'forms', 'event', 'events', 'manage', 'login',
-  'settings', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
-  'api', 'home', 'frames', 'tix',
-])
-const isReservedSlug = (slug: string) => RESERVED_SLUGS.has(slug.toLowerCase())
 
 const REFERRER_MAP: Record<string, string> = {
   // Own properties
@@ -289,6 +282,9 @@ app.put('/api/links/:id', async (c) => {
       return c.json({ error: 'That slug is reserved by the eypi.cc suite. Choose another.' }, 400)
     }
     const normalizedUrl = normalizeUrl(original_url)
+    if (!validateDestinationUrl(normalizedUrl)) {
+      return c.json({ error: 'Destination URL is not allowed.' }, 400)
+    }
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
@@ -343,6 +339,9 @@ app.post('/api/links', async (c) => {
       return c.json({ error: 'original_url is required' }, 400)
     }
     const normalizedUrl = normalizeUrl(original_url)
+    if (!validateDestinationUrl(normalizedUrl)) {
+      return c.json({ error: 'Destination URL is not allowed.' }, 400)
+    }
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,

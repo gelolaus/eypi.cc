@@ -373,6 +373,7 @@ import { useRouter, useRoute } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
+import { isReservedSlug } from '@shared/reservedSlugs'
 
 const toast = useToast()
 const router = useRouter()
@@ -392,13 +393,6 @@ const isValidUrl = (url: string) => {
   return pattern.test(url.trim())
 }
 const isValidSlug = (slug: string) => /^[a-zA-Z0-9]+$/.test(slug)
-// Mirror of the backend guard: these collide with first-level suite routes.
-const RESERVED_SLUGS = new Set([
-  'dashboard', 'links', 'forms', 'event', 'events', 'manage', 'login',
-  'settings', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
-  'api', 'home', 'dp',
-])
-const isReservedSlug = (slug: string) => RESERVED_SLUGS.has(slug.toLowerCase())
 
 const copyToClipboard = async (text: string) => {
   try {
