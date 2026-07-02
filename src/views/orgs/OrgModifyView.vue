@@ -55,9 +55,19 @@
 
       <!-- Public directory profile -->
       <section class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
-        <div class="mb-6 border-b border-g-border pb-5">
-          <h3 class="font-mono text-lg font-semibold uppercase tracking-[0.1em] text-g-text">Public profile</h3>
-          <p class="mt-1 font-mono text-xs text-g-muted">Shown on /orgs when listed in the directory.</p>
+        <div class="mb-6 flex flex-col gap-3 border-b border-g-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h3 class="font-mono text-lg font-semibold uppercase tracking-[0.1em] text-g-text">Public profile</h3>
+            <p class="mt-1 font-mono text-xs text-g-muted">Shown on /orgs when listed in the directory.</p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-g-border px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
+            data-cursor="nav"
+            @click="openPreview"
+          >
+            Preview ↗
+          </button>
         </div>
 
         <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-g-border bg-white/20 p-4 dark:bg-slate-900/20">
@@ -279,6 +289,7 @@ import {
   type OrgListItem,
   type OrgProfileSettings,
   type OrgSocialLinks,
+  type PublicOrgProfile,
 } from '@/types/orgs'
 import {
   SOCIAL_FIELD_META,
@@ -442,6 +453,21 @@ async function togglePublicCatalog() {
   } finally {
     togglingCatalog.value = false
   }
+}
+
+function openPreview() {
+  if (!org.value || !profileForm.value) return
+  const draft: PublicOrgProfile = {
+    slug: org.value.org_id,
+    name: org.value.org_name,
+    tagline: profileForm.value.tagline.trim() || null,
+    aboutMarkdown: profileForm.value.aboutMarkdown.trim() || null,
+    bannerUrl: profileForm.value.bannerUrl || null,
+    logoUrl: profileForm.value.logoUrl || null,
+    socialLinks: socialHandlesToUrls(profileForm.value.socialHandles),
+  }
+  sessionStorage.setItem(`eypi_org_preview_${org.value.org_id}`, JSON.stringify(draft))
+  window.open(`/orgs/${org.value.org_id}?preview=1`, '_blank', 'noopener,noreferrer')
 }
 
 async function saveProfile() {

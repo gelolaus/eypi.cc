@@ -21,6 +21,13 @@
     </div>
 
     <template v-else-if="profile">
+      <div
+        v-if="isPreview"
+        class="mb-6 rounded-2xl border border-[#DEAC4B]/40 bg-[#DEAC4B]/10 px-4 py-3 font-mono text-xs text-g-text"
+      >
+        Preview mode — showing unsaved changes. Save your profile in org settings to publish.
+      </div>
+
       <!-- Hero -->
       <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border bg-g-surface">
         <div class="relative">
@@ -209,6 +216,7 @@ const route = useRoute()
 
 const loading = ref(true)
 const error = ref('')
+const isPreview = ref(false)
 const profile = ref<PublicOrgProfile | null>(null)
 const events = ref<{ upcoming: PublicOrgEvent[]; past: PublicOrgEvent[] }>({
   upcoming: [],
@@ -251,11 +259,45 @@ function formatEventDate(d: string) {
   }
 }
 
+function loadPreviewDraft(slug: string): PublicOrgProfile | null {
+  if (route.query.preview !== '1') return null
+  try {
+    const raw = sessionStorage.getItem(`eypi_org_preview_${slug}`)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as PublicOrgProfile
+    return draft.slug === slug ? draft : null
+  } catch {
+    return null
+  }
+}
+
+async function fetchEvents(slug: string) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
+    const data = await res.json()
+    if (res.ok) {
+      events.value = data.events ?? { upcoming: [], past: [] }
+    }
+  } catch {
+    // Events are optional in preview mode.
+  }
+}
+
 async function fetchProfile(slug: string) {
   loading.value = true
   error.value = ''
+  isPreview.value = false
   profile.value = null
   events.value = { upcoming: [], past: [] }
+
+  const previewDraft = loadPreviewDraft(slug)
+  if (previewDraft) {
+    profile.value = previewDraft
+    isPreview.value = true
+    loading.value = false
+    await fetchEvents(slug)
+    return
+  }
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
@@ -275,8 +317,8 @@ onMounted(() => {
 })
 
 watch(
-  () => route.params.slug,
-  (slug) => {
+  () => [route.params.slug, route.query.preview] as const,
+  ([slug]) => {
     if (typeof slug === 'string') {
       activeTab.value = 0
       fetchProfile(slug)
