@@ -23,21 +23,21 @@
     <template v-else-if="profile">
       <!-- Hero -->
       <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border bg-g-surface">
-        <div
-          class="relative h-44 md:h-52"
-          :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
-        >
-          <img
-            v-if="profile.bannerUrl"
-            :src="profile.bannerUrl"
-            :alt="`${profile.name} banner`"
-            class="h-full w-full object-cover"
-          />
-        </div>
+        <div class="relative">
+          <div
+            class="relative h-44 md:h-52"
+            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
+          >
+            <img
+              v-if="profile.bannerUrl"
+              :src="profile.bannerUrl"
+              :alt="`${profile.name} banner`"
+              class="h-full w-full object-cover"
+            />
+          </div>
 
-        <div class="px-6 pb-8 sm:px-8">
-          <!-- Logo overlaps banner; content below has clear separation -->
-          <div class="-mt-14 mb-6 flex justify-start md:-mt-16">
+          <!-- Logo sits on the banner, overlapping into the content area -->
+          <div class="absolute bottom-0 left-6 z-10 translate-y-1/2 sm:left-8">
             <div
               v-if="profile.logoUrl"
               class="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
@@ -51,7 +51,9 @@
               {{ orgInitials(profile.name) }}
             </div>
           </div>
+        </div>
 
+        <div class="px-6 pb-8 pt-16 sm:px-8 md:pt-[4.5rem]">
           <h1
             class="font-mono font-black leading-tight tracking-tight text-g-primary dark:text-slate-100 break-words"
             style="font-size: clamp(1.35rem, 3.5vw, 2rem); letter-spacing: -0.02em;"
@@ -67,14 +69,15 @@
             {{ profile.tagline }}
           </p>
 
-          <nav v-if="hasSocialLinks" class="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+          <nav v-if="hasSocialLinks" class="mt-5 flex flex-wrap gap-2">
             <a
               v-for="link in visibleSocialLinks"
               :key="link.key"
               :href="link.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="font-mono text-sm font-bold uppercase tracking-[0.08em] text-g-primary transition-colors hover:text-g-accent dark:text-slate-200 dark:hover:text-g-accent"
+              class="inline-flex items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
+              :aria-label="link.label"
               data-cursor="nav"
             >
               {{ link.label }}
