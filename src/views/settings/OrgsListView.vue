@@ -19,14 +19,15 @@
           v-for="org in orgs"
           :key="org.org_id"
           :to="{ name: 'settings-org-detail', params: { orgId: org.org_id } }"
-          class="mica-card group flex items-center justify-between rounded-3xl border border-g-border p-5 transition-all hover:-translate-y-0.5 hover:border-g-accent/40"
+          class="mica-card group flex items-center gap-4 rounded-3xl border border-g-border p-5 transition-all hover:-translate-y-0.5 hover:border-g-accent/40"
           data-cursor="nav"
         >
+          <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="md" />
           <div class="min-w-0 flex-1">
             <h2 class="font-mono text-base font-bold leading-snug tracking-[0.04em] text-g-text group-hover:text-g-accent break-words">
               {{ org.org_name }}
             </h2>
-            <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">
+            <p class="mt-1 font-mono text-[0.65rem] lowercase tracking-normal text-g-muted">
               /orgs/{{ org.org_id }}
             </p>
           </div>
@@ -50,6 +51,7 @@ import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import type { OrgListItem } from '@/types/orgs'
+import OrgLogo from '@/components/OrgLogo.vue'
 
 const { authHeaders } = useAuth()
 const toast = useToast()

@@ -40,6 +40,11 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
+  html.nav-scroll-lock,
+  body.nav-scroll-lock {
+    overflow: hidden;
+  }
+
   /* Hide system cursor globally — AppCursor provides the custom one */
   * {
     cursor: none !important;

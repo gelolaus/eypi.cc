@@ -19,10 +19,17 @@
 
     <template v-else-if="org && profileForm">
       <header class="mb-6 flex flex-col gap-3 border-b border-g-border pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p class="font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">org settings</p>
-          <h2 class="mt-2 font-mono text-2xl font-semibold leading-tight tracking-[0.04em] text-g-text break-words">{{ org.org_name }}</h2>
-          <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">/orgs/{{ org.org_id }}</p>
+        <div class="flex min-w-0 items-start gap-4">
+          <OrgLogo
+            :logo-url="profileForm.logoUrl"
+            :name="org.org_name"
+            size="md"
+          />
+          <div class="min-w-0">
+            <p class="font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">org settings</p>
+            <h2 class="mt-2 font-mono text-2xl font-semibold leading-tight tracking-[0.04em] text-g-text break-words">{{ org.org_name }}</h2>
+            <p class="mt-1 font-mono text-[0.65rem] lowercase tracking-normal text-g-muted">/orgs/{{ org.org_id }}</p>
+          </div>
         </div>
         <span
           class="inline-flex w-fit rounded-full border px-3 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-[0.12em]"
@@ -249,6 +256,7 @@ import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
+import OrgLogo from '@/components/OrgLogo.vue'
 import {
   EMPTY_SOCIAL_LINKS,
   orgInitials,

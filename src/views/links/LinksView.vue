@@ -194,7 +194,7 @@
     <Transition name="slide-right">
       <div
         v-if="isSidebarOpen"
-        class="mica-card fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-300 p-8 shadow-2xl dark:bg-mica-navy-panel dark:border-slate-600 dark:backdrop-blur-xl"
+        class="fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900"
         style="z-index: 99991"
       >
         <button

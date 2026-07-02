@@ -47,10 +47,16 @@ export interface PublicOrgProfileResponse {
 export interface OrgListItem {
   org_id: string
   org_name: string
+  logo_url?: string | null
   owner_id: string
   is_owner: number
   is_public_catalog?: number
   created_at: string
+}
+
+/** Organization slug (organizations.id). */
+export function orgSlug(org: Pick<OrgListItem, 'org_id'>): string {
+  return org.org_id
 }
 
 export const EMPTY_SOCIAL_LINKS: Required<OrgSocialLinks> = {

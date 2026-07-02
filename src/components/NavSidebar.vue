@@ -14,7 +14,7 @@
       <aside
         v-if="isOpen"
         id="site-nav-sidebar"
-        class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-g-border bg-white/92 p-8 shadow-2xl backdrop-blur-xl dark:border-slate-700/50 dark:bg-slate-900/95 sm:max-w-md"
+        class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900 sm:max-w-md"
         style="z-index: 99991"
         aria-label="Site navigation"
         :class="itemsVisible ? 'nav-sidebar--visible' : ''"
@@ -64,7 +64,7 @@
             </router-link>
           </nav>
 
-          <div v-if="orgs.length > 0" class="nav-sidebar-item mt-10 border-t border-g-border pt-8">
+          <div v-if="orgs.length > 0" class="nav-sidebar-item mt-10 pt-2">
             <p class="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-g-muted">
               Active Organization
             </p>
@@ -73,7 +73,7 @@
                 v-for="org in orgs"
                 :key="org.org_id"
                 type="button"
-                class="tap-scale w-full rounded-xl border px-3 py-2.5 text-left font-mono text-[11px] uppercase tracking-wider transition-colors"
+                class="tap-scale flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left font-mono text-[11px] transition-colors"
                 :class="
                   activeOrg?.org_id === org.org_id
                     ? 'border-[#DEAC4B]/50 bg-[#DEAC4B]/10 text-[#DEAC4B]'
@@ -82,12 +82,13 @@
                 data-cursor="nav"
                 @click="$emit('selectOrg', org)"
               >
-                <span class="break-words leading-snug">{{ org.org_name }}</span>
+                <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="xs" />
+                <span class="min-w-0 flex-1 truncate lowercase leading-snug">{{ orgSlug(org) }}</span>
               </button>
             </div>
           </div>
 
-          <div class="nav-sidebar-item mt-auto border-t border-g-border pt-8">
+          <div class="nav-sidebar-item mt-auto pt-6">
             <button
               type="button"
               class="nav-sidebar-link nav-sidebar-link--danger tap-scale w-full"
@@ -125,19 +126,21 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import OrgLogo from '@/components/OrgLogo.vue'
+import { orgSlug, type OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
   isOpen: boolean
   isAuthenticated: boolean
   userName: string
   userEmail: string
-  orgs: { org_id: string; org_name: string }[]
-  activeOrg: { org_id: string; org_name: string } | null
+  orgs: OrgListItem[]
+  activeOrg: OrgListItem | null
 }>()
 
 defineEmits<{
   close: []
-  selectOrg: [org: { org_id: string; org_name: string }]
+  selectOrg: [org: OrgListItem]
   logout: []
 }>()
 
@@ -205,6 +208,10 @@ watch(
     opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
     color 0.22s ease;
+}
+
+.nav-sidebar-link:last-of-type {
+  border-bottom: none;
 }
 
 .nav-sidebar-link:hover {

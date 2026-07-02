@@ -57,7 +57,7 @@
       :orgs="orgs"
       :active-org="activeOrg"
       @close="closeSidebar"
-      @select-org="selectOrg"
+      @select-org="handleSelectOrg"
       @logout="handleLogout"
     />
   </header>
@@ -68,52 +68,24 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDarkMode } from '@/composables/useDarkMode'
-import { useAuth } from '@/composables/useAuth'
-import { API_BASE_URL } from '@/config/api'
+import { useActiveOrg } from '@/composables/useActiveOrg'
+import type { OrgListItem } from '@/types/orgs'
 import NavSidebar from '@/components/NavSidebar.vue'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { isDark, toggle: toggleDark } = useDarkMode()
-const { authHeaders } = useAuth()
+const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 
 const isSidebarOpen = ref(false)
 const userName = ref('Guest User')
 const userEmail = ref('')
 const isAuthenticated = ref(false)
 
-const orgs = ref<any[]>([])
-const activeOrg = ref<any>(null)
-
-async function fetchUserOrgs() {
-  if (!isAuthenticated.value) return
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs`, {
-      headers: authHeaders(),
-    })
-    const data = (await res.json()) as { orgs?: { org_id: string; org_name: string }[] }
-    if (res.ok) {
-      orgs.value = data.orgs || []
-      const savedActiveOrgId = localStorage.getItem('active_org_id')
-      let selected = orgs.value.find((o) => o.org_id === savedActiveOrgId)
-      if (!selected && orgs.value.length > 0) {
-        selected = orgs.value[0]
-        localStorage.setItem('active_org_id', selected.org_id)
-      }
-      activeOrg.value = selected || null
-    }
-  } catch (err) {
-    console.error('Error fetching orgs for header:', err)
-  }
-}
-
-function selectOrg(org: any) {
-  localStorage.setItem('active_org_id', org.org_id)
-  activeOrg.value = org
+function handleSelectOrg(org: OrgListItem) {
   closeSidebar()
-  toast.success(`Active context: ${org.org_name}`)
-  window.location.reload()
+  selectOrg(org)
 }
 
 const isScrolled = ref(false)
@@ -183,7 +155,8 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 function setBodyScrollLock(locked: boolean) {
-  document.body.style.overflow = locked ? 'hidden' : ''
+  document.documentElement.classList.toggle('nav-scroll-lock', locked)
+  document.body.classList.toggle('nav-scroll-lock', locked)
 }
 
 const handleLogout = () => {
@@ -199,7 +172,7 @@ const handleLogout = () => {
 
 onMounted(() => {
   loadUserFromToken()
-  fetchUserOrgs()
+  if (isAuthenticated.value) fetchOrgs()
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onKeydown)
 })
@@ -220,7 +193,7 @@ watch(
 
 watch(isAuthenticated, (newVal) => {
   if (newVal) {
-    fetchUserOrgs()
+    fetchOrgs()
   } else {
     orgs.value = []
     activeOrg.value = null

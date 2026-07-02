@@ -277,6 +277,7 @@ app.get('/', async (c) => {
         SELECT DISTINCT
           o.id as org_id,
           o.name as org_name,
+          o.logo_url as logo_url,
           o.owner_id,
           o.is_public_catalog,
           CASE WHEN o.owner_id = ? THEN 1 ELSE 0 END as is_owner,
