@@ -1,14 +1,28 @@
 <template>
-  <div>
-    <router-link
-      to="/settings/orgs"
-      class="mb-6 inline-flex font-mono text-xs uppercase tracking-widest text-g-muted transition-colors hover:text-g-accent"
-      data-cursor="nav"
-    >
-      ← Back to orgs
-    </router-link>
+  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
+    <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1
+          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
+          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+          data-cursor="text"
+        >
+          Orgs
+        </h1>
+        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
+          Organization information &amp; members
+        </p>
+      </div>
+      <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
+        <OrgSwitcher navigate-path="/orgs/modify" />
+      </div>
+    </div>
 
-    <div v-if="loading" class="space-y-4">
+    <div v-if="isLocked">
+      <OrgLockout />
+    </div>
+
+    <div v-else-if="loading" class="space-y-4">
       <div class="h-10 w-1/2 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
       <div class="h-64 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
     </div>
@@ -246,7 +260,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -257,6 +271,8 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
+import OrgSwitcher from '@/components/OrgSwitcher.vue'
+import OrgLockout from '@/components/OrgLockout.vue'
 import {
   EMPTY_SOCIAL_LINKS,
   orgInitials,
@@ -290,10 +306,11 @@ const { authHeaders, getUser } = useAuth()
 const toast = useToast()
 const currentUser = getUser()
 
-const orgId = computed(() => route.params.orgId as string)
+const slug = computed(() => route.params.slug as string)
 const org = ref<OrgListItem | null>(null)
 const profileForm = ref<ProfileFormState | null>(null)
 const members = ref<OrgMember[]>([])
+const userOrgs = ref<OrgListItem[]>([])
 
 const loading = ref(true)
 const error = ref('')
@@ -310,6 +327,7 @@ const showTransferModal = ref(false)
 const inviteEmail = ref('')
 const transferEmail = ref('')
 
+const isLocked = computed(() => !loading.value && userOrgs.value.length === 0)
 const isOwner = computed(() => org.value?.is_owner === 1)
 
 function mapProfileToForm(profile: OrgProfileSettings): ProfileFormState {
@@ -326,19 +344,32 @@ function mapProfileToForm(profile: OrgProfileSettings): ProfileFormState {
 async function loadOrgContext() {
   loading.value = true
   error.value = ''
+  org.value = null
+  profileForm.value = null
   try {
     const listRes = await fetch(`${API_BASE_URL}/api/orgs`, { headers: authHeaders() })
     const listData = await listRes.json()
     if (!listRes.ok) throw new Error(listData.error || 'Failed to load org.')
 
-    const match = (listData.orgs as OrgListItem[]).find((o) => o.org_id === orgId.value)
+    userOrgs.value = listData.orgs ?? []
+    if (userOrgs.value.length === 0) return
+
+    if (slug.value === '__none') {
+      const savedId = localStorage.getItem('active_org_id')
+      const fallback = userOrgs.value.find((o) => o.org_id === savedId) ?? userOrgs.value[0]
+      router.replace({ name: 'orgs-modify', params: { slug: fallback.org_id } })
+      return
+    }
+
+    const match = userOrgs.value.find((o) => o.org_id === slug.value)
     if (!match) {
       error.value = 'You do not have access to this org.'
       return
     }
     org.value = match
+    localStorage.setItem('active_org_id', match.org_id)
 
-    const profileRes = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/profile`, { headers: authHeaders() })
+    const profileRes = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/profile`, { headers: authHeaders() })
     const profileData = await profileRes.json()
     if (!profileRes.ok) throw new Error(profileData.error || 'Failed to load profile.')
     profileForm.value = mapProfileToForm(profileData.profile)
@@ -354,7 +385,7 @@ async function loadOrgContext() {
 async function fetchMembers() {
   loadingMembers.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/members`, { headers: authHeaders() })
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/members`, { headers: authHeaders() })
     const data = await res.json()
     if (res.ok) members.value = data.members ?? []
   } catch {
@@ -397,7 +428,7 @@ async function togglePublicCatalog() {
   togglingCatalog.value = true
   const next = !profileForm.value.isPublicCatalog
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/profile`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/profile`, {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublicCatalog: next }),
@@ -417,7 +448,7 @@ async function saveProfile() {
   if (!profileForm.value) return
   savingProfile.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/profile`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/profile`, {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -442,7 +473,7 @@ async function saveProfile() {
 async function sendInvite() {
   sendingInvite.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/members`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/members`, {
       method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail.value.toLowerCase().trim() }),
@@ -462,7 +493,7 @@ async function sendInvite() {
 async function removeMember(email: string) {
   if (!confirm(`Remove ${email}?`)) return
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/members`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/members`, {
       method: 'DELETE',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -478,7 +509,7 @@ async function removeMember(email: string) {
 async function executeTransfer() {
   transferring.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/transfer`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/transfer`, {
       method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
@@ -487,7 +518,7 @@ async function executeTransfer() {
     if (!res.ok) throw new Error(data.error || 'Transfer failed.')
     toast.success('Ownership transferred.')
     showTransferModal.value = false
-    router.push('/settings/orgs')
+    router.push('/orgs/modify')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Transfer failed.')
   } finally {
@@ -499,14 +530,14 @@ async function leaveOrg() {
   if (!confirm('Leave this org?')) return
   leaving.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${orgId.value}/leave`, {
+    const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/leave`, {
       method: 'POST',
       headers: authHeaders(),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Could not leave org.')
     toast.success('You left the org.')
-    router.push('/settings/orgs')
+    router.push('/orgs/modify')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Could not leave org.')
   } finally {
@@ -515,7 +546,7 @@ async function leaveOrg() {
 }
 
 onMounted(loadOrgContext)
-watch(orgId, loadOrgContext)
+watch(slug, loadOrgContext)
 </script>
 
 <style scoped>

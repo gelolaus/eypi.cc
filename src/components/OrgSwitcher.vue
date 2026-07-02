@@ -63,15 +63,32 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useActiveOrg } from '@/composables/useActiveOrg'
+import { useToast } from '@/composables/useToast'
 import OrgLogo from '@/components/OrgLogo.vue'
 import { orgSlug, type OrgListItem } from '@/types/orgs'
 
+const props = defineProps<{
+  /** When set, switch org via client navigation instead of full page reload. */
+  navigatePath?: string
+}>()
+
+const router = useRouter()
+const toast = useToast()
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 const isOpen = ref(false)
 
 function handleSelect(org: OrgListItem) {
   isOpen.value = false
+  if (props.navigatePath) {
+    if (activeOrg.value?.org_id === org.org_id) return
+    localStorage.setItem('active_org_id', org.org_id)
+    activeOrg.value = org
+    toast.success(`Active context: ${org.org_id}`)
+    router.push(`${props.navigatePath}/${org.org_id}`)
+    return
+  }
   selectOrg(org)
 }
 

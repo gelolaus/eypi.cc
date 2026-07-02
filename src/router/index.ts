@@ -128,6 +128,32 @@ const router = createRouter({
       component: () => import('@/views/tix/TicketLookupView.vue'),
     },
 
+    // ── Orgs module (coordinator org settings) ─────────────────────────────
+    // Static /orgs/modify/* must be declared before public /orgs/:slug.
+    {
+      path: '/orgs/modify',
+      component: () => import('@/views/orgs/OrgsManageLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'orgs-modify-index',
+          redirect: () => {
+            const activeOrgId = localStorage.getItem('active_org_id')
+            if (activeOrgId) {
+              return { name: 'orgs-modify', params: { slug: activeOrgId } }
+            }
+            return { name: 'orgs-modify', params: { slug: '__none' } }
+          },
+        },
+        {
+          path: ':slug',
+          name: 'orgs-modify',
+          component: () => import('@/views/orgs/OrgModifyView.vue'),
+        },
+      ],
+    },
+
     // ── Public org catalog ─────────────────────────────────────────────────────
     {
       path: '/orgs',
@@ -157,17 +183,18 @@ const router = createRouter({
         },
         {
           path: 'organizations',
-          redirect: { name: 'settings-orgs' },
+          redirect: () => ({ name: 'orgs-modify-index' }),
         },
         {
           path: 'orgs',
-          name: 'settings-orgs',
-          component: () => import('@/views/settings/OrgsListView.vue'),
+          redirect: () => ({ name: 'orgs-modify-index' }),
         },
         {
           path: 'orgs/:orgId',
-          name: 'settings-org-detail',
-          component: () => import('@/views/settings/OrgSettingsView.vue'),
+          redirect: (to) => ({
+            name: 'orgs-modify',
+            params: { slug: to.params.orgId as string },
+          }),
         },
         {
           path: 'org-management',
