@@ -22,8 +22,8 @@
           class="mica-card group flex items-center justify-between rounded-3xl border border-g-border p-5 transition-all hover:-translate-y-0.5 hover:border-g-accent/40"
           data-cursor="nav"
         >
-          <div class="min-w-0">
-            <h2 class="truncate font-mono text-base font-bold uppercase tracking-[0.08em] text-g-text group-hover:text-g-accent">
+          <div class="min-w-0 flex-1">
+            <h2 class="font-mono text-base font-bold leading-snug tracking-[0.04em] text-g-text group-hover:text-g-accent break-words">
               {{ org.org_name }}
             </h2>
             <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">

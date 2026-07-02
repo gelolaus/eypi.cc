@@ -21,7 +21,7 @@
       <header class="mb-6 flex flex-col gap-3 border-b border-g-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">org settings</p>
-          <h2 class="mt-2 font-mono text-2xl font-semibold uppercase tracking-[0.08em] text-g-text">{{ org.org_name }}</h2>
+          <h2 class="mt-2 font-mono text-2xl font-semibold leading-tight tracking-[0.04em] text-g-text break-words">{{ org.org_name }}</h2>
           <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">/orgs/{{ org.org_id }}</p>
         </div>
         <span

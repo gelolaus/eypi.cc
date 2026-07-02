@@ -26,7 +26,7 @@
         class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 last:border-0 hover:bg-white/30 dark:hover:bg-mica-navy-row-hover"
       >
         <div class="col-span-4 min-w-0">
-          <p class="truncate font-mono text-sm font-bold text-g-text">{{ item.org_name }}</p>
+          <p class="font-mono text-sm font-bold leading-snug text-g-text break-words">{{ item.org_name }}</p>
           <p class="font-mono text-[0.65rem] text-g-muted">/orgs/{{ item.org_id }}</p>
         </div>
         <div class="col-span-3 hidden truncate font-mono text-xs text-g-muted sm:block">{{ item.owner_email }}</div>

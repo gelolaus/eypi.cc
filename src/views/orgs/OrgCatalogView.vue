@@ -67,7 +67,7 @@
         :class="['reveal mica-card group flex h-full flex-col rounded-3xl border border-g-border p-6 transition-all hover:-translate-y-0.5 hover:border-g-accent/40', `delay-${Math.min(index + 1, 4)}`]"
         data-cursor="card"
       >
-        <div class="mb-4 flex items-start gap-4">
+        <div class="mb-4 flex flex-col items-start gap-4">
           <div
             v-if="org.logoUrl"
             class="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-g-border bg-white/50 dark:bg-slate-900/40"
@@ -80,8 +80,8 @@
           >
             {{ orgInitials(org.name) }}
           </div>
-          <div class="min-w-0 flex-1">
-            <h2 class="truncate font-mono text-base font-bold uppercase tracking-[0.06em] text-g-text group-hover:text-g-accent">
+          <div class="w-full">
+            <h2 class="font-mono text-base font-bold leading-snug tracking-[0.04em] text-g-text group-hover:text-g-accent break-words">
               {{ org.name }}
             </h2>
             <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">

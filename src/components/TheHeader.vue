@@ -26,14 +26,15 @@
           <div v-if="isOrgMenuOpen" class="fixed inset-0 z-40" @click="isOrgMenuOpen = false" />
           
           <button
-            class="flex items-center gap-1.5 border border-gray-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl px-2.5 py-1.5 rounded-lg font-mono uppercase tracking-wider text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            class="flex max-w-[min(100%,11rem)] items-center gap-1.5 border border-gray-300 dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl px-2.5 py-1.5 rounded-lg font-mono uppercase tracking-wider text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+            :title="activeOrg?.org_name || 'Select Org'"
             data-cursor="nav"
             @click="isOrgMenuOpen = !isOrgMenuOpen"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 opacity-60 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 opacity-60 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
-            <span class="max-w-[120px] truncate">{{ activeOrg?.org_name || 'Select Org' }}</span>
+            <span class="line-clamp-2 text-left text-[10px] leading-tight">{{ activeOrg?.org_name || 'Select Org' }}</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-3 w-3 opacity-40 transition-transform duration-200"
@@ -48,19 +49,19 @@
           </button>
 
           <!-- Org Dropdown list -->
-          <div v-if="isOrgMenuOpen" class="absolute left-0 mt-1.5 z-50 w-52 bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-800 rounded-xl shadow-xl py-1.5 text-left font-mono text-[10px] uppercase tracking-wider">
+          <div v-if="isOrgMenuOpen" class="absolute left-0 mt-1.5 z-50 w-64 max-w-[min(90vw,16rem)] bg-white dark:bg-slate-950 border border-gray-300 dark:border-slate-800 rounded-xl shadow-xl py-1.5 text-left font-mono text-[10px] uppercase tracking-wider">
             <div class="px-3 py-1.5 text-[9px] text-gray-400 dark:text-slate-500 border-b border-gray-100 dark:border-slate-900 font-bold">
-              Switch Organization
+              Switch Org
             </div>
             <div class="max-h-48 overflow-y-auto py-1">
               <button
                 v-for="org in orgs"
                 :key="org.org_id"
-                class="w-full text-left px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-900 flex items-center justify-between transition-colors cursor-pointer"
+                class="w-full text-left px-3 py-2 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-900 flex items-start justify-between gap-2 transition-colors cursor-pointer"
                 :class="activeOrg?.org_id === org.org_id ? 'text-[#DEAC4B] dark:text-[#DEAC4B] font-bold' : ''"
                 @click="selectOrg(org)"
               >
-                <span class="truncate pr-2">{{ org.org_name }}</span>
+                <span class="break-words leading-snug pr-1">{{ org.org_name }}</span>
                 <span v-if="activeOrg?.org_id === org.org_id" class="text-[9px] text-amber-500 font-bold">●</span>
               </button>
             </div>

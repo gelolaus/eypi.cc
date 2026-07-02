@@ -22,9 +22,9 @@
 
     <template v-else-if="profile">
       <!-- Hero -->
-      <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border">
+      <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border bg-g-surface">
         <div
-          class="relative h-40 md:h-56"
+          class="relative h-44 md:h-52"
           :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
         >
           <img
@@ -35,53 +35,51 @@
           />
         </div>
 
-        <div class="relative px-6 pb-6 pt-0 sm:px-8">
-          <div class="-mt-10 mb-4 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end sm:justify-between">
-            <div class="flex items-end gap-4">
-              <div
-                v-if="profile.logoUrl"
-                class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg dark:border-slate-900 sm:h-24 sm:w-24"
-              >
-                <img :src="profile.logoUrl" :alt="`${profile.name} logo`" class="h-full w-full object-cover" />
-              </div>
-              <div
-                v-else
-                class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-g-surface bg-[#34418F] font-mono text-xl font-black text-white shadow-lg dark:border-slate-900 sm:h-24 sm:w-24"
-              >
-                {{ orgInitials(profile.name) }}
-              </div>
-              <div class="min-w-0 pb-1">
-                <h1
-                  class="font-mono font-black tracking-tight text-g-primary dark:text-slate-100"
-                  style="font-size: clamp(1.5rem, 4vw, 2.25rem); letter-spacing: -0.03em;"
-                  data-cursor="text"
-                >
-                  {{ profile.name }}
-                </h1>
-                <p
-                  v-if="profile.tagline"
-                  class="mt-1 font-mono text-sm leading-relaxed text-g-muted"
-                >
-                  {{ profile.tagline }}
-                </p>
-              </div>
+        <div class="px-6 pb-8 sm:px-8">
+          <!-- Logo overlaps banner; content below has clear separation -->
+          <div class="-mt-14 mb-6 flex justify-start md:-mt-16">
+            <div
+              v-if="profile.logoUrl"
+              class="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+            >
+              <img :src="profile.logoUrl" :alt="`${profile.name} logo`" class="h-full w-full object-cover" />
             </div>
-
-            <div v-if="hasSocialLinks" class="flex flex-wrap items-center gap-2">
-              <a
-                v-for="link in visibleSocialLinks"
-                :key="link.key"
-                :href="link.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex h-9 w-9 items-center justify-center rounded-full border border-g-border font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
-                :aria-label="link.label"
-                data-cursor="nav"
-              >
-                {{ link.short }}
-              </a>
+            <div
+              v-else
+              class="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-g-surface bg-[#34418F] font-mono text-2xl font-black text-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+            >
+              {{ orgInitials(profile.name) }}
             </div>
           </div>
+
+          <h1
+            class="font-mono font-black leading-tight tracking-tight text-g-primary dark:text-slate-100 break-words"
+            style="font-size: clamp(1.35rem, 3.5vw, 2rem); letter-spacing: -0.02em;"
+            data-cursor="text"
+          >
+            {{ profile.name }}
+          </h1>
+
+          <p
+            v-if="profile.tagline"
+            class="mt-3 max-w-3xl font-mono text-sm leading-relaxed text-g-muted"
+          >
+            {{ profile.tagline }}
+          </p>
+
+          <nav v-if="hasSocialLinks" class="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+            <a
+              v-for="link in visibleSocialLinks"
+              :key="link.key"
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-mono text-sm font-bold uppercase tracking-[0.08em] text-g-primary transition-colors hover:text-g-accent dark:text-slate-200 dark:hover:text-g-accent"
+              data-cursor="nav"
+            >
+              {{ link.label }}
+            </a>
+          </nav>
         </div>
       </header>
 
@@ -221,18 +219,18 @@ const hasSocialLinks = computed(() => visibleSocialLinks.value.length > 0)
 
 const visibleSocialLinks = computed(() => {
   const links = profile.value?.socialLinks ?? {}
-  const entries: { key: string; url: string; label: string; short: string }[] = []
-  const map: { key: keyof OrgSocialLinks; label: string; short: string }[] = [
-    { key: 'website', label: 'Website', short: 'WWW' },
-    { key: 'facebook', label: 'Facebook', short: 'FB' },
-    { key: 'instagram', label: 'Instagram', short: 'IG' },
-    { key: 'twitter', label: 'Twitter', short: 'X' },
-    { key: 'linkedin', label: 'LinkedIn', short: 'IN' },
-    { key: 'github', label: 'GitHub', short: 'GH' },
+  const entries: { key: string; url: string; label: string }[] = []
+  const map: { key: keyof OrgSocialLinks; label: string }[] = [
+    { key: 'website', label: 'Website' },
+    { key: 'facebook', label: 'Facebook' },
+    { key: 'instagram', label: 'Instagram' },
+    { key: 'twitter', label: 'X' },
+    { key: 'linkedin', label: 'LinkedIn' },
+    { key: 'github', label: 'GitHub' },
   ]
   for (const item of map) {
     const url = links[item.key]?.trim()
-    if (url) entries.push({ key: item.key, url, label: item.label, short: item.short })
+    if (url) entries.push({ key: item.key, url, label: item.label })
   }
   return entries
 })
