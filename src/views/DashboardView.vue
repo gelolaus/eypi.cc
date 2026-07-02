@@ -73,6 +73,12 @@ const modules = [
     description: 'Upload a frame and share a link so anyone can make a matching profile picture.',
     route: '/manage/frames',
   },
+  {
+    id: 'orgs',
+    title: 'Orgs',
+    description: 'Edit your organization profile, manage members, and control public directory visibility.',
+    route: '/orgs/modify',
+  },
 ]
 </script>
 
