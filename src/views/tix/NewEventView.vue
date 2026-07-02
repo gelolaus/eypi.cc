@@ -206,6 +206,7 @@ import { useReveal } from '@/composables/useReveal'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
+import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import { useRouter } from 'vue-router'
 
 useReveal()
@@ -360,9 +361,7 @@ async function submit() {
         height: 400,
         type: 'canvas',
         data: a.qrToken,
-        dotsOptions:          { color: '#34418F', type: 'rounded' },
-        cornersSquareOptions: { color: '#DEAC4B', type: 'extra-rounded' },
-        backgroundOptions:    { color: '#ffffff' },
+        ...TIX_QR_RENDER_OPTIONS,
       })
       const blob = await qr.getRawData('png')
       if (blob) {

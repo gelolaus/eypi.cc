@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 import { createClient } from '@libsql/client/web'
 import { logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKvEntry } from '../shared/linksKv'

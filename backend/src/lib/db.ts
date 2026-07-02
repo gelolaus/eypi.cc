@@ -44,6 +44,16 @@ export type Bindings = {
   RATE_LIMIT_KV: KVNamespace
   LINKS_KV: KVNamespace
   ASSETS: Fetcher
+  // Apple Wallet (.pkpass)
+  APPLE_PASS_TYPE_ID?: string
+  APPLE_TEAM_ID?: string
+  APPLE_PASS_CERT_PEM?: string
+  APPLE_PASS_KEY_PEM?: string
+  APPLE_WWDR_CERT_PEM?: string
+  // Google Wallet (JWT save link)
+  GOOGLE_WALLET_ISSUER_ID?: string
+  GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL?: string
+  GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY?: string
 }
 
 export type JWTPayload = {

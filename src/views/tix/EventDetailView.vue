@@ -205,14 +205,50 @@
             </div>
             <div class="relative w-full max-w-sm overflow-hidden rounded-xl bg-black" style="aspect-ratio: 4/3;">
               <video ref="videoRef" class="h-full w-full object-cover" muted playsinline />
+
+              <!-- Tap-to-enable: getUserMedia MUST run inside a user gesture (click).
+                   Auto-starting from a tab watcher loses Chrome's user-activation and
+                   yields NotAllowedError with no permission prompt. -->
               <div
-                v-if="lastScan"
-                :class="[
-                  'absolute inset-x-0 bottom-0 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-white',
-                  lastScan.ok ? 'bg-emerald-600/90' : 'bg-red-600/90',
-                ]"
+                v-if="needsCameraPrompt"
+                class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6"
               >
-                {{ lastScan.message }}
+                <p class="text-center font-mono text-xs uppercase tracking-wide text-white/80">
+                  Camera access is required to scan QR codes.
+                </p>
+                <button
+                  type="button"
+                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
+                  @click="onEnableCameraClick"
+                >
+                  {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry Camera' : 'Enable Camera' }}
+                </button>
+              </div>
+
+              <!-- Purely visual aiming guide — CSS only, never touches the
+                   pixels handed to the detection engines. -->
+              <div class="pointer-events-none absolute inset-0">
+                <div
+                  class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-white/90"
+                  style="width: 72%; aspect-ratio: 1; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);"
+                />
+              </div>
+
+              <!-- Phase HUD badge -->
+              <div
+                :class="hudClass"
+                class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 font-mono text-xs font-bold uppercase tracking-widest text-white"
+              >
+                {{ hudLabel }}
+              </div>
+
+              <!-- Detail message banner -->
+              <div
+                v-if="scanMessage"
+                :class="hudBannerClass"
+                class="pointer-events-none absolute inset-x-0 bottom-0 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-white"
+              >
+                {{ scanMessage }}
               </div>
             </div>
           </div>
@@ -491,7 +527,20 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
+import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { ClusterConfig } from '@/types/selection'
+import {
+  CAMERA_CONSTRAINTS,
+  SCAN_COOLDOWN_MS,
+  SCAN_FPS,
+  canUseNativeBarcodeDetector,
+  formatScannerError,
+  isRetriableCameraError,
+  isValidQrToken,
+  playScanFeedback,
+  scannerPermissionHint,
+  type ScanStatus,
+} from '@/utils/tix-scanner'
 
 const toast = useToast()
 const { authHeaders } = useAuth()
@@ -720,14 +769,12 @@ async function downloadGuestQr(a: { firstName: string; lastName: string; qrToken
   const qr = new QRCodeStyling({
     width: 400, height: 400, type: 'canvas',
     data: a.qrToken,
-    dotsOptions:          { color: '#34418F', type: 'rounded' },
-    cornersSquareOptions: { color: '#DEAC4B', type: 'extra-rounded' },
-    backgroundOptions:    { color: '#ffffff' },
+    ...TIX_QR_RENDER_OPTIONS,
   })
   const blob = await qr.getRawData('png')
   if (blob) {
     const name = `${a.firstName}_${a.lastName}`.replace(/[^a-zA-Z0-9_]/g, '_')
-    const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(blob as Blob)
     const link = document.createElement('a')
     link.href = url; link.download = `${name}-qr.png`; link.click()
     URL.revokeObjectURL(url)
@@ -761,101 +808,345 @@ async function reRaffle(clusterValue: string) {
 }
 
 // ── scanner ───────────────────────────────────────────────────────────────────
-const videoRef    = ref<HTMLVideoElement | null>(null)
+const videoRef = ref<HTMLVideoElement | null>(null)
 const scannerError = ref('')
-const lastScan    = ref<{ ok: boolean; message: string } | null>(null)
-let qrScanner: { start: () => Promise<void>; stop: () => void; destroy: () => void } | null = null
-let nativeStream: MediaStream | null = null
-let rafId: number | null = null
-let scanCooldown = false
-let detecting    = false
+const scanStatus = ref<ScanStatus>('idle')
+const scanMessage = ref('')
 
-async function startScanner() {
-  if (!videoRef.value) return
-  scannerError.value = ''
-  try {
-    if ('BarcodeDetector' in window) {
-      // @ts-ignore
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-      nativeStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
-      })
-      videoRef.value.srcObject = nativeStream
-      await videoRef.value.play()
-      const video = videoRef.value
-      // Poll at ~15fps — fast enough to feel instant, not so fast we queue detect calls
-      const loop = async () => {
-        if (!detecting && !scanCooldown && video.readyState >= 2) {
-          detecting = true
-          try {
-            const [barcode] = await detector.detect(video)
-            if (barcode && !scanCooldown) {
-              scanCooldown = true
-              await handleScan(barcode.rawValue)
-              setTimeout(() => { scanCooldown = false }, 1500)
-            }
-          } catch { /* frame decode failed */ }
-          detecting = false
-        }
-        rafId = requestAnimationFrame(loop)
+type QrScannerInstance = InstanceType<typeof import('qr-scanner').default>
+type QrScannerModule = typeof import('qr-scanner').default
+
+/** Minimal shape of the native BarcodeDetector API (not yet in all TS lib targets). */
+type NativeBarcodeDetector = {
+  detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]>
+}
+
+let qrScanner: QrScannerInstance | null = null
+let activeStream: MediaStream | null = null
+let resetTimer: ReturnType<typeof setTimeout> | null = null
+let scanCooldown = false
+const cameraStarting = ref(false)
+let startToken = 0
+
+// Native GPU-accelerated path (Chrome/Android/Windows). Runs on raw
+// requestAnimationFrame ticks against the full, uncropped video element —
+// modern hardware decodes an entire frame in sub-millisecond time, so there
+// is nothing to gain (and latency to lose) by cropping or throttling it.
+let nativeDetector: NativeBarcodeDetector | null = null
+let nativeRafId: number | null = null
+let detecting = false
+
+const needsCameraPrompt = computed(() =>
+  activeTab.value === 5
+  && (scanStatus.value === 'idle' || scanStatus.value === 'error')
+  && !cameraStarting.value,
+)
+
+// Fallback engine (iOS/Safari and any browser without BarcodeDetector).
+// No calculateScanRegion — the worker processes the full native frame size
+// so nothing is destructively clipped before jsQR ever sees it.
+const QR_SCANNER_OPTIONS = {
+  highlightScanRegion: false,
+  highlightCodeOutline: false,
+  maxScansPerSecond: SCAN_FPS,
+  returnDetailedScanResult: true as const,
+}
+
+const hudLabel = computed(() => {
+  const labels: Record<ScanStatus, string> = {
+    idle: 'Idle',
+    ready: 'Ready',
+    decoding: 'Decoding',
+    submitting: 'Checking In',
+    success: 'Success',
+    error: 'Error',
+  }
+  return labels[scanStatus.value]
+})
+
+const hudClass = computed(() => {
+  const classes: Record<ScanStatus, string> = {
+    idle: 'bg-gray-600',
+    ready: 'bg-emerald-600',
+    decoding: 'bg-amber-500',
+    submitting: 'bg-blue-600',
+    success: 'bg-emerald-600',
+    error: 'bg-red-600',
+  }
+  return classes[scanStatus.value]
+})
+
+const hudBannerClass = computed(() => {
+  if (scanStatus.value === 'success') return 'bg-emerald-600'
+  if (scanStatus.value === 'error') return 'bg-red-600'
+  if (scanStatus.value === 'submitting') return 'bg-blue-600'
+  return 'bg-gray-700'
+})
+
+function scheduleReset(ms: number) {
+  if (resetTimer) clearTimeout(resetTimer)
+  resetTimer = setTimeout(() => {
+    scanCooldown = false
+    scanStatus.value = 'decoding'
+    scanMessage.value = ''
+    resetTimer = null
+  }, ms)
+}
+
+function onDecoded(raw: string | null) {
+  if (!raw || scanCooldown) return
+
+  if (!isValidQrToken(raw)) {
+    scanCooldown = true
+    scanStatus.value = 'error'
+    scanMessage.value = 'Invalid token format'
+    scheduleReset(SCAN_COOLDOWN_MS)
+    return
+  }
+
+  scanCooldown = true
+  playScanFeedback()
+  scanStatus.value = 'submitting'
+  scanMessage.value = 'Submitting check-in…'
+  submitScan(raw.trim())
+}
+
+function submitScan(qrToken: string) {
+  fetch(`${TIX_API_URL}/api/events/${slug}/checkin`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ qrToken }),
+  })
+    .then(async (res) => {
+      const data = await res.json() as { message: string }
+      if (res.ok) {
+        scanStatus.value = 'success'
+        scanMessage.value = data.message
+        fetchAttendees()
+      } else {
+        scanStatus.value = 'error'
+        scanMessage.value = data.message
       }
-      rafId = requestAnimationFrame(loop)
-    } else {
-      const QrScanner = (await import('qr-scanner')).default
-      qrScanner = new QrScanner(
-        videoRef.value,
-        async (result: { data: string }) => {
-          if (scanCooldown) return
-          scanCooldown = true
-          await handleScan(result.data)
-          setTimeout(() => { scanCooldown = false }, 1500)
-        },
-        {
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          maxScansPerSecond: 25,
-          returnDetailedScanResult: true,
-          // Downscale large frames before decode — biggest speed win on high-res cameras
-          calculateScanRegion: (v: HTMLVideoElement) => {
-            const s = Math.min(v.videoWidth, v.videoHeight, 400)
-            const x = (v.videoWidth - s) / 2
-            const y = (v.videoHeight - s) / 2
-            return { x, y, width: s, height: s, downScaledWidth: 400, downScaledHeight: 400 }
-          },
-        },
-      )
-      await qrScanner.start()
+    })
+    .catch(() => {
+      scanStatus.value = 'error'
+      scanMessage.value = 'Network error'
+    })
+    .finally(() => scheduleReset(SCAN_COOLDOWN_MS))
+}
+
+function stopStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach(t => t.stop())
+}
+
+function releaseActiveStream() {
+  stopStream(activeStream)
+  activeStream = null
+  if (videoRef.value?.srcObject instanceof MediaStream) {
+    stopStream(videoRef.value.srcObject)
+    videoRef.value.srcObject = null
+  }
+}
+
+/**
+ * Drives the native BarcodeDetector against raw rAF ticks. detect() runs
+ * fully async and the next frame is always scheduled immediately — the
+ * `detecting` mutex only prevents two overlapping detect() calls from
+ * queueing up, it never delays or skips the rAF loop itself, so the camera
+ * preview and detection cadence stay perfectly real-time.
+ */
+function startNativeDetectionLoop(detector: NativeBarcodeDetector, video: HTMLVideoElement) {
+  const tick = () => {
+    if (!detecting && !scanCooldown && video.readyState >= video.HAVE_CURRENT_DATA) {
+      detecting = true
+      detector.detect(video)
+        .then((codes) => { onDecoded(codes[0]?.rawValue ?? null) })
+        .catch(() => { /* transient frame miss (e.g. mid-resize) — next tick retries */ })
+        .finally(() => { detecting = false })
     }
-  } catch (err: unknown) {
-    scannerError.value = err instanceof Error ? err.message : 'Camera unavailable.'
+    nativeRafId = requestAnimationFrame(tick)
+  }
+  nativeRafId = requestAnimationFrame(tick)
+}
+
+function stopNativeDetectionLoop() {
+  if (nativeRafId !== null) {
+    cancelAnimationFrame(nativeRafId)
+    nativeRafId = null
+  }
+  nativeDetector = null
+  detecting = false
+}
+
+function destroyQrScanner() {
+  stopNativeDetectionLoop()
+  if (qrScanner) {
+    qrScanner.stop()
+    qrScanner.destroy()
+    qrScanner = null
+  }
+  releaseActiveStream()
+}
+
+/** Tries constraint sets from `fromIndex` onward (async fallbacks after the first). */
+async function acquireCameraStreamFrom(fromIndex: number): Promise<MediaStream> {
+  let lastError: unknown = null
+  for (let i = fromIndex; i < CAMERA_CONSTRAINTS.length; i++) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS[i])
+    } catch (err) {
+      lastError = err
+      if (!isRetriableCameraError(err)) throw err
+    }
+  }
+  throw lastError ?? new DOMException('No camera could be acquired', 'NotFoundError')
+}
+
+/**
+ * Begin getUserMedia synchronously inside a user-gesture handler (button click).
+ * Must NOT await anything before the first getUserMedia call — Chrome revokes
+ * user activation across awaits and will reject with NotAllowedError silently.
+ */
+function beginCameraStreamRequest(): Promise<MediaStream> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return Promise.reject(new DOMException('Camera API unavailable', 'NotSupportedError'))
+  }
+  return navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS[0]).catch((err) => {
+    if (!isRetriableCameraError(err)) throw err
+    return acquireCameraStreamFrom(1)
+  })
+}
+
+async function loadQrScannerModule(): Promise<QrScannerModule> {
+  const [{ default: QrScanner }, { default: workerUrl }] = await Promise.all([
+    import('qr-scanner'),
+    import('qr-scanner/qr-scanner-worker.min.js?url'),
+  ])
+  // Same-origin worker URL satisfies CSP worker-src 'self' (blob: workers are blocked).
+  QrScanner.WORKER_PATH = workerUrl
+  return QrScanner
+}
+
+async function startQrScannerEngine(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  token: number,
+): Promise<boolean> {
+  const QrScanner = await loadQrScannerModule()
+  if (token !== startToken) return false
+
+  destroyQrScanner()
+  qrScanner = new QrScanner(video, (result) => onDecoded(result.data), QR_SCANNER_OPTIONS)
+  activeStream = stream
+  video.srcObject = stream
+  await qrScanner.start()
+  return token === startToken
+}
+
+async function startNativeScannerEngine(
+  video: HTMLVideoElement,
+  stream: MediaStream,
+  token: number,
+): Promise<boolean> {
+  destroyQrScanner()
+  activeStream = stream
+  video.srcObject = stream
+  await video.play()
+  if (token !== startToken) return false
+
+  // @ts-expect-error BarcodeDetector is not yet in all TS lib targets
+  nativeDetector = new window.BarcodeDetector({ formats: ['qr_code'] }) as NativeBarcodeDetector
+  startNativeDetectionLoop(nativeDetector, video)
+  return token === startToken
+}
+
+function reportScannerError(err: unknown) {
+  const base = formatScannerError(err)
+  const hint = scannerPermissionHint(err)
+  const message = hint ? `${base} — ${hint}` : base
+  scannerError.value = message
+  scanStatus.value = 'error'
+  scanMessage.value = message
+}
+
+function onEnableCameraClick() {
+  void startScannerFromUserGesture()
+}
+
+async function startScannerFromUserGesture() {
+  const token = ++startToken
+  scannerError.value = ''
+  scanMessage.value = ''
+  scanStatus.value = 'idle'
+  cameraStarting.value = true
+
+  if (!window.isSecureContext) {
+    cameraStarting.value = false
+    reportScannerError(new DOMException('Camera requires HTTPS', 'SecurityError'))
+    return
+  }
+
+  // Fire getUserMedia NOW — still inside the click's user-activation window.
+  const streamPromise = beginCameraStreamRequest()
+
+  await nextTick()
+  if (token !== startToken) return
+
+  const video = videoRef.value
+  if (!video?.isConnected) {
+    cameraStarting.value = false
+    reportScannerError(new DOMException('Video element not mounted', 'NotFoundError'))
+    return
+  }
+
+  let stream: MediaStream
+  try {
+    stream = await streamPromise
+  } catch (err) {
+    cameraStarting.value = false
+    if (token === startToken) reportScannerError(err)
+    return
+  }
+  if (token !== startToken) { stopStream(stream); cameraStarting.value = false; return }
+
+  try {
+    if (await canUseNativeBarcodeDetector()) {
+      try {
+        const started = await startNativeScannerEngine(video, stream, token)
+        if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
+      } catch {
+        const started = await startQrScannerEngine(video, stream, token)
+        if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
+      }
+    } else {
+      const started = await startQrScannerEngine(video, stream, token)
+      if (!started) { destroyQrScanner(); cameraStarting.value = false; return }
+    }
+
+    if (token !== startToken) { destroyQrScanner(); cameraStarting.value = false; return }
+    cameraStarting.value = false
+    scanStatus.value = 'decoding'
+  } catch (err) {
+    stopStream(stream)
+    destroyQrScanner()
+    cameraStarting.value = false
+    if (token === startToken) reportScannerError(err)
   }
 }
 
 function stopScanner() {
-  if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null }
-  nativeStream?.getTracks().forEach(t => t.stop())
-  nativeStream = null
-  qrScanner?.stop(); qrScanner?.destroy(); qrScanner = null
-  detecting = false; scanCooldown = false
+  startToken++
+  if (resetTimer) { clearTimeout(resetTimer); resetTimer = null }
+  destroyQrScanner()
+  scanCooldown = false
+  cameraStarting.value = false
+  scanStatus.value = 'idle'
+  scanMessage.value = ''
+  scannerError.value = ''
 }
 
-async function handleScan(qrToken: string) {
-  try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/checkin`, {
-      method: 'POST', headers: authHeaders(), body: JSON.stringify({ qrToken }),
-    })
-    const data = await res.json() as { status: string; message: string }
-    lastScan.value = { ok: res.ok, message: data.message }
-    if (res.ok) fetchAttendees()
-  } catch {
-    lastScan.value = { ok: false, message: 'Check-in failed — network error.' }
-  }
-}
-
-watch(activeTab, (tab, prev) => {
-  if (tab === 5) setTimeout(startScanner, 100)
-  else if (prev === 5) stopScanner()
+watch(activeTab, (_tab, prev) => {
+  if (prev === 5) stopScanner()
 })
 
 function switchTab(i: number) { activeTab.value = i; currentPage.value = 1; searchQuery.value = '' }

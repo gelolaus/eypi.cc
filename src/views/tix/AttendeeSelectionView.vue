@@ -467,6 +467,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
+import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
 
 const route  = useRoute()
@@ -980,9 +981,7 @@ async function finalize() {
       const qr = new QRCodeStyling({
         width: 400, height: 400, type: 'canvas',
         data: a.qrToken,
-        dotsOptions:          { color: '#34418F', type: 'rounded' },
-        cornersSquareOptions: { color: '#DEAC4B', type: 'extra-rounded' },
-        backgroundOptions:    { color: '#ffffff' },
+        ...TIX_QR_RENDER_OPTIONS,
       })
       const blob = await qr.getRawData('png')
       if (blob) {
