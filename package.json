@@ -12,6 +12,8 @@
     "dependencies": {
         "@libsql/client": "^0.17.0",
         "chart.js": "^4.5.1",
+        "dompurify": "^3.2.6",
+        "marked": "^15.0.12",
         "docxtemplater": "^3.68.3",
         "file-saver": "^2.0.5",
         "jszip": "^3.10.1",
@@ -24,6 +26,7 @@
         "xlsx": "^0.18.5"
     },
     "devDependencies": {
+        "@types/dompurify": "^3.2.0",
         "@cloudflare/vite-plugin": "^1.29.0",
         "@cloudflare/workers-types": "^4.20260701.1",
         "@types/file-saver": "^2.0.7",

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
+import { SUPER_ADMIN_EMAIL } from '@/config/admin'
 
 const { checkOrgMembership } = useOrgMembership()
 
@@ -121,18 +122,66 @@ const router = createRouter({
       component: () => import('@/views/tix/TicketLookupView.vue'),
     },
 
+    // ── Public org catalog ─────────────────────────────────────────────────────
+    {
+      path: '/orgs',
+      name: 'org-catalog',
+      component: () => import('@/views/orgs/OrgCatalogView.vue'),
+    },
+    {
+      path: '/orgs/:slug',
+      name: 'org-profile',
+      component: () => import('@/views/orgs/OrgProfileView.vue'),
+    },
+
     // ── Account & legal ──────────────────────────────────────────────────────
     {
       path: '/settings',
-      name: 'settings',
-      component: () => import('@/views/SettingsView.vue'),
+      component: () => import('@/views/settings/SettingsLayout.vue'),
       meta: { requiresAuth: true },
-    },
-    {
-      path: '/orgs',
-      name: 'organizations',
-      component: () => import('@/views/OrganizationsView.vue'),
-      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          redirect: { name: 'settings-security' },
+        },
+        {
+          path: 'security',
+          name: 'settings-security',
+          component: () => import('@/views/SettingsView.vue'),
+        },
+        {
+          path: 'organizations',
+          redirect: { name: 'settings-orgs' },
+        },
+        {
+          path: 'orgs',
+          name: 'settings-orgs',
+          component: () => import('@/views/settings/OrgsListView.vue'),
+        },
+        {
+          path: 'orgs/:orgId',
+          name: 'settings-org-detail',
+          component: () => import('@/views/settings/OrgSettingsView.vue'),
+        },
+        {
+          path: 'org-management',
+          name: 'settings-org-management',
+          component: () => import('@/views/settings/OrgManagementView.vue'),
+          meta: { requiresSuperAdmin: true },
+        },
+        {
+          path: 'org-management/new',
+          name: 'settings-org-management-new',
+          component: () => import('@/views/settings/OrgManagementEditView.vue'),
+          meta: { requiresSuperAdmin: true },
+        },
+        {
+          path: 'org-management/:orgId',
+          name: 'settings-org-management-edit',
+          component: () => import('@/views/settings/OrgManagementEditView.vue'),
+          meta: { requiresSuperAdmin: true },
+        },
+      ],
     },
     {
       path: '/privacy',
@@ -197,6 +246,26 @@ router.beforeEach(async (to, _from, next) => {
         return
       }
       next({ name: 'forms', replace: true })
+      return
+    }
+  }
+
+  const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin)
+  if (requiresSuperAdmin) {
+    try {
+      const token = localStorage.getItem('eypi_token')
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
+        if (payload.email !== SUPER_ADMIN_EMAIL) {
+          next({ name: 'settings-security', replace: true })
+          return
+        }
+      } else {
+        next({ name: 'login' })
+        return
+      }
+    } catch {
+      next({ name: 'settings-security', replace: true })
       return
     }
   }
