@@ -1,5 +1,7 @@
 <template>
-  <div class="flex min-h-screen flex-col">
+  <div :class="['flex min-h-screen flex-col', IS_LOCAL_DEV ? 'local-dev' : '']">
+    <LocalDevBanner />
+
     <!-- Initial page load animation -->
     <AppLoader />
 
@@ -24,8 +26,14 @@
 
     <TheHeader />
 
-    <!-- pt-20 compensates for the fixed pill nav height -->
-    <main id="app-content" class="relative z-10 flex min-h-0 flex-1 flex-col pt-20">
+    <!-- pt-20 compensates for the fixed pill nav height; extra top padding when local dev banner is shown -->
+    <main
+      id="app-content"
+      :class="[
+        'relative z-10 flex min-h-0 flex-1 flex-col',
+        IS_LOCAL_DEV ? 'pt-[calc(5rem+1.75rem)]' : 'pt-20',
+      ]"
+    >
       <router-view v-slot="{ Component }">
         <component :is="Component" />
       </router-view>
@@ -46,6 +54,8 @@ import ParticleCanvas from '@/components/ParticleCanvas.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
 import AppLoader from '@/components/AppLoader.vue'
 import AppTransition from '@/components/AppTransition.vue'
+import LocalDevBanner from '@/components/LocalDevBanner.vue'
+import { IS_LOCAL_DEV } from '@/config/api'
 import { useKeyboardNav } from '@/composables/useKeyboardNav'
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)

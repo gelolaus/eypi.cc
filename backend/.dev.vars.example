@@ -1,6 +1,11 @@
 # Copy this file to backend/.dev.vars and fill in your values.
 # Used by: wrangler dev, npm run backfill-kv, node run-migration.mjs
 #
+# SECURITY — keep backend/.dev.vars gitignored and never commit real secrets.
+# This project intentionally uses the production Turso database for local dev.
+# Use a JWT_SECRET that matches production if you need tokens to interoperate,
+# or a local-only secret if you only test against a fresh local login session.
+#
 # Turso dashboard → your database → Connect:
 #   TURSO_DATABASE_URL = the libsql://... URL shown there
 #   TURSO_AUTH_TOKEN   = a database token (same one you set on Cloudflare Workers)
@@ -9,8 +14,11 @@
 
 TURSO_DATABASE_URL=libsql://your-database-name-your-org.turso.io
 TURSO_AUTH_TOKEN=your-turso-database-token
-JWT_SECRET=your-jwt-secret
+JWT_SECRET=your-local-only-jwt-secret-min-32-chars
 RESEND_API_KEY=your-resend-api-key
+
+# Verification email links (defaults to https://eypi.cc when unset in production)
+FRONTEND_URL=http://localhost:5173
 
 # Apple Wallet — Pass Type ID certificate + WWDR intermediate (PEM, single line or multiline)
 APPLE_PASS_TYPE_ID=pass.cc.eypi.event

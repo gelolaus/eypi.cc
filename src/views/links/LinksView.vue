@@ -373,6 +373,7 @@ import { useRouter, useRoute } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
+import { API_BASE_URL } from '@/config/api'
 import { isReservedSlug } from '@shared/reservedSlugs'
 
 const toast = useToast()
@@ -491,7 +492,6 @@ const downloadQR = async () => {
   toast.success('High-Res QR Code exported successfully')
 }
 
-const API_BASE = 'https://api.eypi.cc'
 const links = ref<Link[]>([])
 const searchQuery = ref('')
 const filteredLinks = computed(() => {
@@ -510,7 +510,7 @@ async function fetchLinks() {
     return
   }
   try {
-    const response = await fetch(`${API_BASE}/api/links`, {
+    const response = await fetch(`${API_BASE_URL}/api/links`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -587,7 +587,7 @@ async function handleShorten() {
 
   isShortening.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/links`, {
+    const res = await fetch(`${API_BASE_URL}/api/links`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -638,7 +638,7 @@ async function onSave(): Promise<void> {
     return
   }
   try {
-    const res = await fetch(`${API_BASE}/api/links/${activeLink.value.id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/links/${activeLink.value.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -706,7 +706,7 @@ async function executeDelete(): Promise<void> {
     return
   }
   try {
-    const res = await fetch(`${API_BASE}/api/links/${linkId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/links/${linkId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })

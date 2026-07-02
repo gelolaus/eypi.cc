@@ -114,6 +114,10 @@
    PILL NAVBAR
    ============================================================ */
 @layer components {
+  .local-dev .pill-nav-wrapper {
+    top: calc(16px + 1.75rem);
+  }
+
   .pill-nav-wrapper {
     position: fixed;
     top: 16px;

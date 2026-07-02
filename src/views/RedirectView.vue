@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { inject, onMounted, ref, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const route = useRoute()
@@ -26,7 +27,7 @@ onMounted(async () => {
 
   const animationPromise = appTransition?.value?.trigger() ?? Promise.resolve()
 
-  const fetchPromise = fetch(`https://api.eypi.cc/api/links/${currentSlug.value}`, {
+  const fetchPromise = fetch(`${API_BASE_URL}/api/links/${currentSlug.value}`, {
     headers: clientReferrer ? { 'X-Client-Referrer': clientReferrer } : {},
   })
     .then((r) => r.json())

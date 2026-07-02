@@ -13,6 +13,10 @@ const app = new Hono<{ Bindings: Bindings }>()
 // Allowed email domains (APC + admin whitelist)
 const ALLOWED_EMAIL_DOMAINS = ['@student.apc.edu.ph', '@apc.edu.ph', '@gelolaus.com', '@alias.gelolaus.com']
 
+function frontendOrigin(env: Bindings): string {
+  return (env.FRONTEND_URL ?? 'https://eypi.cc').replace(/\/$/, '')
+}
+
 // Strict password rules (Zod)
 const registerSchema = z.object({
   email: z.string().email().refine(
@@ -83,6 +87,7 @@ app.post('/api/auth/register', async (c) => {
       })
     }
     const resend = new Resend(c.env.RESEND_API_KEY)
+    const verifyUrl = `${frontendOrigin(c.env)}/verify?token=${verificationToken}`
     await resend.emails.send({
       from: 'eypicc@resend.gelolaus.com',
       to: email,
@@ -94,13 +99,13 @@ app.post('/api/auth/register', async (c) => {
     <p style="color: #555555; font-size: 14px; line-height: 1.6; letter-spacing: normal; margin-bottom: 32px;">
       Welcome to eypi.cc, the link shortener for APC Rams! <br>To finalize your access to the edge, please verify your transmission.
     </p>
-    <a href="https://eypi.cc/verify?token=${verificationToken}"
+    <a href="${verifyUrl}"
        style="background-color: #DEAC4B; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
       Verify Account
     </a>
     <p style="color: #999999; font-size: 12px; margin-top: 32px;">
       If the button doesn't work, copy and paste this link:<br>
-      <span style="color: #34418F; word-break: break-all;">https://eypi.cc/verify?token=${verificationToken}</span>
+      <span style="color: #34418F; word-break: break-all;">${verifyUrl}</span>
     </p>
     <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 32px 0;">
     <p style="color: #bbbbbb; font-size: 10px; text-transform: uppercase;">Created by Angelo Laus for the APC Community</p>

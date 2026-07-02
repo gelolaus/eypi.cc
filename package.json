@@ -5,6 +5,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "dev:api": "npm run dev --prefix backend",
+        "dev:local": "node scripts/dev-local.mjs",
         "build": "vue-tsc -b && vite build",
         "preview": "npm run build && wrangler dev",
         "deploy": "vite build && wrangler deploy --config dist/eypicc_frontend/wrangler.json"
