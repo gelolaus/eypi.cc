@@ -74,8 +74,8 @@
             @click="togglePublicCatalog"
           >
             <span
-              class="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform"
-              :class="profileForm.isPublicCatalog ? 'translate-x-5' : 'translate-x-0.5'"
+              class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
+              :class="profileForm.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
             />
           </button>
         </div>
