@@ -1,0 +1,27 @@
+---
+description: Local development uses production Turso; avoid destructive DB ops unless asked
+alwaysApply: true
+---
+
+# Local development & database
+
+The maintainer runs the stack locally against the **production Turso database** on purpose (`backend/.dev.vars` with prod credentials). Do not insist on a separate dev database unless they ask.
+
+## When helping with local dev
+
+- Assume `npm run dev:local` (frontend + API) or `.env.local` with `VITE_API_BASE_URL=http://localhost:8787` is the normal workflow.
+- Production API default (`https://api.eypi.cc`) applies only when `VITE_API_BASE_URL` is unset at build time — do not change that default.
+
+## Safety (still required)
+
+Even with production DB access, **do not** add or run destructive changes unless the user explicitly requests them:
+
+- No `DELETE`, `DROP`, `TRUNCATE`, or bulk updates without clear user approval
+- No migration scripts that wipe or reset tables unless asked
+- No committing secrets (`.env.local`, `backend/.dev.vars`)
+
+Schema additions and non-destructive reads/writes for feature work are fine.
+
+## Secrets
+
+Never commit or log `TURSO_AUTH_TOKEN`, `JWT_SECRET`, `RESEND_API_KEY`, or wallet keys. Example templates (`.env.example`, `.dev.vars.example`) only.

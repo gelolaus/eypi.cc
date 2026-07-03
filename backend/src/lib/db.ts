@@ -54,6 +54,8 @@ export type Bindings = {
   GOOGLE_WALLET_ISSUER_ID?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY?: string
+  /** SPA origin for verification emails (defaults to https://eypi.cc). */
+  FRONTEND_URL?: string
 }
 
 export type JWTPayload = {

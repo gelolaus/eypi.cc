@@ -9,12 +9,14 @@
         >Frames</h1>
         <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">Start DP-frame campaigns</p>
       </div>
-      <router-link
-        v-if="!isLocked"
-        to="/manage/frames/new"
-        class="rounded-xl bg-g-accent px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-        data-cursor="cta"
-      >New Campaign</router-link>
+      <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
+        <OrgSwitcher />
+        <router-link
+          to="/manage/frames/new"
+          class="rounded-xl bg-g-accent px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          data-cursor="cta"
+        >New Campaign</router-link>
+      </div>
     </div>
 
     <input
@@ -98,6 +100,7 @@ import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
+import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
 const { authHeaders } = useAuth()

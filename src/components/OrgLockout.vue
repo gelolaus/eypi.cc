@@ -37,16 +37,16 @@
       >
         Creation and management tools are strictly locked to student organizations.
         You must be an active member of an organization to access this feature.
-        If you have a pending invitation, you can accept it on the Organizations page.
+        If you have a pending invitation, accept it in the Orgs module.
       </p>
 
       <!-- CTA -->
       <router-link
-        to="/orgs"
+        to="/orgs/modify"
         class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 sm:px-8 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         data-cursor="cta"
       >
-        Manage Organizations
+        Manage orgs
       </router-link>
     </div>
   </div>

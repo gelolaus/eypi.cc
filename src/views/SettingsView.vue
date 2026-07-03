@@ -1,28 +1,5 @@
 ﻿<template>
-  <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-8 sm:px-6 md:pt-16 md:pb-32 lg:px-8">
-    <header class="reveal mb-10 flex flex-col gap-5 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <div>
-        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-g-muted">
-          account console
-        </p>
-        <h1 class="font-mono text-3xl font-semibold tracking-tight text-g-text sm:text-4xl">
-          Security settings.
-        </h1>
-        <p class="mt-3 max-w-2xl font-mono text-sm leading-relaxed text-g-muted">
-          Update your password credentials for the eypi.cc suite.
-        </p>
-      </div>
-
-      <router-link
-        to="/dashboard"
-        class="inline-flex items-center justify-center rounded-full border border-g-border px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.12em] text-g-muted transition-all hover:-translate-y-0.5 hover:border-g-accent hover:text-g-text"
-        data-cursor="nav"
-      >
-        Dashboard
-      </router-link>
-    </header>
-
-    <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+  <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
       <aside class="reveal delay-1 mica-card rounded-3xl p-7 shadow-sm">
         <p class="mb-3 font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">
           credential policy
@@ -100,14 +77,14 @@
           {{ isSaving ? 'SAVING...' : 'UPDATE PASSWORD' }}
         </button>
       </form>
-    </section>
-  </main>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
+import { API_BASE_URL } from '@/config/api'
 
 const toast = useToast()
 useReveal()
@@ -132,7 +109,7 @@ const handleUpdatePassword = async () => {
 
   isSaving.value = true
   try {
-    const response = await fetch('https://api.eypi.cc/api/auth/password', {
+    const response = await fetch(`${API_BASE_URL}/api/auth/password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

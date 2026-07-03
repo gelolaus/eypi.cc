@@ -174,6 +174,7 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { useDarkMode } from '@/composables/useDarkMode'
+import { API_BASE_URL } from '@/config/api'
 
 ChartJS.register(
   Title,
@@ -206,8 +207,6 @@ const analyticsData = ref<{
   timeline: { date: string; count: number }[]
   peakEngagement?: { peakDay: string; peakHour: string; count: number } | null
 } | null>(null)
-
-const API_BASE = 'https://api.eypi.cc'
 
 /** Generate last 30 days as YYYY-MM-DD strings */
 function getLast30Dates(): string[] {
@@ -445,7 +444,7 @@ watch(
       return
     }
     try {
-      const res = await fetch(`${API_BASE}/api/links/${linkId}/analytics`, {
+      const res = await fetch(`${API_BASE_URL}/api/links/${linkId}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.status === 401) {
