@@ -97,6 +97,16 @@
           </div>
 
           <div class="flex flex-col gap-2 font-mono">
+            <label for="org-type" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Org type</label>
+            <select id="org-type" v-model="profileForm.orgType" class="field-input">
+              <option value="">Not set</option>
+              <option v-for="option in ORG_TYPE_OPTIONS" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2 font-mono">
             <label for="about" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">About (Markdown)</label>
             <textarea id="about" v-model="profileForm.aboutMarkdown" rows="6" maxlength="8000" class="field-input" />
           </div>
@@ -291,6 +301,7 @@ import {
   type OrgSocialLinks,
   type PublicOrgProfile,
 } from '@/types/orgs'
+import { ORG_TYPE_OPTIONS, type OrgType } from '@/constants/orgTypes'
 import {
   SOCIAL_FIELD_META,
   socialHandlesToUrls,
@@ -305,6 +316,7 @@ interface OrgMember {
 interface ProfileFormState {
   isPublicCatalog: boolean
   tagline: string
+  orgType: OrgType | ''
   aboutMarkdown: string
   bannerUrl: string
   logoUrl: string
@@ -345,6 +357,7 @@ function mapProfileToForm(profile: OrgProfileSettings): ProfileFormState {
   return {
     isPublicCatalog: profile.isPublicCatalog,
     tagline: profile.tagline ?? '',
+    orgType: profile.orgType ?? '',
     aboutMarkdown: profile.aboutMarkdown ?? '',
     bannerUrl: profile.bannerUrl ?? '',
     logoUrl: profile.logoUrl ?? '',
@@ -461,6 +474,7 @@ function openPreview() {
     slug: org.value.org_id,
     name: org.value.org_name,
     tagline: profileForm.value.tagline.trim() || null,
+    orgType: profileForm.value.orgType || null,
     aboutMarkdown: profileForm.value.aboutMarkdown.trim() || null,
     bannerUrl: profileForm.value.bannerUrl || null,
     logoUrl: profileForm.value.logoUrl || null,
@@ -479,6 +493,7 @@ async function saveProfile() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tagline: profileForm.value.tagline.trim() || null,
+        orgType: profileForm.value.orgType || null,
         aboutMarkdown: profileForm.value.aboutMarkdown.trim() || null,
         bannerUrl: profileForm.value.bannerUrl || null,
         logoUrl: profileForm.value.logoUrl || null,

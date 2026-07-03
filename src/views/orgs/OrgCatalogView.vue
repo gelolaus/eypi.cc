@@ -89,12 +89,20 @@
             </p>
           </div>
         </div>
-        <p
-          v-if="org.tagline"
-          class="line-clamp-2 flex-1 font-mono text-xs leading-relaxed text-g-muted"
-        >
-          {{ org.tagline }}
-        </p>
+        <div class="flex flex-1 flex-col">
+          <p
+            v-if="org.tagline"
+            class="line-clamp-2 font-mono text-xs leading-relaxed text-g-muted"
+          >
+            {{ org.tagline }}
+          </p>
+          <span
+            v-if="orgTypeLabel(org.orgType)"
+            class="mt-2 inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+          >
+            {{ orgTypeLabel(org.orgType) }}
+          </span>
+        </div>
       </router-link>
     </div>
   </section>
@@ -105,6 +113,7 @@ import { ref, computed, onMounted } from 'vue'
 import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
 import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
+import { orgTypeLabel } from '@/constants/orgTypes'
 
 useReveal()
 
@@ -119,7 +128,8 @@ const filteredOrgs = computed(() => {
   return orgs.value.filter((org) =>
     org.name.toLowerCase().includes(q)
     || org.slug.toLowerCase().includes(q)
-    || (org.tagline?.toLowerCase().includes(q) ?? false),
+    || (org.tagline?.toLowerCase().includes(q) ?? false)
+    || (orgTypeLabel(org.orgType)?.toLowerCase().includes(q) ?? false),
   )
 })
 

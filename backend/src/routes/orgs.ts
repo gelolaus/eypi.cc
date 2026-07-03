@@ -17,6 +17,18 @@ const URL_MAX = 2048
 const IMAGE_DATA_URL_MAX = 2_800_000
 const SUPER_ADMIN_EMAIL = 'arlaus@student.apc.edu.ph'
 
+const ORG_TYPE_VALUES = [
+  'shs_academic',
+  'soar_academic',
+  'socit_academic',
+  'soe_academic',
+  'som_academic',
+  'soma_academic',
+  'special_interest',
+  'socio_civic',
+  'performing_arts',
+] as const
+
 function isSuperAdmin(email: string): boolean {
   return email === SUPER_ADMIN_EMAIL
 }
@@ -48,6 +60,7 @@ const socialLinksSchema = z.object({
 const profilePatchSchema = z.object({
   isPublicCatalog: z.boolean().optional(),
   tagline: z.string().max(TAGLINE_MAX).nullable().optional(),
+  orgType: z.enum(ORG_TYPE_VALUES).nullable().optional(),
   aboutMarkdown: z.string().max(ABOUT_MAX).nullable().optional(),
   bannerUrl: imageUrlField.nullable().optional(),
   logoUrl: imageUrlField.nullable().optional(),
@@ -112,10 +125,16 @@ function mapPublicEvent(row: Record<string, unknown>) {
 }
 
 function mapOrgProfileRow(row: Record<string, unknown>) {
+  const rawOrgType = row.org_type as string | null | undefined
+  const orgType = rawOrgType && ORG_TYPE_VALUES.includes(rawOrgType as typeof ORG_TYPE_VALUES[number])
+    ? rawOrgType
+    : null
+
   return {
     slug: row.id as string,
     name: row.name as string,
     tagline: (row.tagline as string | null) ?? null,
+    orgType,
     aboutMarkdown: (row.about_markdown as string | null) ?? null,
     bannerUrl: (row.banner_url as string | null) ?? null,
     logoUrl: (row.logo_url as string | null) ?? null,
@@ -166,7 +185,7 @@ app.get('/public', async (c) => {
   try {
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, logo_url
+        SELECT id, name, tagline, org_type, logo_url
         FROM organizations
         WHERE is_public_catalog = 1
         ORDER BY name ASC
@@ -178,6 +197,7 @@ app.get('/public', async (c) => {
         slug: row.id as string,
         name: row.name as string,
         tagline: (row.tagline as string | null) ?? null,
+        orgType: mapOrgProfileRow(row).orgType,
         logoUrl: (row.logo_url as string | null) ?? null,
       })),
     })
@@ -198,7 +218,7 @@ app.get('/public/:slug', async (c) => {
   try {
     const orgRes = await database.execute({
       sql: `
-        SELECT id, name, tagline, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
         FROM organizations
         WHERE id = ? AND is_public_catalog = 1
         LIMIT 1
@@ -715,7 +735,7 @@ app.get('/:org_id/profile', async (c) => {
   try {
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
         FROM organizations
         WHERE id = ?
         LIMIT 1
@@ -768,6 +788,10 @@ app.patch('/:org_id/profile', async (c) => {
     updates.push('tagline = ?')
     args.push(data.tagline?.trim() || null)
   }
+  if (data.orgType !== undefined) {
+    updates.push('org_type = ?')
+    args.push(data.orgType)
+  }
   if (data.aboutMarkdown !== undefined) {
     updates.push('about_markdown = ?')
     args.push(data.aboutMarkdown?.trim() || null)
@@ -799,7 +823,7 @@ app.patch('/:org_id/profile', async (c) => {
 
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
         FROM organizations
         WHERE id = ?
         LIMIT 1

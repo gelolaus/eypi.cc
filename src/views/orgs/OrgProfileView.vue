@@ -76,20 +76,13 @@
             {{ profile.tagline }}
           </p>
 
-          <nav v-if="hasSocialLinks" class="mt-5 flex flex-wrap gap-2">
-            <a
-              v-for="link in visibleSocialLinks"
-              :key="link.key"
-              :href="link.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
-              :aria-label="link.label"
-              data-cursor="nav"
-            >
-              {{ link.label }}
-            </a>
-          </nav>
+          <span
+            v-if="orgTypeDisplay"
+            class="inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+            :class="profile.tagline ? 'mt-2' : 'mt-3'"
+          >
+            {{ orgTypeDisplay }}
+          </span>
         </div>
       </header>
 
@@ -122,6 +115,21 @@
         <p v-else class="font-mono text-sm leading-relaxed text-g-muted">
           This organization hasn't added a description yet.
         </p>
+
+        <nav v-if="hasSocialLinks" class="mt-8 flex flex-wrap gap-2 border-t border-g-border pt-6">
+          <a
+            v-for="link in visibleSocialLinks"
+            :key="link.key"
+            :href="link.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
+            :aria-label="link.label"
+            data-cursor="nav"
+          >
+            {{ link.label }}
+          </a>
+        </nav>
       </div>
 
       <!-- Events -->
@@ -208,6 +216,7 @@ import {
   type PublicOrgEvent,
   type OrgSocialLinks,
 } from '@/types/orgs'
+import { orgTypeLabel } from '@/constants/orgTypes'
 
 useReveal()
 
@@ -225,6 +234,8 @@ const events = ref<{ upcoming: PublicOrgEvent[]; past: PublicOrgEvent[] }>({
 const activeTab = ref(0)
 
 const aboutHtml = computed(() => renderMarkdown(profile.value?.aboutMarkdown))
+
+const orgTypeDisplay = computed(() => orgTypeLabel(profile.value?.orgType))
 
 const hasSocialLinks = computed(() => visibleSocialLinks.value.length > 0)
 

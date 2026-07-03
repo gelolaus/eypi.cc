@@ -17,20 +17,22 @@
 import { ref, computed, onMounted } from 'vue'
 import { API_BASE_URL, IS_LOCAL_DEV } from '@/config/api'
 
-type HealthStatus = 'checking' | 'online' | 'offline'
+type HealthStatus = 'checking' | 'online' | 'offline' | 'misconfigured'
 
 const status = ref<HealthStatus>('checking')
+const statusDetail = ref('')
 
 const statusLabel = computed(() => {
   if (status.value === 'checking') return 'Checking API…'
   if (status.value === 'online') return 'API online'
+  if (status.value === 'misconfigured') return statusDetail.value || 'API misconfigured — check backend/.dev.vars'
   return 'API unreachable — run npm run dev:local'
 })
 
 const statusClass = computed(() =>
   status.value === 'online'
     ? 'text-emerald-950 dark:text-emerald-100'
-    : status.value === 'offline'
+    : status.value === 'offline' || status.value === 'misconfigured'
       ? 'text-red-950 dark:text-red-100'
       : '',
 )
@@ -39,7 +41,17 @@ onMounted(async () => {
   if (!IS_LOCAL_DEV) return
   try {
     const res = await fetch(`${API_BASE_URL}/api/health`)
-    status.value = res.ok ? 'online' : 'offline'
+    if (res.ok) {
+      status.value = 'online'
+      return
+    }
+    const detail = (await res.text()).trim()
+    if (detail.includes('Missing required secrets')) {
+      status.value = 'misconfigured'
+      statusDetail.value = detail.replace('Missing required secrets in backend/.dev.vars: ', 'Missing in .dev.vars: ')
+      return
+    }
+    status.value = 'offline'
   } catch {
     status.value = 'offline'
   }

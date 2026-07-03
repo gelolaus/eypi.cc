@@ -1,7 +1,10 @@
+import type { OrgType } from '@/constants/orgTypes'
+
 export interface PublicOrgCatalogItem {
   slug: string
   name: string
   tagline: string | null
+  orgType: OrgType | null
   logoUrl: string | null
 }
 
@@ -18,6 +21,7 @@ export interface PublicOrgProfile {
   slug: string
   name: string
   tagline: string | null
+  orgType: OrgType | null
   aboutMarkdown: string | null
   bannerUrl: string | null
   logoUrl: string | null

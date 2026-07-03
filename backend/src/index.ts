@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { Bindings } from './lib/db'
+import { missingRequiredEnv, requiredEnvError } from './lib/env'
 import authRoutes from './routes/auth'
 import linkRoutes from './routes/links'
 import eventRoutes from './routes/events'
@@ -43,7 +44,13 @@ app.use('*', async (c, next) => {
 })
 
 app.get('/', (c) => c.text('eypi.cc API is online.'))
-app.get('/api/health', (c) => c.text('OK'))
+app.get('/api/health', (c) => {
+  const missing = missingRequiredEnv(c.env)
+  if (missing.length) {
+    return c.text(requiredEnvError(missing), 503)
+  }
+  return c.text('OK')
+})
 
 // Mount feature routers. Each declares its own full /api/... paths.
 app.route('/', authRoutes)

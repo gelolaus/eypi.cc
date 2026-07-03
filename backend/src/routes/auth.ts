@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import type { Bindings } from '../lib/db'
+import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { handleUserOnboarding } from '../lib/onboarding'
 import { checkRateLimit } from '../lib/rateLimit'
 
@@ -226,6 +227,12 @@ app.post('/api/auth/login', async (c) => {
     }
 
     // Generate the JWT (include name for header display)
+    const missingEnv = missingRequiredEnv(c.env)
+    if (missingEnv.includes('JWT_SECRET')) {
+      console.error(requiredEnvError(missingEnv))
+      return c.json({ status: 'error', message: 'Server misconfigured: add JWT_SECRET to backend/.dev.vars.' }, 503)
+    }
+
     const payload = {
       sub: user.id,
       email: user.email,
