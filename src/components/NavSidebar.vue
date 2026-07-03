@@ -150,7 +150,7 @@ const appLinks = [
   { to: '/forms', label: 'Forms' },
   { to: '/manage/tix', label: 'Tix' },
   { to: '/manage/frames', label: 'Frames' },
-  { to: '/orgs/modify', label: 'Orgs' },
+  { to: '/orgs', label: 'Orgs' },
   { to: '/settings', label: 'Settings' },
 ]
 

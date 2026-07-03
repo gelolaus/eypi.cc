@@ -16,15 +16,43 @@
           Discover APC student orgs and explore their public profiles.
         </p>
       </div>
+      <div v-if="isAuthenticated && activeOrg" class="flex flex-wrap items-center gap-3">
+        <router-link
+          :to="`/orgs/modify/${activeOrg.org_id}`"
+          class="tap-scale inline-flex items-center gap-2 rounded-xl bg-[#DEAC4B] px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          data-cursor="cta"
+        >
+          Modify {{ orgSlug(activeOrg) }}
+        </router-link>
+      </div>
     </header>
 
-    <input
-      v-if="!loading && orgs.length > 0"
-      v-model="searchQuery"
-      type="search"
-      placeholder="Search organizations..."
-      class="reveal delay-1 mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
-    />
+    <template v-if="!loading && orgs.length > 0">
+      <input
+        v-model="searchQuery"
+        type="search"
+        placeholder="Search organizations..."
+        class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      />
+
+      <div class="reveal delay-1 mb-6 flex flex-wrap gap-2">
+        <button
+          v-for="option in typeFilterOptions"
+          :key="option.value ?? 'all'"
+          type="button"
+          class="rounded-full border px-3 py-1.5 font-mono text-[0.65rem] font-bold uppercase tracking-wider transition-colors"
+          :class="
+            selectedOrgType === option.value
+              ? 'border-g-accent bg-g-accent text-white dark:bg-eypi-gold-dark dark:text-slate-100'
+              : 'border-g-border bg-g-surface text-g-muted hover:border-g-accent/40 hover:text-g-text'
+          "
+          data-cursor="nav"
+          @click="selectedOrgType = option.value"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </template>
 
     <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="i in 6" :key="i" class="h-48 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
@@ -56,7 +84,9 @@
       class="mica-card rounded-3xl border border-g-border p-12 text-center"
     >
       <p class="font-mono text-sm uppercase tracking-widest text-g-muted">No matching organizations</p>
-      <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">Try another search term.</p>
+      <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
+        {{ searchQuery.trim() || selectedOrgType ? 'Try another search term or filter.' : 'Try another search term.' }}
+      </p>
     </div>
 
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -112,20 +142,40 @@
 import { ref, computed, onMounted } from 'vue'
 import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
-import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
-import { orgTypeLabel } from '@/constants/orgTypes'
+import { useAuth } from '@/composables/useAuth'
+import { useActiveOrg } from '@/composables/useActiveOrg'
+import { orgInitials, orgSlug, type PublicOrgCatalogItem } from '@/types/orgs'
+import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 useReveal()
+
+const { getUser } = useAuth()
+const { activeOrg, fetchOrgs } = useActiveOrg()
 
 const orgs = ref<PublicOrgCatalogItem[]>([])
 const loading = ref(true)
 const error = ref('')
 const searchQuery = ref('')
+const selectedOrgType = ref<OrgType | null>(null)
+
+const isAuthenticated = computed(() => !!getUser())
+
+const typeFilterOptions = computed(() => [
+  { value: null as OrgType | null, label: 'All' },
+  ...ORG_TYPE_OPTIONS,
+])
 
 const filteredOrgs = computed(() => {
+  let list = orgs.value
+
+  if (selectedOrgType.value) {
+    list = list.filter((org) => org.orgType === selectedOrgType.value)
+  }
+
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return orgs.value
-  return orgs.value.filter((org) =>
+  if (!q) return list
+
+  return list.filter((org) =>
     org.name.toLowerCase().includes(q)
     || org.slug.toLowerCase().includes(q)
     || (org.tagline?.toLowerCase().includes(q) ?? false)
@@ -134,6 +184,10 @@ const filteredOrgs = computed(() => {
 })
 
 onMounted(async () => {
+  if (isAuthenticated.value) {
+    fetchOrgs()
+  }
+
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/public`)
     const data = await res.json()

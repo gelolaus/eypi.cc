@@ -77,7 +77,7 @@ const modules = [
     id: 'orgs',
     title: 'Orgs',
     description: 'Edit your organization profile, manage members, and control public directory visibility.',
-    route: '/orgs/modify',
+    route: '/orgs',
   },
 ]
 </script>
