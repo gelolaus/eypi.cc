@@ -18,18 +18,40 @@
 
 ## 1. Brand Identity & Vibe
 
-### Aesthetic Philosophy
+### Aesthetic Philosophy (v2)
 
-**eypi.cc** is a URL shortener built for the APC (Asia Pacific College) student community. The visual language is derived from the **gelolaus design language** — a refined, monospace-forward aesthetic that sits at the intersection of **brutalism** and **premium minimalism**.
+**eypi.cc** is a URL shortener built for the APC (Asia Pacific College) student community. The visual language is derived from the **gelolaus design language** — refined minimalism with APC branding, professional rather than playful.
 
-Key personality markers:
-- **Dark on light / light on dark**: pure black-on-near-white in light mode; pure white-on-true-black in dark mode — no gray-washed midgrounds.
-- **Monospace identity**: UI labels, codes, slugs, and navigation elements use `Geist Mono`. This signals precision, technical trust, and a developer-adjacent personality.
-- **Gold as the singular accent**: `#DEAC4B` (APC Gold) is the *only* warm color on the whole site. Every CTA, every hover spark, every selection highlight traces back to this single gold. Its rarity gives it weight.
-- **Dot-grid texture**: The page background is a fixed-attachment radial-gradient dot grid (120px × 120px pitch). It gives depth without noise and adapts between light/dark modes by simply inverting the dot color.
-- **Hardware skeuomorphism in cards**: Glassmorphism cards carry four decorative corner-screw `div`s — a deliberate physical/mechanical motif that runs through auth cards, 404, and the hero monitor widget.
-- **Uppercase + wide tracking for metadata**: Labels, table headers, nav items, and error codes are styled `text-transform: uppercase; letter-spacing: 0.06em+` in `Geist Mono`. This creates a consistent "system readout" feel throughout the data-dense dashboard and settings views.
-- **Pill navigation**: The header exists as a floating frosted-glass pill, not a full-width bar. It auto-hides on scroll down, reappears on scroll up, and rides 16px from the viewport top — keeping content fully visible.
+Key personality markers (v2):
+- **Dark on light / light on dark**: pure black-on-near-white in light mode; pure white-on-true-black in dark mode.
+- **Sans-first typography**: `Geist` (sans) is the default voice for headings, body copy, navigation, and buttons. `Geist Mono` is reserved for data-like content only: slugs, codes, timestamps, table numerics.
+- **One header per section**: No redundant eyebrow labels above headings. A section gets exactly one clear heading at the correct hierarchy level.
+- **Gold as the singular accent**: `#DEAC4B` (APC Gold) for CTAs, hovers, and selection highlights.
+- **Dot-grid texture**: Fixed-attachment radial-gradient dot grid (120px pitch) for subtle depth.
+- **Glassmorphism**: Frosted-glass pill nav, mica cards, and nav sidebar with backdrop blur and inner highlight.
+- **Pill navigation**: Floating frosted-glass pill that auto-hides on scroll down.
+
+### Copy concision policy
+
+Every heading, subtitle, label, or helper line must carry information the surrounding UI does not already convey. If a line only restates a heading, a control, or another line nearby, cut it.
+
+**Rules:**
+- One heading per section — no eyebrow labels that duplicate the heading below them.
+- No subtitles that restate what tabs, cards, or form fields already show.
+- No helper text under links or buttons that repeat what the destination page says.
+- No card footers or CTAs that only say "open this" when the card is already clickable.
+- Keep instructional copy when it explains non-obvious behavior (format rules, consequences, empty-state next steps).
+
+**Before / after examples from this codebase:**
+
+| Before (cut) | After |
+|---|---|
+| Dashboard card footer: `Launch ->` on every module card | *(removed — cards are already clickable launchers)* |
+| OrgSwitcher dropdown header: `Switch organization` | *(removed — org list is self-evident)* |
+| Settings subtitle: `Account security and platform org management.` | *(removed — tab labels already say this)* |
+| Login `<h2>LOGIN</h2>` above a form with Login/Register toggles | *(removed — toggles identify the mode)* |
+
+Use `.text-eyebrow` sparingly — only when the label adds context the heading cannot (e.g. breadcrumbs, status chips, scroll cues). Never duplicate the heading text in miniature above it.
 
 ---
 
@@ -124,48 +146,42 @@ body {
 
 ### Font Families
 
-| Role | Family | Fallback |
+| Role | Family | Fallback | Usage |
+|---|---|---|---|
+| Sans (default) | `Geist` | `system-ui, sans-serif` | Headings, body, nav, buttons, form labels |
+| Mono (data only) | `Geist Mono` | `monospace` | Slugs, codes, timestamps, table data, stat numbers |
+
+### Typography utility classes
+
+| Class | Usage |
+|---|---|
+| `.text-page-title` | Top-level page headings (h1) |
+| `.text-section-title` | Section headings (h2) |
+| `.text-card-title` | Card and list item titles |
+| `.text-data` | Monospace data values |
+| `.text-eyebrow` | Rare contextual labels only — not duplicate headings |
+
+### Typographic Rules by Context (v2)
+
+**Heading Scale** — all use `font-family: Geist` sans:
+
+| Element | Class / Size | Weight |
 |---|---|---|
-| Sans (body) | `Geist` | `system-ui, sans-serif` |
-| Mono (code, labels, UI) | `Geist Mono` | `monospace` |
+| Page title | `.text-page-title` / `clamp(2rem, 5vw, 3.5rem)` | 700 |
+| Section title | `.text-section-title` / `clamp(1.25rem, 2.5vw, 1.75rem)` | 600 |
+| Card title | `.text-card-title` / `1.125rem` | 600 |
+| Hero | `.text-page-title` / larger clamp | 700 |
 
-Both are loaded via the `Geist` npm package or a CDN import. There is no serif typeface used anywhere in this system.
+**Data scale** — use `.text-data` or `font-mono` only for:
 
-### Typographic Rules by Context
+| Context | Usage |
+|---|---|
+| Link slugs | `eypi.cc/abc123` |
+| Table data cells | URLs, click counts |
+| Timestamps | Event dates, created_at |
+| Codes | 404 codes, verification tokens |
 
-**Heading Scale** — all use `font-family: Geist` with tight leading and negative letter-spacing:
-
-| Element | Size (`clamp`) | Weight | Line Height | Tracking |
-|---|---|---|---|---|
-| H1 (hero) | `clamp(2.6rem, 6vw, 5.5rem)` | 900 (black) | `1.05` | `-0.03em` |
-| H1 (404) | `clamp(~4.5rem, 8vw, 9rem)` via Tailwind `text-7xl` → `text-9xl` | 900 | `1.0` | tighter |
-| Footer heading | `clamp(2.8rem, 8vw, 7rem)` | 700 | `0.95` | `-0.04em` |
-| Loader text | `clamp(2.5rem, 8vw, 5rem)` | 700 | — | `-0.04em` |
-| Dashboard panel h2 | `1.5rem` (24px) | 900 | — | `0.1em` (widest) |
-
-**Label / Metadata scale** — all use `font-family: Geist Mono`, uppercase, wide tracking:
-
-| Context | Size | Weight | Tracking | Transform |
-|---|---|---|---|---|
-| Table column headers | `0.75rem` (12px) | 700 | `0.1em` | uppercase |
-| Nav dropdown name | `0.75rem` | 700 | `0.06em` | uppercase |
-| Nav dropdown items | `0.75rem` | 600 | `0.06em` | uppercase |
-| Toast messages | `0.875rem` | 700 | `0.05em` | uppercase |
-| Form labels | `0.75rem` | 700 | `0.05em` | uppercase |
-| Footer label/year | `clamp(0.75rem, 1.2vw, 0.9rem)` | 500 | `0.06em` | uppercase |
-
-**Body / UI text scale**:
-
-| Context | Size | Weight | Font | Leading |
-|---|---|---|---|---|
-| Body paragraph | `clamp(1.1rem, 2vw, 1.4rem)` | 400 | Geist | `1.65` |
-| Nav links | `0.8125rem` (13px) | 500 | Geist | — |
-| Nav CTA | `0.8125rem` | 600 | Geist | — |
-| Nav logo | `0.9375rem` (15px) | 700 | Geist Mono | `-0.01em` |
-| Table body primary | `1.125rem` (18px) | 700 | Geist Mono | — |
-| Table body secondary | `0.875rem` (14px) | 400 | Geist Mono | — |
-| Input fields | `1rem` (16px) body; `1.25rem` hero | 400 | Geist Mono | — |
-| Footer link rows | `clamp(1.2rem, 3vw, 2rem)` | 500 | Geist | `-0.03em` |
+**Form labels**: `text-sm font-medium text-g-muted` in sans — normal case, no wide tracking.
 
 ### Responsive Typography Strategy
 
@@ -661,54 +677,25 @@ Exit: `opacity: 0` over `0.25s ease` (Vue Transition `leave-active`).
 
 ### 6.5 — Custom Cursor (AppCursor)
 
-The system cursor is globally hidden: `* { cursor: none !important; }`.
-A custom `div` follows the mouse via `requestAnimationFrame`.
+The native OS pointer is hidden on desktop (`html.has-custom-cursor`). A custom circle follows the mouse at all times via `requestAnimationFrame`.
 
-**Spring physics**:
-```js
-const SPRING = 0.175   // Interpolation factor per frame
-curX += (mouseX - curX) * SPRING
-curY += (mouseY - curY) * SPRING
-element.style.transform = `translate(${curX}px, ${curY}px) translate(-50%, -50%)`
-```
-This creates a lagging spring effect — the cursor chases the mouse with ~17.5% of the gap closed per frame (~6–8 frames of lag at 60fps).
+**Default state**: 24×24px white circle with `mix-blend-mode: difference` — visible everywhere.
 
-**Cursor states** (toggled via `data-cursor` attribute on target elements):
+**Hover states** — morphs when over interactive elements (explicit `data-cursor` or auto-detected `a`, `button`, inputs, etc.):
 
-| State | Size | Color | Blend Mode | Trigger |
-|---|---|---|---|---|
-| `default` | 24×24px | `#ffffff` | `difference` | No `data-cursor` attribute |
-| `nav` | 34×34px | `#DEAC4B` | `normal` | `data-cursor="nav"` (links, toggles) |
-| `cta` | 48×48px | `#DEAC4B` | `normal` | `data-cursor="cta"` (submit buttons) |
-| `card` | 80×80px | `#34418F` | `normal` | `data-cursor="card"` (preview widget) |
-| `text` | 2×22px | `#DEAC4B` | `normal` | `data-cursor="text"` (text elements) |
+| State | Size | Color | Trigger |
+|---|---|---|---|
+| `default` | 24×24px | `#ffffff` (difference blend) | Non-interactive areas |
+| `nav` | 34×34px | `#DEAC4B` | Links, buttons, toggles |
+| `cta` | 48×48px | `#DEAC4B` | Submit buttons, primary CTAs |
+| `card` | 80×80px | `#34418F` | Card links |
+| `text` | 2×22px | `#DEAC4B` | Text inputs, textareas |
 
-The `default` state uses `mix-blend-mode: difference` — the white dot inverts whatever color sits beneath it (appears black on white backgrounds, white on black backgrounds).
+**Spring physics**: `SPRING = 0.38` for snappy follow.
 
-The `card` state uses a `::after` pseudo-element with the text `VIEW →` (8px Geist Mono, weight 700, letter-spacing 0.08em).
+**Touch devices**: Not rendered when `pointer: coarse` — native pointer used.
 
-**Size/color transitions on the cursor element**:
-```css
-transition:
-  width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-  height 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-  background-color 0.18s ease;
-```
-
-**Touch devices**: The cursor component is not rendered when `window.matchMedia('(pointer: coarse)').matches` is `true`.
-
-### 6.6 — Confetti Particle System (ParticleCanvas)
-
-An HTML Canvas overlay (fixed, full-screen, `pointer-events: none`) renders colored square confetti particles on mouse hold-click drag.
-
-- **Trigger**: `mousedown` → `mouseup` (hold to stream, not single click)
-- **Particle count**: max 100 simultaneous; 3 spawned per animation frame while held
-- **Palette**: `['#FF3B30','#FF9500','#FFCC00','#30D158','#007AFF','#BF5AF2','#FF375F','#00C7BE']`
-- **Particle physics**: random direction (0–2π), speed `1.5–3.5`, size `4/6/8/10px` square, rotation with `rotationSpeed ±0.09`, `alpha -= 0.016` per frame (~60 frames / ~1s lifetime)
-- **Shape**: `fillRect` (axis-aligned square, rotated via canvas transform)
-- **Desktop only**: skipped on touch devices
-
-### 6.7 — Slide Panel Transitions
+### 6.6 — Slide Panel Transitions
 
 Used for the Edit Sidebar and Analytics Panel:
 
@@ -766,16 +753,29 @@ transform: rotate(180deg);    /* When open: .rotate-180 */
 
 ### Focus Management
 
-The system uses `outline: none` on all interactive elements (inputs, buttons). No `focus-visible` ring is explicitly defined — this is a known gap in the current implementation. Interactive elements should have a visible focus indicator added for keyboard users.
-
-Recommended remediation (not yet implemented):
+Visible focus rings are applied site-wide:
 ```css
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: inherit;
+  border-radius: 0.5rem;
 }
 ```
+
+A **Skip to content** link is the first focusable element (`href="#app-content"`), visible on focus.
+
+### Reduced Motion
+
+`@media (prefers-reduced-motion: reduce)` disables or shortens:
+- Scroll reveal animations (`.reveal` shown immediately)
+- Pill nav hide/show transitions
+- Slide-over panel transitions
+- Custom cursor (native pointer on touch only)
+- Page transition wipe (instant)
+
+### Live Regions
+
+Toast notifications use `aria-live="polite"` and `role="status"` on each toast item.
 
 ### ARIA Attributes in Use
 
@@ -799,7 +799,6 @@ Recommended remediation (not yet implemented):
   <AppLoader aria-hidden>       ← z:99998, auto-dismisses
   <AppTransition aria-hidden>   ← z:99997, page wipe overlay
   <AppCursor>                   ← z:99999, decorative
-  <ParticleCanvas>              ← z:9997, pointer-events:none
   <ScrollTop>                   ← z:9998, fixed utility
   <div id="base-layer">         ← z:-10, dot grid background
   <TheHeader>                   ← z:9990, fixed pill nav
@@ -833,7 +832,7 @@ Recommended remediation (not yet implemented):
 
 ### Reduced Motion
 
-The system does not currently implement `@media (prefers-reduced-motion: reduce)`. For production-grade a11y, all `transition`, `animation`, and `requestAnimationFrame` loops should respect this preference — particularly the cursor spring loop, the confetti system, and scroll reveal animations.
+The system implements `@media (prefers-reduced-motion: reduce)` in `main.css`. Animation loops (reveal, nav transitions) respect this preference.
 
 ---
 

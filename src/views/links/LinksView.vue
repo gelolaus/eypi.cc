@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="relative w-full">
     <div
       class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 pb-24 md:pt-16 md:pb-32"
@@ -6,15 +6,11 @@
     <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1
-          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+          class="text-page-title"
           data-cursor="text"
         >
           Links
         </h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
-          Shorten links and monitor engagement
-        </p>
       </div>
     </header>
 
@@ -28,12 +24,12 @@
       />
       <button
         type="button"
-        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         :disabled="isShortening"
         :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isShortening, 'hover:scale-105': !isShortening }"
         @click="handleShorten"
       >
-        {{ isShortening ? 'PROCESSING...' : 'SHORTEN' }}
+        {{ isShortening ? 'Processing...' : 'Shorten' }}
       </button>
     </div>
 
@@ -41,7 +37,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search links..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
     <!-- Unified Table (horizontal scroll on mobile) -->
@@ -51,10 +47,10 @@
     >
       <!-- Table Header -->
       <div
-        class="flex items-center justify-between border-b border-g-border bg-white/40 px-4 md:px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-g-muted dark:bg-mica-navy-header"
+        class="flex items-center justify-between border-b border-g-border bg-white/40 px-4 md:px-6 py-3 text-data text-xs font-semibold text-g-muted dark:bg-mica-navy-header"
       >
-        <span class="flex-1">Branded Link</span>
-        <span class="w-32 text-center">Engagement</span>
+        <span class="flex-1">Short link</span>
+        <span class="w-32 text-center">Clicks</span>
         <span class="w-40 text-center">Actions</span>
       </div>
 
@@ -79,7 +75,7 @@
           <div class="flex w-40 items-center justify-center gap-2">
             <button
               type="button"
-              class="rounded-full p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
+              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
               aria-label="Copy link"
               @click="copyToClipboard(link.short)"
             >
@@ -99,7 +95,7 @@
             </button>
             <button
               type="button"
-              class="rounded-full p-2 text-emerald-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-slate-600/30"
+              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-emerald-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-slate-600/30"
               aria-label="Analytics"
               @click="activeAnalyticsLinkId = link.id; activeAnalyticsShortUrl = link.short; isAnalyticsOpen = true"
             >
@@ -119,7 +115,7 @@
             </button>
             <button
               type="button"
-              class="rounded-full p-2 text-g-muted transition-colors hover:bg-gray-100 hover:text-g-text dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
+              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-g-muted transition-colors hover:bg-gray-100 hover:text-g-text dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
               aria-label="Edit"
               @click="openSidebar(link)"
             >
@@ -139,7 +135,7 @@
             </button>
             <button
               type="button"
-              class="rounded-full p-2 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700 dark:hover:bg-slate-600/30"
+              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700 dark:hover:bg-slate-600/30"
               aria-label="Delete"
               @click="confirmDelete(link)"
             >
@@ -168,11 +164,11 @@
           <div class="absolute w-2 h-[1px] bg-gray-400"></div>
           <div class="absolute h-2 w-[1px] bg-gray-400"></div>
         </div>
-        <h3 class="font-mono text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-widest mb-2">
-          {{ links.length ? 'NO MATCHING LINKS' : 'NO ACTIVE TRANSMISSIONS' }}
+        <h3 class="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2">
+          {{ links.length ? 'No matching links' : 'No links yet' }}
         </h3>
-        <p class="font-mono text-sm text-gray-400 dark:text-slate-500 max-w-md leading-relaxed">
-          {{ links.length ? 'No links match the current search.' : 'The registry is currently empty. Enter a destination URL in the console above to establish a new routing sequence.' }}
+        <p v-if="!links.length" class="text-sm text-gray-400 dark:text-slate-500 max-w-md leading-relaxed">
+          Create your first short link using the field above.
         </p>
       </div>
     </div>
@@ -194,6 +190,9 @@
     <Transition name="slide-right">
       <div
         v-if="isSidebarOpen"
+        role="dialog"
+        aria-labelledby="link-config-title"
+        aria-modal="true"
         class="fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900"
         style="z-index: 99991"
       >
@@ -206,8 +205,8 @@
           &times;
         </button>
 
-        <h2 class="mb-8 font-mono text-2xl font-black uppercase tracking-widest text-g-primary dark:text-slate-200">
-          Link Configuration
+        <h2 id="link-config-title" class="mb-8 text-section-title text-g-primary dark:text-slate-200">
+          Link configuration
         </h2>
 
         <div class="flex flex-1 flex-col">
@@ -216,7 +215,7 @@
             v-model="sidebarOriginalUrl"
             type="url"
             placeholder="Original URL"
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
 
           <!-- Arrow -->
@@ -238,17 +237,17 @@
 
           <!-- Optical Routing Matrix (QR Code Generator) -->
           <div class="mt-8 mb-auto flex flex-col border-t border-gray-200 pt-8">
-            <h4 class="font-mono text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-widest mb-4">
-              Optical Routing Matrix
+            <h4 class="text-card-title mb-4 text-gray-400 dark:text-slate-400">
+              QR code
             </h4>
 
             <div class="flex justify-center mb-6">
               <div class="p-2 bg-white border-2 border-gray-200 rounded-xl shadow-sm dark:bg-slate-800/50 dark:border-slate-600" ref="qrContainer"></div>
             </div>
 
-            <div class="flex flex-col gap-4 mb-6 font-mono text-sm">
+            <div class="mb-6 flex flex-col gap-4 text-sm">
               <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Body Shape</label>
+                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Body shape</label>
                 <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                   <option value="square">Standard Square</option>
                   <option value="dots">Dotted</option>
@@ -259,7 +258,7 @@
 
               <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
-                  <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Eye Frame</label>
+                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye frame</label>
                   <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
@@ -267,7 +266,7 @@
                   </select>
                 </div>
                 <div class="flex flex-col gap-1">
-                  <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Eye Ball</label>
+                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye ball</label>
                   <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
@@ -276,7 +275,7 @@
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Matrix Color</label>
+                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Matrix color</label>
                 <div class="flex items-center gap-3">
                   <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-g-accent transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
                     <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
@@ -286,12 +285,12 @@
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider">Center Logo</label>
+                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
                 <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" />
               </div>
             </div>
 
-            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary font-mono text-sm font-bold uppercase tracking-wider rounded-lg hover:border-g-accent hover:text-g-accent transition-colors dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary text-sm font-semibold rounded-lg hover:border-g-accent hover:text-g-accent transition-colors dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
               Export PNG
             </button>
           </div>
@@ -300,12 +299,12 @@
           <div class="mt-6">
             <button
               type="button"
-              class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-bold uppercase tracking-wider text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+              class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
               :disabled="isSaving"
               :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
               @click="handleSave"
             >
-              {{ isSaving ? 'ENCRYPTING...' : 'SAVE' }}
+              {{ isSaving ? 'Saving...' : 'Save' }}
             </button>
           </div>
         </div>
@@ -318,6 +317,9 @@
   <Transition name="fade">
     <div
       v-if="isDeleteModalOpen"
+      role="dialog"
+      aria-labelledby="delete-link-title"
+      aria-modal="true"
       class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       style="z-index: 9999 !important;"
       @click.self="cancelDelete"
@@ -327,10 +329,10 @@
       >
         <div class="h-2 w-full shrink-0 bg-red-500" />
         <div class="flex flex-col p-8">
-          <h3 class="mb-2 font-mono text-xl font-black uppercase tracking-widest text-red-500">
-            CONFIRM DELETION
+          <h3 id="delete-link-title" class="text-section-title mb-2 text-red-500">
+            Confirm deletion
           </h3>
-          <p class="mb-8 font-mono text-sm leading-relaxed text-gray-800 dark:text-slate-200">
+          <p class="mb-8 text-sm leading-relaxed text-gray-800 dark:text-slate-200">
             Are you sure you want to delete the short link
             <span class="font-bold text-g-text dark:text-slate-100">{{ linkToDelete?.short }}</span>?
             This will permanently break the redirect to
@@ -340,14 +342,14 @@
           <div class="flex w-full justify-end gap-4">
             <button
               type="button"
-              class="rounded-lg px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-gray-700 transition-colors hover:bg-gray-100 hover:text-black dark:bg-slate-700/50 dark:text-slate-200 dark:hover:bg-slate-600"
+              class="rounded-lg px-6 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 hover:text-black dark:bg-slate-700/50 dark:text-slate-200 dark:hover:bg-slate-600"
               @click="cancelDelete"
             >
               Abort
             </button>
             <button
               type="button"
-              class="rounded-lg bg-red-500 px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-md transition-colors hover:bg-red-600"
+              class="rounded-lg bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-red-600"
               @click="executeDelete"
             >
               Delete Link
@@ -489,7 +491,7 @@ const downloadQR = async () => {
   qrEngine.update({ width: 1920, height: 1920 })
   await qrEngine.download({ name: `eypi-qr-${sidebarSlug.value || 'link'}`, extension: 'png' })
   qrEngine.update({ width: 240, height: 240 })
-  toast.success('High-Res QR Code exported successfully')
+  toast.success('QR code exported')
 }
 
 const links = ref<Link[]>([])
@@ -575,7 +577,7 @@ async function handleShorten() {
   if (!urlToProcess) return
 
   if (!isValidUrl(urlToProcess)) {
-    toast.error('Transmission failed: Invalid URL format')
+    toast.error('Enter a valid URL.')
     return
   }
 
@@ -609,7 +611,7 @@ async function handleShorten() {
 
     if (data.status === 'success' && data.link) {
       longUrlInput.value = ''
-      toast.success('New link successfully generated')
+      toast.success('Link created')
       await fetchLinks()
       const newLink = links.value.find((l) => l.original === urlToProcess || normalizeUrl(l.original) === urlToProcess)
       if (newLink) {
@@ -648,7 +650,7 @@ async function onSave(): Promise<void> {
     })
     const data = await res.json()
     if (res.ok && data.status === 'success') {
-      toast.success('Link successfully updated')
+      toast.success('Link updated')
       isSidebarOpen.value = false
       await fetchLinks()
     } else {
@@ -674,7 +676,7 @@ async function handleSave() {
   }
 
   if (slug && isReservedSlug(slug)) {
-    toast.error('That slug is reserved by the eypi.cc suite. Choose another.')
+    toast.error('That slug is reserved. Choose another.')
     return
   }
 
@@ -713,7 +715,7 @@ async function executeDelete(): Promise<void> {
     const data = await res.json()
     if (res.ok && data.status === 'success') {
       links.value = links.value.filter((l) => l.id !== linkId)
-      toast.success('Link successfully deleted')
+      toast.success('Link deleted')
       cancelDelete()
     } else {
       toast.error(data.error || 'Failed to delete link')

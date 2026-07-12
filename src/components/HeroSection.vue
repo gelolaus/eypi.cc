@@ -4,128 +4,146 @@
   >
     <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
       <h1
-        class="reveal mb-6 font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
-        style="font-size: clamp(2.6rem, 6vw, 5.5rem); line-height: 1.05; letter-spacing: -0.03em;"
+        class="reveal hero-title mb-6"
         data-cursor="text"
       >
-        Short links for the <span class="text-[#DEAC4B]">APC</span> community.
+        The toolkit for <span class="text-[#DEAC4B]">APC</span> orgs.
       </h1>
       <p
-        class="reveal delay-1 mb-8 max-w-2xl text-gray-600 dark:text-slate-400"
-        style="font-size: clamp(1.1rem, 2vw, 1.4rem); line-height: 1.65;"
+        class="reveal delay-1 mb-10 max-w-2xl text-g-muted"
+        style="font-size: clamp(1.15rem, 2.2vw, 1.5rem); line-height: 1.65;"
         data-cursor="text"
       >
-        Built for student orgs and the college community to claim clean, custom links instantly. Free to use, zero ads.
+        Short links, official paperwork, event tickets, and org pages. One APC login, zero ads.
       </p>
-      <div class="reveal delay-2 w-full max-w-3xl">
-        <ShortenForm v-model="longUrl" :loading="isShortening" @submit="handleShorten" />
-      </div>
 
-      <!-- Visual connector -->
-      <div class="reveal delay-3 my-4 flex flex-col items-center justify-center text-[#34418F]/50 dark:text-slate-400 animate-bounce">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      </div>
-
-      <!-- Live Preview Monitor -->
-      <div
-        class="reveal delay-4 relative h-28 w-full max-w-3xl rounded-3xl border-2 border-gray-300 bg-gray-50/50 p-3 shadow-2xl dark:border-slate-600 dark:bg-slate-900/30 md:h-36 lg:h-44"
-        data-cursor="card"
-      >
-        <div
-          class="mica-card relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl p-4"
+      <div class="reveal delay-2 mb-12 flex flex-wrap items-center justify-center gap-4">
+        <router-link
+          to="/login"
+          class="tap-scale inline-flex items-center rounded-full bg-[#DEAC4B] px-8 py-4 text-base font-bold uppercase tracking-wide text-white shadow-md transition-all hover:-translate-y-0.5 hover:opacity-90"
+          data-cursor="cta"
         >
-          <!-- Corner screws -->
-          <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-          <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-          <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-          <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-          <!-- Single output monitor -->
-          <div class="flex flex-col items-center justify-center w-full h-full">
-            <span class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.5rem, 3vw, 2.5rem);">
-              eypi.cc/<span class="text-[#DEAC4B] transition-all">{{ previewSlug }}</span>
-            </span>
-            <router-link
-              to="/login"
-              class="mt-3 block font-mono text-xs uppercase tracking-widest text-gray-500 transition-colors hover:text-[#DEAC4B] dark:text-slate-400 dark:hover:text-slate-200"
-              data-cursor="nav"
-            >
-              Login to customize →
-            </router-link>
-          </div>
-        </div>
+          Get started
+        </router-link>
+        <a
+          href="#features"
+          class="tap-scale inline-flex items-center rounded-full border-2 border-[#34418F] px-8 py-4 text-base font-semibold text-[#34418F] transition-all hover:bg-[#34418F] hover:text-white dark:border-g-border dark:text-g-text dark:hover:border-g-accent dark:hover:bg-g-accent dark:hover:text-white"
+          data-cursor="nav"
+          @click.prevent="scrollToFeatures"
+        >
+          See what's inside
+        </a>
       </div>
+
+      <div class="reveal delay-3 mb-10 flex flex-wrap items-center justify-center gap-3">
+        <router-link
+          v-for="badge in moduleBadges"
+          :key="badge.name"
+          :to="badge.to"
+          class="mica-card tap-scale inline-flex items-center gap-2 rounded-full border border-g-border px-4 py-2 text-sm font-medium text-g-text transition-all hover:-translate-y-0.5 hover:border-g-accent/40"
+          data-cursor="nav"
+        >
+          <span
+            class="flex h-7 w-7 items-center justify-center rounded-lg"
+            :style="{ color: badge.accent, background: badge.bg }"
+            aria-hidden="true"
+          >
+            <component :is="badge.icon" />
+          </span>
+          {{ badge.name }}
+        </router-link>
+      </div>
+
+      <a
+        href="#features"
+        class="reveal delay-4 group flex flex-col items-center gap-2 text-eyebrow transition-colors hover:text-[#DEAC4B]"
+        data-cursor="nav"
+        @click.prevent="scrollToFeatures"
+      >
+        <span>Scroll to features</span>
+        <span class="flex flex-col items-center justify-center text-[#34418F]/50 transition-colors group-hover:text-[#DEAC4B] dark:text-slate-400">
+          <svg class="h-6 w-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </span>
+      </a>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import ShortenForm from './ShortenForm.vue'
-import { useToast } from '@/composables/useToast'
-import { useReveal } from '@/composables/useReveal'
+import { h, type Component } from 'vue'
 
-useReveal()
-
-const router = useRouter()
-const toast = useToast()
-const longUrl = ref('')
-const isShortening = ref(false)
-
-const normalizeUrl = (url: string): string => {
-  const trimmed = url.trim()
-  if (!trimmed) return ''
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`
-  }
-  return trimmed
+const IconLinks = {
+  render: () =>
+    h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2', class: 'h-4 w-4' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' }),
+    ]),
 }
 
-const isValidUrl = (url: string) => {
-  const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
-  return pattern.test(url.trim())
+const IconForms = {
+  render: () =>
+    h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2', class: 'h-4 w-4' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' }),
+    ]),
 }
 
-const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-function hashToSlug(str: string): string {
-  if (!str.trim()) return '...'
-  let hash = 5381
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i)
-    hash = hash | 0
-  }
-  const n = Math.abs(hash)
-  let result = ''
-  let remaining = n
-  for (let i = 0; i < 5; i++) {
-    result = BASE62[remaining % 62] + result
-    remaining = Math.floor(remaining / 62)
-  }
-  return result
+const IconTix = {
+  render: () =>
+    h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2', class: 'h-4 w-4' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z' }),
+    ]),
 }
 
-const previewSlug = computed(() => hashToSlug(longUrl.value))
+const IconFrames = {
+  render: () =>
+    h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2', class: 'h-4 w-4' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' }),
+    ]),
+}
 
-function handleShorten(): void {
-  const urlToProcess = normalizeUrl(longUrl.value)
-  if (!urlToProcess) return
+const IconOrgs = {
+  render: () =>
+    h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2', class: 'h-4 w-4' }, [
+      h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }),
+    ]),
+}
 
-  if (!isValidUrl(urlToProcess)) {
-    toast.error('Please enter a valid URL')
-    return
-  }
+interface ModuleBadge {
+  name: string
+  to: string
+  accent: string
+  bg: string
+  icon: Component
+}
 
-  const token = localStorage.getItem('eypi_token')
-  if (token) {
-    router.push({ path: '/dashboard', query: { url: urlToProcess } })
-  } else {
-    localStorage.setItem('pending_url', urlToProcess)
-    toast.error('Please log in to shorten your link!')
-    router.push('/login')
-  }
+const moduleBadges: ModuleBadge[] = [
+  { name: 'Links', to: '/login', accent: '#34418F', bg: 'rgba(52, 65, 143, 0.08)', icon: IconLinks },
+  { name: 'Forms', to: '/login', accent: '#DEAC4B', bg: 'rgba(222, 172, 75, 0.12)', icon: IconForms },
+  { name: 'Tix', to: '/login', accent: '#34418F', bg: 'rgba(52, 65, 143, 0.08)', icon: IconTix },
+  { name: 'Frames', to: '/login', accent: '#DEAC4B', bg: 'rgba(222, 172, 75, 0.12)', icon: IconFrames },
+  { name: 'Orgs', to: '/orgs', accent: '#34418F', bg: 'rgba(52, 65, 143, 0.08)', icon: IconOrgs },
+]
+
+function scrollToFeatures() {
+  const target = document.getElementById('features')
+  if (!target) return
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' })
 }
 </script>
+
+<style scoped>
+.hero-title {
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: clamp(2.5rem, 6.5vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--color-primary);
+}
+
+html.dark .hero-title {
+  color: var(--color-text);
+}
+</style>

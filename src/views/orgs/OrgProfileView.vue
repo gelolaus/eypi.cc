@@ -10,10 +10,10 @@
       v-else-if="error"
       class="mica-card rounded-3xl border border-g-border p-12 text-center"
     >
-      <p class="font-mono text-sm uppercase tracking-widest text-red-500">{{ error }}</p>
+      <p class="text-sm text-red-500">{{ error }}</p>
       <router-link
         to="/orgs"
-        class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
+        class="mt-6 inline-block text-sm font-medium text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
         data-cursor="nav"
       >
         ← Back to directory
@@ -23,7 +23,7 @@
     <template v-else-if="profile">
       <div
         v-if="isPreview"
-        class="mb-6 rounded-2xl border border-[#DEAC4B]/40 bg-[#DEAC4B]/10 px-4 py-3 font-mono text-xs text-g-text"
+        class="mb-6 rounded-2xl border border-[#DEAC4B]/40 bg-[#DEAC4B]/10 px-4 py-3 text-sm text-g-text"
       >
         Preview mode — showing unsaved changes. Save your profile in org settings to publish.
       </div>
@@ -62,8 +62,7 @@
 
         <div class="px-6 pb-8 pt-16 sm:px-8 md:pt-[4.5rem]">
           <h1
-            class="font-mono font-black leading-tight tracking-tight text-g-primary dark:text-slate-100 break-words"
-            style="font-size: clamp(1.35rem, 3.5vw, 2rem); letter-spacing: -0.02em;"
+            class="text-section-title break-words"
             data-cursor="text"
           >
             {{ profile.name }}
@@ -71,14 +70,14 @@
 
           <p
             v-if="profile.tagline"
-            class="mt-3 max-w-3xl font-mono text-sm leading-relaxed text-g-muted"
+            class="mt-3 max-w-3xl text-sm leading-relaxed text-g-muted"
           >
             {{ profile.tagline }}
           </p>
 
           <span
             v-if="orgTypeDisplay"
-            class="inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+            class="inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
             :class="profile.tagline ? 'mt-2' : 'mt-3'"
           >
             {{ orgTypeDisplay }}
@@ -93,7 +92,7 @@
           :key="tab"
           type="button"
           :class="[
-            'rounded-lg px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+            'min-h-[44px] rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === i
               ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
               : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -109,10 +108,10 @@
       <div v-if="activeTab === 0" class="reveal delay-2 mica-card rounded-3xl border border-g-border p-6 sm:p-8">
         <div
           v-if="aboutHtml"
-          class="org-markdown prose-sm max-w-none font-mono text-sm leading-relaxed text-g-text"
+          class="org-markdown prose-sm max-w-none text-sm leading-relaxed text-g-text"
           v-html="aboutHtml"
         />
-        <p v-else class="font-mono text-sm leading-relaxed text-g-muted">
+        <p v-else class="text-sm leading-relaxed text-g-muted">
           This organization hasn't added a description yet.
         </p>
 
@@ -123,7 +122,7 @@
             :href="link.url"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
+            class="inline-flex min-h-[44px] items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
             :aria-label="link.label"
             data-cursor="nav"
           >
@@ -135,14 +134,14 @@
       <!-- Events -->
       <div v-else class="reveal delay-2 grid gap-6 md:grid-cols-2">
         <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
-          <h2 class="mb-4 font-mono text-xs font-bold uppercase tracking-[0.16em] text-g-accent">
-            Upcoming Events
+          <h2 class="text-card-title mb-4 text-g-accent">
+            Upcoming events
           </h2>
           <p
             v-if="events.upcoming.length === 0"
-            class="font-mono text-sm leading-relaxed text-g-muted"
+            class="text-sm leading-relaxed text-g-muted"
           >
-            There are currently no upcoming events. Please check again soon.
+            No upcoming events.
           </p>
           <ul v-else class="space-y-4">
             <li
@@ -155,25 +154,25 @@
                 class="group block"
                 data-cursor="nav"
               >
-                <p class="font-mono text-sm font-bold uppercase tracking-[0.06em] text-g-text group-hover:text-g-accent">
+                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
                   {{ event.name }}
                 </p>
-                <p class="mt-1 font-mono text-xs text-g-muted">
+                <p class="text-data mt-1 text-xs text-g-muted">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
-                <p class="mt-0.5 font-mono text-xs text-g-muted">{{ event.location }}</p>
+                <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
               </router-link>
             </li>
           </ul>
         </section>
 
         <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
-          <h2 class="mb-4 font-mono text-xs font-bold uppercase tracking-[0.16em] text-g-muted">
-            Past Events
+          <h2 class="text-card-title mb-4 text-g-muted">
+            Past events
           </h2>
           <p
             v-if="events.past.length === 0"
-            class="font-mono text-sm leading-relaxed text-g-muted"
+            class="text-sm leading-relaxed text-g-muted"
           >
             No past events yet.
           </p>
@@ -188,13 +187,13 @@
                 class="group block"
                 data-cursor="nav"
               >
-                <p class="font-mono text-sm font-bold uppercase tracking-[0.06em] text-g-text group-hover:text-g-accent">
+                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
                   {{ event.name }}
                 </p>
-                <p class="mt-1 font-mono text-xs text-g-muted">
+                <p class="text-data mt-1 text-xs text-g-muted">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
-                <p class="mt-0.5 font-mono text-xs text-g-muted">{{ event.location }}</p>
+                <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
               </router-link>
             </li>
           </ul>
@@ -342,10 +341,9 @@ watch(
 .org-markdown :deep(h1),
 .org-markdown :deep(h2),
 .org-markdown :deep(h3) {
-  font-family: 'Geist Mono', monospace;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: 'Geist', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
 }

@@ -2,16 +2,9 @@
   <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
     <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1
-          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
-          data-cursor="text"
-        >
-          Orgs
+        <h1 class="text-page-title" data-cursor="text">
+          Org settings
         </h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
-          Organization information &amp; members
-        </p>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
         <OrgSwitcher navigate-path="/orgs/modify" />
@@ -27,7 +20,7 @@
       <div class="h-64 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
     </div>
 
-    <div v-else-if="error" class="mica-card rounded-3xl p-8 text-center font-mono text-sm text-red-500">
+    <div v-else-if="error" class="mica-card rounded-3xl p-8 text-center text-sm text-red-500">
       {{ error }}
     </div>
 
@@ -40,13 +33,11 @@
             size="md"
           />
           <div class="min-w-0">
-            <p class="font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">org settings</p>
-            <h2 class="mt-2 font-mono text-2xl font-semibold leading-tight tracking-[0.04em] text-g-text break-words">{{ org.org_name }}</h2>
-            <p class="mt-1 font-mono text-[0.65rem] lowercase tracking-normal text-g-muted">/orgs/{{ org.org_id }}</p>
+            <h2 class="text-section-title break-words">{{ org.org_name }}</h2>
           </div>
         </div>
         <span
-          class="inline-flex w-fit rounded-full border px-3 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-[0.12em]"
+          class="inline-flex w-fit rounded-full border px-3 py-1 text-sm font-medium"
           :class="isOwner ? 'border-g-accent/40 bg-g-accent/10 text-g-accent' : 'border-g-border text-g-muted'"
         >
           {{ isOwner ? 'Owner' : 'Member' }}
@@ -57,12 +48,12 @@
       <section class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
         <div class="mb-6 flex flex-col gap-3 border-b border-g-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 class="font-mono text-lg font-semibold uppercase tracking-[0.1em] text-g-text">Public profile</h3>
-            <p class="mt-1 font-mono text-xs text-g-muted">Shown on /orgs when listed in the directory.</p>
+            <h3 class="text-section-title">Public profile</h3>
+            <p class="mt-1 text-sm text-g-muted">Shown on /orgs when listed in the directory.</p>
           </div>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-g-border px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
+            class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
             data-cursor="nav"
             @click="openPreview"
           >
@@ -72,12 +63,13 @@
 
         <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-g-border bg-white/20 p-4 dark:bg-slate-900/20">
           <div>
-            <p class="font-mono text-xs font-bold uppercase tracking-[0.12em] text-g-text">List in /orgs directory</p>
+            <p class="text-sm font-medium text-g-text">List in /orgs directory</p>
           </div>
           <button
             type="button"
             role="switch"
             :aria-checked="profileForm.isPublicCatalog"
+            :aria-label="profileForm.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
             :disabled="togglingCatalog"
             class="relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50"
             :class="profileForm.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
@@ -91,13 +83,13 @@
         </div>
 
         <form class="space-y-5" @submit.prevent="saveProfile">
-          <div class="flex flex-col gap-2 font-mono">
-            <label for="tagline" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Tagline</label>
+          <div class="flex flex-col gap-2">
+            <label for="tagline" class="text-sm font-medium text-g-muted">Tagline</label>
             <input id="tagline" v-model="profileForm.tagline" type="text" maxlength="160" class="field-input" />
           </div>
 
-          <div class="flex flex-col gap-2 font-mono">
-            <label for="org-type" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Org type</label>
+          <div class="flex flex-col gap-2">
+            <label for="org-type" class="text-sm font-medium text-g-muted">Org type</label>
             <select id="org-type" v-model="profileForm.orgType" class="field-input">
               <option value="">Not set</option>
               <option v-for="option in ORG_TYPE_OPTIONS" :key="option.value" :value="option.value">
@@ -106,36 +98,36 @@
             </select>
           </div>
 
-          <div class="flex flex-col gap-2 font-mono">
-            <label for="about" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">About (Markdown)</label>
+          <div class="flex flex-col gap-2">
+            <label for="about" class="text-sm font-medium text-g-muted">About (Markdown)</label>
             <textarea id="about" v-model="profileForm.aboutMarkdown" rows="6" maxlength="8000" class="field-input" />
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
-            <div class="flex flex-col gap-3 font-mono">
-              <span class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Banner</span>
+            <div class="flex flex-col gap-3">
+              <span class="text-sm font-medium text-g-muted">Banner</span>
               <div
                 class="relative h-28 overflow-hidden rounded-xl border border-g-border"
                 :class="profileForm.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
               >
                 <img v-if="profileForm.bannerUrl" :src="profileForm.bannerUrl" alt="Banner preview" class="h-full w-full object-cover" />
               </div>
-              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
                 {{ uploadingBanner ? 'Uploading...' : 'Upload banner' }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingBanner" @change="onBannerPicked" />
               </label>
               <button
                 v-if="profileForm.bannerUrl"
                 type="button"
-                class="text-left text-[0.65rem] font-bold uppercase tracking-wider text-red-500"
+                class="text-left text-sm font-medium text-red-500"
                 @click="profileForm.bannerUrl = ''"
               >
                 Remove banner
               </button>
             </div>
 
-            <div class="flex flex-col gap-3 font-mono">
-              <span class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Logo</span>
+            <div class="flex flex-col gap-3">
+              <span class="text-sm font-medium text-g-muted">Logo</span>
               <div class="flex h-28 items-center justify-center">
                 <div
                   v-if="profileForm.logoUrl"
@@ -145,19 +137,19 @@
                 </div>
                 <div
                   v-else
-                  class="flex h-24 w-24 items-center justify-center rounded-2xl border border-g-border bg-[#34418F]/10 font-mono text-lg font-bold text-[#34418F]"
+                  class="flex h-24 w-24 items-center justify-center rounded-2xl border border-g-border bg-[#34418F]/10 text-lg font-bold text-[#34418F]"
                 >
                   {{ orgInitials(org.org_name) }}
                 </div>
               </div>
-              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
                 {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingLogo" @change="onLogoPicked" />
               </label>
               <button
                 v-if="profileForm.logoUrl"
                 type="button"
-                class="text-left text-[0.65rem] font-bold uppercase tracking-wider text-red-500"
+                class="text-left text-sm font-medium text-red-500"
                 @click="profileForm.logoUrl = ''"
               >
                 Remove logo
@@ -166,12 +158,12 @@
           </div>
 
           <div>
-            <p class="mb-3 font-mono text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Social links</p>
+            <p class="mb-3 text-sm font-medium text-g-muted">Social links</p>
             <div class="grid gap-4 sm:grid-cols-2">
-              <div v-for="field in SOCIAL_FIELD_META" :key="field.key" class="flex flex-col gap-2 font-mono">
-                <label :for="`social-${field.key}`" class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-g-muted">{{ field.label }}</label>
+              <div v-for="field in SOCIAL_FIELD_META" :key="field.key" class="flex flex-col gap-2">
+                <label :for="`social-${field.key}`" class="text-sm font-medium text-g-muted">{{ field.label }}</label>
                 <div v-if="field.prefix" class="flex overflow-hidden rounded-lg border-2 border-gray-200 focus-within:border-g-primary dark:border-slate-600 dark:focus-within:border-slate-500">
-                  <span class="flex shrink-0 items-center bg-white/50 px-3 text-[0.65rem] text-g-muted dark:bg-mica-navy-input">{{ field.prefix }}</span>
+                  <span class="text-data flex shrink-0 items-center bg-white/50 px-3 text-xs text-g-muted dark:bg-mica-navy-input">{{ field.prefix }}</span>
                   <input
                     :id="`social-${field.key}`"
                     v-model="profileForm.socialHandles[field.key]"
@@ -193,21 +185,21 @@
           </div>
 
           <button type="submit" :disabled="savingProfile" class="btn-primary" data-cursor="cta">
-            {{ savingProfile ? 'SAVING...' : 'SAVE PROFILE' }}
+            {{ savingProfile ? 'Saving...' : 'Save profile' }}
           </button>
         </form>
       </section>
 
       <!-- Owner: members -->
       <section v-if="isOwner" class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
-        <h3 class="mb-6 border-b border-g-border pb-4 font-mono text-lg font-semibold uppercase tracking-[0.1em] text-g-text">Members</h3>
+        <h3 class="text-section-title mb-6 border-b border-g-border pb-4">Members</h3>
 
         <div v-if="loadingMembers" class="h-20 animate-pulse rounded-xl bg-white/50 dark:bg-slate-800/40" />
 
         <div v-else class="mb-6 overflow-x-auto rounded-2xl border border-g-border">
-          <table class="w-full min-w-[480px] border-collapse text-left font-mono text-xs">
+          <table class="text-data w-full min-w-[480px] border-collapse text-left text-xs">
             <thead>
-              <tr class="border-b border-g-border bg-white/40 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-g-muted dark:bg-mica-navy-header">
+              <tr class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
                 <th class="px-4 py-3">Email</th>
                 <th class="px-4 py-3 text-center">Status</th>
                 <th class="px-4 py-3 text-right">Actions</th>
@@ -221,7 +213,7 @@
                   <button
                     v-if="currentUser?.email !== member.email"
                     type="button"
-                    class="font-bold uppercase tracking-wider text-red-500"
+                    class="font-semibold text-red-500"
                     @click="removeMember(member.email)"
                   >
                     Remove
@@ -235,25 +227,25 @@
 
         <form class="mb-6 flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
           <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-g-primary px-4 py-3 font-mono text-xs font-bold uppercase text-white">
+          <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-g-primary px-4 py-3 text-sm font-semibold text-white">
             {{ sendingInvite ? 'Inviting...' : 'Invite' }}
           </button>
         </form>
 
         <form class="flex flex-col gap-2 border-t border-g-border pt-6 sm:flex-row" @submit.prevent="showTransferModal = true">
           <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 font-mono text-xs font-bold uppercase text-white">Transfer ownership</button>
+          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">Transfer ownership</button>
         </form>
       </section>
 
       <!-- Member: leave -->
       <section v-else class="mica-card rounded-3xl p-6 sm:p-8">
-        <h3 class="mb-2 font-mono text-sm font-bold uppercase tracking-[0.12em] text-g-text">Leave org</h3>
-        <p class="mb-4 font-mono text-xs text-g-muted">You will lose access to org-scoped tools until re-invited.</p>
+        <h3 class="text-card-title mb-2">Leave org</h3>
+        <p class="mb-4 text-sm text-g-muted">You will lose access to org-scoped tools until re-invited.</p>
         <button
           type="button"
           :disabled="leaving"
-          class="rounded-lg border border-red-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+          class="rounded-lg border border-red-500 px-4 py-3 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
           @click="leaveOrg"
         >
           {{ leaving ? 'Leaving...' : 'Leave org' }}
@@ -264,17 +256,20 @@
     <!-- Transfer modal -->
     <div
       v-if="showTransferModal"
+      role="dialog"
+      aria-labelledby="transfer-modal-title"
+      aria-modal="true"
       class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       @click.self="showTransferModal = false"
     >
       <div class="w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-6 shadow-2xl dark:bg-mica-navy-modal">
         <div class="mb-4 h-2 bg-red-500" />
-        <p class="mb-6 font-mono text-xs text-g-muted">
+        <p id="transfer-modal-title" class="mb-6 text-sm text-g-muted">
           Transfer ownership to <strong class="text-g-text">{{ transferEmail }}</strong>? This is permanent.
         </p>
         <div class="flex justify-end gap-3">
-          <button type="button" class="rounded-lg border border-g-border px-4 py-2 font-mono text-xs uppercase" @click="showTransferModal = false">Cancel</button>
-          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 font-mono text-xs uppercase text-white" @click="executeTransfer">
+          <button type="button" class="rounded-lg border border-g-border px-4 py-2 text-sm font-medium" @click="showTransferModal = false">Cancel</button>
+          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white" @click="executeTransfer">
             {{ transferring ? 'Transferring...' : 'Confirm' }}
           </button>
         </div>
@@ -595,6 +590,6 @@ watch(slug, loadOrgContext)
   @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 .btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 font-mono text-xs font-bold uppercase tracking-[0.14em] text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
 }
 </style>

@@ -7,15 +7,11 @@
     <template v-else>
       <header class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1
-            class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-            style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
-            data-cursor="text"
-          >
+          <h1 class="text-page-title" data-cursor="text">
             Forms
           </h1>
-          <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
-            Generate organization documents
+          <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
+            Generate organization documents.
           </p>
         </div>
       </header>
@@ -24,7 +20,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search forms..."
-        class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
+        class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
       />
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -35,10 +31,10 @@
           @click="router.push(form.route)"
           class="mica-card rounded-2xl border border-g-border p-6 text-left transition-all duration-200 focus:outline-none hover:-translate-y-0.5 hover:border-g-accent/50"
         >
-          <h2 class="mb-2 font-mono text-xl font-semibold uppercase tracking-[0.1em] text-g-primary dark:text-white">
+          <h2 class="text-card-title mb-2 text-g-primary dark:text-white">
             {{ form.title }}
           </h2>
-          <p class="font-mono text-sm text-g-muted">
+          <p class="text-sm text-g-muted">
             {{ form.description }}
           </p>
         </button>
@@ -64,7 +60,7 @@ const FALLBACK_FORMS: FormCatalogItem[] = [
   {
     id: 'concessionaire',
     title: 'Concessionaire Form',
-    description: 'Generate official concessionaire documents.',
+    description: 'MOA, waiver, reply form, and related docs in one ZIP.',
     route: '/forms/concessionaire',
   },
   {

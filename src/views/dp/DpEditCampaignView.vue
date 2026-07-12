@@ -20,24 +20,24 @@
         <div class="reveal mb-8 flex items-center justify-between">
           <div>
             <h1 class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.03em;" data-cursor="text">Edit Campaign</h1>
-            <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">eypi.cc/frames/{{ form.slug }}</p>
+            <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">eypi.cc/frames/{{ form.slug }}</p>
           </div>
           <router-link
             :to="`/frames/${form.slug}`"
-            class="shrink-0 rounded-lg border-2 border-gray-200 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
+            class="shrink-0 rounded-lg border-2 border-gray-200 px-4 py-2 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
           >View →</router-link>
         </div>
 
         <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-8 md:p-10 dark:border-slate-600">
           <!-- Title -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Title</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
             <input v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
               <input v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
@@ -46,13 +46,13 @@
 
           <!-- Description -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
             <input v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Caption -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
             <textarea v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
@@ -60,14 +60,14 @@
           <button
             type="button"
             :disabled="saving || !form.title.trim()"
-            class="w-full rounded-xl bg-[#34418F] px-8 py-3.5 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all dark:bg-slate-700 dark:text-slate-100"
+            class="w-full rounded-xl bg-[#34418F] px-8 py-3.5 text-sm font-semibold text-white transition-all dark:bg-slate-700 dark:text-slate-100"
             :class="(saving || !form.title.trim()) ? 'cursor-not-allowed opacity-50' : 'hover:bg-[#2a3578]'"
             @click="saveDetails"
           >{{ saving ? 'Saving…' : 'Save Details' }}</button>
 
           <!-- Frames (persisted immediately) -->
           <div class="border-t border-gray-200 pt-5 dark:border-slate-700">
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Frames</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</label>
             <p class="mb-3 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
             <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
           </div>

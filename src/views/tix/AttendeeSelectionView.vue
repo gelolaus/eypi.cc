@@ -3,14 +3,14 @@
 
     <!-- Header -->
     <div class="mb-8">
-      <router-link to="/manage/tix" class="mb-4 inline-block font-mono text-xs uppercase tracking-widest text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
+      <router-link to="/manage/tix" class="mb-4 inline-block text-sm font-medium text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
       <h1
         class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
         style="font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -0.03em;"
       >
         Attendee Selection
       </h1>
-      <p v-if="eventName" class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">{{ eventName }}</p>
+      <p v-if="eventName" class="mt-1 text-sm text-gray-500 dark:text-slate-400">{{ eventName }}</p>
     </div>
 
     <!-- Step progress bar -->
@@ -24,8 +24,8 @@
         />
       </template>
     </div>
-    <p class="mb-6 font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">
-      Step {{ stepIndex + 1 }} of {{ visibleSteps.length }} — {{ visibleSteps[stepIndex]?.label }}
+    <p class="mb-6 text-xs font-medium text-gray-400 dark:text-slate-500">
+      Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
     </p>
 
     <!-- ─── STEP 1: UPLOAD ─────────────────────────────────────────────── -->
@@ -35,7 +35,7 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Upload Spreadsheet</h2>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Upload Spreadsheet</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.</p>
 
       <div
@@ -46,12 +46,11 @@
         @dragover.prevent
         @drop.prevent="onDrop"
       >
-        <p v-if="csvFile" class="font-mono text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+        <p v-if="csvFile" class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
           {{ csvFile.name }} — {{ allRows.length }} rows, {{ columnHeaders.length }} columns
         </p>
         <template v-else>
-          <p class="font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Drop .xlsx or click to upload</p>
-          <p class="mt-2 font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">Any column headers accepted</p>
+          <p class="text-sm text-gray-500 dark:text-slate-400">Drop .xlsx or click to upload</p>
         </template>
         <input ref="fileInput" type="file" accept=".xlsx" class="hidden" @change="onFileChange" />
         <button
@@ -62,12 +61,12 @@
           {{ csvFile ? 'Change file' : 'Browse' }}
         </button>
       </div>
-      <p v-if="csvError" class="mt-2 font-mono text-[0.65rem] uppercase tracking-wide text-red-500">{{ csvError }}</p>
+      <p v-if="csvError" class="mt-2 text-xs font-medium text-red-500">{{ csvError }}</p>
 
       <button
         :disabled="!csvFile || !allRows.length || uploading"
         :class="[
-          'mt-6 w-full rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-slate-700',
+          'mt-6 w-full rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
           (!csvFile || !allRows.length || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
         ]"
         @click="uploadCsv"
@@ -83,8 +82,8 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Map Columns</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Tell us what each column contains. One column must be the attendee's email.</p>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
+      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
         <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
@@ -112,12 +111,12 @@
         </div>
       </div>
 
-      <p v-if="mapError" class="mt-3 font-mono text-[0.65rem] uppercase tracking-wide text-red-500">{{ mapError }}</p>
+      <p v-if="mapError" class="mt-3 text-xs font-medium text-red-500">{{ mapError }}</p>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'upload'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'upload'">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
           @click="confirmMapping"
         >
           Continue →
@@ -132,7 +131,7 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
       <p class="mb-1 font-mono text-xs text-gray-500 dark:text-slate-400">
         Column: <span class="font-bold text-[#34418F] dark:text-slate-300">{{ columnMapping?.clusterCol }}</span>
       </p>
@@ -167,14 +166,14 @@
         </p>
       </div>
 
-      <p v-if="clusterError" class="mt-3 font-mono text-[0.65rem] uppercase tracking-wide text-red-500">{{ clusterError }}</p>
+      <p v-if="clusterError" class="mt-3 text-xs font-medium text-red-500">{{ clusterError }}</p>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'map-columns'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'map-columns'">← Back</button>
         <button
           :disabled="savingClusters"
           :class="[
-            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-slate-700',
+            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
             savingClusters ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
           ]"
           @click="saveClusters"
@@ -191,7 +190,7 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
         Check the answer values you want to <span class="font-bold">include</span> in the raffle. Unchecked = excluded. Empty column = no filter applied.
       </p>
@@ -205,7 +204,7 @@
           >
             <div>
               <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
-              <p class="font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+              <p class="text-xs font-medium text-gray-400 dark:text-slate-500">
                 max {{ cl.maxCount }} · {{ clusterEligibleCount(cl.value) }} eligible of {{ clusterRawCount(cl.value) }} total
               </p>
             </div>
@@ -215,7 +214,7 @@
           <div v-if="openClusters.has(cl.value)" class="border-t border-gray-100 px-4 py-4 dark:border-slate-700">
             <div v-if="!criteriaColumns.length" class="font-mono text-xs text-gray-400 dark:text-slate-500">No criteria columns configured.</div>
             <div v-for="col in criteriaColumns" :key="col" class="mb-4 last:mb-0">
-              <p class="mb-2 font-mono text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-400">{{ col }}</p>
+              <p class="mb-2 text-sm font-semibold text-gray-600 dark:text-slate-400">{{ col }}</p>
               <div class="flex flex-wrap gap-2">
                 <label
                   v-for="val in uniqueValuesForCluster(col, cl.value)"
@@ -243,7 +242,7 @@
       <!-- No-cluster global filter -->
       <template v-else>
         <div v-for="col in criteriaColumns" :key="col" class="mb-6 last:mb-0">
-          <p class="mb-2 font-mono text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-400">{{ col }}</p>
+          <p class="mb-2 text-sm font-semibold text-gray-600 dark:text-slate-400">{{ col }}</p>
           <div class="flex flex-wrap gap-2">
             <label
               v-for="val in uniqueValues(col)"
@@ -275,9 +274,9 @@
       </div>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromFilter">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromFilter">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
           @click="currentStep = 'guarantee'"
         >
           Continue →
@@ -292,7 +291,7 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Manual Guarantees</h2>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Manual Guarantees</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Add specific people who are guaranteed a slot regardless of the raffle. These reduce the available raffle slots.</p>
 
       <!-- Search -->
@@ -301,7 +300,7 @@
           v-model="guaranteeSearch"
           type="text"
           placeholder="Search by name or email…"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
         />
       </div>
 
@@ -334,7 +333,7 @@
 
       <!-- Guaranteed list -->
       <div v-if="guaranteedRowIds.size" class="mb-4">
-        <p class="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-slate-400">Guaranteed ({{ guaranteedRowIds.size }})</p>
+        <p class="mb-2 text-data text-xs font-semibold text-gray-500 dark:text-slate-400">Guaranteed ({{ guaranteedRowIds.size }})</p>
         <div class="max-h-52 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-600">
           <div
             v-for="rowId in [...guaranteedRowIds]"
@@ -359,9 +358,9 @@
       <p v-else class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">No guaranteed attendees yet.</p>
 
       <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromGuarantee">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromGuarantee">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
           @click="currentStep = 'confirm'"
         >
           Continue →
@@ -376,12 +375,12 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-1 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Confirm & Generate</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Review the selection summary. Once you finalize, QR codes will be generated and downloaded.</p>
+      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Confirm & Generate</h2>
+      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Once you finalize, QR codes will be generated and downloaded.</p>
 
       <!-- Max attendees edit -->
       <div class="mb-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input">
-        <label class="font-mono text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-400">Max Attendees:</label>
+        <label class="text-sm font-semibold text-gray-600 dark:text-slate-400">Max Attendees:</label>
         <input
           v-model.number="maxAttendeesEdit"
           type="number"
@@ -393,8 +392,9 @@
       </div>
 
       <!-- Cluster summary table -->
-      <div v-if="clusters.length" class="mb-6 overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-        <div class="grid grid-cols-5 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.6rem] font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+      <div v-if="clusters.length" class="mb-6 overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-600">
+        <div class="min-w-[520px]">
+        <div class="text-data grid grid-cols-5 border-b border-gray-100 bg-gray-50/60 px-4 py-2 text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
           <span class="col-span-2">Cluster</span>
           <span class="text-center">Quota</span>
           <span class="text-center">Guaranteed</span>
@@ -420,6 +420,7 @@
             <p v-else class="font-mono text-[0.6rem] text-emerald-500 uppercase tracking-wide">all fit</p>
           </div>
         </div>
+        </div>
       </div>
 
       <!-- No-cluster summary -->
@@ -444,11 +445,11 @@
       </div>
 
       <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'guarantee'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'guarantee'">← Back</button>
         <button
           :disabled="finalizing"
           :class="[
-            'flex-1 rounded-xl bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+            'flex-1 rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
             finalizing ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
           ]"
           @click="finalize"

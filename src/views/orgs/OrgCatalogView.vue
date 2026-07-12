@@ -2,27 +2,20 @@
   <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-8 sm:px-6 md:py-16 lg:px-8">
     <header class="reveal mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
-        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-g-muted">
-          orgs
-        </p>
-        <h1
-          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
-          data-cursor="text"
-        >
-          Org directory
+        <h1 class="text-page-title" data-cursor="text">
+          Orgs
         </h1>
-        <p class="mt-2 max-w-2xl font-mono text-sm leading-relaxed text-g-muted">
-          Discover APC student orgs and explore their public profiles.
+        <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
+          APC student organizations
         </p>
       </div>
       <div v-if="isAuthenticated && activeOrg" class="flex flex-wrap items-center gap-3">
         <router-link
           :to="`/orgs/modify/${activeOrg.org_id}`"
-          class="tap-scale inline-flex items-center gap-2 rounded-xl bg-[#DEAC4B] px-5 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          class="tap-scale inline-flex items-center gap-2 rounded-xl bg-[#DEAC4B] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
           data-cursor="cta"
         >
-          Modify {{ orgSlug(activeOrg) }}
+          Modify {{ activeOrg.org_name }}
         </router-link>
       </div>
     </header>
@@ -32,7 +25,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search organizations..."
-        class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+        class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
       />
 
       <div class="reveal delay-1 mb-6 flex flex-wrap gap-2">
@@ -40,7 +33,7 @@
           v-for="option in typeFilterOptions"
           :key="option.value ?? 'all'"
           type="button"
-          class="rounded-full border px-3 py-1.5 font-mono text-[0.65rem] font-bold uppercase tracking-wider transition-colors"
+          class="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           :class="
             selectedOrgType === option.value
               ? 'border-g-accent bg-g-accent text-white dark:bg-eypi-gold-dark dark:text-slate-100'
@@ -75,7 +68,7 @@
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <p class="font-mono text-sm uppercase tracking-widest text-g-muted">No organizations in the directory yet</p>
       <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
-        Check back soon as student organizations opt in to the public catalog.
+        Org officers can opt in from Settings → Org Management.
       </p>
     </div>
 
@@ -111,24 +104,21 @@
             {{ orgInitials(org.name) }}
           </div>
           <div class="w-full">
-            <h2 class="font-mono text-base font-bold leading-snug tracking-[0.04em] text-g-text group-hover:text-g-accent break-words">
+            <h2 class="text-card-title leading-snug text-g-text group-hover:text-g-accent break-words">
               {{ org.name }}
             </h2>
-            <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-g-muted">
-              /orgs/{{ org.slug }}
-            </p>
           </div>
         </div>
         <div class="flex flex-1 flex-col">
           <p
             v-if="org.tagline"
-            class="line-clamp-2 font-mono text-xs leading-relaxed text-g-muted"
+            class="line-clamp-2 text-sm leading-relaxed text-g-muted"
           >
             {{ org.tagline }}
           </p>
           <span
             v-if="orgTypeLabel(org.orgType)"
-            class="mt-2 inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+            class="mt-2 inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
           >
             {{ orgTypeLabel(org.orgType) }}
           </span>
@@ -144,7 +134,7 @@ import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { orgInitials, orgSlug, type PublicOrgCatalogItem } from '@/types/orgs'
+import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
 import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 useReveal()

@@ -2,7 +2,7 @@
   <div>
     <router-link
       to="/settings/org-management"
-      class="mb-6 inline-flex font-mono text-xs uppercase tracking-widest text-g-muted transition-colors hover:text-g-accent"
+      class="mb-6 inline-flex text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
       data-cursor="nav"
     >
       ← Back to org management
@@ -10,31 +10,32 @@
 
     <section class="mica-card rounded-3xl p-6 sm:p-8">
       <header class="mb-6 border-b border-g-border pb-5">
-        <h2 class="font-mono text-xl font-semibold uppercase tracking-[0.1em] text-g-text">
+        <h2 class="text-section-title">
           {{ isCreate ? 'New org' : 'Edit org' }}
         </h2>
       </header>
 
       <form class="space-y-5" @submit.prevent="save">
-        <div class="flex flex-col gap-2 font-mono">
-          <label for="org-slug" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Org slug</label>
-          <input id="org-slug" v-model="form.id" type="text" required class="field-input" placeholder="jpcs" />
+        <div class="flex flex-col gap-2">
+          <label for="org-slug" class="text-sm font-medium text-g-muted">Org slug</label>
+          <input id="org-slug" v-model="form.id" type="text" required class="field-input text-data" placeholder="jpcs" />
         </div>
-        <div class="flex flex-col gap-2 font-mono">
-          <label for="org-name" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Org name</label>
+        <div class="flex flex-col gap-2">
+          <label for="org-name" class="text-sm font-medium text-g-muted">Org name</label>
           <input id="org-name" v-model="form.name" type="text" required class="field-input" placeholder="Junior Philippine Computer Society" />
         </div>
-        <div class="flex flex-col gap-2 font-mono">
-          <label for="owner-email" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Owner email</label>
+        <div class="flex flex-col gap-2">
+          <label for="owner-email" class="text-sm font-medium text-g-muted">Owner email</label>
           <input id="owner-email" v-model="form.ownerEmail" type="email" required class="field-input" placeholder="president@student.apc.edu.ph" />
         </div>
 
         <div v-if="!isCreate" class="flex items-center justify-between rounded-2xl border border-g-border p-4">
-          <span class="font-mono text-xs font-bold uppercase tracking-[0.12em] text-g-text">List in /orgs directory</span>
+          <span class="text-sm font-medium text-g-text">List in /orgs directory</span>
           <button
             type="button"
             role="switch"
             :aria-checked="form.isPublicCatalog"
+            :aria-label="form.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
             class="relative h-7 w-12 rounded-full transition-colors"
             :class="form.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
             @click="form.isPublicCatalog = !form.isPublicCatalog"
@@ -48,39 +49,42 @@
 
         <div class="flex flex-wrap gap-3">
           <button type="submit" :disabled="saving" class="btn-primary" data-cursor="cta">
-            {{ saving ? 'SAVING...' : isCreate ? 'CREATE ORG' : 'SAVE CHANGES' }}
+            {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
           </button>
           <button
             v-if="!isCreate"
             type="button"
             :disabled="deleting"
-            class="rounded-xl border border-red-500 px-5 py-3 font-mono text-xs font-bold uppercase tracking-wider text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
+            class="rounded-xl border border-red-500 px-5 py-3 text-sm font-semibold text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
             @click="deleteOrg"
           >
-            {{ deleting ? 'DELETING...' : 'DELETE ORG' }}
+            {{ deleting ? 'Deleting...' : 'Delete org' }}
           </button>
         </div>
       </form>
 
       <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="showTransferModal = true">
-        <h3 class="font-mono text-sm font-bold uppercase tracking-[0.12em] text-red-500">Transfer ownership</h3>
+        <h3 class="text-card-title text-red-500">Transfer ownership</h3>
         <div class="flex flex-col gap-2 sm:flex-row">
           <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 font-mono text-xs font-bold uppercase text-white">Transfer</button>
+          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">Transfer</button>
         </div>
       </form>
     </section>
 
     <div
       v-if="showTransferModal"
+      role="dialog"
+      aria-labelledby="admin-transfer-title"
+      aria-modal="true"
       class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       @click.self="showTransferModal = false"
     >
       <div class="w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-6 shadow-2xl">
-        <p class="mb-6 font-mono text-xs text-g-muted">Transfer ownership to <strong>{{ transferEmail }}</strong>?</p>
+        <p id="admin-transfer-title" class="mb-6 text-sm text-g-muted">Transfer ownership to <strong>{{ transferEmail }}</strong>?</p>
         <div class="flex justify-end gap-3">
-          <button type="button" class="rounded-lg border px-4 py-2 font-mono text-xs uppercase" @click="showTransferModal = false">Cancel</button>
-          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 font-mono text-xs uppercase text-white" @click="executeTransfer">
+          <button type="button" class="rounded-lg border px-4 py-2 text-sm font-medium" @click="showTransferModal = false">Cancel</button>
+          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white" @click="executeTransfer">
             {{ transferring ? 'Transferring...' : 'Confirm' }}
           </button>
         </div>
@@ -228,6 +232,6 @@ onMounted(loadOrg)
   @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 .btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 font-mono text-xs font-bold uppercase tracking-[0.14em] text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
 }
 </style>

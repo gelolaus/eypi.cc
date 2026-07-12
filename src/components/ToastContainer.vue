@@ -1,20 +1,25 @@
 <template>
-  <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+  <div
+    class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"
+    aria-live="polite"
+    aria-atomic="true"
+  >
     <TransitionGroup name="toast" tag="div" class="flex flex-col gap-3">
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="w-80 bg-white border border-gray-200 shadow-xl flex items-center p-4 relative overflow-hidden pointer-events-auto dark:bg-mica-navy-modal dark:border-slate-600 dark:backdrop-blur-xl"
+        role="status"
+        class="w-80 bg-white border border-gray-200 shadow-xl flex items-center p-4 relative overflow-hidden pointer-events-auto dark:bg-mica-navy-modal dark:border-slate-600 dark:backdrop-blur-xl rounded-xl"
       >
         <div
-          class="absolute left-0 top-0 bottom-0 w-1"
+          class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
           :class="{
             'bg-emerald-500': toast.type === 'success',
             'bg-red-500': toast.type === 'error',
             'bg-[#34418F]': toast.type === 'info'
           }"
         />
-        <p class="font-mono text-sm font-bold ml-2 uppercase tracking-wide text-gray-800 dark:text-slate-200">
+        <p class="text-sm font-semibold ml-2 text-gray-800 dark:text-slate-200">
           {{ toast.message }}
         </p>
       </div>

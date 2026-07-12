@@ -9,23 +9,23 @@
 
       <!-- Header -->
       <div class="mb-10 border-b border-gray-200 dark:border-slate-700 pb-8">
-        <h1 class="font-mono text-2xl font-bold text-[#34418F] dark:text-slate-200 uppercase tracking-widest mb-1">
+        <h1 class="text-section-title mb-1">
           Contact
         </h1>
-        <p class="font-mono text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+        <p class="text-data text-xs text-gray-500 dark:text-slate-400">
           Last Updated: May 16, 2026
         </p>
       </div>
 
-      <div class="space-y-10 font-mono text-sm leading-relaxed">
+      <div class="space-y-10 text-sm leading-relaxed">
 
         <!-- General Support -->
         <div>
-          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             General Support
           </h3>
           <p class="text-gray-600 dark:text-slate-400 mb-3">
-            For inquiries, bug reports, or anything related to eypi.cc, reach out directly to the maintainer:
+            For inquiries and bug reports:
           </p>
           <a
             href="mailto:hello@gelolaus.com"
@@ -38,14 +38,11 @@
 
         <!-- Build with Eypi -->
         <div>
-          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             Build with Eypi
           </h3>
           <p class="text-gray-600 dark:text-slate-400 mb-4">
-            Are you an APC student, org officer, or faculty member with an idea that could benefit the broader college community? Eypi is open to collaboration.
-          </p>
-          <p class="text-gray-600 dark:text-slate-400 mb-4">
-            Whether you want to build a personal project on top of the Eypi infrastructure, propose a new feature, or partner on a community tool — send an email <strong class="text-gray-800 dark:text-slate-200">from your APC-provided email address</strong> with the subject line <strong class="text-gray-800 dark:text-slate-200">"Build with Eypi"</strong>.
+            APC students, org officers, and faculty — if you have an idea for the college community, send an email <strong class="text-gray-800 dark:text-slate-200">from your APC-provided email address</strong> with the subject line <strong class="text-gray-800 dark:text-slate-200">"Build with Eypi"</strong>.
           </p>
           <a
             href="mailto:hello@gelolaus.com?subject=Build%20with%20Eypi"
@@ -58,7 +55,7 @@
 
         <!-- What to Include -->
         <div>
-          <h3 class="text-xs font-bold text-[#34418F] dark:text-slate-300 uppercase tracking-widest border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             What to Include
           </h3>
           <ul class="list-disc pl-5 space-y-2 text-gray-600 dark:text-slate-400">

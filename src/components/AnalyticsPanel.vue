@@ -15,22 +15,25 @@
   <Transition name="slide-right">
     <div
       v-if="isOpen"
+      role="dialog"
+      aria-labelledby="analytics-panel-title"
+      aria-modal="true"
       class="fixed top-0 right-0 flex h-full max-h-screen w-[95vw] md:max-w-2xl flex-col overflow-y-auto bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border-l border-gray-200 dark:border-slate-700/50 p-8 shadow-2xl"
       style="z-index: 99991"
     >
       <button
         type="button"
-        class="absolute right-6 top-6 font-mono text-2xl text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        class="absolute right-6 top-6 text-2xl text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
         aria-label="Close"
         @click="$emit('close')"
       >
         &times;
       </button>
 
-      <h2 class="mb-2 font-mono text-2xl font-black uppercase tracking-widest text-slate-900 dark:text-slate-100">
+      <h2 id="analytics-panel-title" class="mb-2 text-section-title text-slate-900 dark:text-slate-100">
         Analytics
       </h2>
-      <p class="mb-8 font-mono text-sm text-slate-600 dark:text-slate-400 truncate">
+      <p class="text-data mb-8 truncate text-sm text-slate-600 dark:text-slate-400">
         {{ shortUrl }}
       </p>
 
@@ -55,7 +58,7 @@
         >
           <p class="font-mono text-sm text-slate-900 dark:text-slate-200">
             <span class="text-eypi-gold">&#128293;</span>
-            <strong>Peak Engagement:</strong> Most clicks happen on <strong>{{ formattedPeak.day }}</strong> at <strong>{{ formattedPeak.time }}</strong>.
+            <strong>Busiest time:</strong> <strong>{{ formattedPeak.day }}</strong> at <strong>{{ formattedPeak.time }}</strong>.
           </p>
         </div>
 
