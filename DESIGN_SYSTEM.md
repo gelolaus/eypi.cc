@@ -1,65 +1,99 @@
 # eypi.cc Design System
-**gelolaus Design Language — Production Specification**
+**gelolaus design language. Production specification.**
 
 ---
 
 ## Table of Contents
 
-1. [Brand Identity & Vibe](#1-brand-identity--vibe)
-2. [Color System](#2-color-system)
-3. [Typography Scale](#3-typography-scale)
-4. [Spacing & Layout](#4-spacing--layout)
-5. [Component Anatomy](#5-component-anatomy)
-6. [Motion & Interaction](#6-motion--interaction)
-7. [Accessibility (a11y)](#7-accessibility-a11y)
-8. [Z-Index Architecture](#8-z-index-architecture)
+1. [Brand identity](#1-brand-identity)
+2. [UI writing rules](#2-ui-writing-rules)
+3. [Color system](#3-color-system)
+4. [Typography scale](#4-typography-scale)
+5. [Spacing and layout](#5-spacing-and-layout)
+6. [Component anatomy](#6-component-anatomy)
+7. [Motion and interaction](#7-motion-and-interaction)
+8. [Accessibility (a11y)](#8-accessibility-a11y)
+9. [Z-index architecture](#9-z-index-architecture)
 
 ---
 
-## 1. Brand Identity & Vibe
+## 1. Brand identity
 
-### Aesthetic Philosophy (v2)
+### Product and attribution
 
-**eypi.cc** is a URL shortener built for the APC (Asia Pacific College) student community. The visual language is derived from the **gelolaus design language** — refined minimalism with APC branding, professional rather than playful.
+**eypi.cc** is a URL shortener for the Asia Pacific College (APC) student community.
 
-Key personality markers (v2):
-- **Dark on light / light on dark**: pure black-on-near-white in light mode; pure white-on-true-black in dark mode.
-- **Sans-first typography**: `Geist` (sans) is the default voice for headings, body copy, navigation, and buttons. `Geist Mono` is reserved for data-like content only: slugs, codes, timestamps, table numerics.
-- **One header per section**: No redundant eyebrow labels above headings. A section gets exactly one clear heading at the correct hierarchy level.
-- **Gold as the singular accent**: `#DEAC4B` (APC Gold) for CTAs, hovers, and selection highlights.
-- **Dot-grid texture**: Fixed-attachment radial-gradient dot grid (120px pitch) for subtle depth.
-- **Glassmorphism**: Frosted-glass pill nav, mica cards, and nav sidebar with backdrop blur and inner highlight.
-- **Pill navigation**: Floating frosted-glass pill that auto-hides on scroll down.
+| Source | What it owns |
+|---|---|
+| **APC (Asia Pacific College)** | Brand colors: APC Blue `#34418F` (`--color-primary`), APC Gold `#DEAC4B` (`--color-accent`), and the gold hover variants listed in §3. These are APC brand colors, not gelolaus.com brand marks. |
+| **gelolaus design language** | How eypi.cc is built: Geist / Geist Mono roles, light-default theme, fixed 120px dot grid, mica and pill glass surfaces, one heading per section, motion curves, z-index stack, UI copy rules in §2. gelolaus applies APC colors; it does not own them. |
+| **eypi.cc** | The product: URL shortener and related modules for the APC student community. |
 
-### Copy concision policy
+### Visual rules
+
+- **Light and dark text pairs**: Light mode uses `#0A0A0A` on `#F5F5F5`. Dark mode uses `#F5F5F5` on `#000000`.
+- **Geist for UI copy; Geist Mono for data**: `Geist` for headings, body, nav, buttons, and form labels. `Geist Mono` for slugs, codes, timestamps, and table numerics only.
+- **One heading per section**: No eyebrow label above a heading when it repeats the same words. One heading at the correct hierarchy level per section.
+- **APC Gold accent; APC Blue primary**: Accent is APC Gold `#DEAC4B` (`--color-accent`) for CTAs, hovers, and selection. Primary actions and focus borders use APC Blue `#34418F` (`--color-primary`). No third accent color.
+- **Dot grid**: `.bg-dot-grid` uses `radial-gradient` dots, `background-size: 120px 120px`, `background-attachment: fixed`.
+- **Glass surfaces**: `.mica-card` and `.pill-nav` use `backdrop-filter` blur (16px on cards, 20px on nav) over semi-transparent fills.
+- **Pill navigation**: Fixed `.pill-nav-wrapper` at `top: 16px`. Hides on scroll down via `.pill-nav--hidden` (`translateY(-80px)`, `opacity: 0`).
+
+---
+
+## 2. UI writing rules
+
+UI text is part of the design system. Agents and contributors editing headings, labels, empty states, toasts, errors, or marketing-facing copy in eypi.cc must follow these rules. Full banned-word lists live in the no-ai-slop skill; this section is the product subset required inside eypi.cc.
+
+### Prose rules
+
+1. **No em dashes** in UI strings or design-system prose. Use a period, comma, colon, semicolon, or parentheses.
+2. **No hollow intensifiers** (`seamless`, `robust`, `powerful`, `delightful`, `significantly`, etc.). If a claim needs a number or token, state the number or token; otherwise cut the word.
+3. **No marketing filler** in product UI: no "In today's…", "It's important to note", "effortlessly", "unlock", "elevate". Open on the fact the user needs.
+4. **Headings name the screen or section**; they do not tease. Use `Organization settings`, not `Take control of your org`.
+5. **One job per line**: If a subtitle, eyebrow, helper, or card footer only restates a heading or control, remove it.
+6. **Empty states and errors state the next action**, not mood. Wrong: `Something went wrong.` Right: `Could not save link. Check the URL and try again.`
+7. **Loading labels stay uppercase data voice** where already specified (`PROCESSING...`, `SAVING...`, `ENCRYPTING...`); do not rewrite those into soft marketing phrases.
+8. **When adding prose to this design system**, use checkable facts only; update tokens and examples when the product changes.
+
+### Concision rules
 
 Every heading, subtitle, label, or helper line must carry information the surrounding UI does not already convey. If a line only restates a heading, a control, or another line nearby, cut it.
 
-**Rules:**
-- One heading per section — no eyebrow labels that duplicate the heading below them.
+- One heading per section; no eyebrow labels that duplicate the heading below them.
 - No subtitles that restate what tabs, cards, or form fields already show.
 - No helper text under links or buttons that repeat what the destination page says.
 - No card footers or CTAs that only say "open this" when the card is already clickable.
 - Keep instructional copy when it explains non-obvious behavior (format rules, consequences, empty-state next steps).
 
-**Before / after examples from this codebase:**
+Use `.text-eyebrow` only when the label adds context the heading cannot (breadcrumbs, status chips, scroll cues). Never duplicate the heading text in miniature above it.
+
+### Cut-copy examples (this codebase)
 
 | Before (cut) | After |
 |---|---|
-| Dashboard card footer: `Launch ->` on every module card | *(removed — cards are already clickable launchers)* |
-| OrgSwitcher dropdown header: `Switch organization` | *(removed — org list is self-evident)* |
-| Settings subtitle: `Account security and platform org management.` | *(removed — tab labels already say this)* |
-| Login `<h2>LOGIN</h2>` above a form with Login/Register toggles | *(removed — toggles identify the mode)* |
+| Dashboard card footer: `Launch ->` on every module card | *(removed; cards are already clickable launchers)* |
+| OrgSwitcher dropdown header: `Switch organization` | *(removed; org list is self-evident)* |
+| Settings subtitle: `Account security and platform org management.` | *(removed; tab labels already say this)* |
+| Login `<h2>LOGIN</h2>` above a form with Login/Register toggles | *(removed; toggles identify the mode)* |
 
-Use `.text-eyebrow` sparingly — only when the label adds context the heading cannot (e.g. breadcrumbs, status chips, scroll cues). Never duplicate the heading text in miniature above it.
+### UI string examples (wrong vs right)
+
+| Wrong | Right |
+|---|---|
+| `Unlock powerful link analytics` | `Link analytics` |
+| `Seamlessly manage your organization` | `Organization settings` |
+| `Something went wrong. Please try again.` | `Could not save link. Check the URL and try again.` |
+| `Welcome to your dashboard!` | `Dashboard` |
+| `Get started with eypi today` | `Create account` (button label only; no subtitle) |
 
 ---
 
-## 2. Color System
+## 3. Color system
 
-### Design Token Map (CSS Custom Properties)
+### Design token map (CSS custom properties)
 
-These tokens are defined on `:root` and overridden on `html.dark`. All component-level colors MUST reference these variables, never hard-coded hex values (with the exceptions noted below).
+These tokens are defined on `:root` and overridden on `html.dark`. Component-level colors must reference these variables, not hard-coded hex values, except where noted below.
 
 | Token | Light Mode | Dark Mode | Usage |
 |---|---|---|---|
@@ -68,11 +102,13 @@ These tokens are defined on `:root` and overridden on `html.dark`. All component
 | `--color-border` | `#E8E8E8` | `#262626` | All border strokes |
 | `--color-text` | `#0A0A0A` | `#F5F5F5` | Primary body text |
 | `--color-text-muted` | `#6B6B6B` | `#AAAAAA` | Secondary / caption text |
-| `--color-accent` | `#DEAC4B` | `#DEAC4B` | Gold accent — **never changes** |
-| `--color-primary` | `#34418F` | `#34418F` | APC Blue — **never changes** |
+| `--color-accent` | `#DEAC4B` | `#DEAC4B` | APC Gold accent. Same hex in light and dark. |
+| `--color-primary` | `#34418F` | `#34418F` | APC Blue. Same hex in light and dark. |
 | `--color-dot` | `#000000` | `#ffffff` | Dot grid dot fill |
 
-### Extended Brand Palette (Hard-coded where appropriate)
+### Extended brand palette (hard-coded where appropriate)
+
+APC Blue and APC Gold below are APC brand colors applied by the gelolaus system. They are not gelolaus.com brand marks.
 
 These values appear directly in components where the intent is to override the theme-aware system:
 
@@ -82,7 +118,7 @@ These values appear directly in components where the intent is to override the t
 | APC Gold (default) | `#DEAC4B` | CTAs, accent, selection, cursor states |
 | APC Gold (dark hover) | `#c9a84c` | Dark mode button variant, progress bars |
 | APC Gold (hover) | `#d4b55a` | Dark mode button hover |
-| Footer BG | `#040d1f` | Always-dark footer — ignores theme |
+| Footer BG | `#040d1f` | Always-dark footer; theme class does not change it |
 | Footer Border | `#1a1a1a` / `#1f1f1f` | Footer section separators |
 | Footer Text | `#F5F5F5` | Always light on dark footer |
 | Footer Muted | `#444444` | Footer bottom-bar labels |
@@ -90,7 +126,7 @@ These values appear directly in components where the intent is to override the t
 | Danger Hover BG | `rgba(220, 38, 38, 0.06)` | Danger item hover wash |
 | Danger Solid | `#ef4444` / hover `#dc2626` | Delete confirmation button |
 
-### Semantic Status Colors
+### Semantic status colors
 
 | Status | Color | Usage |
 |---|---|---|
@@ -99,9 +135,9 @@ These values appear directly in components where the intent is to override the t
 | Info | `#34418F` (APC Blue) | Info toast accent bar |
 | Analytics | `#c9a84c` | Progress bars in analytics panel |
 
-### Glassmorphism (Mica) Layer Palette
+### Glassmorphism (mica) layer palette
 
-The `mica-navy` scale is used exclusively for the dashboard and settings views (glassmorphism surfaces over the dot grid):
+The `mica-navy` scale is used on dashboard and settings views (glass surfaces over the dot grid):
 
 | Token | Value | Usage |
 |---|---|---|
@@ -129,11 +165,11 @@ border: 1px solid rgba(51, 65, 85, 0.50)
 box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.20)
 ```
 
-### Dark Mode Mechanism
+### Dark mode mechanism
 
-Dark mode is toggled by adding/removing the class `dark` on `<html>`. No `prefers-color-scheme` media query is used — the user's preference is stored in `localStorage` under the key `eypi_dark_mode`. Default is **light mode**.
+Dark mode is toggled by adding or removing the class `dark` on `<html>`. No `prefers-color-scheme` media query is used; the user's preference is stored in `localStorage` under the key `eypi_dark_mode`. Default is light mode.
 
-The `body` transitions smoothly on mode change:
+`body` transitions `background-color` and `color` over `0.3s ease` on mode change:
 ```css
 body {
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -142,9 +178,9 @@ body {
 
 ---
 
-## 3. Typography Scale
+## 4. Typography scale
 
-### Font Families
+### Font families
 
 | Role | Family | Fallback | Usage |
 |---|---|---|---|
@@ -159,11 +195,11 @@ body {
 | `.text-section-title` | Section headings (h2) |
 | `.text-card-title` | Card and list item titles |
 | `.text-data` | Monospace data values |
-| `.text-eyebrow` | Rare contextual labels only — not duplicate headings |
+| `.text-eyebrow` | Rare contextual labels only; not duplicate headings |
 
-### Typographic Rules by Context (v2)
+### Typographic rules by context
 
-**Heading Scale** — all use `font-family: Geist` sans:
+**Heading scale** (all use `font-family: Geist` sans):
 
 | Element | Class / Size | Weight |
 |---|---|---|
@@ -172,7 +208,7 @@ body {
 | Card title | `.text-card-title` / `1.125rem` | 600 |
 | Hero | `.text-page-title` / larger clamp | 700 |
 
-**Data scale** — use `.text-data` or `font-mono` only for:
+**Data scale** (use `.text-data` or `font-mono` only for):
 
 | Context | Usage |
 |---|---|
@@ -181,22 +217,22 @@ body {
 | Timestamps | Event dates, created_at |
 | Codes | 404 codes, verification tokens |
 
-**Form labels**: `text-sm font-medium text-g-muted` in sans — normal case, no wide tracking.
+**Form labels**: `text-sm font-medium text-g-muted` in sans; normal case, no wide tracking.
 
-### Responsive Typography Strategy
+### Responsive typography strategy
 
 The site uses `clamp()` for all large display text. The clamp formula follows the pattern:
 ```
 clamp(minimum, preferred-vw, maximum)
 ```
 
-No custom fluid type scale library is used — values are manually authored. The midpoint `vw` values are in the `3vw–8vw` range, chosen to reach the maximum at approximately `1100–1400px` viewport widths.
+No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` range so maxima land near `1100px` to `1400px` viewports.
 
 ---
 
-## 4. Spacing & Layout
+## 5. Spacing and layout
 
-### Grid & Max-Widths
+### Grid and max-widths
 
 | Zone | Max-Width | Notes |
 |---|---|---|
@@ -205,19 +241,19 @@ No custom fluid type scale library is used — values are manually authored. The
 | Dashboard content | `max-w-5xl` (1024px) | Centered |
 | Login / auth card | `max-w-md` (448px) | Centered within full-screen |
 | Settings panel | `max-w-xl` (576px) | Centered |
-| Footer inner | `max-width: 87.5rem` (1400px) | Generous editorial width |
+| Footer inner | `max-width: 87.5rem` (1400px) | `1400px` max content width |
 | Analytics panel | `max-w-2xl` (672px) on md+, `95vw` on mobile | Right-anchored slide panel |
 | Edit sidebar | `max-w-md` (448px) | Right-anchored slide panel |
 
-### Padding Tokens (derived from Tailwind + custom)
+### Padding tokens (Tailwind utilities plus custom values)
 
 | Context | Value |
 |---|---|
 | Pill nav internal padding | `0.5rem 1.25rem` (8px × 20px) |
 | Pill nav top offset | `16px` from viewport top |
 | Main content top padding | `5rem` (80px, pt-20) compensates for fixed nav |
-| Hero section padding | `1.5rem` sides; `3rem–6rem` vertical |
-| Card inner padding | `2rem` (p-8, 32px) — standard |
+| Hero section padding | `1.5rem` sides; `3rem` to `6rem` vertical |
+| Card inner padding | `2rem` (p-8, 32px) |
 | Card inner padding (lg) | `3rem` (p-12, 48px) on settings |
 | Footer inner padding | `clamp(4rem, 8vw, 6rem)` top; `clamp(1.5rem, 6vw, 6rem)` sides; `clamp(2.5rem, 5vw, 4rem)` bottom |
 | Toast position | `1.5rem` from bottom and right edges |
@@ -225,7 +261,7 @@ No custom fluid type scale library is used — values are manually authored. The
 
 ### Breakpoints
 
-The system uses Tailwind's default breakpoints with no custom additions:
+Tailwind default breakpoints; no custom additions:
 
 | Name | Min-width | Notes |
 |---|---|---|
@@ -235,17 +271,17 @@ The system uses Tailwind's default breakpoints with no custom additions:
 | `xl` | `1280px` | Not explicitly used |
 | `2xl` | `1536px` | Not explicitly used |
 
-### Dot Grid Background
+### Dot grid background
 
 ```css
 .bg-dot-grid {
   background-color: var(--color-bg);
   background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
   background-size: 120px 120px;
-  background-attachment: fixed;  /* Parallax-lite: grid doesn't scroll with content */
+  background-attachment: fixed;  /* fixed attachment; grid does not scroll with content */
 }
 
-.bg-dot-grid-dark {  /* Footer — always dark regardless of theme */
+.bg-dot-grid-dark {  /* Footer: always dark regardless of theme */
   background-color: #040d1f;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
   background-size: 120px 120px;
@@ -255,11 +291,11 @@ The system uses Tailwind's default breakpoints with no custom additions:
 
 ---
 
-## 5. Component Anatomy
+## 6. Component anatomy
 
-### 5.1 — Pill Navigation (TheHeader)
+### 6.1 Pill navigation (TheHeader)
 
-A floating, fixed-position pill with frosted glass effect.
+Fixed-position pill with frosted glass (`.pill-nav`).
 
 **Outer wrapper** (`.pill-nav-wrapper`):
 ```css
@@ -272,7 +308,7 @@ width: min(92vw, 1100px);
 transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
 ```
 
-**Hidden state** (`.pill-nav--hidden`) — triggered on scroll down:
+**Hidden state** (`.pill-nav--hidden`), triggered on scroll down:
 ```css
 transform: translateX(-50%) translateY(-80px);
 opacity: 0;
@@ -294,7 +330,7 @@ Dark mode: `background: rgba(22, 22, 22, 0.88); box-shadow: 0 2px 16px rgba(0,0,
 
 **Scrolled state** (`.pill-nav--scrolled .pill-nav`):
 ```
-box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);  /* deeper shadow */
+box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);
 Dark: box-shadow: 0 4px 28px rgba(0, 0, 0, 0.50);
 ```
 
@@ -333,9 +369,9 @@ Dark: box-shadow: 0 4px 28px rgba(0, 0, 0, 0.50);
 
 ---
 
-### 5.2 — Buttons
+### 6.2 Buttons
 
-Three distinct button variants are used throughout the system:
+Three button variants:
 
 **Primary CTA Button** (gold-filled):
 ```
@@ -343,15 +379,15 @@ background: #DEAC4B
 color: #ffffff
 font-family: Geist (Mono in dashboard/settings)
 font-weight: 700 (bold)
-font-size: 0.8125rem–1.25rem (context-dependent)
+font-size: 0.8125rem to 1.25rem (context-dependent)
 text-transform: uppercase
-letter-spacing: 0.05em–0.1em
-border-radius: 9999px (nav CTA) / 0.75rem–0.875rem (form buttons)
+letter-spacing: 0.05em to 0.1em
+border-radius: 9999px (nav CTA) / 0.75rem to 0.875rem (form buttons)
 padding: 0.35rem 0.875rem (nav) / 1rem 2rem (hero) / 0.75rem 1rem (auth)
 ```
 
 States:
-- **Hover**: `opacity: 0.88` or `hover:brightness-110` + `translateY(-0.5px to -1px)` (lift effect)
+- **Hover**: `opacity: 0.88` or `hover:brightness-110` + `translateY(-0.5px to -1px)`
 - **Active**: standard browser press
 - **Disabled**: `opacity: 0.70; cursor: not-allowed` + `animate-pulse` (loading state)
 - **Loading text**: label changes to `PROCESSING...` / `SAVING...` / `ENCRYPTING...`
@@ -383,9 +419,9 @@ Colors by action: Copy (gray), Analytics (emerald), Edit (blue/sky), Delete (red
 
 ---
 
-### 5.3 — Input Fields
+### 6.3 Input fields
 
-Two size variants exist:
+Two size variants:
 
 **Hero Input** (large, landing page):
 ```
@@ -431,7 +467,7 @@ background: transparent; border: none; outline: none; flex: 1
 
 ---
 
-### 5.4 — Cards & Containers
+### 6.4 Cards and containers
 
 **Glassmorphism Card** (`.mica-card`):
 ```
@@ -465,7 +501,7 @@ background: #ffffff; dark: rgba(15,23,42,0.60)
 border: 1px solid #D1D5DB; dark: slate-600
 box-shadow: 0 25px 50px rgba(0,0,0,0.25) (shadow-2xl)
 padding: 2.5rem (p-10) / 3rem (p-12) on md+
-border-radius: 0  /* Intentionally sharp — brutalist vs. card views */
+border-radius: 0  /* settings panels; mica cards use 1.5rem */
 ```
 Top accent bar: `height: 8px; background: #34418F; width: 100%; position: absolute; top: 0; left: 0;`
 
@@ -480,7 +516,7 @@ Row border: `1px solid gray-100` / `rgba(51,65,85,0.30)`
 
 ---
 
-### 5.5 — Modals & Slide Panels
+### 6.5 Modals and slide panels
 
 **Backdrop** (shared pattern):
 ```
@@ -499,7 +535,7 @@ box-shadow: 0 25px 50px rgba(0,0,0,0.25) (shadow-2xl)
 ```
 Panel widths: `max-w-md` (448px) for edit; `max-w-2xl` (672px) / `95vw` for analytics.
 Slide direction: enters from `translateX(100%)`, exits to `translateX(100%)`.
-Transition: `transform 0.4s cubic-bezier(0.2, 1, 0.3, 1)` — decelerate-in, accelerate-out.
+Transition: `transform 0.4s cubic-bezier(0.2, 1, 0.3, 1)`.
 
 **Delete Confirmation Modal** (centered):
 ```
@@ -514,7 +550,7 @@ Transition: `opacity 0.3s ease`
 
 ---
 
-### 5.6 — Toast Notification System
+### 6.6 Toast notification system
 
 Position: `fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999`
 Stacks vertically (column direction) with `gap: 0.75rem` between toasts.
@@ -526,7 +562,7 @@ background: #ffffff; dark: rgba(15,23,42,0.95)
 border: 1px solid #E5E7EB; dark: slate-600
 box-shadow: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04) (shadow-xl)
 padding: 1rem (p-4)
-border-radius: 0   /* Sharp — intentional, not rounded */
+border-radius: 0
 ```
 Left accent stripe: `position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 0`
 - Success: `#10b981` (emerald-500)
@@ -541,7 +577,7 @@ Both: `transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1)`
 
 ---
 
-### 5.7 — Scroll-Top Button
+### 6.7 Scroll-top button
 
 ```
 position: fixed; bottom: 2rem; right: 2rem; z-index: 9998;
@@ -559,9 +595,9 @@ Hover: `border-color: var(--color-accent); background: var(--color-accent); colo
 
 ---
 
-### 5.8 — Footer
+### 6.8 Footer
 
-The footer is **always dark** regardless of the current theme. It uses the `bg-dot-grid-dark` class.
+The footer is always dark regardless of the current theme. It uses the `bg-dot-grid-dark` class.
 
 **Heading** (`.footer-heading`):
 ```
@@ -574,7 +610,7 @@ margin-bottom: clamp(3rem, 6vw, 5rem);
 max-width: 900px;
 ```
 
-**Link Rows** (`.footer-link-row`): Full-width stacked rows, gelolaus editorial style:
+**Link Rows** (`.footer-link-row`): Full-width stacked rows with top border `#1f1f1f` and clamp type sizes:
 ```
 display: flex; align-items: center; justify-content: space-between;
 padding: clamp(1.1rem, 2.5vw, 1.75rem) 0;
@@ -584,26 +620,26 @@ font-weight: 500; letter-spacing: -0.03em;
 color: #F5F5F5;
 transition: color 0.22s ease;
 ```
-Hover: `color: #DEAC4B` (gold)
+Hover: `color: #DEAC4B` (APC Gold)
 Arrow: `font-size: 0.85em; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)`
-Arrow hover: `translate(4px, -4px)` — diagonal northeast movement.
+Arrow hover: `translate(4px, -4px)`.
 
 ---
 
-## 6. Motion & Interaction
+## 7. Motion and interaction
 
-### 6.1 — Easing Curves
+### 7.1 Easing curves
 
-Two primary easing curves are used throughout the system:
+Four easing curves:
 
-| Name | Cubic Bezier | Character | Primary Use |
+| Name | Cubic Bezier | Behavior | Primary Use |
 |---|---|---|---|
-| **Spring Out** | `cubic-bezier(0.16, 1, 0.3, 1)` | Fast start, long deceleration — feels physical | Scroll reveals, pill nav transitions, cursor size, footer arrow |
+| **Spring Out** | `cubic-bezier(0.16, 1, 0.3, 1)` | Fast start, long deceleration | Scroll reveals, pill nav transitions, cursor size, footer arrow |
 | **Quick In-Out** | `cubic-bezier(0.2, 1, 0.3, 1)` | Slightly slower ease-in than Spring Out | Slide panels, toast notifications |
-| **Heavy Cinematic** | `cubic-bezier(0.76, 0, 0.24, 1)` | Slow start AND slow end — dramatic | Page transition wipe (clip-path expand) |
+| **Heavy Cinematic** | `cubic-bezier(0.76, 0, 0.24, 1)` | Slow in and slow out | Page transition wipe (`clip-path` expand, `0.6s`) |
 | **Linear ease** | `ease` | Standard browser ease | Color/opacity micro-transitions |
 
-### 6.2 — Scroll Reveal System
+### 7.2 Scroll reveal system
 
 Elements marked with `.reveal` are hidden by default and revealed by an `IntersectionObserver`.
 
@@ -616,7 +652,7 @@ transition:
   transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
 ```
 
-**Revealed state** (`.reveal.is-visible` — added by JS):
+**Revealed state** (`.reveal.is-visible`, added by JS):
 ```css
 opacity: 1;
 transform: translateY(0);
@@ -630,9 +666,9 @@ transform: translateY(0);
 .delay-4 → transition-delay: 0.48s
 ```
 
-**Observer config**: `{ threshold: 0.10, rootMargin: '0px 0px -40px 0px' }` — elements trigger 40px before they reach the bottom of the viewport. Once revealed, they are `unobserved` (fire-once, not bi-directional).
+**Observer config**: `{ threshold: 0.10, rootMargin: '0px 0px -40px 0px' }`. Elements trigger 40px before they reach the bottom of the viewport. Once revealed, they are `unobserved` (fire-once, not bi-directional).
 
-### 6.3 — Page Transition Wipe
+### 7.3 Page transition wipe
 
 Triggered on authenticated login before router push. A full-screen `clip-path` animation:
 
@@ -655,11 +691,11 @@ Triggered on authenticated login before router push. A full-screen `clip-path` a
 
 **Timing sequence**:
 1. Element becomes visible (2 rAF delay for render)
-2. `clip-path` expands over `600ms` (heavy cinematic ease)
+2. `clip-path` expands over `600ms` (Heavy Cinematic ease)
 3. After `500ms`, route navigation resolves
 4. After `900ms`, element is removed from DOM
 
-### 6.4 — Page Load Splash Screen
+### 7.4 Page load splash screen
 
 On first load, a fullscreen overlay displays `eypi.cc` in APC Blue with the dot in APC Gold:
 
@@ -675,13 +711,13 @@ Duration: `1.1s` with `cubic-bezier(0.16, 1, 0.3, 1)` fill-forwards.
 Auto-dismisses after `1400ms`.
 Exit: `opacity: 0` over `0.25s ease` (Vue Transition `leave-active`).
 
-### 6.5 — Custom Cursor (AppCursor)
+### 7.5 Custom cursor (AppCursor)
 
 The native OS pointer is hidden on desktop (`html.has-custom-cursor`). A custom circle follows the mouse at all times via `requestAnimationFrame`.
 
-**Default state**: 24×24px white circle with `mix-blend-mode: difference` — visible everywhere.
+**Default state**: 24×24px white circle with `mix-blend-mode: difference`.
 
-**Hover states** — morphs when over interactive elements (explicit `data-cursor` or auto-detected `a`, `button`, inputs, etc.):
+**Hover states** morph when over interactive elements (explicit `data-cursor` or auto-detected `a`, `button`, inputs, etc.):
 
 | State | Size | Color | Trigger |
 |---|---|---|---|
@@ -691,11 +727,11 @@ The native OS pointer is hidden on desktop (`html.has-custom-cursor`). A custom 
 | `card` | 80×80px | `#34418F` | Card links |
 | `text` | 2×22px | `#DEAC4B` | Text inputs, textareas |
 
-**Spring physics**: `SPRING = 0.38` for snappy follow.
+**Spring physics**: `SPRING = 0.38` for follow rate.
 
-**Touch devices**: Not rendered when `pointer: coarse` — native pointer used.
+**Touch devices**: Not rendered when `pointer: coarse`; native pointer used.
 
-### 6.6 — Slide Panel Transitions
+### 7.6 Slide panel transitions
 
 Used for the Edit Sidebar and Analytics Panel:
 
@@ -704,7 +740,7 @@ Used for the Edit Sidebar and Analytics Panel:
 
 Exit reverses: panel slides back `translateX(100%)` and backdrop fades to `opacity: 0`.
 
-### 6.8 — Navigation Scroll Behavior
+### 7.7 Navigation scroll behavior
 
 ```js
 function onScroll() {
@@ -714,17 +750,18 @@ function onScroll() {
   lastScrollY = y
 }
 ```
-The nav hides via `translateY(-80px)` + `opacity: 0` (the pill wrapper, not the pill itself).
+The nav hides via `translateY(-80px)` + `opacity: 0` on the pill wrapper, not the pill itself.
 
-### 6.9 — Hover Lift Pattern
+### 7.8 Hover lift pattern
 
-Several elements use a `translateY(-1px)` to `translateY(-2px)` lift on hover. This is a consistent micro-interaction across:
-- Pill nav CTA: `translateY(-1px)`
-- Scroll-top button: `translateY(-2px)`
-- 404 return CTA: `scale(1.05)`
-- Dashboard shorten button: `scale(1.05)`
+| Element | Hover transform |
+|---|---|
+| Pill nav CTA | `translateY(-1px)` |
+| Scroll-top button | `translateY(-2px)` |
+| 404 return CTA | `scale(1.05)` |
+| Dashboard shorten button | `scale(1.05)` |
 
-### 6.10 — Loading / Skeleton States
+### 7.9 Loading / skeleton states
 
 The Analytics Panel uses `animate-pulse` (Tailwind) on placeholder rectangles while data is fetching:
 ```
@@ -735,11 +772,11 @@ animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite
 
 Buttons in loading state use `animate-pulse` on the button itself (combined with reduced opacity).
 
-### 6.11 — Dark Mode Toggle Transition
+### 7.10 Dark mode toggle transition
 
-The icon switches between Moon (light mode) and Sun (dark mode) with a `v-if`/`v-else` swap (no transition — instant icon change). The page-wide color shift uses the `body` transition: `background-color 0.3s ease, color 0.3s ease`.
+The icon switches between Moon (light mode) and Sun (dark mode) with a `v-if`/`v-else` swap (instant icon change). The page-wide color shift uses the `body` transition: `background-color 0.3s ease, color 0.3s ease`.
 
-### 6.12 — Chevron Rotation
+### 7.11 Chevron rotation
 
 The dropdown chevron in the user button rotates on open:
 ```css
@@ -749,9 +786,9 @@ transform: rotate(180deg);    /* When open: .rotate-180 */
 
 ---
 
-## 7. Accessibility (a11y)
+## 8. Accessibility (a11y)
 
-### Focus Management
+### Focus management
 
 Visible focus rings are applied site-wide:
 ```css
@@ -764,20 +801,21 @@ Visible focus rings are applied site-wide:
 
 A **Skip to content** link is the first focusable element (`href="#app-content"`), visible on focus.
 
-### Reduced Motion
+### Reduced motion
 
-`@media (prefers-reduced-motion: reduce)` disables or shortens:
+`@media (prefers-reduced-motion: reduce)` in `main.css` disables or shortens:
 - Scroll reveal animations (`.reveal` shown immediately)
 - Pill nav hide/show transitions
 - Slide-over panel transitions
 - Custom cursor (native pointer on touch only)
 - Page transition wipe (instant)
+- Animation loops (reveal, nav transitions)
 
-### Live Regions
+### Live regions
 
 Toast notifications use `aria-live="polite"` and `role="status"` on each toast item.
 
-### ARIA Attributes in Use
+### ARIA attributes in use
 
 | Element | Attribute | Value |
 |---|---|---|
@@ -792,7 +830,7 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 | Scroll-top button | `aria-label` | `"Back to top"` |
 | Footer `<nav>` | `aria-label` | `"Footer navigation"` |
 
-### Semantic Structure
+### Semantic structure
 
 ```
 <body>
@@ -810,7 +848,7 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 </body>
 ```
 
-### Color Contrast
+### Color contrast
 
 | Pairing | Ratio (approx.) | Notes |
 |---|---|---|
@@ -821,7 +859,7 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 | `#ffffff` on `#DEAC4B` (button label) | ~3.2:1 | Passes AA for large/bold |
 | `#6B6B6B` on `#F5F5F5` (muted text) | ~4.8:1 | Passes AA |
 
-### Text Selection
+### Text selection
 
 ```css
 ::selection {
@@ -830,15 +868,11 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 }
 ```
 
-### Reduced Motion
-
-The system implements `@media (prefers-reduced-motion: reduce)` in `main.css`. Animation loops (reveal, nav transitions) respect this preference.
-
 ---
 
-## 8. Z-Index Architecture
+## 9. Z-index architecture
 
-A strict z-index hierarchy prevents layering conflicts:
+Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
 
 | Layer | Z-Index | Element |
 |---|---|---|
@@ -846,19 +880,18 @@ A strict z-index hierarchy prevents layering conflicts:
 | Page content | `10` | `<main>` (relative) |
 | Footer | `1` | `<footer>` (relative) |
 | Fixed nav | `9990` | Pill nav wrapper |
-| Slide panel backdrop | `99990` | Teleported overlay |
-| Slide panel | `99991` | Teleported panel |
+| Scroll-top button | `9998` | Fixed bottom-right |
 | Delete modal | `9999` | Inline modal |
 | Toast container | `9999` | Fixed bottom-right |
-| Particle canvas | `9997` | Fixed, pointer-events:none |
-| Scroll-top button | `9998` | Fixed bottom-right |
+| Slide panel backdrop | `99990` | Teleported overlay |
+| Slide panel | `99991` | Teleported panel |
 | Page transition wipe | `99997` | Full-screen clip-path |
 | Page load splash | `99998` | Full-screen loader |
 | Custom cursor | `99999` | Fixed, pointer-events:none |
 
 ---
 
-## Appendix: Quick Reference — Common Patterns
+## Appendix: Common pattern snippets
 
 ### CTA Button (minimal spec)
 ```css
@@ -866,10 +899,10 @@ background: #DEAC4B;
 color: #ffffff;
 font-family: 'Geist', 'Geist Mono', sans-serif;
 font-weight: 700;
-font-size: 0.8125rem–1.25rem;
+font-size: 0.8125rem to 1.25rem;
 text-transform: uppercase;
-letter-spacing: 0.05em–0.1em;
-border-radius: 0.75rem–9999px;
+letter-spacing: 0.05em to 0.1em;
+border-radius: 0.75rem to 9999px;
 padding: 0.75rem 1.5rem;
 transition: opacity 0.2s ease, transform 0.15s ease;
 
