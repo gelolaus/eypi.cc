@@ -294,9 +294,11 @@ Expected: PASS, 25 tests (no automated test exercises this navigation guard dire
 
 Run: `npm run build`
 
-Expected: builds cleanly — confirms the `router/index.ts` change type-checks and bundles (this file isn't covered by `backend/tsconfig.json`, so the frontend build is the type-safety net for it).
+Actual result: `vue-tsc -b` already fails on this repo before this change — 46 pre-existing `TS18046`/`TS2322`/`TS2339` errors across `AnalyticsPanel.vue`, `LinksView.vue`, `LoginView.vue`, `OrgCatalogView.vue`, `OrgModifyView.vue`, `OrgProfileView.vue`, `RedirectView.vue`, `OrgManagementEditView.vue`, `OrgManagementView.vue`, and `SettingsView.vue` (confirmed via `git stash` against the pre-migration tree — same 46 errors, none in `router/index.ts`). None of them are in `router/index.ts` or reference `useAuth`/`SUPER_ADMIN_EMAIL`, so this change adds nothing new; the frontend build isn't a usable pass/fail gate for this repo yet (untracked pre-existing debt, out of scope for this RFC). Verification instead relies on: `npm test` (25/25 passing, including the Task 1 characterization test this router change now depends on) and manual code review of the before/after diff.
 
 - [ ] **Step 4: Manual smoke test**
+
+Deferred — this environment has no test super-admin/non-admin credentials to drive a real login. Documented here for the maintainer to run once, matching the RFC's testing decision to keep this navigation guard manually verified rather than automated:
 
 - Log in as a non-super-admin account, navigate to `/settings/org-management` → expect redirect to `/settings/security`.
 - Log in as the super admin (`arlaus@student.apc.edu.ph`) → expect `/settings/org-management` to load normally.
