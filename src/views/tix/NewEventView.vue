@@ -143,6 +143,8 @@
               :class="csvFile
                 ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-900/10'
                 : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
+              :aria-invalid="Boolean(csvError)"
+              :aria-describedby="csvError ? 'csv-error' : undefined"
               data-cursor="card"
               @dragover.prevent
               @drop.prevent="onDrop"
@@ -163,7 +165,7 @@
                 {{ csvFile ? 'Change file' : 'Browse' }}
               </button>
             </div>
-            <p v-if="csvError" class="mt-1 font-mono text-[0.65rem] text-red-500 uppercase tracking-wide">{{ csvError }}</p>
+            <p v-if="csvError" id="csv-error" class="mt-1 font-mono text-[0.65rem] text-red-500 uppercase tracking-wide">{{ csvError }}</p>
           </div>
 
           <!-- Selection mode info + max attendees -->
@@ -222,6 +224,7 @@ const maxAttendeesValue = ref<number | null>(null)
 const form = ref({ name: '', slug: '', date: '', time: '', location: '' })
 const csvFile = ref<File | null>(null)
 const csvError = ref('')
+watch(useSelectionMode, () => { csvError.value = '' })
 const fileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
 const loadingLabel = computed(() =>
@@ -302,7 +305,7 @@ function loadFile(file: File) {
 // ── submit ────────────────────────────────────────────────────────────────────
 async function submit() {
   if (!useSelectionMode.value && (!csvFile.value || !parsedAttendees.value.length)) {
-    toast.error('Upload a valid CSV first.')
+    csvError.value = 'Upload a valid CSV before creating the event.'
     return
   }
 

@@ -193,8 +193,12 @@ import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 
 const { authHeaders } = useAuth()
+const toast = useToast()
+const dialog = useDialog()
 
 const formData = reactive({
   submissionDate: '',
@@ -292,9 +296,14 @@ async function generateDocument() {
     formData.walkInCount = 0
     csvFileName.value = ''
     parsedNames.value = []
+
+    await dialog.info({
+      title: 'Visitor pass generated',
+      body: 'Your visitor pass is ready in the downloaded document.',
+    })
   } catch (e) {
     console.error(e)
-    alert('Failed to generate document. Check console for details.')
+    toast.error('Could not generate the visitor pass. Check the form and try again.')
   } finally {
     isGenerating.value = false
   }

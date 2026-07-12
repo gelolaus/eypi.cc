@@ -93,12 +93,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
+const dialog = useDialog()
 const { authHeaders } = useAuth()
 
 const campaigns = ref<DpCampaignSummary[]>([])
@@ -128,7 +130,13 @@ async function copyLink(slug: string) {
 }
 
 async function remove(id: string, title: string) {
-  if (!confirm(`Delete "${title}"?\n\nThis permanently removes the campaign, its frames, and its public page. This cannot be undone.`)) return
+  const ok = await dialog.confirm({
+    title: 'Delete this campaign?',
+    body: `Removes "${title}", its frames, and its public page. This cannot be undone.`,
+    confirmLabel: 'Delete campaign',
+    requireText: title,
+  })
+  if (!ok) return
   deletingId.value = id
   try {
     const res = await fetch(`${API_BASE_URL}/api/dp/${id}`, { method: 'DELETE', headers: authHeaders() })

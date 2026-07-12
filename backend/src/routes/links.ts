@@ -1,13 +1,13 @@
 import { Hono } from 'hono'
-import { verify } from 'hono/jwt'
 import { createClient } from '@libsql/client/web'
 import type { Bindings } from '../lib/db'
+import { requireAuth } from '../middleware/requireAuth'
 import { validateDestinationUrl } from '../lib/validateDestinationUrl'
 import { isReservedSlug } from '../../../shared/reservedSlugs'
 import { logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKvEntry } from '../../../shared/linksKv'
 
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }>()
 
 const generateSlug = () => Math.random().toString(36).substring(2, 8)
 
@@ -18,22 +18,15 @@ const normalizeUrl = (url: string) => {
 }
 
 // Link Routes (require JWT)
-app.get('/api/links', async (c) => {
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
-  }
-  const token = authHeader.split(' ')[1]
-  if (!token) return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
+app.get('/api/links', requireAuth, async (c) => {
   try {
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     const result = await db.execute({
       sql: 'SELECT id, original_url, slug, clicks FROM links WHERE user_id = ? ORDER BY created_at DESC',
-      args: [payload.sub],
+      args: [c.var.userId],
     })
     const links = result.rows.map((row) => {
       const r = row as unknown as { id: string; original_url: string; slug: string; clicks?: number }
@@ -51,23 +44,16 @@ app.get('/api/links', async (c) => {
 })
 
 // Analytics aggregation (auth required, must be placed before :slug route)
-app.get('/api/links/:id/analytics', async (c) => {
+app.get('/api/links/:id/analytics', requireAuth, async (c) => {
   const id = c.req.param('id')
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
-  }
-  const token = authHeader.split(' ')[1]
-  if (!token) return c.json({ error: 'Unauthorized', message: 'Missing or malformed token' }, 401)
   try {
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     const ownership = await db.execute({
       sql: 'SELECT id FROM links WHERE id = ? AND user_id = ?',
-      args: [id, payload.sub],
+      args: [id, c.var.userId],
     })
     if (ownership.rows.length === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -155,14 +141,9 @@ app.get('/api/links/:slug', async (c) => {
   return c.json({ original_url: row.original_url })
 })
 
-app.put('/api/links/:id', async (c) => {
+app.put('/api/links/:id', requireAuth, async (c) => {
   const id = c.req.param('id')
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
   try {
-    const token = authHeader.split(' ')[1]
-    if (!token) return c.json({ error: 'Unauthorized' }, 401)
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
     const { original_url, slug } = await c.req.json() as { original_url?: string; slug?: string }
     if (!original_url || typeof original_url !== 'string' || !slug || typeof slug !== 'string') {
       return c.json({ error: 'original_url and slug are required' }, 400)
@@ -181,7 +162,7 @@ app.put('/api/links/:id', async (c) => {
     })
     const existing = await db.execute({
       sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
-      args: [id, payload.sub],
+      args: [id, c.var.userId],
     })
     if (existing.rows.length === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -190,7 +171,7 @@ app.put('/api/links/:id', async (c) => {
 
     const result = await db.execute({
       sql: 'UPDATE links SET original_url = ?, slug = ? WHERE id = ? AND user_id = ?',
-      args: [normalizedUrl, normalizedSlug, id, payload.sub],
+      args: [normalizedUrl, normalizedSlug, id, c.var.userId],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -214,21 +195,16 @@ app.put('/api/links/:id', async (c) => {
   }
 })
 
-app.delete('/api/links/:id', async (c) => {
+app.delete('/api/links/:id', requireAuth, async (c) => {
   const id = c.req.param('id')
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
   try {
-    const token = authHeader.split(' ')[1]
-    if (!token) return c.json({ error: 'Unauthorized' }, 401)
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     const existing = await db.execute({
       sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
-      args: [id, payload.sub],
+      args: [id, c.var.userId],
     })
     if (existing.rows.length === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -237,7 +213,7 @@ app.delete('/api/links/:id', async (c) => {
 
     const result = await db.execute({
       sql: 'DELETE FROM links WHERE id = ? AND user_id = ?',
-      args: [id, payload.sub],
+      args: [id, c.var.userId],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -255,13 +231,8 @@ app.delete('/api/links/:id', async (c) => {
   }
 })
 
-app.post('/api/links', async (c) => {
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader) return c.json({ error: 'Unauthorized' }, 401)
+app.post('/api/links', requireAuth, async (c) => {
   try {
-    const token = authHeader.split(' ')[1]
-    if (!token) return c.json({ error: 'Unauthorized' }, 401)
-    const payload = await verify(token, c.env.JWT_SECRET, 'HS256') as { sub: string }
     const { original_url } = await c.req.json() as { original_url?: string }
     if (!original_url || typeof original_url !== 'string') {
       return c.json({ error: 'original_url is required' }, 400)
@@ -285,7 +256,7 @@ app.post('/api/links', async (c) => {
     const linkId = crypto.randomUUID()
     await db.execute({
       sql: 'INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
-      args: [linkId, payload.sub, normalizedUrl, slug],
+      args: [linkId, c.var.userId, normalizedUrl, slug],
     })
 
     try {

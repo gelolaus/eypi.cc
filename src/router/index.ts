@@ -2,9 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
+import { useAuth } from '@/composables/useAuth'
 import { SUPER_ADMIN_EMAIL } from '@/config/admin'
 
 const { checkOrgMembership } = useOrgMembership()
+const { getUser } = useAuth()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -285,19 +287,12 @@ router.beforeEach(async (to, _from, next) => {
 
   const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin)
   if (requiresSuperAdmin) {
-    try {
-      const token = localStorage.getItem('eypi_token')
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
-        if (payload.email !== SUPER_ADMIN_EMAIL) {
-          next({ name: 'settings-security', replace: true })
-          return
-        }
-      } else {
-        next({ name: 'login' })
-        return
-      }
-    } catch {
+    const user = getUser()
+    if (!user) {
+      next({ name: 'login' })
+      return
+    }
+    if (user.email !== SUPER_ADMIN_EMAIL) {
       next({ name: 'settings-security', replace: true })
       return
     }

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { db, getUser } from '../lib/db'
 import type { Bindings } from '../lib/db'
 import type { Client } from '@libsql/client/web'
+import { SUPER_ADMIN_EMAIL } from '../../../shared/admin'
 
 type Variables = {
   userId: string
@@ -15,7 +16,6 @@ const TAGLINE_MAX = 160
 const ABOUT_MAX = 8000
 const URL_MAX = 2048
 const IMAGE_DATA_URL_MAX = 2_800_000
-const SUPER_ADMIN_EMAIL = 'arlaus@student.apc.edu.ph'
 
 const ORG_TYPE_VALUES = [
   'shs_academic',

@@ -42,25 +42,39 @@
 
       <!-- Form -->
       <form @submit.prevent="onSubmit" class="flex flex-col">
-        <input
-          v-if="mode === 'register'"
-          v-model="name"
-          type="text"
-          placeholder="Full Name"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
-        <input
-          v-model="password"
-          type="password"
-          placeholder="Password"
-          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
+        <div v-if="mode === 'register'" class="mb-4">
+          <input
+            v-model="name"
+            type="text"
+            placeholder="Full Name"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.name)"
+            :aria-describedby="errors.name ? 'name-error' : undefined"
+          />
+          <p v-if="errors.name" id="name-error" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
+        </div>
+        <div class="mb-4">
+          <input
+            v-model="email"
+            type="email"
+            placeholder="Email"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.email)"
+            :aria-describedby="errors.email ? 'email-error' : undefined"
+          />
+          <p v-if="errors.email" id="email-error" class="mt-1 text-sm text-red-500">{{ errors.email }}</p>
+        </div>
+        <div class="mb-6">
+          <input
+            v-model="password"
+            type="password"
+            placeholder="Password"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.password)"
+            :aria-describedby="errors.password ? 'password-error' : undefined"
+          />
+          <p v-if="errors.password" id="password-error" class="mt-1 text-sm text-red-500">{{ errors.password }}</p>
+        </div>
 
         <!-- Submit button - use plain text, no bracketed formatting for CTAs -->
         <button
@@ -83,58 +97,21 @@
       </form>
     </div>
 
-    <!-- Verification Modal -->
-    <div
-      v-if="showVerificationModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 dark:bg-slate-900/80 backdrop-blur-sm p-4"
-      role="dialog"
-      aria-labelledby="verification-modal-title"
-      aria-modal="true"
-    >
-      <div class="mica-card max-w-md w-full p-8 text-center rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-mica-navy-modal">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="mx-auto mb-4 w-12 h-12 text-sky-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <h3 id="verification-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">Check your inbox</h3>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">
-          We've sent a verification link to your APC email. <strong>You must verify your account before you can log in.</strong>
-        </p>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Note: Enterprise email filters may delay the message by 1 to 5 minutes. Please check your Spam/Junk folder. <strong>If you still do not receive an email, please send a message to arlaus on Microsoft Teams.</strong>
-        </p>
-        <button
-          type="button"
-          @click="showVerificationModal = false"
-          class="w-full rounded-lg bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-        >
-          Got it!
-        </button>
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, inject, onMounted, watch, type Ref } from 'vue'
+import { ref, reactive, inject, onMounted, watch, type Ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const dialog = useDialog()
 const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
 
 const mode = ref<'login' | 'register'>('login')
@@ -142,7 +119,11 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
-const showVerificationModal = ref(false)
+const errors = reactive({ name: '', email: '', password: '' })
+
+watch(name, () => { errors.name = '' })
+watch(email, () => { errors.email = '' })
+watch(password, () => { errors.password = '' })
 
 watch(
   () => route.query.tab,
@@ -158,18 +139,18 @@ watch(
 
 onMounted(() => {
   if (route.query.verified === 'true') {
-    toast.success('Email verified! You can now log in.')
+    toast.success('Email verified. You can now log in.')
     router.replace({ path: '/login', query: {} })
   }
 })
 
 const handleLogin = async () => {
   if (!email.value.trim() || !email.value.includes('@')) {
-    toast.error('Please enter a valid email address.')
+    errors.email = 'Enter a valid email address.'
     return
   }
   if (password.value.length < 8) {
-    toast.error('Password must be at least 8 characters.')
+    errors.password = 'Enter a password with at least 8 characters.'
     return
   }
   isAuthenticating.value = true
@@ -210,15 +191,15 @@ const PW_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
 
 const handleRegister = async () => {
   if (!email.value.trim() || !email.value.includes('@')) {
-    toast.error('Please enter a valid email address.')
+    errors.email = 'Enter a valid email address.'
     return
   }
   if (!PW_PATTERN.test(password.value)) {
-    toast.error('Password must be 8+ chars with uppercase, lowercase, a number, and a symbol.')
+    errors.password = 'Use at least 8 characters with uppercase, lowercase, a number, and a symbol.'
     return
   }
   if (name.value.trim().length > 200) {
-    toast.error('Name is too long.')
+    errors.name = 'Shorten your name to 200 characters or fewer.'
     return
   }
   isAuthenticating.value = true
@@ -236,9 +217,12 @@ const handleRegister = async () => {
       throw new Error(data.message || 'Registration failed')
     }
 
-    showVerificationModal.value = true
     mode.value = 'login'
     password.value = ''
+    await dialog.info({
+      title: 'Check your inbox',
+      body: 'We sent a verification link to your APC email. Verify before you log in.\n\nDelivery can take up to 10 minutes. Resend\'s free plan queues slowly, and APC\'s mail filters often hold new messages. Check Spam or Junk if it is not in your inbox. Still missing after 10 minutes? Message arlaus on Microsoft Teams.',
+    })
   } catch (error: unknown) {
     toast.error(error instanceof Error ? error.message : 'Registration failed')
     password.value = ''

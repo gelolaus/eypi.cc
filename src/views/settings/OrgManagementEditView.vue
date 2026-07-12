@@ -63,33 +63,16 @@
         </div>
       </form>
 
-      <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="showTransferModal = true">
+      <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="confirmTransfer">
         <h3 class="text-card-title text-red-500">Transfer ownership</h3>
         <div class="flex flex-col gap-2 sm:flex-row">
           <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">Transfer</button>
+          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
+            {{ transferring ? 'Transferring...' : 'Transfer' }}
+          </button>
         </div>
       </form>
     </section>
-
-    <div
-      v-if="showTransferModal"
-      role="dialog"
-      aria-labelledby="admin-transfer-title"
-      aria-modal="true"
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      @click.self="showTransferModal = false"
-    >
-      <div class="w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-6 shadow-2xl">
-        <p id="admin-transfer-title" class="mb-6 text-sm text-g-muted">Transfer ownership to <strong>{{ transferEmail }}</strong>?</p>
-        <div class="flex justify-end gap-3">
-          <button type="button" class="rounded-lg border px-4 py-2 text-sm font-medium" @click="showTransferModal = false">Cancel</button>
-          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white" @click="executeTransfer">
-            {{ transferring ? 'Transferring...' : 'Confirm' }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -99,11 +82,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 
 const route = useRoute()
 const router = useRouter()
 const { authHeaders } = useAuth()
 const toast = useToast()
+const dialog = useDialog()
 
 const isCreate = computed(() => route.name === 'settings-org-management-new')
 
@@ -117,7 +102,6 @@ const form = ref({
 const saving = ref(false)
 const deleting = ref(false)
 const transferring = ref(false)
-const showTransferModal = ref(false)
 const transferEmail = ref('')
 
 async function loadOrg() {
@@ -186,7 +170,14 @@ async function save() {
 }
 
 async function deleteOrg() {
-  if (!confirm('Delete this org permanently?')) return
+  const orgName = form.value.name || form.value.id
+  const ok = await dialog.confirm({
+    title: 'Delete this org?',
+    body: `Permanently removes "${orgName}". This cannot be undone.`,
+    confirmLabel: 'Delete org',
+    requireText: orgName,
+  })
+  if (!ok) return
   deleting.value = true
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${route.params.orgId}`, {
@@ -204,6 +195,19 @@ async function deleteOrg() {
   }
 }
 
+async function confirmTransfer() {
+  const targetEmail = transferEmail.value.toLowerCase().trim()
+  const orgName = form.value.name || form.value.id
+  const ok = await dialog.confirm({
+    title: 'Transfer ownership?',
+    body: `Transfers "${orgName}" to ${targetEmail}. The current owner will lose ownership.`,
+    confirmLabel: 'Transfer ownership',
+    requireText: orgName,
+  })
+  if (!ok) return
+  await executeTransfer()
+}
+
 async function executeTransfer() {
   transferring.value = true
   try {
@@ -215,7 +219,6 @@ async function executeTransfer() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Transfer failed.')
     toast.success('Ownership transferred.')
-    showTransferModal.value = false
     await loadOrg()
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Transfer failed.')

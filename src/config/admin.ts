@@ -1,4 +1,4 @@
-export const SUPER_ADMIN_EMAIL = 'arlaus@student.apc.edu.ph'
+export { SUPER_ADMIN_EMAIL } from '@shared/admin'
 
 export interface AdminOrgListItem {
   org_id: string

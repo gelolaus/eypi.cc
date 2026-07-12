@@ -16,12 +16,17 @@
 
     <!-- Top Bar (Create Link) -->
     <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">
-      <input
-        v-model="longUrlInput"
-        type="url"
-        placeholder="Paste your long link here..."
-        class="flex-1 rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
-      />
+      <div class="flex-1">
+        <input
+          v-model="longUrlInput"
+          type="url"
+          placeholder="Paste your long link here..."
+          class="w-full rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
+          :aria-invalid="Boolean(longUrlError)"
+          :aria-describedby="longUrlError ? 'long-url-error' : undefined"
+        />
+        <p v-if="longUrlError" id="long-url-error" class="mt-1 text-sm text-red-500">{{ longUrlError }}</p>
+      </div>
       <button
         type="button"
         class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
@@ -211,12 +216,17 @@
 
         <div class="flex flex-1 flex-col">
           <!-- Original Link Input -->
-          <input
-            v-model="sidebarOriginalUrl"
-            type="url"
-            placeholder="Original URL"
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-          />
+          <div class="mb-4">
+            <input
+              v-model="sidebarOriginalUrl"
+              type="url"
+              placeholder="Original URL"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+              :aria-invalid="Boolean(sidebarUrlError)"
+              :aria-describedby="sidebarUrlError ? 'sidebar-url-error' : undefined"
+            />
+            <p v-if="sidebarUrlError" id="sidebar-url-error" class="mt-1 text-sm text-red-500">{{ sidebarUrlError }}</p>
+          </div>
 
           <!-- Arrow -->
           <div class="my-4 text-center font-black text-g-text dark:text-slate-300 text-4xl">
@@ -224,15 +234,20 @@
           </div>
 
           <!-- Custom Slug Input (eypi.cc/ prefix + slug) -->
-          <div class="mb-6 flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-            <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
-            <input
-              :value="sidebarSlug"
-              type="text"
-              placeholder="custom-slug"
-              class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200 dark:placeholder-slate-400"
-              @input="sanitizeSlugInput"
-            />
+          <div class="mb-6">
+            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
+              <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
+              <input
+                :value="sidebarSlug"
+                type="text"
+                placeholder="custom-slug"
+                class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200 dark:placeholder-slate-400"
+                :aria-invalid="Boolean(slugError)"
+                :aria-describedby="slugError ? 'slug-error' : undefined"
+                @input="sanitizeSlugInput"
+              />
+            </div>
+            <p v-if="slugError" id="slug-error" class="mt-1 text-sm text-red-500">{{ slugError }}</p>
           </div>
 
           <!-- Optical Routing Matrix (QR Code Generator) -->
@@ -286,7 +301,8 @@
 
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
-                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" />
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : undefined" />
+                <p v-if="logoError" id="logo-error" class="text-sm text-red-500">{{ logoError }}</p>
               </div>
             </div>
 
@@ -312,53 +328,6 @@
     </Transition>
     </Teleport>
   </div>
-
-  <!-- Delete Confirmation Modal -->
-  <Transition name="fade">
-    <div
-      v-if="isDeleteModalOpen"
-      role="dialog"
-      aria-labelledby="delete-link-title"
-      aria-modal="true"
-      class="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      style="z-index: 9999 !important;"
-      @click.self="cancelDelete"
-    >
-      <div
-        class="relative z-50 flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:bg-mica-navy-modal dark:border-slate-600 dark:backdrop-blur-xl"
-      >
-        <div class="h-2 w-full shrink-0 bg-red-500" />
-        <div class="flex flex-col p-8">
-          <h3 id="delete-link-title" class="text-section-title mb-2 text-red-500">
-            Confirm deletion
-          </h3>
-          <p class="mb-8 text-sm leading-relaxed text-gray-800 dark:text-slate-200">
-            Are you sure you want to delete the short link
-            <span class="font-bold text-g-text dark:text-slate-100">{{ linkToDelete?.short }}</span>?
-            This will permanently break the redirect to
-            <span class="break-all text-gray-500 dark:text-slate-400">{{ linkToDelete?.original }}</span>
-            and cannot be undone.
-          </p>
-          <div class="flex w-full justify-end gap-4">
-            <button
-              type="button"
-              class="rounded-lg px-6 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 hover:text-black dark:bg-slate-700/50 dark:text-slate-200 dark:hover:bg-slate-600"
-              @click="cancelDelete"
-            >
-              Abort
-            </button>
-            <button
-              type="button"
-              class="rounded-lg bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-red-600"
-              @click="executeDelete"
-            >
-              Delete Link
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    </Transition>
   </div>
 
   <AnalyticsPanel
@@ -374,11 +343,13 @@ import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
 import { API_BASE_URL } from '@/config/api'
 import { isReservedSlug } from '@shared/reservedSlugs'
 
 const toast = useToast()
+const dialog = useDialog()
 const router = useRouter()
 const route = useRoute()
 
@@ -416,16 +387,22 @@ interface Link {
 
 const longUrlInput = ref('')
 const isSidebarOpen = ref(false)
-const isDeleteModalOpen = ref(false)
 const activeAnalyticsLinkId = ref<string | number | null>(null)
 const activeAnalyticsShortUrl = ref('')
 const isAnalyticsOpen = ref(false)
-const linkToDelete = ref<Link | null>(null)
 const activeLink = ref<Link | null>(null)
 const sidebarOriginalUrl = ref('')
 const sidebarSlug = ref('')
 const isShortening = ref(false)
 const isSaving = ref(false)
+const longUrlError = ref('')
+const sidebarUrlError = ref('')
+const slugError = ref('')
+const logoError = ref('')
+
+watch(longUrlInput, () => { longUrlError.value = '' })
+watch(sidebarOriginalUrl, () => { sidebarUrlError.value = '' })
+watch(sidebarSlug, () => { slugError.value = '' })
 
 const qrContainer = ref<HTMLElement | null>(null)
 const qrConfig = ref({
@@ -473,12 +450,13 @@ const LOGO_MAX_BYTES = 2 * 1024 * 1024
 const handleLogoUpload = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
+  logoError.value = ''
   if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
-    toast.error('Logo must be PNG, JPEG, WebP, or GIF.')
+    logoError.value = 'Choose a PNG, JPEG, WebP, or GIF image.'
     return
   }
   if (file.size > LOGO_MAX_BYTES) {
-    toast.error('Logo must be smaller than 2 MB.')
+    logoError.value = 'Choose an image smaller than 2 MB.'
     return
   }
   if (qrConfig.value.logoUrl) {
@@ -574,10 +552,13 @@ function openSidebar(link?: Link): void {
 
 async function handleShorten() {
   const urlToProcess = normalizeUrl(longUrlInput.value)
-  if (!urlToProcess) return
+  if (!urlToProcess) {
+    longUrlError.value = 'Enter the URL you want to shorten.'
+    return
+  }
 
   if (!isValidUrl(urlToProcess)) {
-    toast.error('Enter a valid URL.')
+    longUrlError.value = 'Enter a valid URL.'
     return
   }
 
@@ -666,17 +647,17 @@ async function handleSave() {
   const slug = sidebarSlug.value.trim()
 
   if (!isValidUrl(url)) {
-    toast.error('Cannot save: Invalid destination URL')
+    sidebarUrlError.value = 'Enter a valid destination URL.'
     return
   }
 
   if (slug && !isValidSlug(slug)) {
-    toast.error('Slug must contain only letters and numbers')
+    slugError.value = 'Use letters and numbers only.'
     return
   }
 
   if (slug && isReservedSlug(slug)) {
-    toast.error('That slug is reserved. Choose another.')
+    slugError.value = 'Choose a different slug. This one is reserved.'
     return
   }
 
@@ -688,23 +669,21 @@ async function handleSave() {
   }
 }
 
-function confirmDelete(link: Link): void {
-  linkToDelete.value = link
-  isDeleteModalOpen.value = true
+async function confirmDelete(link: Link): Promise<void> {
+  const ok = await dialog.confirm({
+    title: 'Delete this link?',
+    body: `Removes "${link.short}" and breaks its redirect to ${link.original}. This cannot be undone.`,
+    confirmLabel: 'Delete link',
+  })
+  if (!ok) return
+  await executeDelete(link)
 }
 
-function cancelDelete(): void {
-  isDeleteModalOpen.value = false
-  linkToDelete.value = null
-}
-
-async function executeDelete(): Promise<void> {
-  if (!linkToDelete.value) return
-  const linkId = linkToDelete.value.id
+async function executeDelete(link: Link): Promise<void> {
+  const linkId = link.id
   const token = localStorage.getItem('eypi_token')
   if (!token) {
-    toast.error('Please log in to delete links')
-    cancelDelete()
+    toast.error('Log in to delete this link.')
     return
   }
   try {
@@ -716,7 +695,6 @@ async function executeDelete(): Promise<void> {
     if (res.ok && data.status === 'success') {
       links.value = links.value.filter((l) => l.id !== linkId)
       toast.success('Link deleted')
-      cancelDelete()
     } else {
       toast.error(data.error || 'Failed to delete link')
     }

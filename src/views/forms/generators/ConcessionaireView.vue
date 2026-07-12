@@ -199,8 +199,12 @@ import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 
 const { authHeaders } = useAuth()
+const toast = useToast()
+const dialog = useDialog()
 
 const formData = reactive({
   COMPANY_NAME: '',
@@ -283,9 +287,14 @@ async function generateDocuments() {
     formData.COMPANY_REPRESENTATIVE_POSITION = ''
     formData.COMPANY_PHONE = ''
     formData.COMPANY_EMAIL = ''
+
+    await dialog.info({
+      title: 'Documents generated',
+      body: 'Your concessionaire documents are ready in the downloaded ZIP.',
+    })
   } catch (e) {
     console.error(e)
-    alert('Failed to generate documents. Check console for details.')
+    toast.error('Could not generate the documents. Check the form and try again.')
   } finally {
     isGenerating.value = false
   }
