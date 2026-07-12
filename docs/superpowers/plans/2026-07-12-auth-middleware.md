@@ -125,8 +125,8 @@ import { Context, Next } from 'hono'
 import { getUser } from '../lib/db'
 import type { Bindings } from '../lib/db'
 
-export const requireAuth = async (
-  c: Context<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }>,
+export const requireAuth = async <P extends string>(
+  c: Context<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }, P>,
   next: Next,
 ) => {
   const user = await getUser(c as any)
@@ -138,6 +138,8 @@ export const requireAuth = async (
   await next()
 }
 ```
+
+`requireAuth` is generic over the route's path literal `P` (matching Hono's own `Context<E, P>` shape). This is required, not cosmetic: `isOrgFeature` in `orgGuard.ts` sidesteps this because it's mounted with `app.use('*', isOrgFeature)`, but `requireAuth` is passed inline as a per-route argument (`app.get(path, requireAuth, handler)`) since one route in `links.ts` (`GET /api/links/:slug`) must stay public. Without the `<P extends string>` generic, TypeScript can't unify `requireAuth`'s path type with each route's literal path, and every downstream `c.req.param(...)` call in that route's handler silently widens from `string` to `string | undefined` — verified by running `npx tsc --noEmit -p backend/tsconfig.json` before and after adding the generic (12 new errors appeared without it, 0 with it, against a baseline of 3 pre-existing unrelated errors in `forms.ts`/`orgs.ts`).
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -261,7 +263,7 @@ Expected: PASS — no test directly exercises `links.ts`'s routes (out of scope 
 
 Run: `npx tsc --noEmit -p backend/tsconfig.json`
 
-Expected: no new type errors from the migration (e.g. `c.var.userId` typed as `string`, matching the `Variables` type parameter added in Step 1).
+Expected: no new type errors from the migration (e.g. `c.var.userId` typed as `string`, matching the `Variables` type parameter added in Step 1). Baseline is 3 pre-existing, unrelated errors in `forms.ts` and `orgs.ts` (confirmed via `git stash` against the pre-migration tree) — this step should not add to that count. If it does, see the `requireAuth`'s `<P extends string>` generic note in Task 1 Step 3 before assuming the migration itself is wrong.
 
 - [ ] **Step 10: Commit**
 

@@ -2,8 +2,8 @@ import { Context, Next } from 'hono'
 import { getUser } from '../lib/db'
 import type { Bindings } from '../lib/db'
 
-export const requireAuth = async (
-  c: Context<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }>,
+export const requireAuth = async <P extends string>(
+  c: Context<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }, P>,
   next: Next,
 ) => {
   const user = await getUser(c as any)
