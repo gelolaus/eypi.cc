@@ -232,9 +232,11 @@
           </button>
         </form>
 
-        <form class="flex flex-col gap-2 border-t border-g-border pt-6 sm:flex-row" @submit.prevent="showTransferModal = true">
+        <form class="flex flex-col gap-2 border-t border-g-border pt-6 sm:flex-row" @submit.prevent="confirmTransfer">
           <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">Transfer ownership</button>
+          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
+            {{ transferring ? 'Transferring...' : 'Transfer ownership' }}
+          </button>
         </form>
       </section>
 
@@ -253,28 +255,6 @@
       </section>
     </template>
 
-    <!-- Transfer modal -->
-    <div
-      v-if="showTransferModal"
-      role="dialog"
-      aria-labelledby="transfer-modal-title"
-      aria-modal="true"
-      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
-      @click.self="showTransferModal = false"
-    >
-      <div class="w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-6 shadow-2xl dark:bg-mica-navy-modal">
-        <div class="mb-4 h-2 bg-red-500" />
-        <p id="transfer-modal-title" class="mb-6 text-sm text-g-muted">
-          Transfer ownership to <strong class="text-g-text">{{ transferEmail }}</strong>? This is permanent.
-        </p>
-        <div class="flex justify-end gap-3">
-          <button type="button" class="rounded-lg border border-g-border px-4 py-2 text-sm font-medium" @click="showTransferModal = false">Cancel</button>
-          <button type="button" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white" @click="executeTransfer">
-            {{ transferring ? 'Transferring...' : 'Confirm' }}
-          </button>
-        </div>
-      </div>
-    </div>
   </section>
 </template>
 
@@ -285,6 +265,7 @@ import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
@@ -324,6 +305,7 @@ const router = useRouter()
 const { authHeaders, getUser } = useAuth()
 const { setActiveOrg } = useActiveOrg()
 const toast = useToast()
+const dialog = useDialog()
 const currentUser = getUser()
 
 const slug = computed(() => route.params.slug as string)
@@ -342,7 +324,6 @@ const uploadingLogo = ref(false)
 const sendingInvite = ref(false)
 const leaving = ref(false)
 const transferring = ref(false)
-const showTransferModal = ref(false)
 
 const inviteEmail = ref('')
 const transferEmail = ref('')
@@ -529,7 +510,12 @@ async function sendInvite() {
 }
 
 async function removeMember(email: string) {
-  if (!confirm(`Remove ${email}?`)) return
+  const ok = await dialog.confirm({
+    title: 'Remove this member?',
+    body: `Removes ${email} from this org. They will lose access until invited again.`,
+    confirmLabel: 'Remove member',
+  })
+  if (!ok) return
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/members`, {
       method: 'DELETE',
@@ -544,6 +530,19 @@ async function removeMember(email: string) {
   }
 }
 
+async function confirmTransfer() {
+  const targetEmail = transferEmail.value.toLowerCase().trim()
+  const orgName = org.value?.org_name ?? slug.value
+  const ok = await dialog.confirm({
+    title: 'Transfer ownership?',
+    body: `Transfers "${orgName}" to ${targetEmail}. You will no longer be the owner.`,
+    confirmLabel: 'Transfer ownership',
+    requireText: orgName,
+  })
+  if (!ok) return
+  await executeTransfer()
+}
+
 async function executeTransfer() {
   transferring.value = true
   try {
@@ -555,7 +554,6 @@ async function executeTransfer() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || 'Transfer failed.')
     toast.success('Ownership transferred.')
-    showTransferModal.value = false
     router.push('/orgs/modify')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Transfer failed.')
@@ -565,7 +563,14 @@ async function executeTransfer() {
 }
 
 async function leaveOrg() {
-  if (!confirm('Leave this org?')) return
+  const orgName = org.value?.org_name ?? slug.value
+  const ok = await dialog.confirm({
+    title: 'Leave this org?',
+    body: `Leaves "${orgName}". You will lose access until invited again.`,
+    confirmLabel: 'Leave org',
+    requireText: orgName,
+  })
+  if (!ok) return
   leaving.value = true
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/leave`, {

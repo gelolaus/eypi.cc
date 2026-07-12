@@ -272,7 +272,7 @@ async function download() {
     const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
     const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
     saveAs(blob, `eypi-dp-${safe}${suffix}.png`)
-    toast.success('Downloaded! Share your new profile picture 🎉')
+    toast.success('Downloaded. Share your new profile picture.')
     fetch(`${API_BASE_URL}/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')

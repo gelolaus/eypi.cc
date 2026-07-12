@@ -524,6 +524,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
@@ -542,6 +543,7 @@ import {
 } from '@/utils/tix-scanner'
 
 const toast = useToast()
+const dialog = useDialog()
 const { authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
@@ -782,7 +784,13 @@ async function downloadGuestQr(a: { firstName: string; lastName: string; qrToken
 
 // ── re-raffle ─────────────────────────────────────────────────────────────────
 async function reRaffle(clusterValue: string) {
-  if (!confirm(`Re-raffle "${clusterValue}"? This will randomly add attendees from unselected eligible respondents.`)) return
+  const ok = await dialog.confirm({
+    title: 'Re-raffle this cluster?',
+    body: `Randomly adds attendees to "${clusterValue}" from unselected eligible respondents.`,
+    confirmLabel: 'Re-raffle cluster',
+    requireText: clusterValue,
+  })
+  if (!ok) return
   rafflingCluster.value = clusterValue
   try {
     const res = await fetch(`${TIX_API_URL}/api/events/${slug}/clusters/${encodeURIComponent(clusterValue)}/raffle`, {
@@ -1366,7 +1374,14 @@ async function exportToXlsx() {
 }
 
 async function confirmDeleteEvent() {
-  if (!confirm(`Delete "${event.value?.name}"?\n\nThis will permanently remove all attendees and their data. This cannot be undone.`)) return
+  const eventName = event.value?.name ?? slug
+  const ok = await dialog.confirm({
+    title: 'Delete this event?',
+    body: `Removes "${eventName}" and all attendee data. This cannot be undone.`,
+    confirmLabel: 'Delete event',
+    requireText: eventName,
+  })
+  if (!ok) return
   deletingEvent.value = true
   try {
     const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, {

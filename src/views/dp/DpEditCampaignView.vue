@@ -90,6 +90,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
@@ -98,6 +99,7 @@ import type { DpUploaderFrame, DpFrame } from '@/types/dp'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const dialog = useDialog()
 const { authHeaders } = useAuth()
 useReveal()
 
@@ -201,7 +203,14 @@ async function onReorderFrame(from: number, to: number) {
 }
 
 async function removeCampaign() {
-  if (!confirm('Delete this campaign?\n\nThis permanently removes it, its frames, and its public page. This cannot be undone.')) return
+  const campaignName = form.title || form.slug
+  const ok = await dialog.confirm({
+    title: 'Delete this campaign?',
+    body: `Removes "${campaignName}", its frames, and its public page. This cannot be undone.`,
+    confirmLabel: 'Delete campaign',
+    requireText: campaignName,
+  })
+  if (!ok) return
   try {
     const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}`, { method: 'DELETE', headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string }

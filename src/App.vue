@@ -39,6 +39,7 @@
 
     <TheFooter />
     <ToastContainer />
+    <DialogHost />
   </div>
 </template>
 
@@ -47,6 +48,7 @@ import { ref, provide } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import TheFooter from '@/components/TheFooter.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
+import DialogHost from '@/components/DialogHost.vue'
 import AppCursor from '@/components/AppCursor.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
 import AppLoader from '@/components/AppLoader.vue'

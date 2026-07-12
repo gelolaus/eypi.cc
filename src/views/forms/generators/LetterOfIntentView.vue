@@ -144,8 +144,12 @@ import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 
 const { authHeaders } = useAuth()
+const toast = useToast()
+const dialog = useDialog()
 
 const formData = reactive({
   submissionDate: '',
@@ -181,7 +185,7 @@ const formatFilename = (name: string) =>
 
 async function generateDocuments() {
   if (parsedNames.value.length === 0) {
-    alert('Please upload a CSV file with at least one student name.')
+    toast.error('Upload a CSV file with at least one student name.')
     return
   }
 
@@ -224,10 +228,13 @@ async function generateDocuments() {
     csvFileName.value = ''
     parsedNames.value = []
 
-    alert('Documents generated.')
+    await dialog.info({
+      title: 'Documents generated',
+      body: 'Your letter of intent and waiver files are ready in the downloaded ZIP.',
+    })
   } catch (e) {
     console.error(e)
-    alert('Failed to generate documents. Check console for details.')
+    toast.error('Could not generate the documents. Check the form and try again.')
   } finally {
     isGenerating.value = false
   }

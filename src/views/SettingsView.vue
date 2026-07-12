@@ -28,10 +28,12 @@
               id="current-password"
               v-model="passwords.current"
               type="password"
-              required
               autocomplete="current-password"
               class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+              :aria-invalid="Boolean(errors.current)"
+              :aria-describedby="errors.current ? 'current-password-error' : undefined"
             />
+            <p v-if="errors.current" id="current-password-error" class="text-sm text-red-500">{{ errors.current }}</p>
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
@@ -41,10 +43,12 @@
                 id="new-password"
                 v-model="passwords.new"
                 type="password"
-                required
                 autocomplete="new-password"
                 class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+                :aria-invalid="Boolean(errors.new)"
+                :aria-describedby="errors.new ? 'new-password-error' : undefined"
               />
+              <p v-if="errors.new" id="new-password-error" class="text-sm text-red-500">{{ errors.new }}</p>
             </div>
 
             <div class="flex flex-col gap-2">
@@ -53,10 +57,12 @@
                 id="confirm-password"
                 v-model="passwords.confirm"
                 type="password"
-                required
                 autocomplete="new-password"
                 class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+                :aria-invalid="Boolean(errors.confirm)"
+                :aria-describedby="errors.confirm ? 'confirm-password-error' : undefined"
               />
+              <p v-if="errors.confirm" id="confirm-password-error" class="text-sm text-red-500">{{ errors.confirm }}</p>
             </div>
           </div>
         </div>
@@ -75,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
 import { API_BASE_URL } from '@/config/api'
@@ -84,20 +90,25 @@ const toast = useToast()
 useReveal()
 const isSaving = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
+const errors = reactive({ current: '', new: '', confirm: '' })
+
+watch(() => passwords.current, () => { errors.current = '' })
+watch(() => passwords.new, () => { errors.new = '' })
+watch(() => passwords.confirm, () => { errors.confirm = '' })
 
 const PW_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
 
 const handleUpdatePassword = async () => {
   if (!passwords.current) {
-    toast.error('Please enter your current password.')
+    errors.current = 'Enter your current password.'
     return
   }
   if (!PW_PATTERN.test(passwords.new)) {
-    toast.error('New password must be 8+ chars with uppercase, lowercase, a number, and a symbol.')
+    errors.new = 'Use at least 8 characters with uppercase, lowercase, a number, and a symbol.'
     return
   }
   if (passwords.new !== passwords.confirm) {
-    toast.error('New passwords do not match.')
+    errors.confirm = 'Re-enter the new password so both fields match.'
     return
   }
 

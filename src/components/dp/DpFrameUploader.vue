@@ -40,6 +40,8 @@
       v-if="frames.length < max"
       class="dp-dropzone relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition-colors"
       :class="dragging ? 'dp-dropzone--active' : ''"
+      :aria-invalid="Boolean(uploadError)"
+      :aria-describedby="uploadError ? 'frame-upload-error' : undefined"
       @click="fileInput?.click()"
       @dragover.prevent="dragging = true"
       @dragleave.prevent="dragging = false"
@@ -53,6 +55,7 @@
       <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">transparent PNG · ≤2 MB each</p>
     </div>
 
+    <p v-if="uploadError" id="frame-upload-error" class="mt-2 text-sm text-red-500">{{ uploadError }}</p>
     <p class="text-data mt-2 text-right text-xs text-gray-400 dark:text-slate-500">{{ frames.length }} / {{ max }} frames</p>
   </div>
 </template>
@@ -80,6 +83,7 @@ const emit = defineEmits<{
 const toast = useToast()
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragging = ref(false)
+const uploadError = ref('')
 const max = props.max ?? DP_MAX_FRAMES
 
 // Drag-to-reorder state (thumbnail-to-thumbnail; distinct from file drops).
@@ -105,17 +109,18 @@ function onDragEnd() {
 }
 
 function readFiles(files: FileList | File[]) {
+  uploadError.value = ''
   const list = Array.from(files)
   let remaining = max - props.frames.length
   for (const file of list) {
-    if (remaining <= 0) { toast.error(`Up to ${max} frames per campaign.`); break }
+    if (remaining <= 0) { uploadError.value = `Remove a frame before adding more. The limit is ${max}.`; break }
     const fileType = file.type.toLowerCase()
     const isPng = fileType === 'image/png' || fileType === 'image/x-png' || (!fileType && file.name.toLowerCase().endsWith('.png'))
     if (!isPng) {
-      toast.error(`"${file.name}" must be a transparent PNG.`)
+      uploadError.value = `Choose a transparent PNG instead of "${file.name}".`
       continue
     }
-    if (file.size > DP_FRAME_MAX_BYTES) { toast.error(`"${file.name}" must be under 2 MB.`); continue }
+    if (file.size > DP_FRAME_MAX_BYTES) { uploadError.value = `Choose a file under 2 MB instead of "${file.name}".`; continue }
     remaining--
     const reader = new FileReader()
     reader.onload = () => emit('add', reader.result as string)

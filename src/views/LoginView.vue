@@ -42,25 +42,39 @@
 
       <!-- Form -->
       <form @submit.prevent="onSubmit" class="flex flex-col">
-        <input
-          v-if="mode === 'register'"
-          v-model="name"
-          type="text"
-          placeholder="Full Name"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
-          class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
-        <input
-          v-model="password"
-          type="password"
-          placeholder="Password"
-          class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-        />
+        <div v-if="mode === 'register'" class="mb-4">
+          <input
+            v-model="name"
+            type="text"
+            placeholder="Full Name"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.name)"
+            :aria-describedby="errors.name ? 'name-error' : undefined"
+          />
+          <p v-if="errors.name" id="name-error" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
+        </div>
+        <div class="mb-4">
+          <input
+            v-model="email"
+            type="email"
+            placeholder="Email"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.email)"
+            :aria-describedby="errors.email ? 'email-error' : undefined"
+          />
+          <p v-if="errors.email" id="email-error" class="mt-1 text-sm text-red-500">{{ errors.email }}</p>
+        </div>
+        <div class="mb-6">
+          <input
+            v-model="password"
+            type="password"
+            placeholder="Password"
+            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            :aria-invalid="Boolean(errors.password)"
+            :aria-describedby="errors.password ? 'password-error' : undefined"
+          />
+          <p v-if="errors.password" id="password-error" class="mt-1 text-sm text-red-500">{{ errors.password }}</p>
+        </div>
 
         <!-- Submit button - use plain text, no bracketed formatting for CTAs -->
         <button
@@ -83,46 +97,21 @@
       </form>
     </div>
 
-    <!-- Verification Modal -->
-    <div
-      v-if="showVerificationModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 p-4 backdrop-blur-sm dark:bg-slate-900/80"
-      role="dialog"
-      aria-labelledby="verification-modal-title"
-      aria-modal="true"
-    >
-      <div class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left">
-        <h3 id="verification-modal-title" class="mb-3 text-xl font-bold text-g-text">
-          Check your inbox
-        </h3>
-        <p class="mb-4 text-sm leading-relaxed text-g-text">
-          We sent a verification link to your APC email. Verify before you log in.
-        </p>
-        <p class="mb-6 text-sm leading-relaxed text-g-muted">
-          Delivery can take up to 10 minutes. Resend's free plan queues slowly, and APC's mail filters often hold new messages. Check Spam or Junk if it is not in your inbox. Still missing after 10 minutes? Message arlaus on Microsoft Teams.
-        </p>
-        <button
-          type="button"
-          class="w-full rounded-lg bg-g-accent px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-          @click="showVerificationModal = false"
-        >
-          Got it
-        </button>
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, inject, onMounted, watch, type Ref } from 'vue'
+import { ref, reactive, inject, onMounted, watch, type Ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+const dialog = useDialog()
 const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
 
 const mode = ref<'login' | 'register'>('login')
@@ -130,7 +119,11 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
-const showVerificationModal = ref(false)
+const errors = reactive({ name: '', email: '', password: '' })
+
+watch(name, () => { errors.name = '' })
+watch(email, () => { errors.email = '' })
+watch(password, () => { errors.password = '' })
 
 watch(
   () => route.query.tab,
@@ -146,18 +139,18 @@ watch(
 
 onMounted(() => {
   if (route.query.verified === 'true') {
-    toast.success('Email verified! You can now log in.')
+    toast.success('Email verified. You can now log in.')
     router.replace({ path: '/login', query: {} })
   }
 })
 
 const handleLogin = async () => {
   if (!email.value.trim() || !email.value.includes('@')) {
-    toast.error('Please enter a valid email address.')
+    errors.email = 'Enter a valid email address.'
     return
   }
   if (password.value.length < 8) {
-    toast.error('Password must be at least 8 characters.')
+    errors.password = 'Enter a password with at least 8 characters.'
     return
   }
   isAuthenticating.value = true
@@ -198,15 +191,15 @@ const PW_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
 
 const handleRegister = async () => {
   if (!email.value.trim() || !email.value.includes('@')) {
-    toast.error('Please enter a valid email address.')
+    errors.email = 'Enter a valid email address.'
     return
   }
   if (!PW_PATTERN.test(password.value)) {
-    toast.error('Password must be 8+ chars with uppercase, lowercase, a number, and a symbol.')
+    errors.password = 'Use at least 8 characters with uppercase, lowercase, a number, and a symbol.'
     return
   }
   if (name.value.trim().length > 200) {
-    toast.error('Name is too long.')
+    errors.name = 'Shorten your name to 200 characters or fewer.'
     return
   }
   isAuthenticating.value = true
@@ -224,9 +217,12 @@ const handleRegister = async () => {
       throw new Error(data.message || 'Registration failed')
     }
 
-    showVerificationModal.value = true
     mode.value = 'login'
     password.value = ''
+    await dialog.info({
+      title: 'Check your inbox',
+      body: 'We sent a verification link to your APC email. Verify before you log in.\n\nDelivery can take up to 10 minutes. Resend\'s free plan queues slowly, and APC\'s mail filters often hold new messages. Check Spam or Junk if it is not in your inbox. Still missing after 10 minutes? Message arlaus on Microsoft Teams.',
+    })
   } catch (error: unknown) {
     toast.error(error instanceof Error ? error.message : 'Registration failed')
     password.value = ''

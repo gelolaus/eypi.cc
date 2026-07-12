@@ -103,12 +103,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
+const dialog = useDialog()
 const { authHeaders } = useAuth()
 
 interface Event {
@@ -147,9 +149,13 @@ function formatDate(d: string) {
 }
 
 async function deleteEvent(slug: string, name: string) {
-  if (!confirm(
-    `Delete "${name}"?\n\nThis will permanently remove all attendees, QR tokens, check-in records, clusters, and CSV data tied to this event. This cannot be undone.`
-  )) return
+  const ok = await dialog.confirm({
+    title: 'Delete this event?',
+    body: `Removes "${name}" and all attendee, QR, check-in, cluster, and CSV data. This cannot be undone.`,
+    confirmLabel: 'Delete event',
+    requireText: name,
+  })
+  if (!ok) return
 
   deletingSlug.value = slug
   try {

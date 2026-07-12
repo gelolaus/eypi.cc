@@ -537,39 +537,53 @@ Panel widths: `max-w-md` (448px) for edit; `max-w-2xl` (672px) / `95vw` for anal
 Slide direction: enters from `translateX(100%)`, exits to `translateX(100%)`.
 Transition: `transform 0.4s cubic-bezier(0.2, 1, 0.3, 1)`.
 
-**Delete Confirmation Modal** (centered):
+**Feedback channels** (see also §6.6):
+
+| Channel | When |
+|---|---|
+| Signal strip toast | Short async / clipboard outcome |
+| Inline field error | Client-side validation on a known input |
+| Info mica dialog | Must-read gate (e.g. check your inbox) |
+| Confirm mica dialog | Destructive or irreversible action |
+
+**Mica Info / Confirm dialog** (`DialogHost`, z-index `10000`):
 ```
-position: fixed; inset: 0;
-z-index: 9999;
-display: flex; align-items: center; justify-content: center;
-padding: 1rem;
+backdrop: fixed inset 0; bg-slate-900/20 (dark: slate-900/80); backdrop-blur-sm
+panel: .mica-card; max-width 448px; rounded-2xl; border g-border; padding 2rem
 ```
-Modal box: `max-width: 448px; border-radius: 1rem; overflow: hidden`
-Danger stripe: `height: 8px; background: #ef4444; width: 100%` at top
-Transition: `opacity 0.3s ease`
+- Info primary CTA: APC Gold `#DEAC4B` (full width)
+- Confirm: Abort (border) + danger CTA `#ef4444` / hover `#dc2626`
+- Title: Geist sans, `text-g-text` (neutral; danger is the button, not a red title bar)
+- Type-to-confirm: optional `requireText` input for high-stakes deletes (org, event, campaign, leave org, transfer, re-raffle). Link delete and remove member use Confirm without typing.
+- Esc / backdrop: abort (Info dismisses). Focus trap; restore focus to opener.
+- API: `useDialog().info({ title, body, confirmLabel? })`, `useDialog().confirm({ title, body, confirmLabel?, requireText? })`
+
+Do not use `window.confirm()` or `alert()` for product feedback.
 
 ---
 
-### 6.6 Toast notification system
+### 6.6 Signal strip toast
 
 Position: `fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999`
-Stacks vertically (column direction) with `gap: 0.75rem` between toasts.
+Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
 
-**Toast Card**:
+**Strip**:
 ```
-width: 320px (w-80)
-background: #ffffff; dark: rgba(15,23,42,0.95)
-border: 1px solid #E5E7EB; dark: slate-600
-box-shadow: 0 20px 25px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.04) (shadow-xl)
-padding: 1rem (p-4)
+width: min(100vw - 2rem, 20rem)
+background: #ffffff; dark: mica-navy.modal
+border: 1px solid var(--color-border) / slate-600
+box-shadow: shadow-xl
+padding: 0.75rem
 border-radius: 0
 ```
-Left accent stripe: `position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 0`
-- Success: `#10b981` (emerald-500)
-- Error: `#ef4444` (red-500)
-- Info: `#34418F` (APC Blue)
+Row: equalizer bars (4px-scale, type color) + Geist sentence-case message (+ optional detail line) + Geist Mono tag (`OK` / `ERR` / `INFO`).
+- Success bars/tag: `#10b981`
+- Error: `#ef4444`
+- Info: `#34418F`
 
-Text: `font-family: Geist Mono; font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px`
+Durations: success/info **4s**, error **7s**. Click or × dismisses; hover pauses; Esc dismisses topmost.
+
+API: `useToast().success|error|info(message, durationOrOpts?)` where opts may include `{ detail?, duration? }`.
 
 **Enter animation**: `opacity: 0 → 1; transform: translateY(20px) scale(0.95) → none`
 **Exit animation**: `opacity: 0; transform: scale(0.95)`
@@ -844,7 +858,8 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
     <router-view />
   </main>
   <TheFooter>                   ← z:1, always-dark
-  <ToastContainer>              ← z:9999, fixed notifications
+  <ToastContainer>              ← z:9999, Signal strip
+  <DialogHost>                  ← z:10000, mica Info/Confirm
 </body>
 ```
 
@@ -881,8 +896,8 @@ Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
 | Footer | `1` | `<footer>` (relative) |
 | Fixed nav | `9990` | Pill nav wrapper |
 | Scroll-top button | `9998` | Fixed bottom-right |
-| Delete modal | `9999` | Inline modal |
-| Toast container | `9999` | Fixed bottom-right |
+| Toast container | `9999` | Signal strip (bottom-right) |
+| DialogHost | `10000` | Mica Info / Confirm |
 | Slide panel backdrop | `99990` | Teleported overlay |
 | Slide panel | `99991` | Teleported panel |
 | Page transition wipe | `99997` | Full-screen clip-path |
