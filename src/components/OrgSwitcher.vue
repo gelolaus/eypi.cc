@@ -1,25 +1,25 @@
 <template>
-  <div v-if="orgs.length > 0" class="relative inline-block font-mono text-[10px]">
+  <div v-if="orgs.length > 0" class="relative inline-block">
     <div v-if="isOpen" class="fixed inset-0 z-40" @click="isOpen = false" />
 
     <button
       type="button"
-      class="tap-scale flex max-w-[min(100%,11rem)] items-center gap-2 rounded-lg border border-g-border bg-g-surface px-2.5 py-1.5 lowercase tracking-normal text-g-text transition-colors hover:border-g-primary/40"
-      :title="activeOrg ? orgSlug(activeOrg) : 'Select organization'"
+      class="tap-scale flex max-w-[min(100%,14rem)] items-center gap-2.5 rounded-lg border border-g-border bg-g-surface px-3 py-2 text-g-text transition-colors hover:border-g-primary/40"
+      :title="activeOrg ? activeOrg.org_name : 'Select organization'"
       data-cursor="nav"
       @click="isOpen = !isOpen"
     >
       <OrgLogo
         :logo-url="activeOrg?.logo_url"
         :name="activeOrg?.org_name ?? ''"
-        size="xs"
+        size="sm"
       />
-      <span class="truncate text-left text-[11px] leading-tight">
-        {{ activeOrg ? orgSlug(activeOrg) : 'select-org' }}
+      <span class="truncate text-left text-sm font-medium leading-tight">
+        {{ activeOrg ? activeOrg.org_name : 'Select org' }}
       </span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-3 w-3 shrink-0 opacity-40 transition-transform duration-200"
+        class="h-3.5 w-3.5 shrink-0 opacity-40 transition-transform duration-200"
         :class="isOpen ? 'rotate-180' : ''"
         fill="none"
         viewBox="0 0 24 24"
@@ -32,29 +32,26 @@
 
     <div
       v-if="isOpen"
-      class="absolute right-0 z-50 mt-1.5 w-64 max-w-[min(90vw,16rem)] rounded-xl border border-g-border bg-g-surface py-1.5 text-left shadow-xl"
+      class="absolute right-0 z-50 mt-1.5 w-72 max-w-[min(90vw,18rem)] rounded-xl border border-g-border bg-g-surface py-1.5 text-left shadow-xl"
     >
-      <div class="border-b border-g-border px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-g-muted">
-        Switch Organization
-      </div>
-      <div class="max-h-48 overflow-y-auto py-1">
+      <div class="max-h-56 overflow-y-auto py-1">
         <button
           v-for="org in orgs"
           :key="org.org_id"
           type="button"
-          class="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-g-bg"
+          class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-g-bg"
           :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
           data-cursor="nav"
           @click="handleSelect(org)"
         >
-          <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="xs" />
+          <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
           <span
-            class="min-w-0 flex-1 truncate font-mono text-[11px] lowercase leading-snug"
-            :class="activeOrg?.org_id === org.org_id ? 'font-bold text-[#DEAC4B]' : 'text-g-text'"
+            class="min-w-0 flex-1 truncate text-sm leading-snug"
+            :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-[#DEAC4B]' : 'text-g-text'"
           >
-            {{ orgSlug(org) }}
+            {{ org.org_name }}
           </span>
-          <span v-if="activeOrg?.org_id === org.org_id" class="text-[9px] font-bold text-[#DEAC4B]">●</span>
+          <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-[#DEAC4B]" aria-hidden="true">●</span>
         </button>
       </div>
     </div>
@@ -67,7 +64,7 @@ import { useRouter } from 'vue-router'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useToast } from '@/composables/useToast'
 import OrgLogo from '@/components/OrgLogo.vue'
-import { orgSlug, type OrgListItem } from '@/types/orgs'
+import type { OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
   /** When set, switch org via client navigation instead of full page reload. */
@@ -85,7 +82,7 @@ function handleSelect(org: OrgListItem) {
     if (activeOrg.value?.org_id === org.org_id) return
     localStorage.setItem('active_org_id', org.org_id)
     activeOrg.value = org
-    toast.success(`Active context: ${org.org_id}`)
+    toast.success(org.org_name)
     router.push(`${props.navigatePath}/${org.org_id}`)
     return
   }

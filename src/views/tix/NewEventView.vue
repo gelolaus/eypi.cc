@@ -8,7 +8,7 @@
       >
         New Event
       </h1>
-      <p class="reveal delay-1 mb-8 text-center font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
+      <p class="reveal delay-1 mb-8 text-center text-sm text-gray-500 dark:text-slate-400">
         Details &amp; attendee CSV
       </p>
 
@@ -21,14 +21,14 @@
         <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
         <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
         <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <p class="mb-2 font-mono text-xs uppercase tracking-widest text-emerald-500">Event Created</p>
+        <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
         <h2 class="mb-4 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.name }}</h2>
         <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
           QR ZIP downloaded. Share tickets manually with your attendees.
         </p>
         <router-link
           :to="`/manage/tix/${form.slug}`"
-          class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
+          class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
           data-cursor="cta"
         >
           Go to Event →
@@ -50,7 +50,7 @@
           <button
             type="button"
             :class="[
-              'flex-1 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+              'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
               !useSelectionMode
                 ? 'bg-[#34418F] text-white dark:bg-slate-700'
                 : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -60,7 +60,7 @@
           <button
             type="button"
             :class="[
-              'flex-1 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+              'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
               useSelectionMode
                 ? 'bg-[#34418F] text-white dark:bg-slate-700'
                 : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -72,7 +72,7 @@
         <form class="flex flex-col gap-4" @submit.prevent="submit">
           <!-- Event Name -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Event Name</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
             <input
               v-model="form.name"
               type="text"
@@ -84,7 +84,7 @@
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link Slug</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
               <input
@@ -96,7 +96,7 @@
                 @input="sanitizeSlug"
               />
             </div>
-            <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+            <p class="mt-1 text-xs font-medium text-gray-400 dark:text-slate-500">
               Lowercase letters and numbers only — no spaces, hyphens, or special characters.
             </p>
           </div>
@@ -104,7 +104,7 @@
           <!-- Date + Time -->
           <div class="flex flex-col gap-4 md:flex-row">
             <div class="flex-1">
-              <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Date</label>
+              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
               <input
                 v-model="form.date"
                 type="date"
@@ -113,7 +113,7 @@
               />
             </div>
             <div class="flex-1">
-              <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Time</label>
+              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
               <input
                 v-model="form.time"
                 type="time"
@@ -125,7 +125,7 @@
 
           <!-- Location -->
           <div>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Location</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
             <input
               v-model="form.location"
               type="text"
@@ -137,7 +137,7 @@
 
           <!-- CSV Upload (simple mode only) -->
           <div v-if="!useSelectionMode">
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Attendee CSV</label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</label>
             <div
               class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
               :class="csvFile
@@ -147,11 +147,11 @@
               @dragover.prevent
               @drop.prevent="onDrop"
             >
-              <p v-if="csvFile" class="font-mono text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+              <p v-if="csvFile" class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                 {{ csvFile.name }} — {{ parsedAttendees.length }} attendees
               </p>
               <template v-else>
-                <p class="font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
+                <p class="text-sm text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
                 <p class="mt-2 font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
               </template>
               <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileChange" />
@@ -171,7 +171,7 @@
             <p class="mb-3 font-mono text-xs text-[#34418F] dark:text-slate-300">
               You'll upload the CSV and configure clusters &amp; criteria on the next page.
             </p>
-            <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
+            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
             <input
               v-model.number="maxAttendeesValue"
               type="number"
@@ -187,7 +187,7 @@
             type="submit"
             :disabled="loading"
             :class="[
-              'mt-2 w-full rounded-xl bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+              'mt-2 w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"

@@ -1,19 +1,17 @@
-﻿<template>
+<template>
   <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
     <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1
-          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+          class="text-page-title"
           data-cursor="text"
         >Frames</h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">Start DP-frame campaigns</p>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
         <OrgSwitcher />
         <router-link
           to="/manage/frames/new"
-          class="rounded-xl bg-g-accent px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
           data-cursor="cta"
         >New Campaign</router-link>
       </div>
@@ -24,7 +22,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search frames..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
     <div v-if="loading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -35,7 +33,7 @@
       <OrgLockout />
     </div>
 
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center font-mono text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">{{ error }}</div>
+    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">{{ error }}</div>
 
     <div
       v-else-if="!filteredCampaigns.length"
@@ -45,8 +43,8 @@
       <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <p class="font-mono text-sm uppercase tracking-widest text-g-muted">{{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}</p>
-      <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">{{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}</p>
+      <p class="text-sm font-medium text-g-muted">{{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}</p>
+      <p class="mt-3 text-sm leading-relaxed text-g-muted">{{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}</p>
     </div>
 
     <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,36 +53,34 @@
         :key="c.id"
         class="mica-card flex flex-col gap-3 rounded-3xl border border-g-border p-6"
       >
-        <h2 class="font-mono text-lg font-bold leading-tight text-g-text">{{ c.title }}</h2>
-        <p v-if="c.description" class="line-clamp-2 font-mono text-xs leading-relaxed text-g-muted">{{ c.description }}</p>
+        <h2 class="text-card-title leading-tight">{{ c.title }}</h2>
+        <p v-if="c.description" class="line-clamp-2 text-sm leading-relaxed text-g-muted">{{ c.description }}</p>
 
-        <div class="mt-1 flex items-end gap-4 font-mono">
+        <div class="mt-1 flex items-end gap-4">
           <div class="flex items-baseline gap-1.5">
-            <span class="text-2xl font-black text-g-text">{{ c.downloadCount }}</span>
-            <span class="text-xs uppercase tracking-widest text-g-muted">download{{ c.downloadCount === 1 ? '' : 's' }}</span>
+            <span class="text-data text-2xl font-bold text-g-text">{{ c.downloadCount }}</span>
+            <span class="text-xs text-g-muted">download{{ c.downloadCount === 1 ? '' : 's' }}</span>
           </div>
           <div class="flex items-baseline gap-1.5">
-            <span class="text-2xl font-black text-g-text">{{ c.frameCount }}</span>
-            <span class="text-xs uppercase tracking-widest text-g-muted">frame{{ c.frameCount === 1 ? '' : 's' }}</span>
+            <span class="text-data text-2xl font-bold text-g-text">{{ c.frameCount }}</span>
+            <span class="text-xs text-g-muted">frame{{ c.frameCount === 1 ? '' : 's' }}</span>
           </div>
         </div>
-
-        <p class="truncate font-mono text-[0.7rem] text-g-muted">eypi.cc/frames/{{ c.slug }}</p>
 
         <div class="mt-auto flex items-center gap-2 pt-2">
           <button
             type="button"
-            class="flex-1 rounded-lg border border-g-border px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
+            class="min-h-[44px] flex-1 rounded-lg border border-g-border px-3 py-2 text-sm font-semibold text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
             @click="copyLink(c.slug)"
-          >Copy Link</button>
+          >Copy link</button>
           <router-link
             :to="`/manage/frames/${c.slug}/edit`"
-            class="rounded-lg border border-g-border px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-g-muted transition-colors hover:border-g-accent hover:text-g-text"
+            class="min-h-[44px] rounded-lg border border-g-border px-3 py-2 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-text"
             data-cursor="nav"
           >Edit</router-link>
           <button
             :disabled="deletingId === c.id"
-            class="rounded-lg border border-red-200 px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
+            class="min-h-[44px] rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
             @click="remove(c.id, c.title)"
           >{{ deletingId === c.id ? '...' : 'Delete' }}</button>
         </div>

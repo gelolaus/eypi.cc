@@ -10,7 +10,7 @@
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-      <h2 class="mb-4 text-center font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">
+      <h2 class="mb-4 text-center text-section-title text-[#34418F] dark:text-slate-200">
         VERIFY YOUR ACCOUNT
       </h2>
 
@@ -29,15 +29,11 @@
       </p>
 
       <template v-else>
-        <p class="mb-8 font-mono text-sm text-gray-600 dark:text-slate-400">
-          Click the button below to confirm your eypi.cc account verification.
-        </p>
-
         <button
           type="button"
           :disabled="isVerifying"
           :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-4 font-mono text-base font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+            'w-full rounded-lg bg-[#DEAC4B] px-4 py-4 font-mono text-base font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
             isVerifying ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
           ]"
           @click="confirmVerification"

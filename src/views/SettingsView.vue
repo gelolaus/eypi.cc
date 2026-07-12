@@ -1,13 +1,10 @@
 ﻿<template>
   <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
       <aside class="reveal delay-1 mica-card rounded-3xl p-7 shadow-sm">
-        <p class="mb-3 font-mono text-[0.65rem] font-bold uppercase tracking-[0.3em] text-g-accent">
-          credential policy
-        </p>
-        <h2 class="mb-4 font-mono text-xl font-semibold uppercase tracking-[0.1em] text-g-primary dark:text-white">
+        <h2 class="text-section-title mb-4 text-g-primary dark:text-white">
           Password requirements
         </h2>
-        <ul class="space-y-3 font-mono text-sm leading-relaxed text-g-muted">
+        <ul class="space-y-3 text-sm leading-relaxed text-g-muted">
           <li class="border-t border-g-border pt-3">At least 8 characters</li>
           <li class="border-t border-g-border pt-3">One uppercase and one lowercase letter</li>
           <li class="border-t border-g-border pt-3">One number and one symbol</li>
@@ -19,17 +16,14 @@
         @submit.prevent="handleUpdatePassword"
       >
         <div class="mb-8">
-          <p class="mb-2 font-mono text-xs font-bold uppercase tracking-[0.22em] text-g-muted">
-            Security action
-          </p>
-          <h2 class="font-mono text-2xl font-semibold uppercase tracking-[0.08em] text-g-text">
+          <h2 class="text-section-title text-g-text">
             Update password
           </h2>
         </div>
 
         <div class="space-y-5">
-          <div class="flex flex-col gap-2 font-mono">
-            <label for="current-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Current Password</label>
+          <div class="flex flex-col gap-2">
+            <label for="current-password" class="text-sm font-medium text-g-muted">Current password</label>
             <input
               id="current-password"
               v-model="passwords.current"
@@ -41,8 +35,8 @@
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
-            <div class="flex flex-col gap-2 font-mono">
-              <label for="new-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">New Password</label>
+            <div class="flex flex-col gap-2">
+              <label for="new-password" class="text-sm font-medium text-g-muted">New password</label>
               <input
                 id="new-password"
                 v-model="passwords.new"
@@ -53,8 +47,8 @@
               />
             </div>
 
-            <div class="flex flex-col gap-2 font-mono">
-              <label for="confirm-password" class="text-xs font-bold uppercase tracking-[0.08em] text-g-muted">Confirm New Password</label>
+            <div class="flex flex-col gap-2">
+              <label for="confirm-password" class="text-sm font-medium text-g-muted">Confirm new password</label>
               <input
                 id="confirm-password"
                 v-model="passwords.confirm"
@@ -71,10 +65,10 @@
           type="submit"
           :disabled="isSaving"
           :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:-translate-y-0.5 hover:opacity-90': !isSaving }"
-          class="mt-8 w-full rounded-xl bg-g-accent px-6 py-4 font-mono text-sm font-bold uppercase tracking-[0.16em] text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          class="mt-8 w-full rounded-xl bg-g-accent px-6 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
           data-cursor="cta"
         >
-          {{ isSaving ? 'SAVING...' : 'UPDATE PASSWORD' }}
+          {{ isSaving ? 'Saving...' : 'Update password' }}
         </button>
       </form>
   </section>
@@ -128,7 +122,7 @@ const handleUpdatePassword = async () => {
       return
     }
 
-    toast.success('Password successfully updated')
+    toast.success('Password updated')
     passwords.current = ''
     passwords.new = ''
     passwords.confirm = ''

@@ -8,6 +8,7 @@ import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
 import orgsRoutes from './routes/orgs'
 import formsRoutes from './routes/forms'
+import statsRoutes from './routes/stats'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -59,5 +60,6 @@ app.route('/', eventRoutes)
 app.route('/', dpRoutes)
 app.route('/api/orgs', orgsRoutes)
 app.route('/', formsRoutes)
+app.route('/', statsRoutes)
 
 export default app

@@ -10,7 +10,7 @@
         >
           {{ ticket.event.name }}
         </h1>
-        <p class="font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
+        <p class="text-sm text-gray-500 dark:text-slate-400">
           {{ formatDate(ticket.event.eventDate) }} · {{ formatTime(ticket.event.eventTime) }} · {{ ticket.event.location }}
         </p>
       </div>
@@ -25,13 +25,12 @@
         <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
         <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
 
-        <p class="mb-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Your ticket</p>
         <p class="mb-4 font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">{{ ticket.firstName }} {{ ticket.lastName }}</p>
 
         <!-- QR canvas container -->
         <div class="mx-auto mb-4 flex items-center justify-center" ref="qrContainer" />
 
-        <p class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">
+        <p class="text-xs font-medium text-gray-400 dark:text-slate-500">
           Screenshot this QR — it is not saved on your device.
         </p>
 
@@ -40,7 +39,7 @@
             type="button"
             :disabled="savingGoogleWallet"
             :class="[
-              'w-full rounded-xl bg-[#34418F] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-slate-600',
+              'w-full rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-600',
               savingGoogleWallet ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             @click="saveToGoogleWallet"
@@ -57,7 +56,7 @@
 
         <button
           type="button"
-          class="mt-4 font-mono text-xs uppercase tracking-widest text-gray-400 underline hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
+          class="mt-4 text-sm font-medium text-gray-400 underline hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
           @click="reset"
         >
           Look up a different ticket
@@ -84,14 +83,14 @@
             type="text"
             placeholder="First Name"
             required
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
           <input
             v-model="form.lastName"
             type="text"
             placeholder="Last Name"
             required
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
           <input
             v-model="form.email"
@@ -113,7 +112,7 @@
             type="submit"
             :disabled="lookingUp"
             :class="[
-              'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100',
+              'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100',
               lookingUp ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"
@@ -123,7 +122,7 @@
         </form>
 
         <p class="mt-4 text-center font-mono text-xs leading-relaxed text-gray-500 dark:text-slate-400">
-          Enter your details exactly as registered. Screenshot your QR to keep it.
+          Enter your details exactly as registered.
         </p>
       </div>
     </div>

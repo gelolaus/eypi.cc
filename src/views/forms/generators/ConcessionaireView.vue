@@ -4,7 +4,7 @@
       <div
         class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"
       >
-        <h1 class="mb-6 font-mono text-2xl font-black uppercase tracking-[0.1em] text-g-text">
+        <h1 class="text-section-title mb-6">
           Concessionaire Document Generator
         </h1>
         <form
@@ -12,146 +12,146 @@
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
         >
           <div>
-            <label for="COMPANY_NAME" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
               Company Name
             </label>
             <input
               id="COMPANY_NAME"
               v-model="formData.COMPANY_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Notion @ APC"
             />
           </div>
           <div>
-            <label for="COMPANY_ADDRESS" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_ADDRESS" class="mb-1.5 block text-sm font-medium text-g-muted">
               Company Address
             </label>
             <input
               id="COMPANY_ADDRESS"
               v-model="formData.COMPANY_ADDRESS"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., #3 Humabon Place, Magallanes, Makati City"
             />
           </div>
           <div>
-            <label for="COMPANY_REPRESENTATIVE" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_REPRESENTATIVE" class="mb-1.5 block text-sm font-medium text-g-muted">
               Company Representative
             </label>
             <input
               id="COMPANY_REPRESENTATIVE"
               v-model="formData.COMPANY_REPRESENTATIVE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Angelo Laus"
             />
           </div>
           <div>
-            <label for="COMPANY_REPRESENTATIVE_POSITION" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_REPRESENTATIVE_POSITION" class="mb-1.5 block text-sm font-medium text-g-muted">
               Representative Position
             </label>
             <input
               id="COMPANY_REPRESENTATIVE_POSITION"
               v-model="formData.COMPANY_REPRESENTATIVE_POSITION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Campus Leader"
             />
           </div>
           <div>
-            <label for="COMPANY_PHONE" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_PHONE" class="mb-1.5 block text-sm font-medium text-g-muted">
               Company Phone
             </label>
             <input
               id="COMPANY_PHONE"
               v-model="formData.COMPANY_PHONE"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., +63 912 345 6789"
             />
           </div>
           <div>
-            <label for="COMPANY_EMAIL" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="COMPANY_EMAIL" class="mb-1.5 block text-sm font-medium text-g-muted">
               Company Email
             </label>
             <input
               id="COMPANY_EMAIL"
               v-model="formData.COMPANY_EMAIL"
               type="email"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., hello@gelolaus.com"
             />
           </div>
           <div>
-            <label for="EVENT_NAME" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="EVENT_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Name
             </label>
             <input
               id="EVENT_NAME"
               v-model="formData.EVENT_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., SoCIT Fest 2025"
             />
           </div>
           <div>
-            <label for="EVENT_DATE" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="EVENT_DATE" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Date
             </label>
             <input
               id="EVENT_DATE"
               v-model="formData.EVENT_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 15, 2025"
             />
           </div>
           <div>
-            <label for="EVENT_LOCATION" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="EVENT_LOCATION" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Location
             </label>
             <input
               id="EVENT_LOCATION"
               v-model="formData.EVENT_LOCATION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 12/F Auditorium, 7/F Library Lobby"
             />
           </div>
           <div>
-            <label for="DEADLINE_DATE" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="DEADLINE_DATE" class="mb-1.5 block text-sm font-medium text-g-muted">
               Deadline Date
             </label>
             <input
               id="DEADLINE_DATE"
               v-model="formData.DEADLINE_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 1, 2025"
             />
           </div>
           <div>
-            <label for="ORGANIZATION_NAME" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="ORGANIZATION_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Name
             </label>
             <input
               id="ORGANIZATION_NAME"
               v-model="formData.ORGANIZATION_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Junior Philippine Computer Society"
             />
           </div>
           <div>
-            <label for="ORGANIZATION_ADVISER" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="ORGANIZATION_ADVISER" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Adviser
             </label>
             <input
               id="ORGANIZATION_ADVISER"
               v-model="formData.ORGANIZATION_ADVISER"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Roselle Wednesday Gardon"
             />
           </div>
@@ -159,7 +159,7 @@
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
             >
               <svg
                 v-if="isGenerating"

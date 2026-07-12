@@ -166,7 +166,7 @@ const handleLogout = () => {
   orgs.value = []
   activeOrg.value = null
   closeSidebar()
-  toast.success('Session terminated safely.')
+  toast.success('Signed out.')
   router.push('/login')
 }
 
@@ -202,5 +202,11 @@ watch(isAuthenticated, (newVal) => {
 
 watch(isSidebarOpen, (open) => {
   setBodyScrollLock(open)
+  if (open) {
+    requestAnimationFrame(() => {
+      const closeBtn = document.querySelector<HTMLButtonElement>('#site-nav-sidebar button[aria-label="Close navigation"]')
+      closeBtn?.focus()
+    })
+  }
 })
 </script>

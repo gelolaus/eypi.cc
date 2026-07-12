@@ -31,7 +31,7 @@ onMounted(() => {
 }
 
 .app-loader__text {
-  font-family: 'Geist Mono', monospace;
+  font-family: 'Geist', system-ui, sans-serif;
   font-size: clamp(2.5rem, 8vw, 5rem);
   font-weight: 700;
   color: var(--color-primary);

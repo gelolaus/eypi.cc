@@ -1,12 +1,9 @@
 ﻿<template>
   <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
     <header class="mb-10 border-b border-g-border pb-8">
-      <h1 class="font-mono text-3xl sm:text-4xl font-semibold tracking-tight text-g-primary dark:text-slate-200">
+      <h1 class="text-page-title">
         {{ userName ? `Hi, ${userName}` : 'Hi' }}.
       </h1>
-      <p class="font-mono text-sm mt-3 text-g-muted">
-        Choose a module to launch.
-      </p>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -16,19 +13,17 @@
         type="button"
         @click="router.push(mod.route)"
         class="mica-card rounded-2xl p-7 text-left transition-all duration-200 focus:outline-none hover:-translate-y-1 flex flex-col gap-4"
+        data-cursor="card"
         :style="{ border: '1px solid var(--color-border)' }"
         @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(222,172,75,0.5)'"
         @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'"
       >
-        <h2 class="font-mono text-2xl font-semibold uppercase tracking-[0.1em] text-g-primary dark:text-white">
+        <h2 class="text-card-title text-g-primary dark:text-white">
           {{ mod.title }}
         </h2>
-        <p class="font-mono text-sm text-g-muted">
+        <p class="text-sm text-g-muted">
           {{ mod.description }}
         </p>
-        <span class="font-mono text-xs mt-auto pt-4 text-g-muted">
-          Launch ->
-        </span>
       </button>
     </div>
   </main>
@@ -81,4 +76,3 @@ const modules = [
   },
 ]
 </script>
-

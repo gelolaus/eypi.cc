@@ -2,20 +2,14 @@
   <main class="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-8 sm:px-6 md:pt-16 md:pb-32 lg:px-8">
     <header class="reveal mb-8 flex flex-col gap-5 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
-        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em] text-g-muted">
-          account console
-        </p>
-        <h1 class="font-mono text-3xl font-semibold tracking-tight text-g-text sm:text-4xl">
-          Settings.
+        <h1 class="text-page-title">
+          Settings
         </h1>
-        <p class="mt-3 max-w-2xl font-mono text-sm leading-relaxed text-g-muted">
-          Account security and platform org management.
-        </p>
       </div>
 
       <router-link
         to="/dashboard"
-        class="inline-flex items-center justify-center rounded-full border border-g-border px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.12em] text-g-muted transition-all hover:-translate-y-0.5 hover:border-g-accent hover:text-g-text"
+        class="inline-flex items-center justify-center rounded-full border border-g-border px-4 py-2 text-sm font-semibold text-g-muted transition-all hover:-translate-y-0.5 hover:border-g-accent hover:text-g-text"
         data-cursor="nav"
       >
         Dashboard
@@ -28,7 +22,7 @@
         :key="tab.name"
         :to="{ name: tab.name }"
         :class="[
-          'rounded-lg px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+          'min-h-[44px] rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
           isTabActive(tab)
             ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
             : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -77,4 +71,3 @@ function isTabActive(tab: SettingsTab): boolean {
   return route.name === tab.name
 }
 </script>
-

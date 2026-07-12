@@ -14,32 +14,31 @@
 
       <!-- Error Code -->
       <h1
-        class="mb-2 font-mono text-7xl font-black leading-none tracking-tighter text-[#34418F] sm:text-8xl md:text-9xl"
+        class="text-data mb-2 text-7xl font-black leading-none text-[#34418F] sm:text-8xl md:text-9xl"
       >
         404
       </h1>
 
       <!-- Subtitle -->
       <h2
-        class="mb-4 font-mono text-base font-bold uppercase tracking-widest text-[#DEAC4B] sm:mb-6 sm:text-lg md:text-xl"
+        class="mb-4 text-lg font-semibold text-[#DEAC4B] sm:mb-6 sm:text-lg md:text-xl"
       >
-        Transmission Failed
+        Page not found
       </h2>
 
       <!-- Body -->
       <p
-        class="mb-8 font-mono text-sm leading-relaxed text-gray-500 sm:mb-10 md:text-base"
+        class="mb-8 text-sm leading-relaxed text-gray-500 sm:mb-10 md:text-base"
       >
-        The requested destination could not be located in the registry. The
-        link may have expired, been deleted, or never existed.
+        This link doesn't exist. It may have expired, been deleted, or been mistyped.
       </p>
 
       <!-- CTA -->
       <router-link
         to="/"
-        class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono font-bold uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
+        class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono font-semibold text-white shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
       >
-        Return to System
+        Back to home
       </router-link>
     </div>
   </section>

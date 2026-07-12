@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="IS_LOCAL_DEV"
-    class="fixed inset-x-0 top-0 z-[9991] border-b border-amber-500/40 bg-amber-500/95 px-3 py-1.5 text-center font-mono text-[0.65rem] font-bold uppercase tracking-[0.18em] text-amber-950 shadow-sm backdrop-blur-sm dark:bg-amber-600/90 dark:text-amber-50"
+    class="fixed inset-x-0 top-0 z-[9991] border-b border-amber-500/40 bg-amber-500/95 px-3 py-1.5 text-center text-xs font-semibold text-amber-950 shadow-sm backdrop-blur-sm dark:bg-amber-600/90 dark:text-amber-50"
     role="status"
     aria-live="polite"
   >

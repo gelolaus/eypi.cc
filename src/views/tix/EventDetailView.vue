@@ -12,8 +12,8 @@
     <!-- Not found / forbidden -->
     <div v-else-if="!event" class="py-24 text-center">
       <p class="font-mono text-4xl font-black text-[#34418F] dark:text-slate-200">404</p>
-      <p class="mt-2 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">Event not found</p>
-      <router-link to="/manage/tix" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#DEAC4B] hover:underline">← My events</router-link>
+      <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Event not found</p>
+      <router-link to="/manage/tix" class="mt-6 inline-block text-sm font-medium text-[#DEAC4B] hover:underline">← My events</router-link>
     </div>
 
     <template v-else>
@@ -27,7 +27,7 @@
           >
             {{ event.name }}
           </h1>
-          <p class="mt-1 font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">
             {{ formatDate(event.eventDate) }} · {{ formatTime(event.eventTime) }} · {{ event.location }}
           </p>
 
@@ -70,7 +70,7 @@
               v-if="event.selectionLocked"
               :disabled="isAtCapacity"
               :class="[
-                'rounded-lg border px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+                'rounded-lg border px-3 py-1 text-sm font-semibold transition-colors',
                 isAtCapacity
                   ? 'border-gray-200 text-gray-300 cursor-not-allowed dark:border-slate-700 dark:text-slate-600'
                   : 'border-[#34418F] text-[#34418F] hover:bg-[#34418F] hover:text-white dark:border-slate-500 dark:text-slate-300 dark:hover:bg-slate-700',
@@ -87,7 +87,7 @@
           <a
             :href="`/tix/${slug}`"
             target="_blank"
-            class="rounded-lg border border-gray-200 px-4 py-2 font-mono text-xs uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
+            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
             data-cursor="nav"
           >
             Attendee view ↗
@@ -98,7 +98,7 @@
       <!-- Cluster fill bars (lead only, only if clusters exist) -->
       <div v-if="event.isLead && clusters.length" class="mb-6">
         <button
-          class="mb-2 flex items-center gap-1 font-mono text-xs uppercase tracking-widest text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+          class="mb-2 flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
           @click="showClusters = !showClusters"
         >
           <span>{{ showClusters ? '▼' : '▶' }}</span> Clusters
@@ -111,7 +111,7 @@
           >
             <div class="flex flex-1 items-start justify-between gap-3 px-4 py-2.5">
               <div class="min-w-0 flex-1">
-                <p class="font-mono text-sm font-bold leading-tight text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
+                <p class="text-sm font-semibold leading-tight text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
                 <p class="flex items-center gap-1 font-mono text-xs text-gray-500 dark:text-slate-400">
                   <span>{{ cl.currentCount }}</span>
                   <span>/</span>
@@ -171,7 +171,7 @@
           v-for="(t, i) in TABS"
           :key="t.label"
           :class="[
-            'rounded-lg px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+            'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === i
               ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
               : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -190,11 +190,8 @@
       <!-- Scanner tab -->
       <div v-if="activeTab === 5">
         <div class="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-600">
-          <div class="border-b border-gray-100 bg-gray-50/60 px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
-            QR Scanner
-          </div>
           <div class="flex flex-col items-center px-4 py-6">
-            <p class="mb-4 text-center font-mono text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+            <p class="mb-4 text-center text-xs font-medium text-gray-500 dark:text-slate-400">
               Point the camera at an attendee's QR code to check them in.
             </p>
             <div
@@ -213,12 +210,12 @@
                 v-if="needsCameraPrompt"
                 class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/80 px-6"
               >
-                <p class="text-center font-mono text-xs uppercase tracking-wide text-white/80">
+                <p class="text-center text-xs font-medium text-white/80">
                   Camera access is required to scan QR codes.
                 </p>
                 <button
                   type="button"
-                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
+                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
                   @click="onEnableCameraClick"
                 >
                   {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry Camera' : 'Enable Camera' }}
@@ -237,7 +234,7 @@
               <!-- Phase HUD badge -->
               <div
                 :class="hudClass"
-                class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 font-mono text-xs font-bold uppercase tracking-widest text-white"
+                class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 text-data text-xs font-semibold text-white"
               >
                 {{ hudLabel }}
               </div>
@@ -267,7 +264,7 @@
           />
           <button
             :disabled="!attendees.length || exportingXlsx"
-            class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
+            class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
             @click="exportToXlsx"
           >
             {{ exportingXlsx ? '…' : 'Export .xlsx' }}
@@ -279,9 +276,10 @@
         </div>
 
         <div v-else>
-          <div class="overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-600">
+          <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-600">
+            <div class="min-w-[640px]">
             <!-- Sortable header -->
-            <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 font-mono text-xs font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
+            <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 text-data text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
               <button class="col-span-4 flex items-center gap-1 px-4 py-3 text-left transition-colors hover:text-[#2a3578] dark:hover:text-slate-100" @click="toggleSort('name')">
                 Attendee <span class="opacity-40">{{ sortField === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
               </button>
@@ -297,7 +295,7 @@
             <!-- Empty state -->
             <div
               v-if="!filteredAttendees.length"
-              class="px-4 py-12 text-center font-mono text-xs uppercase tracking-widest text-gray-400 dark:text-slate-500"
+              class="px-4 py-12 text-center text-sm font-medium text-gray-400 dark:text-slate-500"
             >
               {{ searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : `No ${TABS[activeTab].label.toLowerCase()} attendees` }}
             </div>
@@ -369,6 +367,7 @@
                 >✕</button>
               </div>
             </div>
+            </div>
           </div>
 
           <!-- Pagination -->
@@ -395,13 +394,13 @@
 
       <!-- Danger zone -->
       <div v-if="event.isLead" class="mt-12 border-t border-dashed border-red-200 pt-8 dark:border-red-900/30">
-        <p class="mb-1 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-red-500">Danger Zone</p>
+        <p class="text-card-title mb-1 text-red-500">Danger Zone</p>
         <p class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">
           Permanently deletes this event and all attendee data. This cannot be undone.
         </p>
         <button
           :disabled="deletingEvent"
-          class="rounded-lg border border-red-200 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-40 dark:border-red-800/60 dark:hover:bg-red-700"
+          class="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-40 dark:border-red-800/60 dark:hover:bg-red-700"
           @click="confirmDeleteEvent"
         >
           {{ deletingEvent ? 'Deleting…' : 'Delete Event' }}
@@ -419,7 +418,7 @@
         <!-- Panel -->
         <div class="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl dark:bg-slate-900">
           <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
-            <h2 class="font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Add Guest</h2>
+            <h2 class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add Guest</h2>
             <button class="font-mono text-lg text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors" @click="showAddGuest = false">×</button>
           </div>
 
@@ -428,14 +427,14 @@
             <button
               v-if="hasCsvRows"
               :class="[
-                'flex-1 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+                'flex-1 py-3 text-sm font-semibold transition-colors',
                 guestMode === 'search' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
               ]"
               @click="guestMode = 'search'"
             >From CSV</button>
             <button
               :class="[
-                'flex-1 py-3 font-mono text-xs font-bold uppercase tracking-wider transition-colors',
+                'flex-1 py-3 text-sm font-semibold transition-colors',
                 guestMode === 'freeform' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
               ]"
               @click="guestMode = 'freeform'"
@@ -449,7 +448,7 @@
                 v-model="guestSearch"
                 type="text"
                 placeholder="Search by name or email…"
-                class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+                class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
               />
               <div v-if="guestSearchResults.length" class="space-y-1">
                 <div
@@ -478,25 +477,25 @@
             <!-- Free-form -->
             <div v-if="guestMode === 'freeform'" class="flex flex-col gap-4">
               <div>
-                <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">First Name *</label>
-                <input v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First Name *</label>
+                <input v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Last Name</label>
-                <input v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last Name</label>
+                <input v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Email *</label>
-                <input v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
+                <input v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
+                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
                 <input
                   v-model="guestForm.clusterValue"
                   type="text"
                   list="cluster-suggestions"
                   placeholder="Type or pick a cluster…"
-                  class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
+                  class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
                 />
                 <datalist id="cluster-suggestions">
                   <option v-for="cl in clusters" :key="cl.value" :value="cl.value" />
@@ -505,7 +504,7 @@
               <button
                 :disabled="addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()"
                 :class="[
-                  'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+                  'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
                   (addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110',
                 ]"
                 @click="addGuestFreeform"

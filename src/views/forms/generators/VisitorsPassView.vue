@@ -4,7 +4,7 @@
       <div
         class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"
       >
-        <h1 class="mb-6 font-mono text-2xl font-black uppercase tracking-[0.1em] text-g-text">
+        <h1 class="text-section-title mb-6">
           Visitors Pass Generator
         </h1>
         <form
@@ -12,103 +12,103 @@
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
         >
           <div>
-            <label for="submissionDate" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="submissionDate" class="mb-1.5 block text-sm font-medium text-g-muted">
               Submission Date
             </label>
             <input
               id="submissionDate"
               v-model="formData.submissionDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., December 31, 2025"
             />
           </div>
           <div>
-            <label for="orgName" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="orgName" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Name
             </label>
             <input
               id="orgName"
               v-model="formData.orgName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Junior Philippine Computer Society"
             />
           </div>
           <div>
-            <label for="eventName" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="eventName" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Name
             </label>
             <input
               id="eventName"
               v-model="formData.eventName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., SoCIT Fest 2025"
             />
           </div>
           <div>
-            <label for="eventDate" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="eventDate" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Date
             </label>
             <input
               id="eventDate"
               v-model="formData.eventDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., March 21, 2026 at 10:00 AM - 10:00 PM"
             />
           </div>
           <div>
-            <label for="eventLocation" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="eventLocation" class="mb-1.5 block text-sm font-medium text-g-muted">
               Event Location
             </label>
             <input
               id="eventLocation"
               v-model="formData.eventLocation"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 12/F Auditorium"
             />
           </div>
           <div>
-            <label for="repName" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="repName" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Representative Name
             </label>
             <input
               id="repName"
               v-model="formData.repName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Angelo Laus"
             />
           </div>
           <div>
-            <label for="repPosition" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="repPosition" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Representative Position
             </label>
             <input
               id="repPosition"
               v-model="formData.repPosition"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., Director of External Relations"
             />
           </div>
           <div>
-            <label for="repNumber" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="repNumber" class="mb-1.5 block text-sm font-medium text-g-muted">
               Organization Representative Number
             </label>
             <input
               id="repNumber"
               v-model="formData.repNumber"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., (+63) 912 345 6789"
             />
           </div>
           <div>
-            <label for="walkInCount" class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label for="walkInCount" class="mb-1.5 block text-sm font-medium text-g-muted">
               Walk-in Slots (Blank Lines)
             </label>
             <input
@@ -116,13 +116,13 @@
               v-model="formData.walkInCount"
               type="number"
               min="0"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
               placeholder="e.g., 10"
             />
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-1.5 block font-mono text-xs font-bold uppercase tracking-[0.05em]" style="color: var(--color-text-muted);">
+            <label class="mb-1.5 block text-sm font-medium text-g-muted">
               Visitors List (CSV)
             </label>
             <label
@@ -132,10 +132,10 @@
               <svg class="mb-2 h-8 w-8 text-slate-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              <span v-if="!csvFileName" class="font-mono text-sm text-slate-500 dark:text-slate-400">
+              <span v-if="!csvFileName" class="text-sm text-slate-500 dark:text-slate-400">
                 Click to upload a .csv file
               </span>
-              <span v-else class="font-mono text-sm text-g-text dark:text-slate-200">
+              <span v-else class="text-sm text-g-text dark:text-slate-200">
                 {{ csvFileName }}
                 <span class="text-slate-400 dark:text-slate-500">&mdash; {{ parsedNames.length }} name(s)</span>
               </span>
@@ -153,7 +153,7 @@
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
             >
               <svg
                 v-if="isGenerating"

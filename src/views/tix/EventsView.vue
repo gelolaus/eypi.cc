@@ -1,15 +1,14 @@
-﻿<template>
+<template>
   <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
     <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1
-          class="font-mono font-black tracking-tight text-g-primary dark:text-slate-200"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); letter-spacing: -0.03em;"
+          class="text-page-title"
           data-cursor="text"
         >
           Tix
         </h1>
-        <p class="mt-1 font-mono text-xs uppercase tracking-widest text-g-muted">
+        <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
           Manage tickets &amp; check-in
         </p>
       </div>
@@ -17,7 +16,7 @@
         <OrgSwitcher />
         <router-link
           to="/manage/tix/new"
-          class="rounded-xl bg-g-accent px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
           data-cursor="cta"
         >
           New Event
@@ -30,7 +29,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search events..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 font-mono text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
     <div v-if="loading" class="space-y-3">
@@ -41,7 +40,7 @@
       <OrgLockout />
     </div>
 
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center font-mono text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">
+    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">
       {{ error }}
     </div>
 
@@ -53,14 +52,15 @@
       <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
       <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <p class="font-mono text-sm uppercase tracking-widest text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
-      <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
+      <p class="text-sm font-medium text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
+      <p class="mt-3 text-sm leading-relaxed text-g-muted">
         {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
       </p>
     </div>
 
-    <div v-else class="overflow-hidden rounded-2xl border border-g-border">
-      <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest text-g-muted dark:bg-mica-navy-header">
+    <div v-else class="overflow-x-auto rounded-2xl border border-g-border">
+      <div class="min-w-[520px]">
+      <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 text-data text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
         <div class="col-span-8 sm:col-span-5">Event</div>
         <div class="col-span-4 hidden sm:block">Date &amp; Time</div>
         <div class="col-span-4 sm:col-span-3 text-right">Actions</div>
@@ -72,29 +72,29 @@
         class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 transition-colors hover:bg-white/40 dark:hover:bg-mica-navy-row-hover last:border-0"
       >
         <div class="col-span-8 sm:col-span-5">
-          <p class="font-mono text-base font-bold text-g-text">{{ event.name }}</p>
-          <p class="mt-0.5 font-mono text-xs text-g-muted">eypi.cc/tix/{{ event.slug }}</p>
+          <p class="text-base font-semibold text-g-text">{{ event.name }}</p>
         </div>
         <div class="col-span-4 hidden sm:block">
-          <p class="font-mono text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
-          <p class="font-mono text-xs text-g-muted">{{ event.event_time }}</p>
+          <p class="text-data text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
+          <p class="text-data text-xs text-g-muted">{{ event.event_time }}</p>
         </div>
         <div class="col-span-4 sm:col-span-3 flex items-center justify-end gap-1.5">
           <router-link
             :to="`/manage/tix/${event.slug}`"
-            class="rounded-lg border border-g-border px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
+            class="rounded-lg border border-g-border px-3 py-1.5 text-sm font-semibold text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
             data-cursor="nav"
           >
             Manage
           </router-link>
           <button
             :disabled="deletingSlug === (event.slug as string)"
-            class="rounded-lg border border-red-200 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
+            class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
             @click="deleteEvent(event.slug as string, event.name as string)"
           >
             {{ deletingSlug === (event.slug as string) ? '...' : 'Delete' }}
           </button>
         </div>
+      </div>
       </div>
     </div>
   </section>

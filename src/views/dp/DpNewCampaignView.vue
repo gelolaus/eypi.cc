@@ -8,9 +8,6 @@
       >
         New DP Blast
       </h1>
-      <p class="reveal delay-1 mb-8 text-center font-mono text-xs uppercase tracking-widest text-gray-500 dark:text-slate-400">
-        Upload frames · share a link
-      </p>
 
       <!-- Success state -->
       <div
@@ -24,7 +21,7 @@
           <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-[#34418F] dark:text-slate-200">{{ shareDisplay }}</span>
           <button
             type="button"
-            class="shrink-0 rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
+            class="shrink-0 rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
             @click="copyShare"
           >Copy</button>
         </div>
@@ -32,12 +29,12 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <router-link
             :to="`/frames/${createdSlug}`"
-            class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100"
+            class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100"
             data-cursor="cta"
           >Open Public Page →</router-link>
           <router-link
             to="/manage/frames"
-            class="rounded-xl border-2 border-gray-200 px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
+            class="rounded-xl border-2 border-gray-200 px-6 py-3 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
           >All Campaigns</router-link>
         </div>
       </div>
@@ -50,7 +47,7 @@
       >
         <!-- Title -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Title</label>
+          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
           <input
             v-model="form.title"
             type="text"
@@ -63,7 +60,7 @@
 
         <!-- Slug -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
+          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
           <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
             <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
             <input
@@ -80,7 +77,7 @@
 
         <!-- Description -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
           <input
             v-model="form.description"
             type="text"
@@ -92,7 +89,7 @@
 
         <!-- Caption template -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
           <textarea
             v-model="form.captionTemplate"
             rows="3"
@@ -104,7 +101,7 @@
 
         <!-- Frames -->
         <div>
-          <label class="mb-1 block font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></label>
+          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></label>
           <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
         </div>
 
@@ -112,7 +109,7 @@
         <button
           type="submit"
           :disabled="!canSubmit || submitting"
-          class="mt-2 w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
+          class="mt-2 w-full rounded-xl bg-[#DEAC4B] px-8 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
           :class="(!canSubmit || submitting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
         >
           {{ submitting ? 'Creating…' : 'Create Campaign' }}

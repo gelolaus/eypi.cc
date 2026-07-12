@@ -14,7 +14,7 @@
       <aside
         v-if="isOpen"
         id="site-nav-sidebar"
-        class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900 sm:max-w-md"
+        class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-g-border bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:bg-slate-900/95 sm:max-w-md sm:p-8"
         style="z-index: 99991"
         aria-label="Site navigation"
         :class="itemsVisible ? 'nav-sidebar--visible' : ''"
@@ -29,22 +29,13 @@
           &times;
         </button>
 
-        <div class="mb-8 pr-10">
-          <p class="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-g-muted">
-            Navigation
-          </p>
-          <h2 class="mt-1 font-mono text-2xl font-black uppercase tracking-widest text-g-primary dark:text-slate-100">
-            Menu
-          </h2>
-        </div>
-
         <!-- Authenticated -->
         <template v-if="isAuthenticated">
           <div class="nav-sidebar-item mb-8 rounded-2xl border border-g-border bg-g-bg/80 px-4 py-4 dark:bg-slate-950/50">
-            <p class="font-mono text-xs font-bold uppercase tracking-widest text-g-primary dark:text-[#DEAC4B]">
+            <p class="text-base font-semibold text-g-primary dark:text-[#DEAC4B]">
               {{ userName }}
             </p>
-            <p class="mt-1 truncate font-mono text-[11px] text-g-muted">
+            <p class="mt-1 truncate text-sm text-g-muted">
               {{ userEmail }}
             </p>
           </div>
@@ -65,15 +56,15 @@
           </nav>
 
           <div v-if="orgs.length > 0" class="nav-sidebar-item mt-10 pt-2">
-            <p class="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-g-muted">
-              Active Organization
+            <p class="mb-3 text-sm font-medium text-g-muted">
+              Active organization
             </p>
-            <div class="flex flex-col gap-1.5">
+            <div class="flex flex-col gap-2">
               <button
                 v-for="org in orgs"
                 :key="org.org_id"
                 type="button"
-                class="tap-scale flex w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left font-mono text-[11px] transition-colors"
+                class="tap-scale flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm transition-colors"
                 :class="
                   activeOrg?.org_id === org.org_id
                     ? 'border-[#DEAC4B]/50 bg-[#DEAC4B]/10 text-[#DEAC4B]'
@@ -82,8 +73,8 @@
                 data-cursor="nav"
                 @click="$emit('selectOrg', org)"
               >
-                <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="xs" />
-                <span class="min-w-0 flex-1 truncate lowercase leading-snug">{{ orgSlug(org) }}</span>
+                <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
+                <span class="min-w-0 flex-1 truncate font-medium leading-snug">{{ org.org_name }}</span>
               </button>
             </div>
           </div>
@@ -127,7 +118,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import OrgLogo from '@/components/OrgLogo.vue'
-import { orgSlug, type OrgListItem } from '@/types/orgs'
+import type { OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
   isOpen: boolean
@@ -250,11 +241,10 @@ watch(
 .nav-sidebar-link--danger {
   border-bottom: 0;
   color: #dc2626;
-  font-family: 'Geist Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  text-transform: none;
 }
 
 .nav-sidebar-link--danger:hover {

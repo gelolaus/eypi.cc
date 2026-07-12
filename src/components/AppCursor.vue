@@ -2,7 +2,7 @@
   <div
     v-if="!isTouch"
     ref="cursorEl"
-    class="app-cursor"
+    class="app-cursor app-cursor--visible"
     :class="`cursor--${state}`"
   />
 </template>
@@ -22,14 +22,16 @@ let curX = 0
 let curY = 0
 let rafId = 0
 
-const SPRING = 0.175
+const SPRING = 0.38
 
 function animate() {
   curX += (mouseX - curX) * SPRING
   curY += (mouseY - curY) * SPRING
+
   if (cursorEl.value) {
     cursorEl.value.style.transform = `translate(${curX}px, ${curY}px) translate(-50%, -50%)`
   }
+
   rafId = requestAnimationFrame(animate)
 }
 
@@ -40,19 +42,58 @@ function onMouseMove(e: MouseEvent) {
 
 function resolveState(el: Element | null): CursorState {
   if (!el) return 'default'
-  const target = el.closest('[data-cursor]') as HTMLElement | null
+
+  const explicit = el.closest('[data-cursor]') as HTMLElement | null
+  if (explicit?.dataset.cursor) {
+    const type = explicit.dataset.cursor
+    if (type === 'nav' || type === 'cta' || type === 'card' || type === 'text') return type
+  }
+
+  const target = (explicit ?? el.closest(
+    'a, button, input, textarea, select, label[for], summary, [role="button"], [role="link"], [role="tab"]',
+  )) as HTMLElement | null
   if (!target) return 'default'
-  return (target.dataset.cursor as CursorState) || 'default'
+
+  if (target.matches(
+    'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea',
+  )) {
+    return 'text'
+  }
+
+  if (
+    target.matches('[type="submit"], .btn-primary, .pill-nav__cta')
+    || target.closest('[data-cursor="cta"]')
+  ) {
+    return 'cta'
+  }
+
+  if (
+    target.matches('a[data-cursor="card"], .mica-card > a, a.mica-card')
+    || (target.matches('a') && target.classList.contains('mica-card'))
+  ) {
+    return 'card'
+  }
+
+  if (target.matches('a, button, [role="button"], [role="link"], [role="tab"], select, summary, label[for]')) {
+    return 'nav'
+  }
+
+  return 'default'
 }
 
 function onMouseOver(e: MouseEvent) {
   state.value = resolveState(e.target as Element)
 }
 
+function setCustomCursor(enabled: boolean) {
+  document.documentElement.classList.toggle('has-custom-cursor', enabled)
+}
+
 onMounted(() => {
   isTouch.value = window.matchMedia('(pointer: coarse)').matches
   if (isTouch.value) return
 
+  setCustomCursor(true)
   window.addEventListener('mousemove', onMouseMove, { passive: true })
   window.addEventListener('mouseover', onMouseOver, { passive: true })
   rafId = requestAnimationFrame(animate)
@@ -62,6 +103,7 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseover', onMouseOver)
   cancelAnimationFrame(rafId)
+  setCustomCursor(false)
 })
 </script>
 
@@ -72,12 +114,12 @@ onUnmounted(() => {
   left: 0;
   pointer-events: none;
   z-index: 99999;
-  will-change: transform;
+  will-change: transform, width, height, background-color;
   border-radius: 9999px;
   transition:
-    width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    height 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    background-color 0.18s ease,
+    width 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.12s ease,
     mix-blend-mode 0s;
 }
 

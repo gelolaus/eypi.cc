@@ -86,7 +86,7 @@
 
         <!-- Controls -->
         <div class="mt-6 flex flex-col gap-4">
-          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 font-mono text-sm font-bold uppercase tracking-wider text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 text-sm font-semibold text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
             {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
             <input type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
           </label>
@@ -103,7 +103,7 @@
             />
             <button
               type="button"
-              class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
+              class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
               @click="reset"
             >Reset</button>
           </div>
@@ -112,7 +112,7 @@
           <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-xl border py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-all"
+              class="rounded-xl border py-2.5 text-sm font-semibold transition-all"
               :class="previewShape === 'square'
                 ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
                 : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
@@ -122,7 +122,7 @@
             </button>
             <button
               type="button"
-              class="rounded-xl border py-2.5 font-mono text-xs font-bold uppercase tracking-wider transition-all"
+              class="rounded-xl border py-2.5 text-sm font-semibold transition-all"
               :class="previewShape === 'circle'
                 ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
                 : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
@@ -135,7 +135,7 @@
           <button
             type="button"
             :disabled="!headshot || exporting"
-            class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-mono text-sm font-bold uppercase tracking-wider text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
+            class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
             :class="(!headshot || exporting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
             @click="download"
           >{{ exporting ? 'Rendering…' : 'Download' }}</button>
@@ -148,10 +148,10 @@
         class="mica-card reveal delay-2 relative mt-6 rounded-3xl border border-gray-200 p-6 dark:border-slate-600"
       >
         <div class="mb-3 flex items-center justify-between">
-          <p class="font-mono text-xs font-bold uppercase tracking-wider text-[#34418F] dark:text-slate-300">Caption</p>
+          <p class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption</p>
           <button
             type="button"
-            class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-bold uppercase tracking-wider text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
+            class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
             @click="copyCaption"
           >Copy to clipboard</button>
         </div>

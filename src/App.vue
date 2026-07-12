@@ -1,5 +1,6 @@
 <template>
   <div :class="['flex min-h-screen flex-col', IS_LOCAL_DEV ? 'local-dev' : '']">
+    <a href="#app-content" class="skip-link">Skip to content</a>
     <LocalDevBanner />
 
     <!-- Initial page load animation -->
@@ -10,9 +11,6 @@
 
     <!-- Custom cursor overlay -->
     <AppCursor />
-
-    <!-- Confetti canvas -->
-    <ParticleCanvas />
 
     <!-- Back to top -->
     <ScrollTop />
@@ -50,7 +48,6 @@ import TheHeader from '@/components/TheHeader.vue'
 import TheFooter from '@/components/TheFooter.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import AppCursor from '@/components/AppCursor.vue'
-import ParticleCanvas from '@/components/ParticleCanvas.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
 import AppLoader from '@/components/AppLoader.vue'
 import AppTransition from '@/components/AppTransition.vue'
