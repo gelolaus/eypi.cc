@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeReferrer, getOS } from './linkAnalytics'
+import { sanitizeReferrer, getOS, logLinkClick } from './linkAnalytics'
 
 describe('sanitizeReferrer', () => {
   it('classifies a known platform host', () => {
@@ -40,5 +40,31 @@ describe('getOS', () => {
   it('returns Unknown for null or unrecognized user agents', () => {
     expect(getOS(null)).toBe('Unknown')
     expect(getOS('SomeBot/1.0')).toBe('Unknown')
+  })
+})
+
+describe('logLinkClick', () => {
+  it('inserts an analytics row and increments the link click count', async () => {
+    const calls: { sql: string; args: unknown[] }[] = []
+    const fakeClient = {
+      execute: async (query: { sql: string; args: unknown[] }) => {
+        calls.push(query)
+        return {} as unknown
+      },
+    }
+
+    await logLinkClick(fakeClient as never, {
+      linkId: 'link-1',
+      slug: 'abc123',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      referrer: 'Facebook',
+      country: 'PH',
+    })
+
+    expect(calls).toHaveLength(2)
+    expect(calls[0].sql).toContain('INSERT INTO analytics')
+    expect(calls[0].args).toEqual(['link-1', 'Windows', 'PH', 'Facebook'])
+    expect(calls[1].sql).toContain('UPDATE links SET clicks')
+    expect(calls[1].args).toEqual(['abc123'])
   })
 })
