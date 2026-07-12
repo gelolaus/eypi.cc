@@ -8,6 +8,10 @@ import type { Bindings } from '../lib/db'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { handleUserOnboarding } from '../lib/onboarding'
 import { checkRateLimit } from '../lib/rateLimit'
+import {
+  buildVerifyAccountEmailHtml,
+  buildVerifyAccountEmailText,
+} from '../lib/emails/verifyAccountEmail'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -70,18 +74,24 @@ app.post('/api/auth/register', async (c) => {
 
     // 1. Check for existing user before INSERT
     const existing = await db.execute({
-      sql: 'SELECT id FROM users WHERE email = ?',
+      sql: 'SELECT id, is_verified FROM users WHERE email = ?',
       args: [email],
     })
 
     if (existing.rows.length > 0) {
-      // 2. User exists: reset verification status, new password, new token (overwrites old token)
+      const existingUser = existing.rows[0] as unknown as { id: string; is_verified: number }
+      if (existingUser.is_verified) {
+        return c.json({
+          status: 'error',
+          message: 'An account with this email already exists. Log in instead. If you forgot your password, use the password help link on the login page.',
+        }, 409)
+      }
+      // Unverified only: allow re-register to set a new password and resend the verify email
       await db.execute({
         sql: 'UPDATE users SET password_hash = ?, verification_token = ?, is_verified = 0, name = ? WHERE email = ?',
         args: [passwordHash, verificationToken, nameValue, email],
       })
     } else {
-      // 3. New user: insert
       await db.execute({
         sql: 'INSERT INTO users (id, email, password_hash, is_verified, verification_token, name) VALUES (?, ?, ?, 0, ?, ?)',
         args: [userId, email, passwordHash, verificationToken, nameValue]
@@ -89,35 +99,34 @@ app.post('/api/auth/register', async (c) => {
     }
     const resend = new Resend(c.env.RESEND_API_KEY)
     const verifyUrl = `${frontendOrigin(c.env)}/verify?token=${verificationToken}`
-    await resend.emails.send({
-      from: 'eypicc@resend.gelolaus.com',
-      to: email,
-      subject: 'Verify your eypi.cc account',
-      html: `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f7; padding: 40px 20px; text-align: center;">
-  <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 2px solid #34418F; border-radius: 16px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-    <h1 style="color: #34418F; font-size: 24px; font-weight: 900; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 2px;">eypi.cc</h1>
-    <p style="color: #555555; font-size: 14px; line-height: 1.6; letter-spacing: normal; margin-bottom: 32px;">
-      Welcome to eypi.cc, the link shortener for APC Rams! <br>To finalize your access to the edge, please verify your transmission.
-    </p>
-    <a href="${verifyUrl}"
-       style="background-color: #DEAC4B; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; text-transform: uppercase; letter-spacing: 1px;">
-      Verify Account
-    </a>
-    <p style="color: #999999; font-size: 12px; margin-top: 32px;">
-      If the button doesn't work, copy and paste this link:<br>
-      <span style="color: #34418F; word-break: break-all;">${verifyUrl}</span>
-    </p>
-    <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 32px 0;">
-    <p style="color: #bbbbbb; font-size: 10px; text-transform: uppercase;">Created by Angelo Laus for the APC Community</p>
-  </div>
-</div>
-`,
-    })
+    const emailHtml = buildVerifyAccountEmailHtml({ verifyUrl, email })
+    const emailText = buildVerifyAccountEmailText({ verifyUrl, email })
+    try {
+      const { error: sendError } = await resend.emails.send({
+        from: 'eypicc@resend.gelolaus.com',
+        to: email,
+        subject: 'Verify your eypi.cc account',
+        html: emailHtml,
+        text: emailText,
+      })
+      if (sendError) {
+        console.error('Resend send failed:', sendError)
+        return c.json({
+          status: 'error',
+          message: `Account saved, but the verification email did not send (${sendError.message}). Try again in a few minutes, or message arlaus on Teams.`,
+        }, 502)
+      }
+    } catch (sendErr) {
+      console.error('Resend send threw:', sendErr)
+      return c.json({
+        status: 'error',
+        message: 'Account saved, but the verification email did not send. Try again in a few minutes, or message arlaus on Teams.',
+      }, 502)
+    }
 
     return c.json({
       status: 'success',
-      message: 'Registration successful. Please check your APC email to verify your account.'
+      message: 'Account created. Check your APC email to verify before logging in.',
     }, 201)
 
   } catch (error: any) {

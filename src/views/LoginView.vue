@@ -86,39 +86,27 @@
     <!-- Verification Modal -->
     <div
       v-if="showVerificationModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 dark:bg-slate-900/80 backdrop-blur-sm p-4"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/20 p-4 backdrop-blur-sm dark:bg-slate-900/80"
       role="dialog"
       aria-labelledby="verification-modal-title"
       aria-modal="true"
     >
-      <div class="mica-card max-w-md w-full p-8 text-center rounded-2xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-mica-navy-modal">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="mx-auto mb-4 w-12 h-12 text-sky-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        <h3 id="verification-modal-title" class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">Check your inbox</h3>
-        <p class="text-slate-600 dark:text-slate-300 mb-4">
-          We've sent a verification link to your APC email. <strong>You must verify your account before you can log in.</strong>
+      <div class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left">
+        <h3 id="verification-modal-title" class="mb-3 text-xl font-bold text-g-text">
+          Check your inbox
+        </h3>
+        <p class="mb-4 text-sm leading-relaxed text-g-text">
+          We sent a verification link to your APC email. Verify before you log in.
         </p>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Note: Enterprise email filters may delay the message by 1 to 5 minutes. Please check your Spam/Junk folder. <strong>If you still do not receive an email, please send a message to arlaus on Microsoft Teams.</strong>
+        <p class="mb-6 text-sm leading-relaxed text-g-muted">
+          Delivery can take up to 10 minutes. Resend's free plan queues slowly, and APC's mail filters often hold new messages. Check Spam or Junk if it is not in your inbox. Still missing after 10 minutes? Message arlaus on Microsoft Teams.
         </p>
         <button
           type="button"
+          class="w-full rounded-lg bg-g-accent px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
           @click="showVerificationModal = false"
-          class="w-full rounded-lg bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
         >
-          Got it!
+          Got it
         </button>
       </div>
     </div>
