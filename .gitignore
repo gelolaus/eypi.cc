@@ -39,3 +39,6 @@ backend/assets/forms/templates/*.docx
 
 # Local agent session knowledge base (not for the public repo)
 .dev-knowledge/
+
+# Brainstorm companion session files
+.superpowers/
