@@ -7,7 +7,7 @@
         </h1>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
-        <OrgSwitcher navigate-path="/orgs/modify" />
+        <OrgSwitcher />
       </div>
     </div>
 
@@ -283,6 +283,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
+import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useToast } from '@/composables/useToast'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
@@ -321,6 +322,7 @@ interface ProfileFormState {
 const route = useRoute()
 const router = useRouter()
 const { authHeaders, getUser } = useAuth()
+const { setActiveOrg } = useActiveOrg()
 const toast = useToast()
 const currentUser = getUser()
 
@@ -386,7 +388,7 @@ async function loadOrgContext() {
       return
     }
     org.value = match
-    localStorage.setItem('active_org_id', match.org_id)
+    setActiveOrg(match)
 
     const profileRes = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/profile`, { headers: authHeaders() })
     const profileData = await profileRes.json()
