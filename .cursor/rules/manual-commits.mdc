@@ -1,0 +1,32 @@
+---
+description: Never commit/push/PR unless explicitly asked; draft commit messages instead
+alwaysApply: true
+---
+
+# Manual commits only
+
+The human commits. Do **not** run `git add`, `git commit`, `git push`, or `gh pr create` unless the user explicitly asks in this turn.
+
+## Default when work is ready to commit
+
+1. Inspect with read-only git only: `git status --short`, `git diff --stat`, `git diff`, and `git diff --cached` if anything is staged. Review untracked files when relevant.
+2. Draft Conventional Commit text (do not stage or commit):
+
+```text
+type(scope): concise summary
+
+- concrete change
+- concrete change
+```
+
+3. Return that commit text. Do not also "helpfully" commit.
+
+## Explicit ask required
+
+Only run commit/push/PR when the user clearly says to (e.g. "commit this", "create a PR"). Vague phrases like "we're done" or "ship it" are **not** permission to commit — ask first.
+
+## Never
+
+- Autonomously committing "because the feature is finished"
+- Amending, force-pushing, or skipping hooks unless explicitly requested
+- Committing secrets (`.env`, `.dev.vars`, credentials)

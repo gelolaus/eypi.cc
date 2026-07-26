@@ -301,8 +301,17 @@
 
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
-                <input type="file" @change="handleLogoUpload" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : undefined" />
+                <input type="file" @change="handleLogoUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined" />
+                <button
+                  v-if="qrConfig.logoDataUrl"
+                  type="button"
+                  class="self-start text-xs font-medium text-gray-500 underline-offset-2 hover:underline dark:text-slate-400"
+                  @click="clearLogo"
+                >
+                  Remove logo
+                </button>
                 <p v-if="logoError" id="logo-error" class="text-sm text-red-500">{{ logoError }}</p>
+                <p v-else-if="logoPersistHint" id="logo-persist-hint" class="text-sm text-amber-600 dark:text-amber-400">{{ logoPersistHint }}</p>
               </div>
             </div>
 
@@ -347,6 +356,13 @@ import { useDialog } from '@/composables/useDialog'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
 import { API_BASE_URL } from '@/config/api'
 import { isReservedSlug } from '@shared/reservedSlugs'
+import {
+  DEFAULT_LINK_QR_CONFIG,
+  QR_LOGO_PREVIEW_MAX_BYTES,
+  logoExceedsSaveLimit,
+  parseLinkQrConfig,
+  type LinkQrConfig,
+} from '@shared/linkQrConfig'
 
 const toast = useToast()
 const dialog = useDialog()
@@ -383,6 +399,7 @@ interface Link {
   original: string
   short: string
   clicks?: number
+  qrConfig?: LinkQrConfig
 }
 
 const longUrlInput = ref('')
@@ -399,37 +416,42 @@ const longUrlError = ref('')
 const sidebarUrlError = ref('')
 const slugError = ref('')
 const logoError = ref('')
+const logoPersistHint = ref('')
 
 watch(longUrlInput, () => { longUrlError.value = '' })
 watch(sidebarOriginalUrl, () => { sidebarUrlError.value = '' })
 watch(sidebarSlug, () => { slugError.value = '' })
 
 const qrContainer = ref<HTMLElement | null>(null)
-const qrConfig = ref({
-  dotType: 'square' as 'square' | 'dots' | 'rounded' | 'classy' | 'classy-rounded' | 'extra-rounded',
-  eyeFrameType: 'square' as 'square' | 'dot' | 'extra-rounded',
-  eyeBallType: 'square' as 'square' | 'dot',
-  logoUrl: '' as string,
-  color: '#DEAC4B'
-})
+const qrConfig = ref<LinkQrConfig>({ ...DEFAULT_LINK_QR_CONFIG })
 const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim() || 'preview'))
 
 const qrEngine = new QRCodeStyling({
   width: 240,
   height: 240,
   type: 'canvas',
-  imageOptions: { crossOrigin: 'anonymous', margin: 8 }
+  imageOptions: { crossOrigin: 'anonymous', margin: 8, imageSize: 0.35 },
 })
 
+function buildQrOptions(size: number, data: string, config: LinkQrConfig) {
+  const hasLogo = Boolean(config.logoDataUrl)
+  return {
+    width: size,
+    height: size,
+    type: 'canvas' as const,
+    data,
+    image: config.logoDataUrl || undefined,
+    backgroundOptions: { color: '#ffffff' },
+    dotsOptions: { color: config.color, type: config.dotType },
+    cornersSquareOptions: { color: config.color, type: config.eyeFrameType },
+    cornersDotOptions: { color: config.color, type: config.eyeBallType },
+    imageOptions: { crossOrigin: 'anonymous', margin: 8, imageSize: 0.35 },
+    qrOptions: { errorCorrectionLevel: hasLogo ? 'H' as const : 'Q' as const },
+  }
+}
+
 const updateQR = () => {
-  qrEngine.update({
-    data: liveShortUrl.value,
-    image: qrConfig.value.logoUrl,
-    backgroundOptions: { color: 'transparent' },
-    dotsOptions: { color: qrConfig.value.color, type: qrConfig.value.dotType },
-    cornersSquareOptions: { color: qrConfig.value.color, type: qrConfig.value.eyeFrameType },
-    cornersDotOptions: { color: qrConfig.value.color, type: qrConfig.value.eyeBallType }
-  })
+  qrEngine.update(buildQrOptions(240, liveShortUrl.value, qrConfig.value))
 }
 
 watch(liveShortUrl, updateQR)
@@ -445,31 +467,74 @@ watch(isSidebarOpen, async (open) => {
 })
 
 const LOGO_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
-const LOGO_MAX_BYTES = 2 * 1024 * 1024
 
-const handleLogoUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
+function refreshLogoPersistHint() {
+  logoPersistHint.value = logoExceedsSaveLimit(qrConfig.value.logoDataUrl)
+    ? 'This logo is larger than 2 MB. Preview and Export will include it, but Save will keep your QR styles without the logo. Use a file under 2 MB to persist the logo.'
+    : ''
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result)
+      else reject(new Error('Failed to read image.'))
+    }
+    reader.onerror = () => reject(new Error('Failed to read image.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+const handleLogoUpload = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
   logoError.value = ''
   if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
     logoError.value = 'Choose a PNG, JPEG, WebP, or GIF image.'
+    input.value = ''
     return
   }
-  if (file.size > LOGO_MAX_BYTES) {
-    logoError.value = 'Choose an image smaller than 2 MB.'
+  if (file.size > QR_LOGO_PREVIEW_MAX_BYTES) {
+    logoError.value = 'Choose an image smaller than 10 MB for preview.'
+    input.value = ''
     return
   }
-  if (qrConfig.value.logoUrl) {
-    URL.revokeObjectURL(qrConfig.value.logoUrl)
+  try {
+    qrConfig.value.logoDataUrl = await readFileAsDataUrl(file)
+    refreshLogoPersistHint()
+    if (logoPersistHint.value) {
+      toast.info('Logo won’t be saved at this size', {
+        detail: 'Export still includes it. Save will keep styles only unless you use a file under 2 MB.',
+        duration: 9000,
+      })
+    }
+  } catch {
+    logoError.value = 'Failed to read that image.'
+    input.value = ''
   }
-  qrConfig.value.logoUrl = URL.createObjectURL(file)
+}
+
+function clearLogo() {
+  qrConfig.value.logoDataUrl = null
+  logoError.value = ''
+  logoPersistHint.value = ''
 }
 
 const downloadQR = async () => {
-  qrEngine.update({ width: 1920, height: 1920 })
-  await qrEngine.download({ name: `eypi-qr-${sidebarSlug.value || 'link'}`, extension: 'png' })
-  qrEngine.update({ width: 240, height: 240 })
-  toast.success('QR code exported')
+  try {
+    const exportQr = new QRCodeStyling(
+      buildQrOptions(1920, liveShortUrl.value, qrConfig.value),
+    )
+    await exportQr.download({
+      name: `eypi-qr-${sidebarSlug.value || 'link'}`,
+      extension: 'png',
+    })
+    toast.success('QR code exported')
+  } catch {
+    toast.error('Failed to export QR code')
+  }
 }
 
 const links = ref<Link[]>([])
@@ -502,8 +567,11 @@ async function fetchLinks() {
       router.push('/login')
       return
     }
-    const data = await response.json()
-    links.value = data.links || []
+    const data = await response.json() as { links?: Link[] }
+    links.value = (data.links || []).map((link) => ({
+      ...link,
+      qrConfig: parseLinkQrConfig(link.qrConfig ?? null),
+    }))
   } catch (error) {
     console.error('Fetch error:', error)
   }
@@ -540,13 +608,17 @@ function sanitizeSlugInput(e: Event) {
 
 function openSidebar(link?: Link): void {
   activeLink.value = link ?? null
+  logoError.value = ''
   if (link) {
     sidebarOriginalUrl.value = link.original
     sidebarSlug.value = extractSlug(link.short)
+    qrConfig.value = parseLinkQrConfig(link.qrConfig ?? null)
   } else {
     sidebarOriginalUrl.value = longUrlInput.value
     sidebarSlug.value = hashToSlug(longUrlInput.value)
+    qrConfig.value = { ...DEFAULT_LINK_QR_CONFIG }
   }
+  refreshLogoPersistHint()
   isSidebarOpen.value = true
 }
 
@@ -627,11 +699,27 @@ async function onSave(): Promise<void> {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ original_url: originalUrl, slug }),
+      body: JSON.stringify({
+        original_url: originalUrl,
+        slug,
+        qr_config: qrConfig.value,
+      }),
     })
-    const data = await res.json()
+    const data = await res.json() as {
+      status?: string
+      error?: string
+      logoOmitted?: boolean
+      qrConfig?: LinkQrConfig
+    }
     if (res.ok && data.status === 'success') {
-      toast.success('Link updated')
+      if (data.logoOmitted) {
+        toast.info('Saved without logo', {
+          detail: 'QR styles were saved, but the logo was over 2 MB so it was not stored. Re-attach a smaller logo next time if you want it saved.',
+          duration: 10000,
+        })
+      } else {
+        toast.success('Link updated')
+      }
       isSidebarOpen.value = false
       await fetchLinks()
     } else {
@@ -658,6 +746,11 @@ async function handleSave() {
 
   if (slug && isReservedSlug(slug)) {
     slugError.value = 'Choose a different slug. This one is reserved.'
+    return
+  }
+
+  if (!/^#[0-9A-Fa-f]{6}$/.test(qrConfig.value.color.trim())) {
+    toast.error('Matrix color must be a hex value like #DEAC4B.')
     return
   }
 

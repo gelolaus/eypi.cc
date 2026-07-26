@@ -6,6 +6,12 @@ import { validateDestinationUrl } from '../lib/validateDestinationUrl'
 import { isReservedSlug } from '../../../shared/reservedSlugs'
 import { logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKvEntry } from '../../../shared/linksKv'
+import {
+  parseLinkQrConfig,
+  prepareQrConfigForSave,
+  serializeLinkQrConfig,
+  type LinkQrConfig,
+} from '../../../shared/linkQrConfig'
 
 const app = new Hono<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }>()
 
@@ -25,16 +31,23 @@ app.get('/api/links', requireAuth, async (c) => {
       authToken: c.env.TURSO_AUTH_TOKEN,
     })
     const result = await db.execute({
-      sql: 'SELECT id, original_url, slug, clicks FROM links WHERE user_id = ? ORDER BY created_at DESC',
+      sql: 'SELECT id, original_url, slug, clicks, qr_config FROM links WHERE user_id = ? ORDER BY created_at DESC',
       args: [c.var.userId],
     })
     const links = result.rows.map((row) => {
-      const r = row as unknown as { id: string; original_url: string; slug: string; clicks?: number }
+      const r = row as unknown as {
+        id: string
+        original_url: string
+        slug: string
+        clicks?: number
+        qr_config?: string | null
+      }
       return {
         id: r.id,
         original: r.original_url,
         short: `eypi.cc/${r.slug}`,
         clicks: r.clicks ?? 0,
+        qrConfig: parseLinkQrConfig(r.qr_config),
       }
     })
     return c.json({ status: 'success', links })
@@ -144,7 +157,12 @@ app.get('/api/links/:slug', async (c) => {
 app.put('/api/links/:id', requireAuth, async (c) => {
   const id = c.req.param('id')
   try {
-    const { original_url, slug } = await c.req.json() as { original_url?: string; slug?: string }
+    const body = await c.req.json() as {
+      original_url?: string
+      slug?: string
+      qr_config?: LinkQrConfig | null
+    }
+    const { original_url, slug } = body
     if (!original_url || typeof original_url !== 'string' || !slug || typeof slug !== 'string') {
       return c.json({ error: 'original_url and slug are required' }, 400)
     }
@@ -156,6 +174,9 @@ app.put('/api/links/:id', requireAuth, async (c) => {
       return c.json({ error: 'Destination URL is not allowed.' }, 400)
     }
     const normalizedSlug = slug.toLowerCase()
+    const prepared = prepareQrConfigForSave(parseLinkQrConfig(body.qr_config ?? null))
+    const qrConfigJson = serializeLinkQrConfig(prepared.config)
+
     const db = createClient({
       url: c.env.TURSO_DATABASE_URL,
       authToken: c.env.TURSO_AUTH_TOKEN,
@@ -170,8 +191,8 @@ app.put('/api/links/:id', requireAuth, async (c) => {
     const oldSlug = (existing.rows[0] as unknown as { slug: string }).slug.toLowerCase()
 
     const result = await db.execute({
-      sql: 'UPDATE links SET original_url = ?, slug = ? WHERE id = ? AND user_id = ?',
-      args: [normalizedUrl, normalizedSlug, id, c.var.userId],
+      sql: 'UPDATE links SET original_url = ?, slug = ?, qr_config = ? WHERE id = ? AND user_id = ?',
+      args: [normalizedUrl, normalizedSlug, qrConfigJson, id, c.var.userId],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'Link not found or access denied' }, 404)
@@ -189,7 +210,12 @@ app.put('/api/links/:id', requireAuth, async (c) => {
       return c.json({ error: 'Link updated in database but edge cache sync failed.' }, 500)
     }
 
-    return c.json({ status: 'success', message: 'Link updated.' })
+    return c.json({
+      status: 'success',
+      message: 'Link updated.',
+      logoOmitted: prepared.logoOmitted,
+      qrConfig: prepared.config,
+    })
   } catch {
     return c.json({ error: 'Update failed' }, 400)
   }
