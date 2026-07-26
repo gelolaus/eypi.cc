@@ -2,7 +2,7 @@
 export function qrLogoLayout(
   size: number,
   logoRatio = 0.28,
-  padRatio = 0.04,
+  padRatio = 0,
 ): {
   logoSize: number
   pad: number
@@ -13,7 +13,7 @@ export function qrLogoLayout(
   clearSize: number
 } {
   const logoSize = Math.max(1, Math.round(size * logoRatio))
-  const pad = Math.max(1, Math.round(size * padRatio))
+  const pad = Math.max(0, Math.round(size * padRatio))
   const x = Math.round((size - logoSize) / 2)
   const y = Math.round((size - logoSize) / 2)
   return {

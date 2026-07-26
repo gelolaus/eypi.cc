@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { qrLogoLayout } from './qrLogoLayout'
 
 describe('qrLogoLayout', () => {
-  it('centers the logo box inside the QR canvas', () => {
+  it('centers the logo box inside the QR canvas with no pad by default', () => {
     expect(qrLogoLayout(240)).toEqual({
       logoSize: 67,
-      pad: 10,
+      pad: 0,
       x: 87,
       y: 87,
-      clearX: 77,
-      clearY: 77,
-      clearSize: 87,
+      clearX: 87,
+      clearY: 87,
+      clearSize: 67,
     })
   })
 

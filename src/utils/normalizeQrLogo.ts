@@ -1,4 +1,5 @@
 import { QR_LOGO_MAX_EDGE, qrLogoTargetSize } from '@shared/qrLogoSize'
+import { knockOutEdgeConnectedBackground } from '@shared/qrLogoMatte'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -10,8 +11,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Downscale oversized logos so qr-code-styling's canvas/SVG pipeline stays reliable.
- * Large pixel dimensions (e.g. 1920²) blank the preview even when file size is under 2 MB.
+ * Downscale oversized logos and knock out edge-connected backgrounds
+ * (solid black/white pads) so only the artwork remains.
  */
 export async function normalizeQrLogoDataUrl(
   dataUrl: string,
@@ -21,19 +22,18 @@ export async function normalizeQrLogoDataUrl(
   const srcW = img.naturalWidth || img.width
   const srcH = img.naturalHeight || img.height
   const { width, height } = qrLogoTargetSize(srcW, srcH, maxEdge)
-  const alreadySized = width === srcW && height === srcH
-  const alreadyPngOrJpeg =
-    dataUrl.startsWith('data:image/png;base64,')
-    || dataUrl.startsWith('data:image/jpeg;base64,')
-
-  if (alreadySized && alreadyPngOrJpeg) return dataUrl
 
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d', { alpha: true })
   if (!ctx) throw new Error('Canvas unavailable for logo normalize.')
   ctx.clearRect(0, 0, width, height)
   ctx.drawImage(img, 0, 0, width, height)
+
+  const imageData = ctx.getImageData(0, 0, width, height)
+  knockOutEdgeConnectedBackground(imageData.data, width, height)
+  ctx.putImageData(imageData, 0, 0)
+
   return canvas.toDataURL('image/png')
 }

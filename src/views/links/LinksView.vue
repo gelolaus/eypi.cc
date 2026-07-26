@@ -442,7 +442,7 @@ async function updateQR() {
   const data = liveShortUrl.value
   isQrRendering.value = true
   try {
-    const canvas = await renderLinkQrCanvas(240, data, config)
+    const canvas = await renderLinkQrCanvas(240, data, config, 'white')
     if (generation !== qrRenderGeneration || !qrContainer.value) return
     container.replaceChildren(canvas)
   } catch (err) {
@@ -535,6 +535,7 @@ const downloadQR = async () => {
       liveShortUrl.value,
       config,
       `eypi-qr-${sidebarSlug.value || 'link'}`,
+      'transparent',
     )
     toast.success('QR code exported')
   } catch (err) {
