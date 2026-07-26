@@ -314,8 +314,13 @@
               </div>
             </div>
 
-            <button @click="downloadQR" class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary text-sm font-semibold rounded-lg hover:border-g-accent hover:text-g-accent transition-colors dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
-              Export PNG
+            <button
+              type="button"
+              :disabled="isExporting || isQrRendering"
+              @click="downloadQR"
+              class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary text-sm font-semibold rounded-lg hover:border-g-accent hover:text-g-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+            >
+              {{ isExporting ? 'Exporting…' : 'Export PNG' }}
             </button>
           </div>
 
@@ -349,7 +354,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import QRCodeStyling from 'qr-code-styling'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
@@ -363,6 +367,7 @@ import {
   type LinkQrConfig,
 } from '@shared/linkQrConfig'
 import { normalizeQrLogoDataUrl } from '@/utils/normalizeQrLogo'
+import { downloadLinkQrPng, renderLinkQrCanvas } from '@/utils/renderLinkQr'
 
 const toast = useToast()
 const dialog = useDialog()
@@ -425,58 +430,38 @@ watch(sidebarSlug, () => { slugError.value = '' })
 const qrContainer = ref<HTMLElement | null>(null)
 const qrConfig = ref<LinkQrConfig>({ ...DEFAULT_LINK_QR_CONFIG })
 const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim() || 'preview'))
+const isQrRendering = ref(false)
+const isExporting = ref(false)
+let qrRenderGeneration = 0
 
-const qrEngine = new QRCodeStyling({
-  width: 240,
-  height: 240,
-  type: 'svg',
-  imageOptions: { crossOrigin: 'anonymous', margin: 8, imageSize: 0.35 },
-})
-
-function buildQrOptions(
-  size: number,
-  data: string,
-  config: LinkQrConfig,
-  drawType: 'svg' | 'canvas' = 'canvas',
-) {
-  const hasLogo = Boolean(config.logoDataUrl)
-  return {
-    width: size,
-    height: size,
-    type: drawType,
-    data,
-    image: config.logoDataUrl || undefined,
-    backgroundOptions: { color: '#ffffff' },
-    dotsOptions: { color: config.color, type: config.dotType },
-    cornersSquareOptions: { color: config.color, type: config.eyeFrameType },
-    cornersDotOptions: { color: config.color, type: config.eyeBallType },
-    imageOptions: {
-      crossOrigin: 'anonymous',
-      margin: 8,
-      imageSize: 0.35,
-      saveAsBlob: true,
-    },
-    qrOptions: { errorCorrectionLevel: hasLogo ? 'H' as const : 'Q' as const },
-  }
-}
-
-const updateQR = () => {
+async function updateQR() {
+  if (!isSidebarOpen.value || !qrContainer.value) return
+  const generation = ++qrRenderGeneration
+  const container = qrContainer.value
+  const config = { ...qrConfig.value }
+  const data = liveShortUrl.value
+  isQrRendering.value = true
   try {
-    qrEngine.update(buildQrOptions(240, liveShortUrl.value, qrConfig.value, 'svg'))
+    const canvas = await renderLinkQrCanvas(240, data, config)
+    if (generation !== qrRenderGeneration || !qrContainer.value) return
+    container.replaceChildren(canvas)
   } catch (err) {
     console.error('QR preview update failed', err)
+    if (generation === qrRenderGeneration) {
+      container.replaceChildren()
+      toast.error('Could not render QR preview')
+    }
+  } finally {
+    if (generation === qrRenderGeneration) isQrRendering.value = false
   }
 }
 
-watch(liveShortUrl, updateQR)
-watch(qrConfig, updateQR, { deep: true })
+watch(liveShortUrl, () => { void updateQR() })
+watch(qrConfig, () => { void updateQR() }, { deep: true })
 watch(isSidebarOpen, async (open) => {
   if (open) {
     await nextTick()
-    if (qrContainer.value) {
-      qrEngine.append(qrContainer.value)
-    }
-    updateQR()
+    await updateQR()
   }
 })
 
@@ -538,24 +523,25 @@ function clearLogo() {
 }
 
 const downloadQR = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
   try {
-    let config = qrConfig.value
+    let config = { ...qrConfig.value }
     if (config.logoDataUrl) {
-      config = {
-        ...config,
-        logoDataUrl: await normalizeQrLogoDataUrl(config.logoDataUrl),
-      }
+      config.logoDataUrl = await normalizeQrLogoDataUrl(config.logoDataUrl)
     }
-    const exportQr = new QRCodeStyling(
-      buildQrOptions(1920, liveShortUrl.value, config, 'canvas'),
+    await downloadLinkQrPng(
+      1920,
+      liveShortUrl.value,
+      config,
+      `eypi-qr-${sidebarSlug.value || 'link'}`,
     )
-    await exportQr.download({
-      name: `eypi-qr-${sidebarSlug.value || 'link'}`,
-      extension: 'png',
-    })
     toast.success('QR code exported')
-  } catch {
+  } catch (err) {
+    console.error('QR export failed', err)
     toast.error('Failed to export QR code')
+  } finally {
+    isExporting.value = false
   }
 }
 
