@@ -4,7 +4,6 @@
       <div>
         <h1
           class="text-page-title"
-          data-cursor="text"
         >Frames</h1>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">

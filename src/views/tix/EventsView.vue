@@ -4,7 +4,6 @@
       <div>
         <h1
           class="text-page-title"
-          data-cursor="text"
         >
           Tix
         </h1>

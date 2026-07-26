@@ -6,7 +6,6 @@
         <h1
           class="mb-2 font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
           style="font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -0.03em;"
-          data-cursor="text"
         >
           {{ ticket.event.name }}
         </h1>

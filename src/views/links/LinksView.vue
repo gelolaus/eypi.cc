@@ -7,7 +7,6 @@
       <div>
         <h1
           class="text-page-title"
-          data-cursor="text"
         >
           Links
         </h1>

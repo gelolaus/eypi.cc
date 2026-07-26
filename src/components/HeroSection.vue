@@ -5,14 +5,12 @@
     <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
       <h1
         class="reveal hero-title mb-6"
-        data-cursor="text"
       >
         The toolkit for <span class="text-[#DEAC4B]">APC</span> orgs.
       </h1>
       <p
         class="reveal delay-1 mb-10 max-w-2xl text-g-muted"
         style="font-size: clamp(1.15rem, 2.2vw, 1.5rem); line-height: 1.65;"
-        data-cursor="text"
       >
         Short links, official paperwork, event tickets, and org pages. One APC login, zero ads.
       </p>

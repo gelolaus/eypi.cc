@@ -63,7 +63,6 @@
         <div class="px-6 pb-8 pt-16 sm:px-8 md:pt-[4.5rem]">
           <h1
             class="text-section-title break-words"
-            data-cursor="text"
           >
             {{ profile.name }}
           </h1>

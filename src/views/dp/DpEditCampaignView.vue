@@ -19,7 +19,7 @@
       <template v-else>
         <div class="reveal mb-8 flex items-center justify-between">
           <div>
-            <h1 class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.03em;" data-cursor="text">Edit Campaign</h1>
+            <h1 class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.03em;">Edit Campaign</h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">eypi.cc/frames/{{ form.slug }}</p>
           </div>
           <router-link

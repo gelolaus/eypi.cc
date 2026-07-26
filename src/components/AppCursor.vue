@@ -40,25 +40,25 @@ function onMouseMove(e: MouseEvent) {
   mouseY = e.clientY
 }
 
+const TEXT_FIELD_SELECTOR =
+  'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]):not([type="hidden"]), textarea, [contenteditable="true"]'
+
 function resolveState(el: Element | null): CursorState {
   if (!el) return 'default'
+
+  // I-beam only on real text fields — never on headings or labels
+  if (el.closest(TEXT_FIELD_SELECTOR)) return 'text'
 
   const explicit = el.closest('[data-cursor]') as HTMLElement | null
   if (explicit?.dataset.cursor) {
     const type = explicit.dataset.cursor
-    if (type === 'nav' || type === 'cta' || type === 'card' || type === 'text') return type
+    if (type === 'nav' || type === 'cta' || type === 'card') return type
   }
 
   const target = (explicit ?? el.closest(
     'a, button, input, textarea, select, label[for], summary, [role="button"], [role="link"], [role="tab"]',
   )) as HTMLElement | null
   if (!target) return 'default'
-
-  if (target.matches(
-    'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]), textarea',
-  )) {
-    return 'text'
-  }
 
   if (
     target.matches('[type="submit"], .btn-primary, .pill-nav__cta')

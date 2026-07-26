@@ -2,7 +2,7 @@
   <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
     <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
-        <h1 class="text-page-title" data-cursor="text">
+        <h1 class="text-page-title">
           Org settings
         </h1>
       </div>

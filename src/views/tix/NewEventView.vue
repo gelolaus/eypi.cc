@@ -4,7 +4,6 @@
       <h1
         class="reveal mb-2 text-center font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
         style="font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em;"
-        data-cursor="text"
       >
         New Event
       </h1>

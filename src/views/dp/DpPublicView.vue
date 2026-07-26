@@ -25,7 +25,6 @@
         <h1
           class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
           style="font-size: clamp(1.75rem, 5vw, 3rem); letter-spacing: -0.03em;"
-          data-cursor="text"
         >{{ campaign.title }}</h1>
         <p
           v-if="campaign.description"
