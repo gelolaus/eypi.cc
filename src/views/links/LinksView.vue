@@ -362,6 +362,7 @@ import {
   parseLinkQrConfig,
   type LinkQrConfig,
 } from '@shared/linkQrConfig'
+import { normalizeQrLogoDataUrl } from '@/utils/normalizeQrLogo'
 
 const toast = useToast()
 const dialog = useDialog()
@@ -428,29 +429,43 @@ const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim
 const qrEngine = new QRCodeStyling({
   width: 240,
   height: 240,
-  type: 'canvas',
+  type: 'svg',
   imageOptions: { crossOrigin: 'anonymous', margin: 8, imageSize: 0.35 },
 })
 
-function buildQrOptions(size: number, data: string, config: LinkQrConfig) {
+function buildQrOptions(
+  size: number,
+  data: string,
+  config: LinkQrConfig,
+  drawType: 'svg' | 'canvas' = 'canvas',
+) {
   const hasLogo = Boolean(config.logoDataUrl)
   return {
     width: size,
     height: size,
-    type: 'canvas' as const,
+    type: drawType,
     data,
     image: config.logoDataUrl || undefined,
     backgroundOptions: { color: '#ffffff' },
     dotsOptions: { color: config.color, type: config.dotType },
     cornersSquareOptions: { color: config.color, type: config.eyeFrameType },
     cornersDotOptions: { color: config.color, type: config.eyeBallType },
-    imageOptions: { crossOrigin: 'anonymous', margin: 8, imageSize: 0.35 },
+    imageOptions: {
+      crossOrigin: 'anonymous',
+      margin: 8,
+      imageSize: 0.35,
+      saveAsBlob: true,
+    },
     qrOptions: { errorCorrectionLevel: hasLogo ? 'H' as const : 'Q' as const },
   }
 }
 
 const updateQR = () => {
-  qrEngine.update(buildQrOptions(240, liveShortUrl.value, qrConfig.value))
+  try {
+    qrEngine.update(buildQrOptions(240, liveShortUrl.value, qrConfig.value, 'svg'))
+  } catch (err) {
+    console.error('QR preview update failed', err)
+  }
 }
 
 watch(liveShortUrl, updateQR)
@@ -501,7 +516,8 @@ const handleLogoUpload = async (event: Event) => {
     return
   }
   try {
-    qrConfig.value.logoDataUrl = await readFileAsDataUrl(file)
+    const raw = await readFileAsDataUrl(file)
+    qrConfig.value.logoDataUrl = await normalizeQrLogoDataUrl(raw)
     refreshLogoPersistHint()
     if (logoPersistHint.value) {
       toast.info('Logo won’t be saved at this size', {
@@ -523,8 +539,15 @@ function clearLogo() {
 
 const downloadQR = async () => {
   try {
+    let config = qrConfig.value
+    if (config.logoDataUrl) {
+      config = {
+        ...config,
+        logoDataUrl: await normalizeQrLogoDataUrl(config.logoDataUrl),
+      }
+    }
     const exportQr = new QRCodeStyling(
-      buildQrOptions(1920, liveShortUrl.value, qrConfig.value),
+      buildQrOptions(1920, liveShortUrl.value, config, 'canvas'),
     )
     await exportQr.download({
       name: `eypi-qr-${sidebarSlug.value || 'link'}`,
@@ -605,19 +628,33 @@ function sanitizeSlugInput(e: Event) {
   sidebarSlug.value = target.value.replace(/[^a-zA-Z0-9]/g, '')
 }
 
-function openSidebar(link?: Link): void {
+async function applyQrConfig(config: LinkQrConfig) {
+  const next = parseLinkQrConfig(config)
+  if (next.logoDataUrl) {
+    try {
+      next.logoDataUrl = await normalizeQrLogoDataUrl(next.logoDataUrl)
+    } catch {
+      next.logoDataUrl = null
+      logoError.value = 'Saved logo could not be loaded. Upload it again.'
+    }
+  }
+  qrConfig.value = next
+  refreshLogoPersistHint()
+}
+
+async function openSidebar(link?: Link): Promise<void> {
   activeLink.value = link ?? null
   logoError.value = ''
   if (link) {
     sidebarOriginalUrl.value = link.original
     sidebarSlug.value = extractSlug(link.short)
-    qrConfig.value = parseLinkQrConfig(link.qrConfig ?? null)
+    await applyQrConfig(link.qrConfig ?? DEFAULT_LINK_QR_CONFIG)
   } else {
     sidebarOriginalUrl.value = longUrlInput.value
     sidebarSlug.value = hashToSlug(longUrlInput.value)
     qrConfig.value = { ...DEFAULT_LINK_QR_CONFIG }
+    refreshLogoPersistHint()
   }
-  refreshLogoPersistHint()
   isSidebarOpen.value = true
 }
 
