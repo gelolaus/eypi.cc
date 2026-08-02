@@ -1,92 +1,87 @@
 <template>
   <Teleport to="body">
     <Transition name="dialog-fade">
-      <div
+      <Dialog
         v-if="current"
-        class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/20 p-4 backdrop-blur-sm dark:bg-slate-900/80"
-        role="presentation"
-        @mousedown.self="onBackdrop"
+        ref="dialogRef"
+        :labelled-by="titleId"
+        :described-by="bodyId"
+        @backdrop="onBackdrop"
+        @keydown="onPanelKeydown"
       >
-        <div
-          ref="panelRef"
-          class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left shadow-2xl"
-          role="dialog"
-          aria-modal="true"
-          :aria-labelledby="titleId"
-          :aria-describedby="bodyId"
-          tabindex="-1"
-          @keydown="onPanelKeydown"
-        >
-          <h3 :id="titleId" class="mb-3 text-xl font-bold text-g-text">
-            {{ current.title }}
-          </h3>
-          <p :id="bodyId" class="text-sm leading-relaxed text-g-muted whitespace-pre-line">
-            {{ current.body }}
-          </p>
+        <h3 :id="titleId" class="mb-3 font-display text-xl font-bold text-g-text">
+          {{ current.title }}
+        </h3>
+        <p :id="bodyId" class="whitespace-pre-line text-sm leading-relaxed text-g-muted">
+          {{ current.body }}
+        </p>
 
-          <div v-if="current.requireText" class="mt-4">
-            <label :for="inputId" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Type <span class="font-mono text-g-text">{{ current.requireText }}</span> to confirm
-            </label>
-            <input
-              :id="inputId"
-              ref="inputRef"
-              v-model="typed"
-              type="text"
-              autocomplete="off"
-              class="w-full rounded-xl border border-g-border bg-white/70 px-3 py-2.5 font-mono text-sm text-g-text outline-none focus:border-g-primary dark:bg-mica-navy-input"
-              @keydown.enter.prevent="tryConfirm"
-            />
-          </div>
-
-          <div
-            class="mt-6 flex gap-2"
-            :class="current.kind === 'info' ? 'flex-col' : ''"
-          >
-            <template v-if="current.kind === 'info'">
-              <button
-                ref="primaryRef"
-                type="button"
-                class="w-full rounded-xl bg-g-accent px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-                @click="confirmAction"
-              >
-                {{ current.confirmLabel }}
-              </button>
-            </template>
-            <template v-else>
-              <button
-                type="button"
-                class="flex-1 rounded-xl border border-g-border bg-white/60 px-4 py-3 text-sm font-semibold text-g-text transition-colors hover:bg-white dark:bg-mica-navy-input"
-                @click="abort"
-              >
-                {{ current.abortLabel }}
-              </button>
-              <button
-                ref="primaryRef"
-                type="button"
-                class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-55"
-                :disabled="!canConfirm"
-                @click="tryConfirm"
-              >
-                {{ current.confirmLabel }}
-              </button>
-            </template>
-          </div>
+        <div v-if="current.requireText" class="mt-4">
+          <label :for="inputId" class="mb-1.5 block text-sm font-medium text-g-muted">
+            Type <span class="font-mono text-g-text">{{ current.requireText }}</span> to confirm
+          </label>
+          <Input
+            :id="inputId"
+            ref="inputRef"
+            :value="typed"
+            type="text"
+            autocomplete="off"
+            className="font-mono text-sm"
+            @input="onTypedInput"
+            @keydown.enter.prevent="tryConfirm"
+          />
         </div>
-      </div>
+
+        <div
+          class="mt-6 flex gap-2"
+          :class="current.kind === 'info' ? 'flex-col' : ''"
+        >
+          <template v-if="current.kind === 'info'">
+            <Button
+              ref="primaryRef"
+              variant="primary"
+              className="w-full"
+              @click="confirmAction"
+            >
+              {{ current.confirmLabel }}
+            </Button>
+          </template>
+          <template v-else>
+            <Button
+              variant="secondary"
+              className="flex-1"
+              @click="abort"
+            >
+              {{ current.abortLabel }}
+            </Button>
+            <Button
+              ref="primaryRef"
+              variant="destructive"
+              className="flex-1"
+              :disabled="!canConfirm"
+              @click="tryConfirm"
+            >
+              {{ current.confirmLabel }}
+            </Button>
+          </template>
+        </div>
+      </Dialog>
     </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useDialog } from '@/composables/useDialog'
+import Dialog from '@/components/ui/Dialog.vue'
+import Button from '@/components/ui/Button.vue'
+import Input from '@/components/ui/Input.vue'
+import { matchesRequireText, useDialog } from '@/composables/useDialog'
 
 const { current, confirmAction, abort } = useDialog()
 
-const panelRef = ref<HTMLElement | null>(null)
-const inputRef = ref<HTMLInputElement | null>(null)
-const primaryRef = ref<HTMLButtonElement | null>(null)
+const dialogRef = ref<{ panelRef: HTMLElement | null } | null>(null)
+const inputRef = ref<{ $el?: HTMLInputElement } | null>(null)
+const primaryRef = ref<{ $el?: HTMLButtonElement } | null>(null)
 const typed = ref('')
 const titleId = 'eypi-dialog-title'
 const bodyId = 'eypi-dialog-body'
@@ -94,9 +89,12 @@ const inputId = 'eypi-dialog-confirm-text'
 
 const canConfirm = computed(() => {
   if (!current.value || current.value.kind === 'info') return true
-  if (!current.value.requireText) return true
-  return typed.value === current.value.requireText
+  return matchesRequireText(typed.value, current.value.requireText)
 })
+
+function onTypedInput(e: Event) {
+  typed.value = (e.target as HTMLInputElement).value
+}
 
 function onBackdrop() {
   if (current.value?.kind === 'info') {
@@ -111,15 +109,20 @@ function tryConfirm() {
   confirmAction()
 }
 
+function panelEl(): HTMLElement | null {
+  return dialogRef.value?.panelRef ?? null
+}
+
 function onPanelKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     e.preventDefault()
     onBackdrop()
     return
   }
-  if (e.key !== 'Tab' || !panelRef.value) return
+  const panel = panelEl()
+  if (e.key !== 'Tab' || !panel) return
 
-  const focusable = panelRef.value.querySelectorAll<HTMLElement>(
+  const focusable = panel.querySelectorAll<HTMLElement>(
     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
   )
   if (focusable.length === 0) return
@@ -140,16 +143,17 @@ watch(
     typed.value = ''
     if (!dialog) return
     await nextTick()
-    if (dialog.requireText && inputRef.value) {
-      inputRef.value.focus()
+    if (dialog.requireText && inputRef.value?.$el) {
+      inputRef.value.$el.focus()
       return
     }
-    primaryRef.value?.focus()
+    primaryRef.value?.$el?.focus()
   },
 )
 </script>
 
-<style scoped>
+<style>
+/* Transition classes target Dialog root (child SFC); keep unscoped. */
 .dialog-fade-enter-active,
 .dialog-fade-leave-active {
   transition: opacity 0.3s ease;

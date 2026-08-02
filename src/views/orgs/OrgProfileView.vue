@@ -1,39 +1,35 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
     <div v-if="loading" class="space-y-6">
-      <div class="h-48 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60 md:h-56" />
-      <div class="h-8 w-2/3 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
-      <div class="h-40 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+      <div class="h-48 animate-pulse rounded-2xl bg-g-border md:h-56" />
+      <div class="h-8 w-2/3 animate-pulse rounded-lg bg-g-border" />
+      <div class="h-40 animate-pulse rounded-2xl bg-g-border" />
     </div>
 
-    <div
-      v-else-if="error"
-      class="mica-card rounded-3xl border border-g-border p-12 text-center"
-    >
-      <p class="text-sm text-red-500">{{ error }}</p>
+    <Card v-else-if="error" className="text-center">
+      <p class="text-sm text-g-destructive">{{ error }}</p>
       <router-link
         to="/orgs"
-        class="mt-6 inline-block text-sm font-medium text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
-        data-cursor="nav"
+        class="mt-6 inline-block text-sm font-medium text-g-brand transition-colors hover:text-g-primary"
       >
         ← Back to directory
       </router-link>
-    </div>
+    </Card>
 
     <template v-else-if="profile">
       <div
         v-if="isPreview"
-        class="mb-6 rounded-2xl border border-[#DEAC4B]/40 bg-[#DEAC4B]/10 px-4 py-3 text-sm text-g-text"
+        class="mb-6 rounded-2xl border border-g-primary/40 bg-g-primary/10 px-4 py-3 text-sm text-g-text"
       >
         Preview mode — showing unsaved changes. Save your profile in org settings to publish.
       </div>
 
       <!-- Hero -->
-      <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border bg-g-surface">
+      <header class="reveal mb-8 overflow-hidden rounded-2xl border border-g-border bg-g-surface">
         <div class="relative">
           <div
             class="relative h-44 md:h-52"
-            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
+            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-g-brand to-g-primary'"
           >
             <img
               v-if="profile.bannerUrl"
@@ -43,17 +39,16 @@
             />
           </div>
 
-          <!-- Logo sits on the banner, overlapping into the content area -->
           <div class="absolute bottom-0 left-6 z-10 translate-y-1/2 sm:left-8">
             <div
               v-if="profile.logoUrl"
-              class="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+              class="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg md:h-32 md:w-32"
             >
               <img :src="profile.logoUrl" :alt="`${profile.name} logo`" class="h-full w-full object-cover" />
             </div>
             <div
               v-else
-              class="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-g-surface bg-[#34418F] font-mono text-2xl font-black text-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+              class="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-g-surface bg-g-brand font-display text-2xl font-bold text-white shadow-lg md:h-32 md:w-32"
             >
               {{ orgInitials(profile.name) }}
             </div>
@@ -61,9 +56,7 @@
         </div>
 
         <div class="px-6 pb-8 pt-16 sm:px-8 md:pt-[4.5rem]">
-          <h1
-            class="text-section-title break-words"
-          >
+          <h1 class="font-display text-2xl font-bold tracking-tight text-g-text sm:text-3xl break-words">
             {{ profile.name }}
           </h1>
 
@@ -74,13 +67,13 @@
             {{ profile.tagline }}
           </p>
 
-          <span
+          <Badge
             v-if="orgTypeDisplay"
-            class="inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
-            :class="profile.tagline ? 'mt-2' : 'mt-3'"
+            tone="brand"
+            :className="profile.tagline ? 'mt-2' : 'mt-3'"
           >
             {{ orgTypeDisplay }}
-          </span>
+          </Badge>
         </div>
       </header>
 
@@ -91,12 +84,11 @@
           :key="tab"
           type="button"
           :class="[
-            'min-h-[44px] rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            'min-h-[44px] rounded-full px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === i
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
+              ? 'bg-g-brand text-white'
+              : 'bg-transparent text-g-muted hover:text-g-brand',
           ]"
-          data-cursor="nav"
           @click="activeTab = i"
         >
           {{ tab }}
@@ -104,7 +96,7 @@
       </div>
 
       <!-- About -->
-      <div v-if="activeTab === 0" class="reveal delay-2 mica-card rounded-3xl border border-g-border p-6 sm:p-8">
+      <Card v-if="activeTab === 0" className="reveal delay-2">
         <div
           v-if="aboutHtml"
           class="org-markdown prose-sm max-w-none text-sm leading-relaxed text-g-text"
@@ -121,19 +113,18 @@
             :href="link.url"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex min-h-[44px] items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
+            class="inline-flex min-h-[44px] items-center justify-center rounded-full border border-g-border bg-g-bg px-4 py-2 text-sm font-medium text-g-muted transition-colors hover:border-g-primary hover:text-g-primary"
             :aria-label="link.label"
-            data-cursor="nav"
           >
             {{ link.label }}
           </a>
         </nav>
-      </div>
+      </Card>
 
       <!-- Events -->
       <div v-else class="reveal delay-2 grid gap-6 md:grid-cols-2">
-        <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
-          <h2 class="text-card-title mb-4 text-g-accent">
+        <Card>
+          <h2 class="text-card-title mb-4 text-g-primary">
             Upcoming events
           </h2>
           <p
@@ -151,21 +142,20 @@
               <router-link
                 :to="`/tix/${event.slug}`"
                 class="group block"
-                data-cursor="nav"
               >
-                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
+                <p class="text-sm font-semibold text-g-text group-hover:text-g-primary">
                   {{ event.name }}
                 </p>
-                <p class="text-data mt-1 text-xs text-g-muted">
+                <p class="mt-1 text-xs text-g-muted">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
                 <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
               </router-link>
             </li>
           </ul>
-        </section>
+        </Card>
 
-        <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
+        <Card>
           <h2 class="text-card-title mb-4 text-g-muted">
             Past events
           </h2>
@@ -184,19 +174,18 @@
               <router-link
                 :to="`/tix/${event.slug}`"
                 class="group block"
-                data-cursor="nav"
               >
-                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
+                <p class="text-sm font-semibold text-g-text group-hover:text-g-primary">
                   {{ event.name }}
                 </p>
-                <p class="text-data mt-1 text-xs text-g-muted">
+                <p class="mt-1 text-xs text-g-muted">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
                 <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
               </router-link>
             </li>
           </ul>
-        </section>
+        </Card>
       </div>
     </template>
   </section>
@@ -215,6 +204,8 @@ import {
   type OrgSocialLinks,
 } from '@/types/orgs'
 import { orgTypeLabel } from '@/constants/orgTypes'
+import Card from '@/components/ui/Card.vue'
+import Badge from '@/components/ui/Badge.vue'
 
 useReveal()
 
@@ -340,7 +331,7 @@ watch(
 .org-markdown :deep(h1),
 .org-markdown :deep(h2),
 .org-markdown :deep(h3) {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Syne', ui-sans-serif, sans-serif;
   font-weight: 600;
   letter-spacing: -0.01em;
   margin-top: 1.25rem;
@@ -352,7 +343,7 @@ watch(
 }
 
 .org-markdown :deep(a) {
-  color: #34418F;
+  color: var(--color-brand);
   text-decoration: underline;
 }
 

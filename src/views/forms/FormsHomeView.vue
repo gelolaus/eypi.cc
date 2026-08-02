@@ -1,43 +1,37 @@
 <template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div v-for="i in 2" :key="i" class="h-32 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
+  <main class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-12 sm:px-6 lg:px-8">
+    <div v-if="loading" class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <Card v-for="i in 2" :key="i" className="h-32 animate-pulse" />
     </div>
 
     <template v-else>
-      <header class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 class="text-page-title">
-            Forms
-          </h1>
-          <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
-            Generate organization documents.
-          </p>
-        </div>
+      <header class="mb-8">
+        <h1 class="font-display text-3xl font-bold text-g-text">Forms</h1>
+        <p class="mt-2 text-g-muted">Generate organization documents.</p>
       </header>
 
-      <input
-        v-model="searchQuery"
+      <Input
+        :value="searchQuery"
         type="search"
         placeholder="Search forms..."
-        class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
+        className="mb-6"
+        @input="onSearchInput"
       />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <button
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card
           v-for="form in filteredForms"
           :key="form.id"
-          type="button"
+          role="button"
+          tabindex="0"
+          className="cursor-pointer text-left transition hover:-translate-y-1 hover:border-g-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
           @click="router.push(form.route)"
-          class="mica-card rounded-2xl border border-g-border p-6 text-left transition-all duration-200 focus:outline-none hover:-translate-y-0.5 hover:border-g-accent/50"
+          @keydown.enter.prevent="router.push(form.route)"
+          @keydown.space.prevent="router.push(form.route)"
         >
-          <h2 class="text-card-title mb-2 text-g-primary dark:text-white">
-            {{ form.title }}
-          </h2>
-          <p class="text-sm text-g-muted">
-            {{ form.description }}
-          </p>
-        </button>
+          <h2 class="font-display text-xl font-semibold text-g-text">{{ form.title }}</h2>
+          <p class="mt-2 text-sm text-g-muted">{{ form.description }}</p>
+        </Card>
       </div>
     </template>
   </main>
@@ -48,6 +42,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
+import Card from '@/components/ui/Card.vue'
+import Input from '@/components/ui/Input.vue'
 
 interface FormCatalogItem {
   id: string
@@ -82,7 +78,6 @@ const { authHeaders } = useAuth()
 
 const loading = ref(true)
 const availableForms = ref<FormCatalogItem[]>(FALLBACK_FORMS)
-
 const searchQuery = ref('')
 
 const filteredForms = computed(() => {
@@ -91,9 +86,13 @@ const filteredForms = computed(() => {
   return availableForms.value.filter(
     (f) =>
       f.title.toLowerCase().includes(q) ||
-      f.description.toLowerCase().includes(q)
+      f.description.toLowerCase().includes(q),
   )
 })
+
+function onSearchInput(e: Event) {
+  searchQuery.value = (e.target as HTMLInputElement).value
+}
 
 onMounted(async () => {
   try {

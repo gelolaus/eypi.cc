@@ -1,96 +1,98 @@
 ﻿<template>
   <section class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-      <aside class="reveal delay-1 mica-card rounded-3xl p-7 shadow-sm">
-        <h2 class="text-section-title mb-4 text-g-primary dark:text-white">
-          Password requirements
-        </h2>
-        <ul class="space-y-3 text-sm leading-relaxed text-g-muted">
-          <li class="border-t border-g-border pt-3">At least 8 characters</li>
-          <li class="border-t border-g-border pt-3">One uppercase and one lowercase letter</li>
-          <li class="border-t border-g-border pt-3">One number and one symbol</li>
-        </ul>
-      </aside>
+    <Card>
+      <h2 class="font-display text-xl font-semibold text-g-text">
+        Password requirements
+      </h2>
+      <ul class="mt-4 space-y-3 text-sm leading-relaxed text-g-muted">
+        <li class="border-t border-g-border pt-3">At least 8 characters</li>
+        <li class="border-t border-g-border pt-3">One uppercase and one lowercase letter</li>
+        <li class="border-t border-g-border pt-3">One number and one symbol</li>
+      </ul>
+    </Card>
 
-      <form
-        class="reveal delay-2 mica-card rounded-3xl p-6 shadow-sm sm:p-8"
-        @submit.prevent="handleUpdatePassword"
-      >
-        <div class="mb-8">
-          <h2 class="text-section-title text-g-text">
-            Update password
-          </h2>
-        </div>
+    <Card>
+      <form @submit.prevent="handleUpdatePassword">
+        <h2 class="mb-8 font-display text-xl font-semibold text-g-text">
+          Update password
+        </h2>
 
         <div class="space-y-5">
           <div class="flex flex-col gap-2">
             <label for="current-password" class="text-sm font-medium text-g-muted">Current password</label>
-            <input
+            <Input
               id="current-password"
-              v-model="passwords.current"
+              :value="passwords.current"
               type="password"
               autocomplete="current-password"
-              class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
               :aria-invalid="Boolean(errors.current)"
               :aria-describedby="errors.current ? 'current-password-error' : undefined"
+              @input="onCurrentInput"
             />
-            <p v-if="errors.current" id="current-password-error" class="text-sm text-red-500">{{ errors.current }}</p>
+            <p v-if="errors.current" id="current-password-error" class="text-sm text-g-destructive">{{ errors.current }}</p>
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
             <div class="flex flex-col gap-2">
               <label for="new-password" class="text-sm font-medium text-g-muted">New password</label>
-              <input
+              <Input
                 id="new-password"
-                v-model="passwords.new"
+                :value="passwords.new"
                 type="password"
                 autocomplete="new-password"
-                class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
                 :aria-invalid="Boolean(errors.new)"
                 :aria-describedby="errors.new ? 'new-password-error' : undefined"
+                @input="onNewInput"
               />
-              <p v-if="errors.new" id="new-password-error" class="text-sm text-red-500">{{ errors.new }}</p>
+              <p v-if="errors.new" id="new-password-error" class="text-sm text-g-destructive">{{ errors.new }}</p>
             </div>
 
             <div class="flex flex-col gap-2">
               <label for="confirm-password" class="text-sm font-medium text-g-muted">Confirm new password</label>
-              <input
+              <Input
                 id="confirm-password"
-                v-model="passwords.confirm"
+                :value="passwords.confirm"
                 type="password"
                 autocomplete="new-password"
-                class="rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
                 :aria-invalid="Boolean(errors.confirm)"
                 :aria-describedby="errors.confirm ? 'confirm-password-error' : undefined"
+                @input="onConfirmInput"
               />
-              <p v-if="errors.confirm" id="confirm-password-error" class="text-sm text-red-500">{{ errors.confirm }}</p>
+              <p v-if="errors.confirm" id="confirm-password-error" class="text-sm text-g-destructive">{{ errors.confirm }}</p>
             </div>
           </div>
         </div>
 
-        <button
-          type="submit"
-          :disabled="isSaving"
-          :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:-translate-y-0.5 hover:opacity-90': !isSaving }"
-          class="mt-8 w-full rounded-xl bg-g-accent px-6 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-          data-cursor="cta"
-        >
+        <Button type="submit" className="mt-8 w-full" :disabled="isSaving">
           {{ isSaving ? 'Saving...' : 'Update password' }}
-        </button>
+        </Button>
       </form>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useReveal } from '@/composables/useReveal'
 import { API_BASE_URL } from '@/config/api'
+import Card from '@/components/ui/Card.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
 
 const toast = useToast()
-useReveal()
 const isSaving = ref(false)
 const passwords = reactive({ current: '', new: '', confirm: '' })
 const errors = reactive({ current: '', new: '', confirm: '' })
+
+function onCurrentInput(e: Event) {
+  passwords.current = (e.target as HTMLInputElement).value
+}
+function onNewInput(e: Event) {
+  passwords.new = (e.target as HTMLInputElement).value
+}
+function onConfirmInput(e: Event) {
+  passwords.confirm = (e.target as HTMLInputElement).value
+}
 
 watch(() => passwords.current, () => { errors.current = '' })
 watch(() => passwords.new, () => { errors.new = '' })

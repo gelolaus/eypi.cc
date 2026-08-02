@@ -4,7 +4,6 @@
       v-if="isVisible"
       class="scroll-top-btn"
       aria-label="Back to top"
-      data-cursor="nav"
       @click="scrollToTop"
     >
       ↑

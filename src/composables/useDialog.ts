@@ -30,6 +30,12 @@ export interface DialogState {
 
 type DialogEnqueue = Omit<DialogState, 'id' | 'resolve'>
 
+/** Exact match gate used by DialogHost before enabling confirm. */
+export function matchesRequireText(typed: string, requireText?: string): boolean {
+  if (!requireText) return true
+  return typed === requireText
+}
+
 const current = shallowRef<DialogState | null>(null)
 const queue = ref<DialogState[]>([])
 let nextId = 0

@@ -1,58 +1,53 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
-    <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-12 sm:px-6">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1
-          class="text-page-title"
-        >Frames</h1>
+        <h1 class="font-display text-3xl font-bold text-g-text">Frames</h1>
+        <p class="mt-2 text-g-muted">Upload frames and share a link for matching profile pictures.</p>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
         <OrgSwitcher />
-        <router-link
-          to="/manage/frames/new"
-          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-          data-cursor="cta"
-        >New Campaign</router-link>
+        <Button @click="router.push('/manage/frames/new')">New Campaign</Button>
       </div>
     </div>
 
-    <input
+    <Input
       v-if="!isLocked"
-      v-model="searchQuery"
+      :value="searchQuery"
       type="search"
       placeholder="Search frames..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      className="mb-6"
+      @input="onSearchInput"
     />
 
     <div v-if="loading" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="i in 3" :key="i" class="h-44 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+      <Card v-for="i in 3" :key="i" className="h-44 animate-pulse" />
     </div>
 
     <div v-else-if="isLocked">
       <OrgLockout />
     </div>
 
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">{{ error }}</div>
+    <Card v-else-if="error" className="border-g-destructive/30 text-center text-sm text-g-destructive">
+      {{ error }}
+    </Card>
 
-    <div
-      v-else-if="!filteredCampaigns.length"
-      class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
-    >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <p class="text-sm font-medium text-g-muted">{{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}</p>
-      <p class="mt-3 text-sm leading-relaxed text-g-muted">{{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}</p>
-    </div>
+    <Card v-else-if="!filteredCampaigns.length">
+      <EmptyState
+        :title="campaigns.length ? 'No matching frames' : 'No campaigns yet'"
+        :description="campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.'"
+      >
+        <Button v-if="!campaigns.length" @click="router.push('/manage/frames/new')">New Campaign</Button>
+      </EmptyState>
+    </Card>
 
     <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      <div
+      <Card
         v-for="c in filteredCampaigns"
         :key="c.id"
-        class="mica-card flex flex-col gap-3 rounded-3xl border border-g-border p-6"
+        className="flex flex-col gap-3"
       >
-        <h2 class="text-card-title leading-tight">{{ c.title }}</h2>
+        <h2 class="font-display text-lg font-semibold leading-tight text-g-text">{{ c.title }}</h2>
         <p v-if="c.description" class="line-clamp-2 text-sm leading-relaxed text-g-muted">{{ c.description }}</p>
 
         <div class="mt-1 flex items-end gap-4">
@@ -66,30 +61,31 @@
           </div>
         </div>
 
-        <div class="mt-auto flex items-center gap-2 pt-2">
-          <button
+        <div class="mt-auto flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
+          <Button type="button" variant="secondary" size="sm" className="flex-1" @click="copyLink(c.slug)">
+            Copy link
+          </Button>
+          <Button type="button" variant="ghost" size="sm" @click="router.push(`/manage/frames/${c.slug}/edit`)">
+            Edit
+          </Button>
+          <Button
             type="button"
-            class="min-h-[44px] flex-1 rounded-lg border border-g-border px-3 py-2 text-sm font-semibold text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
-            @click="copyLink(c.slug)"
-          >Copy link</button>
-          <router-link
-            :to="`/manage/frames/${c.slug}/edit`"
-            class="min-h-[44px] rounded-lg border border-g-border px-3 py-2 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-text"
-            data-cursor="nav"
-          >Edit</router-link>
-          <button
+            variant="destructive"
+            size="sm"
             :disabled="deletingId === c.id"
-            class="min-h-[44px] rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
             @click="remove(c.id, c.title)"
-          >{{ deletingId === c.id ? '...' : 'Delete' }}</button>
+          >
+            {{ deletingId === c.id ? '…' : 'Delete' }}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -97,7 +93,12 @@ import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
+import Card from '@/components/ui/Card.vue'
+import Button from '@/components/ui/Button.vue'
+import Input from '@/components/ui/Input.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
+const router = useRouter()
 const toast = useToast()
 const dialog = useDialog()
 const { authHeaders } = useAuth()
@@ -115,9 +116,13 @@ const filteredCampaigns = computed(() => {
   return campaigns.value.filter((campaign) =>
     campaign.title.toLowerCase().includes(q) ||
     campaign.slug.toLowerCase().includes(q) ||
-    (campaign.description ?? '').toLowerCase().includes(q)
+    (campaign.description ?? '').toLowerCase().includes(q),
   )
 })
+
+function onSearchInput(e: Event) {
+  searchQuery.value = (e.target as HTMLInputElement).value
+}
 
 async function copyLink(slug: string) {
   try {
@@ -168,4 +173,3 @@ onMounted(async () => {
   }
 })
 </script>
-

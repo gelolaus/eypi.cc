@@ -2,7 +2,7 @@
   <section class="relative flex min-h-screen w-full flex-col items-center px-4 py-24">
     <div class="w-full max-w-xl">
       <h1
-        class="reveal mb-2 text-center font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+        class="reveal mb-2 text-center font-display font-bold tracking-tight text-g-text dark:text-slate-200"
         style="font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em;"
       >
         New Event
@@ -14,21 +14,15 @@
       <!-- Success state -->
       <div
         v-if="done"
-        class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
-      >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
-        <h2 class="mb-4 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.name }}</h2>
+        class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8 text-center"
+      >        <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
+        <h2 class="mb-4 font-mono text-xl font-bold text-g-brand dark:text-slate-200">{{ form.name }}</h2>
         <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
           QR ZIP downloaded. Share tickets manually with your attendees.
         </p>
         <router-link
           :to="`/manage/tix/${form.slug}`"
-          class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
-          data-cursor="cta"
+          class="inline-block rounded-full bg-g-primary px-6 py-3 text-sm font-semibold text-g-primary-fg transition hover:brightness-110"
         >
           Go to Event →
         </router-link>
@@ -37,22 +31,16 @@
       <!-- Form -->
       <div
         v-else
-        class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-10"
-      >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-        <!-- Mode toggle -->
+        class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8 md:p-10"
+      >        <!-- Mode toggle -->
         <div class="mb-6 flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
           <button
             type="button"
             :class="[
               'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
               !useSelectionMode
-                ? 'bg-[#34418F] text-white dark:bg-slate-700'
-                : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
+                ? 'bg-g-brand text-white dark:bg-slate-700'
+                : 'bg-transparent text-gray-400 hover:text-g-brand dark:text-slate-400 dark:hover:text-slate-200',
             ]"
             @click="useSelectionMode = false"
           >Simple CSV Upload</button>
@@ -61,8 +49,8 @@
             :class="[
               'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
               useSelectionMode
-                ? 'bg-[#34418F] text-white dark:bg-slate-700'
-                : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
+                ? 'bg-g-brand text-white dark:bg-slate-700'
+                : 'bg-transparent text-gray-400 hover:text-g-brand dark:text-slate-400 dark:hover:text-slate-200',
             ]"
             @click="useSelectionMode = true"
           >Attendee Selection</button>
@@ -71,21 +59,21 @@
         <form class="flex flex-col gap-4" @submit.prevent="submit">
           <!-- Event Name -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
+            <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Event Name</label>
             <input
               v-model="form.name"
               type="text"
               placeholder="e.g. JPCS General Assembly"
               required
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
             />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
-            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
+            <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Link Slug</label>
+            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:focus-within:border-slate-500">
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-g-brand dark:text-slate-300">eypi.cc/tix/</span>
               <input
                 v-model="form.slug"
                 type="text"
@@ -103,48 +91,47 @@
           <!-- Date + Time -->
           <div class="flex flex-col gap-4 md:flex-row">
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
+              <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Date</label>
               <input
                 v-model="form.date"
                 type="date"
                 required
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
+                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
               />
             </div>
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
+              <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Time</label>
               <input
                 v-model="form.time"
                 type="time"
                 required
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
+                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
               />
             </div>
           </div>
 
           <!-- Location -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
+            <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Location</label>
             <input
               v-model="form.location"
               type="text"
               placeholder="e.g. APC Auditorium"
               required
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
             />
           </div>
 
           <!-- CSV Upload (simple mode only) -->
           <div v-if="!useSelectionMode">
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</label>
+            <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Attendee CSV</label>
             <div
               class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
               :class="csvFile
                 ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-900/10'
-                : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
+                : 'border-gray-300 bg-white/40 hover:border-g-brand dark:border-slate-600 dark:bg-g-bg dark:hover:border-slate-500'"
               :aria-invalid="Boolean(csvError)"
               :aria-describedby="csvError ? 'csv-error' : undefined"
-              data-cursor="card"
               @dragover.prevent
               @drop.prevent="onDrop"
             >
@@ -158,7 +145,7 @@
               <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileChange" />
               <button
                 type="button"
-                class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
+                class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
                 @click="fileInput?.click()"
               >
                 {{ csvFile ? 'Change file' : 'Browse' }}
@@ -168,17 +155,17 @@
           </div>
 
           <!-- Selection mode info + max attendees -->
-          <div v-else class="rounded-xl border border-[#34418F]/20 bg-[#34418F]/5 px-4 py-4 dark:border-slate-600 dark:bg-slate-800/40">
-            <p class="mb-3 font-mono text-xs text-[#34418F] dark:text-slate-300">
+          <div v-else class="rounded-xl border border-g-brand/20 bg-g-brand/5 px-4 py-4 dark:border-slate-600 dark:bg-slate-800/40">
+            <p class="mb-3 font-mono text-xs text-g-brand dark:text-slate-300">
               You'll upload the CSV and configure clusters &amp; criteria on the next page.
             </p>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
+            <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
             <input
               v-model.number="maxAttendeesValue"
               type="number"
               min="1"
               placeholder="Leave blank for no limit"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
             />
             <p class="mt-1 font-mono text-[0.65rem] text-gray-400 dark:text-slate-500 uppercase tracking-wide">This can be overridden when you configure clusters.</p>
           </div>
@@ -188,10 +175,9 @@
             type="submit"
             :disabled="loading"
             :class="[
-              'mt-2 w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+              'mt-2 w-full rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200  dark:text-slate-100 ',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
-            data-cursor="cta"
           >
             {{ loadingLabel }}
           </button>

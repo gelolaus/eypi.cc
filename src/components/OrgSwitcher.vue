@@ -6,7 +6,6 @@
       type="button"
       class="tap-scale flex max-w-[min(100%,14rem)] items-center gap-2.5 rounded-lg border border-g-border bg-g-surface px-3 py-2 text-g-text transition-colors hover:border-g-primary/40"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
-      data-cursor="nav"
       @click="isOpen = !isOpen"
     >
       <OrgLogo
@@ -41,17 +40,16 @@
           type="button"
           class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-g-bg"
           :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
-          data-cursor="nav"
           @click="handleSelect(org)"
         >
           <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
           <span
             class="min-w-0 flex-1 truncate text-sm leading-snug"
-            :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-[#DEAC4B]' : 'text-g-text'"
+            :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-g-primary' : 'text-g-text'"
           >
             {{ org.org_name }}
           </span>
-          <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-[#DEAC4B]" aria-hidden="true">●</span>
+          <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-g-primary" aria-hidden="true">●</span>
         </button>
       </div>
     </div>

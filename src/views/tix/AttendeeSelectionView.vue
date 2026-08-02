@@ -3,9 +3,9 @@
 
     <!-- Header -->
     <div class="mb-8">
-      <router-link to="/manage/tix" class="mb-4 inline-block text-sm font-medium text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
+      <router-link to="/manage/tix" class="mb-4 inline-block text-sm font-medium text-gray-400 hover:text-g-brand dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
       <h1
-        class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+        class="font-display font-bold tracking-tight text-g-text dark:text-slate-200"
         style="font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -0.03em;"
       >
         Attendee Selection
@@ -19,7 +19,7 @@
         <div
           :class="[
             'h-1.5 flex-1 rounded-full transition-all duration-300',
-            stepIndex >= i ? 'bg-[#34418F] dark:bg-slate-400' : 'bg-gray-200 dark:bg-slate-700',
+            stepIndex >= i ? 'bg-g-brand dark:bg-slate-400' : 'bg-gray-200 dark:bg-slate-700',
           ]"
         />
       </template>
@@ -29,20 +29,15 @@
     </p>
 
     <!-- ─── STEP 1: UPLOAD ─────────────────────────────────────────────── -->
-    <div v-if="currentStep === 'upload'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Upload Spreadsheet</h2>
+    <div v-if="currentStep === 'upload'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Upload Spreadsheet</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.</p>
 
       <div
         class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors"
         :class="csvFile
           ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-900/10'
-          : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
+          : 'border-gray-300 bg-white/40 hover:border-g-brand dark:border-slate-600 dark:bg-g-bg dark:hover:border-slate-500'"
         @dragover.prevent
         @drop.prevent="onDrop"
       >
@@ -55,7 +50,7 @@
         <input ref="fileInput" type="file" accept=".xlsx" class="hidden" @change="onFileChange" />
         <button
           type="button"
-          class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
+          class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
           @click="fileInput?.click()"
         >
           {{ csvFile ? 'Change file' : 'Browse' }}
@@ -66,7 +61,7 @@
       <button
         :disabled="!csvFile || !allRows.length || uploading"
         :class="[
-          'mt-6 w-full rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
+          'mt-6 w-full rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200',
           (!csvFile || !allRows.length || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
         ]"
         @click="uploadCsv"
@@ -76,17 +71,12 @@
     </div>
 
     <!-- ─── STEP 2: MAP COLUMNS ────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'map-columns'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
+    <div v-else-if="currentStep === 'map-columns'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Map Columns</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
 
       <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-        <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+        <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-g-brand dark:border-slate-700 dark:bg-g-bg dark:text-slate-400">
           <span>Column</span><span>Role</span>
         </div>
         <div
@@ -97,7 +87,7 @@
           <span class="truncate font-mono text-xs text-gray-700 dark:text-slate-300 pr-2">{{ col }}</span>
           <select
             :value="getColRole(col)"
-            class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-g-brand dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
           >
             <option value="criteria">Criteria</option>
@@ -114,9 +104,9 @@
       <p v-if="mapError" class="mt-3 text-xs font-medium text-red-500">{{ mapError }}</p>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'upload'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'upload'">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           @click="confirmMapping"
         >
           Continue →
@@ -125,15 +115,10 @@
     </div>
 
     <!-- ─── STEP 3: CLUSTERS ──────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'clusters'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
+    <div v-else-if="currentStep === 'clusters'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Configure Clusters</h2>
       <p class="mb-1 font-mono text-xs text-gray-500 dark:text-slate-400">
-        Column: <span class="font-bold text-[#34418F] dark:text-slate-300">{{ columnMapping?.clusterCol }}</span>
+        Column: <span class="font-bold text-g-brand dark:text-slate-300">{{ columnMapping?.clusterCol }}</span>
       </p>
       <p class="mb-6 font-mono text-xs text-gray-400 dark:text-slate-500">Set how many attendees each group can have. Total capacity is the sum of all quotas.</p>
 
@@ -141,7 +126,7 @@
         <div
           v-for="cl in clusters"
           :key="cl.value"
-          class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input"
+          class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-g-bg"
         >
           <div class="flex-1">
             <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
@@ -153,7 +138,7 @@
               :value="cl.maxCount"
               type="number"
               min="0"
-              class="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-sm font-bold text-center outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+              class="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-sm font-bold text-center outline-none transition-colors focus:border-g-brand dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
               @input="cl.maxCount = Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0)"
             />
           </div>
@@ -162,18 +147,18 @@
 
       <div class="mt-4 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-800/50">
         <p class="font-mono text-xs text-gray-600 dark:text-slate-400">
-          Total capacity: <span class="font-bold text-[#34418F] dark:text-slate-200">{{ totalClusterMax }}</span> attendees
+          Total capacity: <span class="font-bold text-g-brand dark:text-slate-200">{{ totalClusterMax }}</span> attendees
         </p>
       </div>
 
       <p v-if="clusterError" class="mt-3 text-xs font-medium text-red-500">{{ clusterError }}</p>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'map-columns'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'map-columns'">← Back</button>
         <button
           :disabled="savingClusters"
           :class="[
-            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
+            'flex-1 rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200',
             savingClusters ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
           ]"
           @click="saveClusters"
@@ -184,13 +169,8 @@
     </div>
 
     <!-- ─── STEP 4: CLUSTER FILTERS (or global filter if no clusters) ─── -->
-    <div v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
+    <div v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Selection Criteria</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
         Check the answer values you want to <span class="font-bold">include</span> in the raffle. Unchecked = excluded. Empty column = no filter applied.
       </p>
@@ -221,13 +201,13 @@
                   :key="val"
                   class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
                   :class="isChecked(cl.value, col, val)
-                    ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
-                    : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
+                    ? 'border-g-brand bg-g-brand/10 dark:border-slate-400 dark:bg-slate-700/50'
+                    : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-g-bg'"
                 >
                   <input
                     type="checkbox"
                     :checked="isChecked(cl.value, col, val)"
-                    class="h-3.5 w-3.5 accent-[#34418F]"
+                    class="h-3.5 w-3.5 accent-g-primary"
                     @change="toggleFilter(cl.value, col, val)"
                   />
                   <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
@@ -249,13 +229,13 @@
               :key="val"
               class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
               :class="isChecked(null, col, val)
-                ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
-                : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
+                ? 'border-g-brand bg-g-brand/10 dark:border-slate-400 dark:bg-slate-700/50'
+                : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-g-bg'"
             >
               <input
                 type="checkbox"
                 :checked="isChecked(null, col, val)"
-                class="h-3.5 w-3.5 accent-[#34418F]"
+                class="h-3.5 w-3.5 accent-g-primary"
                 @change="toggleFilter(null, col, val)"
               />
               <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
@@ -269,14 +249,14 @@
       <!-- Live summary -->
       <div class="mt-6 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-800/50">
         <p class="font-mono text-xs text-gray-600 dark:text-slate-400">
-          Total eligible: <span class="font-bold text-[#34418F] dark:text-slate-200">{{ totalEligible }}</span>
+          Total eligible: <span class="font-bold text-g-brand dark:text-slate-200">{{ totalEligible }}</span>
         </p>
       </div>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromFilter">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400" @click="backFromFilter">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           @click="currentStep = 'guarantee'"
         >
           Continue →
@@ -285,13 +265,8 @@
     </div>
 
     <!-- ─── STEP 5: GUARANTEE ─────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'guarantee'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Manual Guarantees</h2>
+    <div v-else-if="currentStep === 'guarantee'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Manual Guarantees</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Add specific people who are guaranteed a slot regardless of the raffle. These reduce the available raffle slots.</p>
 
       <!-- Search -->
@@ -300,7 +275,7 @@
           v-model="guaranteeSearch"
           type="text"
           placeholder="Search by name or email…"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-g-bg dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
         />
       </div>
 
@@ -314,14 +289,14 @@
           <div>
             <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(row) }}</p>
             <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(row) }}
-              <span v-if="columnMapping?.clusterCol" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
+              <span v-if="columnMapping?.clusterCol" class="ml-2 rounded bg-g-brand/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-g-brand dark:bg-slate-700 dark:text-slate-300">
                 {{ row.rawData[columnMapping.clusterCol] ?? '—' }}
               </span>
             </p>
           </div>
           <button
             v-if="!guaranteedRowIds.has(row.id)"
-            class="rounded-lg bg-[#34418F] px-3 py-1 font-mono text-xs text-white transition-colors hover:brightness-110 dark:bg-slate-600"
+            class="rounded-lg bg-g-primary px-3 py-1 font-mono text-xs text-g-primary-fg transition-colors hover:brightness-110"
             @click="addGuarantee(row.id)"
           >
             Add
@@ -343,7 +318,7 @@
             <div>
               <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(rowById(rowId)) }}</p>
               <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(rowById(rowId)) }}
-                <span v-if="columnMapping?.clusterCol && rowById(rowId)" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
+                <span v-if="columnMapping?.clusterCol && rowById(rowId)" class="ml-2 rounded bg-g-brand/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-g-brand dark:bg-slate-700 dark:text-slate-300">
                   {{ rowById(rowId)!.rawData[columnMapping!.clusterCol!] ?? '—' }}
                 </span>
               </p>
@@ -358,9 +333,9 @@
       <p v-else class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">No guaranteed attendees yet.</p>
 
       <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromGuarantee">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400" @click="backFromGuarantee">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
+          class="flex-1 rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           @click="currentStep = 'confirm'"
         >
           Continue →
@@ -369,24 +344,19 @@
     </div>
 
     <!-- ─── STEP 6: CONFIRM ───────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'confirm'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Confirm & Generate</h2>
+    <div v-else-if="currentStep === 'confirm'" class="rounded-2xl border border-g-border bg-g-surface p-6 sm:p-8">
+      <h2 class="mb-1 text-sm font-semibold text-g-brand dark:text-slate-300">Confirm & Generate</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Once you finalize, QR codes will be generated and downloaded.</p>
 
       <!-- Max attendees edit -->
-      <div class="mb-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input">
+      <div class="mb-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-g-bg">
         <label class="text-sm font-semibold text-gray-600 dark:text-slate-400">Max Attendees:</label>
         <input
           v-model.number="maxAttendeesEdit"
           type="number"
           min="1"
           placeholder="Unlimited"
-          class="w-28 rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-mono text-sm font-bold outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+          class="w-28 rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-mono text-sm font-bold outline-none transition-colors focus:border-g-brand dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
         />
         <span class="font-mono text-[0.65rem] text-gray-400 dark:text-slate-500">(auto-sum from clusters: {{ totalClusterMax || '—' }})</span>
       </div>
@@ -394,7 +364,7 @@
       <!-- Cluster summary table -->
       <div v-if="clusters.length" class="mb-6 overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-600">
         <div class="min-w-[520px]">
-        <div class="text-data grid grid-cols-5 border-b border-gray-100 bg-gray-50/60 px-4 py-2 text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+        <div class="text-data grid grid-cols-5 border-b border-gray-100 bg-gray-50/60 px-4 py-2 text-xs font-semibold text-g-brand dark:border-slate-700 dark:bg-g-bg dark:text-slate-400">
           <span class="col-span-2">Cluster</span>
           <span class="text-center">Quota</span>
           <span class="text-center">Guaranteed</span>
@@ -425,16 +395,16 @@
 
       <!-- No-cluster summary -->
       <div v-else class="mb-6 grid grid-cols-3 gap-3">
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ guaranteedRowIds.size }}</p>
+        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-g-bg">
+          <p class="font-display text-2xl font-bold text-g-text dark:text-slate-200">{{ guaranteedRowIds.size }}</p>
           <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Guaranteed</p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ globalEligibleRows.length }}</p>
+        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-g-bg">
+          <p class="font-display text-2xl font-bold text-g-text dark:text-slate-200">{{ globalEligibleRows.length }}</p>
           <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Eligible</p>
         </div>
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ maxAttendeesEdit ?? '∞' }}</p>
+        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-g-bg">
+          <p class="font-display text-2xl font-bold text-g-text dark:text-slate-200">{{ maxAttendeesEdit ?? '∞' }}</p>
           <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Max slots</p>
         </div>
       </div>
@@ -445,11 +415,11 @@
       </div>
 
       <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'guarantee'">← Back</button>
+        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'guarantee'">← Back</button>
         <button
           :disabled="finalizing"
           :class="[
-            'flex-1 rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+            'flex-1 rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200 ',
             finalizing ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
           ]"
           @click="finalize"

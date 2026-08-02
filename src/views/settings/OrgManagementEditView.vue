@@ -1,16 +1,17 @@
 <template>
   <div>
-    <router-link
-      to="/settings/org-management"
-      class="mb-6 inline-flex text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
-      data-cursor="nav"
+    <Button
+      variant="ghost"
+      size="sm"
+      className="mb-6"
+      @click="router.push('/settings/org-management')"
     >
       ← Back to org management
-    </router-link>
+    </Button>
 
-    <section class="mica-card rounded-3xl p-6 sm:p-8">
+    <Card>
       <header class="mb-6 border-b border-g-border pb-5">
-        <h2 class="text-section-title">
+        <h2 class="font-display text-xl font-semibold text-g-text">
           {{ isCreate ? 'New org' : 'Edit org' }}
         </h2>
       </header>
@@ -18,61 +19,80 @@
       <form class="space-y-5" @submit.prevent="save">
         <div class="flex flex-col gap-2">
           <label for="org-slug" class="text-sm font-medium text-g-muted">Org slug</label>
-          <input id="org-slug" v-model="form.id" type="text" required class="field-input text-data" placeholder="jpcs" />
+          <Input
+            id="org-slug"
+            :value="form.id"
+            type="text"
+            required
+            className="text-data"
+            placeholder="jpcs"
+            @input="onIdInput"
+          />
         </div>
         <div class="flex flex-col gap-2">
           <label for="org-name" class="text-sm font-medium text-g-muted">Org name</label>
-          <input id="org-name" v-model="form.name" type="text" required class="field-input" placeholder="Junior Philippine Computer Society" />
+          <Input
+            id="org-name"
+            :value="form.name"
+            type="text"
+            required
+            placeholder="Junior Philippine Computer Society"
+            @input="onNameInput"
+          />
         </div>
         <div class="flex flex-col gap-2">
           <label for="owner-email" class="text-sm font-medium text-g-muted">Owner email</label>
-          <input id="owner-email" v-model="form.ownerEmail" type="email" required class="field-input" placeholder="president@student.apc.edu.ph" />
+          <Input
+            id="owner-email"
+            :value="form.ownerEmail"
+            type="email"
+            required
+            placeholder="president@student.apc.edu.ph"
+            @input="onOwnerEmailInput"
+          />
         </div>
 
         <div v-if="!isCreate" class="flex items-center justify-between rounded-2xl border border-g-border p-4">
           <span class="text-sm font-medium text-g-text">List in /orgs directory</span>
-          <button
-            type="button"
-            role="switch"
-            :aria-checked="form.isPublicCatalog"
+          <Switch
+            v-model="form.isPublicCatalog"
             :aria-label="form.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
-            class="relative h-7 w-12 rounded-full transition-colors"
-            :class="form.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
-            @click="form.isPublicCatalog = !form.isPublicCatalog"
-          >
-            <span
-              class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
-              :class="form.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
-            />
-          </button>
+          />
         </div>
 
         <div class="flex flex-wrap gap-3">
-          <button type="submit" :disabled="saving" class="btn-primary" data-cursor="cta">
+          <Button type="submit" :disabled="saving">
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
-          </button>
-          <button
+          </Button>
+          <Button
             v-if="!isCreate"
             type="button"
+            variant="destructive"
             :disabled="deleting"
-            class="rounded-xl border border-red-500 px-5 py-3 text-sm font-semibold text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
             @click="deleteOrg"
           >
             {{ deleting ? 'Deleting...' : 'Delete org' }}
-          </button>
+          </Button>
         </div>
       </form>
 
       <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="confirmTransfer">
-        <h3 class="text-card-title text-red-500">Transfer ownership</h3>
+        <h3 class="font-display text-lg font-semibold text-g-destructive">Transfer ownership</h3>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
+          <Input
+            :value="transferEmail"
+            type="email"
+            required
+            placeholder="active-member@apc.edu.ph"
+            className="min-w-0 flex-1"
+            @input="onTransferEmailInput"
+          />
+          <Button type="submit" variant="destructive" :disabled="transferring">
             {{ transferring ? 'Transferring...' : 'Transfer' }}
-          </button>
+          </Button>
         </div>
       </form>
-    </section>
+    </Card>
   </div>
 </template>
 
@@ -83,6 +103,10 @@ import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import Card from '@/components/ui/Card.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
+import Switch from '@/components/ui/Switch.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -103,6 +127,19 @@ const saving = ref(false)
 const deleting = ref(false)
 const transferring = ref(false)
 const transferEmail = ref('')
+
+function onIdInput(e: Event) {
+  form.value.id = (e.target as HTMLInputElement).value
+}
+function onNameInput(e: Event) {
+  form.value.name = (e.target as HTMLInputElement).value
+}
+function onOwnerEmailInput(e: Event) {
+  form.value.ownerEmail = (e.target as HTMLInputElement).value
+}
+function onTransferEmailInput(e: Event) {
+  transferEmail.value = (e.target as HTMLInputElement).value
+}
 
 async function loadOrg() {
   if (isCreate.value) return
@@ -229,12 +266,3 @@ async function executeTransfer() {
 
 onMounted(loadOrg)
 </script>
-
-<style scoped>
-.field-input {
-  @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-.btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
-}
-</style>

@@ -3,29 +3,37 @@
 @tailwind utilities;
 
 /* ============================================================
-   DESIGN TOKENS — gelolaus design language + eypi branding
+   DESIGN TOKENS — Wantap design language + APC brand colors
    ============================================================ */
 @layer base {
   :root {
-    --color-bg:         #F5F5F5;
-    --color-surface:    #ffffff;
-    --color-border:     #E8E8E8;
-    --color-text:       #0A0A0A;
-    --color-text-muted: #6B6B6B;
-    --color-accent:     #DEAC4B;  /* APC Gold */
-    --color-primary:    #34418F;  /* APC Blue */
-    --color-dot:        #000000;
+    --color-bg: #F5F1EA;
+    --color-surface: #FFFCF7;
+    --color-border: #E5DFD4;
+    --color-text: #14110F;
+    --color-text-muted: #6F675C;
+    --color-primary: #DEAC4B;
+    --color-primary-fg: #1A1408;
+    --color-brand: #34418F;
+    --color-destructive: #DC2626;
+    --color-ring: color-mix(in srgb, #DEAC4B 55%, transparent);
+    --radius: 0.875rem;
+    /* Temporary aliases until remaining legacy class names are gone */
+    --color-accent: var(--color-primary);
   }
 
   html.dark {
-    --color-bg:         #000000;
-    --color-surface:    #161616;
-    --color-border:     #262626;
-    --color-text:       #F5F5F5;
-    --color-text-muted: #AAAAAA;
-    --color-accent:     #DEAC4B;  /* gold never changes */
-    --color-primary:    #34418F;
-    --color-dot:        #ffffff;
+    --color-bg: #0A0E18;
+    --color-surface: #121826;
+    --color-border: rgba(255, 255, 255, 0.10);
+    --color-text: #F4F1EA;
+    --color-text-muted: #A39E94;
+    --color-primary: #DEAC4B;
+    --color-primary-fg: #1A1408;
+    --color-brand: #34418F;
+    --color-destructive: #F87171;
+    --color-ring: color-mix(in srgb, #DEAC4B 55%, transparent);
+    --color-accent: var(--color-primary);
   }
 
   html {
@@ -34,10 +42,14 @@
   }
 
   body {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     background-color: var(--color-bg);
     color: var(--color-text);
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, .font-display, .text-page-title, .text-section-title {
+    font-family: 'Syne', ui-sans-serif, sans-serif;
   }
 
   html.nav-scroll-lock,
@@ -45,14 +57,8 @@
     overflow: hidden;
   }
 
-  /* Custom cursor — hide native pointer on desktop when AppCursor is active */
-  html.has-custom-cursor,
-  html.has-custom-cursor * {
-    cursor: none !important;
-  }
-
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
     border-radius: 0.5rem;
   }
@@ -63,43 +69,18 @@
 }
 
 /* ============================================================
-   DOT GRID UTILITIES
+   SURFACE + TYPE UTILITIES
    ============================================================ */
 @layer utilities {
-  /* Theme-aware dot grid (body background) */
-  .bg-dot-grid {
-    background-color: var(--color-bg);
-    background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
-    background-size: 120px 120px;
-    background-attachment: fixed;
+  /* Wantap glass panel — token-based translucent surface */
+  .glass-panel {
+    background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--color-border);
   }
 
-  /* Always-dark dot grid (footer only) */
-  .bg-dot-grid-dark {
-    background-color: #040d1f;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
-    background-size: 120px 120px;
-    background-attachment: fixed;
-  }
-
-  /* Glassmorphism card — preserved for dashboard/settings/auth views */
-  .mica-card {
-    background-color: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  }
-
-  .dark .mica-card {
-    background-color: rgba(15, 23, 42, 0.25);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  /* Typography utilities — v2 sans-first hierarchy */
   .text-eyebrow {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.04em;
@@ -108,12 +89,12 @@
   }
 
   .text-page-title {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Syne', ui-sans-serif, sans-serif;
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.03em;
-    color: var(--color-primary);
+    color: var(--color-brand);
   }
 
   html.dark .text-page-title {
@@ -121,7 +102,7 @@
   }
 
   .text-section-title {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Syne', ui-sans-serif, sans-serif;
     font-size: clamp(1.25rem, 2.5vw, 1.75rem);
     font-weight: 600;
     line-height: 1.25;
@@ -130,7 +111,7 @@
   }
 
   .text-card-title {
-    font-family: 'Geist', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 1.125rem;
     font-weight: 600;
     line-height: 1.35;
@@ -139,12 +120,11 @@
   }
 
   .text-data {
-    font-family: 'Geist Mono', monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Skip to content — keyboard accessibility */
   .skip-link {
     position: fixed;
     top: 0.75rem;
@@ -153,8 +133,8 @@
     padding: 0.625rem 1rem;
     border-radius: 0.5rem;
     background: var(--color-primary);
-    color: #fff;
-    font-family: 'Geist', system-ui, sans-serif;
+    color: var(--color-primary-fg);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.875rem;
     font-weight: 600;
     text-decoration: none;
@@ -191,308 +171,9 @@
 }
 
 /* ============================================================
-   PILL NAVBAR
+   INTERACTION HELPERS
    ============================================================ */
 @layer components {
-  .local-dev .pill-nav-wrapper {
-    top: calc(16px + 1.75rem);
-  }
-
-  .pill-nav-wrapper {
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9990;
-    width: min(92vw, 1100px);
-    transition:
-      transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.35s ease;
-  }
-
-  .pill-nav-wrapper.pill-nav--hidden {
-    transform: translateX(-50%) translateY(-80px);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .pill-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.5rem 0.875rem 0.5rem 1.25rem;
-    border-radius: 9999px;
-    border: 1px solid var(--color-border);
-    /* Always frosted — never transparent */
-    background: rgba(245, 245, 245, 0.82);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    box-shadow:
-      0 2px 16px rgba(0, 0, 0, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.35);
-    width: 100%;
-    transition:
-      box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-      background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  html.dark .pill-nav {
-    background: rgba(22, 22, 22, 0.88);
-    box-shadow:
-      0 2px 16px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-
-  .pill-nav-wrapper.pill-nav--scrolled .pill-nav {
-    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.1);
-  }
-
-  html.dark .pill-nav-wrapper.pill-nav--scrolled .pill-nav {
-    box-shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
-  }
-
-  .pill-nav__logo {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-decoration: none;
-    letter-spacing: -0.01em;
-    transition: color 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  html.dark .pill-nav__logo {
-    color: var(--color-text);
-  }
-
-  .pill-nav__logo:hover {
-    color: var(--color-accent);
-  }
-
-  .pill-nav__sep {
-    width: 1px;
-    height: 16px;
-    background: var(--color-border);
-    flex-shrink: 0;
-  }
-
-  .pill-nav__controls {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    flex-shrink: 0;
-  }
-
-  .pill-nav__menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 9999px;
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text);
-    transition:
-      border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      color 0.22s ease;
-  }
-
-  .pill-nav__menu-btn:hover {
-    border-color: var(--color-primary);
-    background: var(--color-surface);
-  }
-
-  .pill-nav__menu-icon {
-    position: relative;
-    display: block;
-    width: 16px;
-    height: 12px;
-  }
-
-  .pill-nav__menu-icon span {
-    position: absolute;
-    left: 0;
-    display: block;
-    width: 100%;
-    height: 2px;
-    border-radius: 0;
-    background: currentColor;
-    transition:
-      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.22s ease,
-      top 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .pill-nav__menu-icon span:nth-child(1) { top: 0; }
-  .pill-nav__menu-icon span:nth-child(2) { top: 5px; }
-  .pill-nav__menu-icon span:nth-child(3) { top: 10px; }
-
-  .pill-nav__menu-btn--open .pill-nav__menu-icon span:nth-child(1) {
-    top: 5px;
-    transform: rotate(45deg);
-  }
-
-  .pill-nav__menu-btn--open .pill-nav__menu-icon span:nth-child(2) {
-    opacity: 0;
-    transform: scaleX(0.4);
-  }
-
-  .pill-nav__menu-btn--open .pill-nav__menu-icon span:nth-child(3) {
-    top: 5px;
-    transform: rotate(-45deg);
-  }
-
-  .pill-nav__link {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-
-  .pill-nav__link:hover {
-    color: var(--color-text);
-  }
-
-  .pill-nav__cta {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    padding: 0.35rem 0.875rem;
-    border-radius: 9999px;
-    background: var(--color-accent);
-    color: #fff;
-    text-decoration: none;
-    transition: opacity 0.2s ease, transform 0.15s ease;
-    flex-shrink: 0;
-  }
-
-  .pill-nav__cta:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
-  }
-
-  .pill-nav__toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    min-width: 44px;
-    min-height: 44px;
-    border-radius: 9999px;
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text-muted);
-    flex-shrink: 0;
-    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
-  }
-
-  .pill-nav__toggle:hover {
-    border-color: var(--color-text);
-    color: var(--color-text);
-    background: var(--color-surface);
-  }
-
-  .pill-nav__user-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-family: 'Geist Mono', monospace;
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 0.325rem 0.75rem;
-    border-radius: 9999px;
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text);
-    flex-shrink: 0;
-    transition: border-color 0.2s ease, background 0.2s ease;
-  }
-
-  .pill-nav__user-btn:hover {
-    border-color: var(--color-primary);
-    background: var(--color-surface);
-  }
-
-  .pill-nav__dropdown {
-    position: absolute;
-    top: calc(100% + 0.625rem);
-    right: 0;
-    min-width: 210px;
-    border-radius: 1rem;
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    overflow: hidden;
-    z-index: 50;
-  }
-
-  html.dark .pill-nav__dropdown {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  }
-
-  .pill-nav__dropdown-header {
-    padding: 0.875rem 1.125rem;
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg);
-  }
-
-  .pill-nav__dropdown-name {
-    font-family: 'Geist Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  .pill-nav__dropdown-email {
-    font-size: 0.7rem;
-    color: var(--color-text-muted);
-    margin-top: 0.2rem;
-    font-family: 'Geist Mono', monospace;
-  }
-
-  .pill-nav__dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    padding: 0.7rem 1.125rem;
-    font-family: 'Geist Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    transition: color 0.15s ease, background 0.15s ease;
-  }
-
-  .pill-nav__dropdown-item:hover {
-    color: var(--color-primary);
-    background: var(--color-bg);
-  }
-
-  .pill-nav__dropdown-item--danger {
-    color: #dc2626;
-    border-top: 1px solid var(--color-border);
-  }
-
-  .pill-nav__dropdown-item--danger:hover {
-    color: #dc2626;
-    background: rgba(220, 38, 38, 0.06);
-  }
-
-  /* Press feedback — alexi.life tap-scale pattern */
   .tap-scale {
     transition-property: scale, transform, color, background-color, border-color, opacity;
     transition-duration: 0.15s;
@@ -503,12 +184,10 @@
     scale: 0.96;
   }
 
-  /* Hover feedback — fine pointer devices only */
   @media (hover: hover) and (pointer: fine) {
     a:not(.skip-link),
     button:not(:disabled),
     [role="button"]:not([aria-disabled="true"]),
-    [data-cursor],
     input[type="submit"]:not(:disabled),
     input[type="button"]:not(:disabled),
     select,
@@ -523,51 +202,8 @@
         scale 0.15s ease-out;
     }
 
-    [data-cursor="nav"]:hover,
-    a:not(.skip-link):not(.footer-link-row):not(.nav-sidebar-link):hover {
+    a:not(.skip-link):hover {
       opacity: 0.88;
-    }
-
-    [data-cursor="cta"]:hover,
-    button[data-cursor="cta"]:hover,
-    a[data-cursor="cta"]:hover {
-      transform: translateY(-2px) scale(1.02);
-      opacity: 0.92;
-    }
-
-    [data-cursor="card"]:hover,
-    a[data-cursor="card"]:hover,
-    .mica-card[data-cursor="card"]:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 14px 40px rgba(31, 38, 135, 0.12);
-    }
-
-    html.dark [data-cursor="card"]:hover,
-    html.dark a[data-cursor="card"]:hover,
-    html.dark .mica-card[data-cursor="card"]:hover {
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-    }
-
-    [data-cursor="text"]:hover {
-      opacity: 0.9;
-    }
-
-    .pill-nav__menu-btn:hover,
-    .pill-nav__toggle:hover {
-      transform: scale(1.06);
-    }
-
-    .footer-link-row:hover {
-      transform: translateX(4px);
-    }
-
-    .nav-sidebar-link:hover {
-      transform: translateX(6px);
-    }
-
-    .nav-sidebar-link:hover .nav-sidebar-link__arrow {
-      opacity: 1;
-      transform: translate(4px, -4px);
     }
 
     .scroll-top-btn:hover {
@@ -577,7 +213,7 @@
 }
 
 /* ============================================================
-   SLIDE-OVER PANELS (nav sidebar, analytics, link editor)
+   SLIDE-OVER PANELS (analytics, link editor, org tools sheet)
    ============================================================ */
 .slide-over-fade-enter-active,
 .slide-over-fade-leave-active {
@@ -597,104 +233,6 @@
 .slide-over-panel-enter-from,
 .slide-over-panel-leave-to {
   transform: translateX(100%);
-}
-
-/* ============================================================
-   FOOTER
-   ============================================================ */
-@layer components {
-  .footer-dark {
-    color: #F5F5F5;
-    border-top: 1px solid #1a1a1a;
-    position: relative;
-    z-index: 1;
-  }
-
-  .footer-inner {
-    max-width: 87.5rem;
-    margin: 0 auto;
-    padding: clamp(4rem, 8vw, 6rem) clamp(1.5rem, 6vw, 6rem) clamp(2.5rem, 5vw, 4rem);
-  }
-
-  .footer-heading {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(2.8rem, 8vw, 7rem);
-    font-weight: 700;
-    line-height: 0.95;
-    color: #F5F5F5;
-    letter-spacing: -0.04em;
-    margin-bottom: clamp(3rem, 6vw, 5rem);
-    max-width: 900px;
-  }
-
-  /* Full-width stacked link rows — gelolaus style */
-  .footer-links-full {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .footer-link-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: clamp(1.1rem, 2.5vw, 1.75rem) 0;
-    border-top: 1px solid #1f1f1f;
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(1.2rem, 3vw, 2rem);
-    font-weight: 500;
-    letter-spacing: -0.03em;
-    color: #F5F5F5;
-    text-decoration: none;
-    transition: color 0.22s ease;
-  }
-
-  .footer-link-row:last-child {
-    border-bottom: 1px solid #1f1f1f;
-  }
-
-  .footer-link-row:hover {
-    color: #DEAC4B;
-  }
-
-  .footer-arrow {
-    display: inline-block;
-    font-size: 0.85em;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    flex-shrink: 0;
-  }
-
-  .footer-link-row:hover .footer-arrow {
-    transform: translate(4px, -4px);
-  }
-
-  .footer-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding-top: clamp(2rem, 4vw, 3rem);
-    border-top: 1px solid #1f1f1f;
-    margin-top: clamp(2rem, 4vw, 3rem);
-  }
-
-  .footer-label {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
-    font-weight: 500;
-    color: #444;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .footer-year {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
-    font-weight: 500;
-    color: #444;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
 }
 
 /* ============================================================
@@ -733,7 +271,7 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 ::selection {
   background-color: #DEAC4B;
-  color: #000000;
+  color: #1A1408;
 }
 
 /* ============================================================
@@ -755,10 +293,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   .reveal {
     opacity: 1;
     transform: none;
-  }
-
-  .pill-nav-wrapper {
-    transition: none;
   }
 
   .slide-over-fade-enter-active,

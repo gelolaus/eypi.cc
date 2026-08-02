@@ -1,47 +1,41 @@
 <template>
   <section
-    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4"
+    class="relative flex min-h-0 flex-1 w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
   >
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
-    >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--color-primary)_18%,transparent),transparent_70%)]"
+    />
 
-      <h2 class="mb-4 text-center text-section-title text-[#34418F] dark:text-slate-200">
-        VERIFY YOUR ACCOUNT
-      </h2>
+    <Card className="relative w-full max-w-md">
+      <h1 class="mb-4 font-display text-2xl font-bold tracking-tight text-g-text">
+        Verify your account
+      </h1>
 
       <p
         v-if="error"
-        class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-mono text-sm text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300"
+        class="mb-6 rounded-xl border border-g-destructive/30 bg-g-destructive/10 px-4 py-3 text-sm text-g-destructive"
       >
         {{ error }}
       </p>
 
-      <p
-        v-else-if="!token"
-        class="mb-6 font-mono text-sm text-gray-600 dark:text-slate-400"
-      >
+      <p v-else-if="!token" class="mb-6 text-sm leading-relaxed text-g-muted">
         No verification token found. Please use the link from your email.
       </p>
 
       <template v-else>
-        <button
+        <p class="mb-6 text-sm leading-relaxed text-g-muted">
+          Confirm this email to finish setting up your APC account.
+        </p>
+        <Button
           type="button"
+          className="w-full"
           :disabled="isVerifying"
-          :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-4 font-mono text-base font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
-            isVerifying ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
-          ]"
           @click="confirmVerification"
         >
-          {{ isVerifying ? 'Verifying...' : 'Confirm Verification' }}
-        </button>
+          {{ isVerifying ? 'Verifying...' : 'Confirm verification' }}
+        </Button>
       </template>
-    </div>
+    </Card>
   </section>
 </template>
 
@@ -49,6 +43,8 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
+import Card from '@/components/ui/Card.vue'
+import Button from '@/components/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()

@@ -64,7 +64,7 @@ Use these terms. Prefer them over invented synonyms.
 | **Backend API** | `backend/` | All `/api/*` on `api.eypi.cc` (Hono Worker): auth, links, orgs, events, DP, forms catalog/templates, stats |
 | **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list |
 | **Legacy redirects** | `redirects/` | Only `tix.eypi.cc` / `forms.eypi.cc` → unified `eypi.cc` — **not** general short links |
-| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (APC colors + gelolaus patterns) |
+| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (APC colors + Wantap patterns) |
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |
 
 ### Backend route ownership

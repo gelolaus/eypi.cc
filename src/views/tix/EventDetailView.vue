@@ -11,9 +11,9 @@
 
     <!-- Not found / forbidden -->
     <div v-else-if="!event" class="py-24 text-center">
-      <p class="font-mono text-4xl font-black text-[#34418F] dark:text-slate-200">404</p>
+      <p class="font-display text-4xl font-bold text-g-text dark:text-slate-200">404</p>
       <p class="mt-2 text-sm text-gray-500 dark:text-slate-400">Event not found</p>
-      <router-link to="/manage/tix" class="mt-6 inline-block text-sm font-medium text-[#DEAC4B] hover:underline">← My events</router-link>
+      <router-link to="/manage/tix" class="mt-6 inline-block text-sm font-medium text-g-primary hover:underline">← My events</router-link>
     </div>
 
     <template v-else>
@@ -21,7 +21,7 @@
       <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1
-            class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+            class="font-display font-bold tracking-tight text-g-text dark:text-slate-200"
             style="font-size: clamp(1.8rem, 4.5vw, 3rem); letter-spacing: -0.03em;"
           >
             {{ event.name }}
@@ -43,7 +43,7 @@
               <!-- Inline max-edit -->
               <template v-if="!editingMax">
                 <button
-                  class="font-mono text-[0.65rem] text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                  class="font-mono text-[0.65rem] text-gray-400 hover:text-g-brand dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
                   title="Edit max attendees"
                   @click="startEditMax"
                 >✎</button>
@@ -55,7 +55,7 @@
                   type="number"
                   min="1"
                   placeholder="∞"
-                  class="w-20 rounded-md border border-[#34418F] px-2 py-0.5 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                  class="w-20 rounded-md border border-g-brand px-2 py-0.5 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
                   @keydown.enter="saveMax"
                   @keydown.escape="editingMax = false"
                 />
@@ -72,7 +72,7 @@
                 'rounded-lg border px-3 py-1 text-sm font-semibold transition-colors',
                 isAtCapacity
                   ? 'border-gray-200 text-gray-300 cursor-not-allowed dark:border-slate-700 dark:text-slate-600'
-                  : 'border-[#34418F] text-[#34418F] hover:bg-[#34418F] hover:text-white dark:border-slate-500 dark:text-slate-300 dark:hover:bg-slate-700',
+                  : 'border-g-brand text-g-brand hover:bg-g-brand hover:text-white dark:border-slate-500 dark:text-slate-300 dark:hover:bg-slate-700',
               ]"
               @click="showAddGuest = true"
             >
@@ -86,8 +86,7 @@
           <a
             :href="`/tix/${slug}`"
             target="_blank"
-            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
-            data-cursor="nav"
+            class="rounded-lg border border-gray-200 px-4 py-2 text-xs font-mediumr text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
           >
             Attendee view ↗
           </a>
@@ -97,7 +96,7 @@
       <!-- Cluster fill bars (lead only, only if clusters exist) -->
       <div v-if="event.isLead && clusters.length" class="mb-6">
         <button
-          class="mb-2 flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+          class="mb-2 flex items-center gap-1 text-sm font-medium text-gray-400 hover:text-g-brand dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
           @click="showClusters = !showClusters"
         >
           <span>{{ showClusters ? '▼' : '▶' }}</span> Clusters
@@ -121,7 +120,7 @@
                       type="number"
                       min="1"
                       placeholder="∞"
-                      class="w-14 rounded border border-[#34418F] px-1 py-0 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                      class="w-14 rounded border border-g-brand px-1 py-0 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
                       @keydown.enter="saveClusterMax(cl.value)"
                       @keydown.escape="editingMaxCluster = ''"
                       @blur="saveClusterMax(cl.value)"
@@ -130,7 +129,7 @@
                   <template v-else>
                     <span>{{ cl.maxCount ?? '∞' }}</span>
                     <button
-                      class="font-mono text-[0.6rem] text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                      class="font-mono text-[0.6rem] text-gray-400 hover:text-g-brand dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
                       title="Edit max"
                       @click="startEditClusterMax(cl.value, cl.maxCount)"
                     >✎</button>
@@ -146,7 +145,7 @@
                   'rounded-lg px-2.5 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-wide transition-colors',
                   rafflingCluster === cl.value
                     ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500'
-                    : 'bg-[#34418F]/10 text-[#34418F] hover:bg-[#34418F] hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600',
+                    : 'bg-g-brand/10 text-g-brand hover:bg-g-brand hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600',
                 ]"
                 @click="reRaffle(cl.value)"
               >
@@ -156,7 +155,7 @@
             <!-- Fill bar (only when maxCount is set) -->
             <div v-if="cl.maxCount" class="h-1 w-full bg-gray-100 dark:bg-slate-700">
               <div
-                class="h-1 rounded-full bg-[#34418F] dark:bg-slate-400 transition-all duration-500"
+                class="h-1 rounded-full bg-g-brand dark:bg-slate-400 transition-all duration-500"
                 :style="`width: ${Math.min(100, ((cl.currentCount ?? 0) / cl.maxCount) * 100)}%`"
               />
             </div>
@@ -172,10 +171,9 @@
           :class="[
             'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === i
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
+              ? 'bg-g-brand text-white dark:bg-slate-700 dark:text-slate-100'
+              : 'bg-transparent text-gray-400 hover:text-g-brand dark:text-slate-400 dark:hover:text-slate-200',
           ]"
-          data-cursor="nav"
           @click="switchTab(i)"
         >
           {{ t.label }}
@@ -214,7 +212,7 @@
                 </p>
                 <button
                   type="button"
-                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
+                  class="rounded-xl bg-g-primary px-6 py-3 text-sm font-semibold text-g-primary-fg transition-all hover:brightness-110 "
                   @click="onEnableCameraClick"
                 >
                   {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry Camera' : 'Enable Camera' }}
@@ -259,11 +257,11 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, email, or group…"
-            class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-slate-400"
+            class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-mono text-xs outline-none transition-colors focus:border-g-brand dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-slate-400"
           />
           <button
             :disabled="!attendees.length || exportingXlsx"
-            class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
+            class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:border-g-brand hover:text-g-brand disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
             @click="exportToXlsx"
           >
             {{ exportingXlsx ? '…' : 'Export .xlsx' }}
@@ -278,7 +276,7 @@
           <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-600">
             <div class="min-w-[640px]">
             <!-- Sortable header -->
-            <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 text-data text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
+            <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 text-data text-xs font-semibold text-g-brand dark:border-slate-700 dark:bg-g-bg dark:text-slate-300">
               <button class="col-span-4 flex items-center gap-1 px-4 py-3 text-left transition-colors hover:text-[#2a3578] dark:hover:text-slate-100" @click="toggleSort('name')">
                 Attendee <span class="opacity-40">{{ sortField === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}</span>
               </button>
@@ -303,7 +301,7 @@
             <div
               v-for="a in paginatedAttendees"
               :key="a.id as string"
-              class="grid grid-cols-12 items-center border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50/60 dark:border-slate-700/60 dark:hover:bg-mica-navy-row-hover last:border-0"
+              class="grid grid-cols-12 items-center border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50/60 dark:border-slate-700/60 dark:hover:bg-g-bg last:border-0"
             >
               <div class="col-span-7 sm:col-span-4">
                 <p class="font-mono text-sm font-bold text-gray-900 dark:text-slate-100">{{ a.first_name }} {{ a.last_name }}</p>
@@ -314,7 +312,7 @@
                     type="text"
                     list="cluster-suggestions"
                     placeholder="Cluster…"
-                    class="mt-0.5 w-full rounded border border-[#34418F] px-1.5 py-0.5 font-mono text-[0.6rem] outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                    class="mt-0.5 w-full rounded border border-g-brand px-1.5 py-0.5 font-mono text-[0.6rem] outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
                     @keydown.enter="saveAttendeeCluster(a.id as string)"
                     @keydown.escape="editingClusterAttendee = ''"
                     @blur="saveAttendeeCluster(a.id as string)"
@@ -322,7 +320,7 @@
                 </template>
                 <template v-else>
                   <p
-                    class="mt-0.5 cursor-pointer font-mono text-[0.6rem] text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                    class="mt-0.5 cursor-pointer font-mono text-[0.6rem] text-gray-400 hover:text-g-brand dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
                     :title="a.cluster_value ? 'Click to edit cluster' : 'Click to assign cluster'"
                     @click="startEditAttendeeCluster(a.id as string, a.cluster_value as string)"
                   >{{ a.cluster_value || '+ cluster' }}</p>
@@ -378,12 +376,12 @@
             <div class="flex gap-1">
               <button
                 :disabled="currentPage === 1"
-                class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
+                class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-g-brand hover:text-g-brand disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
                 @click="currentPage--"
               >← Prev</button>
               <button
                 :disabled="currentPage === totalPages"
-                class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
+                class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-g-brand hover:text-g-brand disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
                 @click="currentPage++"
               >Next →</button>
             </div>
@@ -417,7 +415,7 @@
         <!-- Panel -->
         <div class="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl dark:bg-slate-900">
           <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
-            <h2 class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add Guest</h2>
+            <h2 class="text-sm font-semibold text-g-brand dark:text-slate-300">Add Guest</h2>
             <button class="font-mono text-lg text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors" @click="showAddGuest = false">×</button>
           </div>
 
@@ -427,14 +425,14 @@
               v-if="hasCsvRows"
               :class="[
                 'flex-1 py-3 text-sm font-semibold transition-colors',
-                guestMode === 'search' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
+                guestMode === 'search' ? 'border-b-2 border-g-brand text-g-brand dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
               ]"
               @click="guestMode = 'search'"
             >From CSV</button>
             <button
               :class="[
                 'flex-1 py-3 text-sm font-semibold transition-colors',
-                guestMode === 'freeform' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
+                guestMode === 'freeform' ? 'border-b-2 border-g-brand text-g-brand dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
               ]"
               @click="guestMode = 'freeform'"
             >Free-form</button>
@@ -447,7 +445,7 @@
                 v-model="guestSearch"
                 type="text"
                 placeholder="Search by name or email…"
-                class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+                class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
               />
               <div v-if="guestSearchResults.length" class="space-y-1">
                 <div
@@ -465,7 +463,7 @@
                   <button
                     v-if="!row.isSelected"
                     :disabled="addingGuest"
-                    class="rounded-lg bg-[#34418F] px-3 py-1 font-mono text-xs text-white transition-colors hover:brightness-110 disabled:opacity-40 dark:bg-slate-600"
+                    class="rounded-lg bg-g-primary px-3 py-1 font-mono text-xs text-g-primary-fg transition-colors hover:brightness-110 disabled:opacity-40"
                     @click="addGuestFromCsv(row.id)"
                   >Add</button>
                 </div>
@@ -476,25 +474,25 @@
             <!-- Free-form -->
             <div v-if="guestMode === 'freeform'" class="flex flex-col gap-4">
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First Name *</label>
-                <input v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">First Name *</label>
+                <input v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last Name</label>
-                <input v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Last Name</label>
+                <input v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
-                <input v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Email *</label>
+                <input v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
+                <label class="mb-1 block text-sm font-semibold text-g-brand dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
                 <input
                   v-model="guestForm.clusterValue"
                   type="text"
                   list="cluster-suggestions"
                   placeholder="Type or pick a cluster…"
-                  class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
+                  class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-g-brand dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
                 />
                 <datalist id="cluster-suggestions">
                   <option v-for="cl in clusters" :key="cl.value" :value="cl.value" />
@@ -503,7 +501,7 @@
               <button
                 :disabled="addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()"
                 :class="[
-                  'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+                  'w-full rounded-xl bg-g-primary px-4 py-3 text-sm font-semibold text-g-primary-fg transition-all duration-200 ',
                   (addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110',
                 ]"
                 @click="addGuestFreeform"

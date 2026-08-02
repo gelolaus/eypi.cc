@@ -1,5 +1,5 @@
 # eypi.cc Design System
-**gelolaus design language. Production specification.**
+**Wantap design language. Production specification.**
 
 ---
 
@@ -21,23 +21,22 @@
 
 ### Product and attribution
 
-**eypi.cc** is a URL shortener for the Asia Pacific College (APC) student community.
+**eypi.cc** is a URL shortener and org-tool suite for the Asia Pacific College (APC) student community.
 
 | Source | What it owns |
 |---|---|
-| **APC (Asia Pacific College)** | Brand colors: APC Blue `#34418F` (`--color-primary`), APC Gold `#DEAC4B` (`--color-accent`), and the gold hover variants listed in §3. These are APC brand colors, not gelolaus.com brand marks. |
-| **gelolaus design language** | How eypi.cc is built: Geist / Geist Mono roles, light-default theme, fixed 120px dot grid, mica and pill glass surfaces, one heading per section, motion curves, z-index stack, UI copy rules in §2. gelolaus applies APC colors; it does not own them. |
-| **eypi.cc** | The product: URL shortener and related modules for the APC student community. |
+| **APC (Asia Pacific College)** | Brand colors: APC Blue `#34418F` (`--color-brand` / `g-brand`), APC Gold `#DEAC4B` (`--color-primary` / `g-primary`), and gold hover variants in §3. These are APC brand colors, not Wantap brand marks. |
+| **Wantap design language** | Shell pattern, density, radius, dual themes (warm paper + navy-ink), Syne + Plus Jakarta Sans roles, primitive kit, AppShell chrome. Wantap applies APC colors; it does not own them. |
+| **eypi.cc** | The product: short links and suite modules for the APC student community. UI copy rules live in §2. |
 
 ### Visual rules
 
-- **Light and dark text pairs**: Light mode uses `#0A0A0A` on `#F5F5F5`. Dark mode uses `#F5F5F5` on `#000000`.
-- **Geist for UI copy; Geist Mono for data**: `Geist` for headings, body, nav, buttons, and form labels. `Geist Mono` for slugs, codes, timestamps, and table numerics only.
+- **Dual themes, equally first-class**: Light is warm paper (`#F5F1EA` / `#FFFCF7`). Dark is deep navy-ink (`#0A0E18` / `#121826`), not warm brown.
+- **Syne for display; Plus Jakarta Sans for UI**: Syne on page titles, marketing brand, H1–H3. Plus Jakarta Sans on nav, buttons, forms, body, labels.
 - **One heading per section**: No eyebrow label above a heading when it repeats the same words. One heading at the correct hierarchy level per section.
-- **APC Gold accent; APC Blue primary**: Accent is APC Gold `#DEAC4B` (`--color-accent`) for CTAs, hovers, and selection. Primary actions and focus borders use APC Blue `#34418F` (`--color-primary`). No third accent color.
-- **Dot grid**: `.bg-dot-grid` uses `radial-gradient` dots, `background-size: 120px 120px`, `background-attachment: fixed`.
-- **Glass surfaces**: `.mica-card` and `.pill-nav` use `backdrop-filter` blur (16px on cards, 20px on nav) over semi-transparent fills.
-- **Pill navigation**: Fixed `.pill-nav-wrapper` at `top: 16px`. Hides on scroll down via `.pill-nav--hidden` (`translateY(-80px)`, `opacity: 0`).
+- **Gold interactive primary; Blue brand secondary**: Gold `#DEAC4B` (`--color-primary`) owns CTAs, active nav tint, charts, focus rings. Blue `#34418F` (`--color-brand`) owns logo, selected headings, structural accents. Do not reuse `--color-primary` for blue.
+- **AppShell chrome**: Desktop left sidebar; mobile slim top bar + bottom tabs. Marketing, auth, and public surfaces stay outside the shell.
+- **Dropped gelolaus chrome**: No custom cursor, no fixed 120px body dot grid, no mica/pill-glass, no floating pill nav.
 
 ---
 
@@ -93,88 +92,66 @@ Use `.text-eyebrow` only when the label adds context the heading cannot (breadcr
 
 ### Design token map (CSS custom properties)
 
-These tokens are defined on `:root` and overridden on `html.dark`. Component-level colors must reference these variables, not hard-coded hex values, except where noted below.
+Defined on `:root` and overridden on `html.dark`. Source of truth for locked values: `src/lib/ui/tokens.ts`. Components must use these tokens (or Tailwind `g-*` maps), not hard-coded hex, except where noted below.
 
-| Token | Light Mode | Dark Mode | Usage |
+| Token | Light (warm paper) | Dark (navy-ink) | Usage |
 |---|---|---|---|
-| `--color-bg` | `#F5F5F5` | `#000000` | Page background (dot grid base) |
-| `--color-surface` | `#ffffff` | `#161616` | Card / panel / dropdown fills |
-| `--color-border` | `#E8E8E8` | `#262626` | All border strokes |
-| `--color-text` | `#0A0A0A` | `#F5F5F5` | Primary body text |
-| `--color-text-muted` | `#6B6B6B` | `#AAAAAA` | Secondary / caption text |
-| `--color-accent` | `#DEAC4B` | `#DEAC4B` | APC Gold accent. Same hex in light and dark. |
-| `--color-primary` | `#34418F` | `#34418F` | APC Blue. Same hex in light and dark. |
-| `--color-dot` | `#000000` | `#ffffff` | Dot grid dot fill |
+| `--color-bg` | `#F5F1EA` | `#0A0E18` | Page background |
+| `--color-surface` | `#FFFCF7` | `#121826` | Card / panel / dropdown fills |
+| `--color-border` | `#E5DFD4` | `rgba(255, 255, 255, 0.10)` | Border strokes |
+| `--color-text` | `#14110F` | `#F4F1EA` | Primary body text |
+| `--color-text-muted` | `#6F675C` | `#A39E94` | Secondary / caption text |
+| `--color-primary` | `#DEAC4B` | `#DEAC4B` | Interactive primary (gold). CTAs, active nav, charts, ring. |
+| `--color-primary-fg` | `#1A1408` | `#1A1408` | Text/icons on gold fills |
+| `--color-brand` | `#34418F` | `#34418F` | Brand secondary (blue). Logo, selected headings, structural accents. |
+| `--color-destructive` | `#DC2626` | `#F87171` | Danger actions |
+| `--color-ring` | gold mix 55% | gold mix 55% | Focus rings |
+| `--radius` | `0.875rem` | `0.875rem` | Base radius |
 
-### Extended brand palette (hard-coded where appropriate)
+Tailwind maps: `g-bg`, `g-surface`, `g-border`, `g-text`, `g-muted`, `g-primary`, `g-primary-fg`, `g-brand`, `g-accent` (alias of primary), `g-destructive`.
 
-APC Blue and APC Gold below are APC brand colors applied by the gelolaus system. They are not gelolaus.com brand marks.
+**Role flip note:** Older gelolaus docs used `--color-primary` for Blue and `--color-accent` for Gold. Current system inverts the interactive role: Gold is primary; Blue is brand.
 
-These values appear directly in components where the intent is to override the theme-aware system:
+### Extended brand palette
 
 | Name | Hex | Usage |
 |---|---|---|
-| APC Blue | `#34418F` | Logo text, h1, headings, border-focus, primary actions |
-| APC Gold (default) | `#DEAC4B` | CTAs, accent, selection, cursor states |
-| APC Gold (dark hover) | `#c9a84c` | Dark mode button variant, progress bars |
-| APC Gold (hover) | `#d4b55a` | Dark mode button hover |
-| Footer BG | `#040d1f` | Always-dark footer; theme class does not change it |
-| Footer Border | `#1a1a1a` / `#1f1f1f` | Footer section separators |
-| Footer Text | `#F5F5F5` | Always light on dark footer |
-| Footer Muted | `#444444` | Footer bottom-bar labels |
-| Danger | `#dc2626` | Destructive actions (logout, delete) |
-| Danger Hover BG | `rgba(220, 38, 38, 0.06)` | Danger item hover wash |
-| Danger Solid | `#ef4444` / hover `#dc2626` | Delete confirmation button |
+| APC Blue | `#34418F` | Logo, brand headings, structural accents (`g-brand`) |
+| APC Gold (default) | `#DEAC4B` | Primary actions, active nav tint, charts |
+| APC Gold (dark hover) | `#c9a84c` | Optional darker gold (`eypi-gold-dark`) |
+| APC Gold (hover) | `#d4b55a` | Optional hover gold (`eypi-gold-hover`) |
+| Danger | `#DC2626` / dark `#F87171` | Destructive actions |
 
 ### Semantic status colors
 
 | Status | Color | Usage |
 |---|---|---|
-| Success | `#10b981` (emerald-500) | Toast accent bar, copy button |
-| Error | `#ef4444` (red-500) | Toast accent bar, delete modal |
-| Info | `#34418F` (APC Blue) | Info toast accent bar |
-| Analytics | `#c9a84c` | Progress bars in analytics panel |
+| Success | `#10b981` (emerald-500) | Toast accent bars |
+| Error | `#ef4444` (red-500) | Toast accent bars, delete confirm |
+| Info | `#34418F` (APC Blue) | Info toast accent |
+| Analytics | Gold / `#c9a84c` | Chart bars (gold owns charts) |
 
-### Glassmorphism (mica) layer palette
+### Surfaces
 
-The `mica-navy` scale is used on dashboard and settings views (glass surfaces over the dot grid):
+**Light (warm paper)**
 
-| Token | Value | Usage |
-|---|---|---|
-| `mica-navy.DEFAULT` | `rgba(15, 23, 42, 0.25)` | Standard glass card |
-| `mica-navy.input` | `rgba(15, 23, 42, 0.20)` | Input field fill (dark mode) |
-| `mica-navy.card` | `rgba(15, 23, 42, 0.60)` | Dense card |
-| `mica-navy.row` | `rgba(15, 23, 42, 0.15)` | Table row (dark) |
-| `mica-navy.row-hover` | `rgba(15, 23, 42, 0.25)` | Table row hover (dark) |
-| `mica-navy.header` | `rgba(15, 23, 42, 0.90)` | Table header (dark) |
-| `mica-navy.panel` | `rgba(15, 23, 42, 0.92)` | Slide-out panel bg (dark) |
-| `mica-navy.modal` | `rgba(15, 23, 42, 0.95)` | Modal bg (dark) |
+- Background: warm off-white `#F5F1EA`
+- Cards: soft warm white `#FFFCF7`
+- Borders: soft warm gray `#E5DFD4`
+- Text: near-black `#14110F`; muted brown-gray `#6F675C`
 
-**.mica-card** (light mode)
-```
-background-color: rgba(255, 255, 255, 0.35)
-backdrop-filter: blur(16px) saturate(150%)
-border: 1px solid rgba(255, 255, 255, 0.60)
-box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07)
-```
+**Dark (navy-ink)**
 
-**.mica-card** (dark mode)
-```
-background-color: rgba(15, 23, 42, 0.25)
-border: 1px solid rgba(51, 65, 85, 0.50)
-box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.20)
-```
+- Background: deep navy-ink `#0A0E18`
+- Cards: slightly lighter `#121826`; optional `.glass-panel` via token mix
+- Borders: soft light strokes ~10% white
+- Text: off-white `#F4F1EA`; muted `#A39E94`
 
 ### Dark mode mechanism
 
-Dark mode is toggled by adding or removing the class `dark` on `<html>`. No `prefers-color-scheme` media query is used; the user's preference is stored in `localStorage` under the key `eypi_dark_mode`. Default is light mode.
+Toggle class `dark` on `<html>`. Preference stored in `localStorage` under `eypi_dark_mode` (`useDarkMode` / `ThemeToggle`). Default is light when unset.
 
-`body` transitions `background-color` and `color` over `0.3s ease` on mode change:
-```css
-body {
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-```
+`body` transitions `background-color` and `color` over `0.3s ease` on mode change.
 
 ---
 
@@ -184,459 +161,190 @@ body {
 
 | Role | Family | Fallback | Usage |
 |---|---|---|---|
-| Sans (default) | `Geist` | `system-ui, sans-serif` | Headings, body, nav, buttons, form labels |
-| Mono (data only) | `Geist Mono` | `monospace` | Slugs, codes, timestamps, table data, stat numbers |
+| Display / headings | `Syne` | `ui-sans-serif, sans-serif` | Page titles, marketing brand, H1–H3 (`.font-display`) |
+| UI / body | `Plus Jakarta Sans` | `system-ui, sans-serif` | Nav, buttons, forms, body, labels (`font-sans`) |
+| Data | System mono / tabular | `ui-monospace, SFMono-Regular, Menlo, monospace` | Slugs, codes, timestamps, table numbers (`.text-data` / `font-mono`) |
+
+Loaded via Google Fonts in `index.html`. Geist is not part of this system.
 
 ### Typography utility classes
 
 | Class | Usage |
 |---|---|
-| `.text-page-title` | Top-level page headings (h1) |
-| `.text-section-title` | Section headings (h2) |
-| `.text-card-title` | Card and list item titles |
-| `.text-data` | Monospace data values |
+| `.text-page-title` | Top-level page headings (h1); Syne; brand blue in light, text color in dark |
+| `.text-section-title` | Section headings (h2); Syne |
+| `.text-card-title` | Card and list item titles; Plus Jakarta Sans |
+| `.text-data` | Monospace / tabular data values |
 | `.text-eyebrow` | Rare contextual labels only; not duplicate headings |
 
-### Typographic rules by context
-
-**Heading scale** (all use `font-family: Geist` sans):
+### Heading scale
 
 | Element | Class / Size | Weight |
 |---|---|---|
 | Page title | `.text-page-title` / `clamp(2rem, 5vw, 3.5rem)` | 700 |
 | Section title | `.text-section-title` / `clamp(1.25rem, 2.5vw, 1.75rem)` | 600 |
 | Card title | `.text-card-title` / `1.125rem` | 600 |
-| Hero | `.text-page-title` / larger clamp | 700 |
 
-**Data scale** (use `.text-data` or `font-mono` only for):
+**Data scale** (use `.text-data` or `font-mono` only for): link slugs, table data cells, timestamps, codes.
 
-| Context | Usage |
-|---|---|
-| Link slugs | `eypi.cc/abc123` |
-| Table data cells | URLs, click counts |
-| Timestamps | Event dates, created_at |
-| Codes | 404 codes, verification tokens |
+**Form labels**: `text-sm font-medium text-g-muted` in Plus Jakarta Sans; normal case.
 
-**Form labels**: `text-sm font-medium text-g-muted` in sans; normal case, no wide tracking.
+### Responsive typography
 
-### Responsive typography strategy
-
-The site uses `clamp()` for all large display text. The clamp formula follows the pattern:
-```
-clamp(minimum, preferred-vw, maximum)
-```
-
-No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` range so maxima land near `1100px` to `1400px` viewports.
+Large display text uses `clamp(minimum, preferred-vw, maximum)`. No fluid-type library.
 
 ---
 
 ## 5. Spacing and layout
 
+### Shape and density
+
+Copied from Wantap's friendly UI scale:
+
+- Base radius `--radius: 0.875rem`; larger radii for section cards; pills (`rounded-full`) for primary CTAs
+- Default Button/Input height `h-11` / `text-base`; large CTA `h-12`; compact `h-9`
+- Section cards padded `p-7`–`p-8` (`Card` primitive)
+- Content pane near full width (`max-w-5xl` / `max-w-6xl` or fluid), not narrow `max-w-2xl` by default
+- Bottom tabs: icon above label; gold active state; `env(safe-area-inset-bottom)`
+
 ### Grid and max-widths
 
 | Zone | Max-Width | Notes |
 |---|---|---|
-| Pill nav wrapper | `min(92vw, 1100px)` | Centered, floats 16px from top |
-| Hero / main content | `max-w-5xl` (1024px) | Centered with `auto` margins |
-| Dashboard content | `max-w-5xl` (1024px) | Centered |
-| Login / auth card | `max-w-md` (448px) | Centered within full-screen |
-| Settings panel | `max-w-xl` (576px) | Centered |
-| Footer inner | `max-width: 87.5rem` (1400px) | `1400px` max content width |
-| Analytics panel | `max-w-2xl` (672px) on md+, `95vw` on mobile | Right-anchored slide panel |
-| Edit sidebar | `max-w-md` (448px) | Right-anchored slide panel |
-
-### Padding tokens (Tailwind utilities plus custom values)
-
-| Context | Value |
-|---|---|
-| Pill nav internal padding | `0.5rem 1.25rem` (8px × 20px) |
-| Pill nav top offset | `16px` from viewport top |
-| Main content top padding | `5rem` (80px, pt-20) compensates for fixed nav |
-| Hero section padding | `1.5rem` sides; `3rem` to `6rem` vertical |
-| Card inner padding | `2rem` (p-8, 32px) |
-| Card inner padding (lg) | `3rem` (p-12, 48px) on settings |
-| Footer inner padding | `clamp(4rem, 8vw, 6rem)` top; `clamp(1.5rem, 6vw, 6rem)` sides; `clamp(2.5rem, 5vw, 4rem)` bottom |
-| Toast position | `1.5rem` from bottom and right edges |
-| Scroll-top button | `2rem` from bottom and right |
+| AppShell content | fluid inside shell | Sidebar ~14rem (`w-56`); dense rail `w-16` |
+| Marketing / legal content | `max-w-5xl` | Centered |
+| Auth panel | `max-w-md` (~448px) | Quiet bordered panel |
+| Settings content | `max-w-5xl` | Inside AppShell |
+| Analytics panel | `max-w-2xl` / `95vw` | Right-anchored slide panel |
+| Footer inner | `max-w-5xl` | Theme-aware footer (not always-dark) |
 
 ### Breakpoints
 
-Tailwind default breakpoints; no custom additions:
-
-| Name | Min-width | Notes |
+| Name | Min-width | Shell behavior |
 |---|---|---|
-| `sm` | `640px` | 404 page card padding increase |
-| `md` | `768px` | Form layout switches col→row; dashboard padding, analytics panel max-width |
-| `lg` | `1024px` | Hero monitor height increase |
-| `xl` | `1280px` | Not explicitly used |
-| `2xl` | `1536px` | Not explicitly used |
+| `< lg` (`1024px`) | — | Slim top bar + fixed bottom tab bar |
+| `lg+` | `1024px` | Left sidebar; icon-only rail on dense editors |
 
-### Dot grid background
+Tailwind defaults otherwise: `sm` 640px, `md` 768px, `xl` 1280px, `2xl` 1536px.
 
-```css
-.bg-dot-grid {
-  background-color: var(--color-bg);
-  background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
-  background-size: 120px 120px;
-  background-attachment: fixed;  /* fixed attachment; grid does not scroll with content */
-}
+### Chrome outside AppShell
 
-.bg-dot-grid-dark {  /* Footer: always dark regardless of theme */
-  background-color: #040d1f;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
-  background-size: 120px 120px;
-  background-attachment: fixed;
-}
-```
+Marketing `/`, auth, public Frames/Tix/Orgs, legal pages: no bottom tabs. Use `MarketingHeader` or `PublicHeader` plus content; footer on marketing surfaces.
 
 ---
 
 ## 6. Component anatomy
 
-### 6.1 Pill navigation (TheHeader)
+### 6.1 AppShell and navigation
 
-Fixed-position pill with frosted glass (`.pill-nav`).
+`AppShell` (`src/components/layout/AppShell.vue`) is the authenticated suite chrome.
 
-**Outer wrapper** (`.pill-nav-wrapper`):
-```css
-position: fixed;
-top: 16px;
-left: 50%;
-transform: translateX(-50%);
-z-index: 9990;
-width: min(92vw, 1100px);
-transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
-```
+**Desktop (`lg+`)**
 
-**Hidden state** (`.pill-nav--hidden`), triggered on scroll down:
-```css
-transform: translateX(-50%) translateY(-80px);
-opacity: 0;
-pointer-events: none;
-```
-Scroll logic: hides when `scrollY > lastScrollY && scrollY >= 50`; shows when scrolling up or `scrollY < 50`.
+- Left sidebar ~14–15rem (`w-56`); dense editors may use icon-only rail (`w-16`)
+- Logo: Syne, `text-g-text`
+- Nav from `resolveAppNav`: always Home + Links; when org membership is activated, add Orgs / Forms / Frames / Tix
+- Active item: gold wash `bg-g-primary/15` with gold icon
+- Account menu + org switcher in sidebar footer
 
-**Pill container** (`.pill-nav`):
-```
-display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-padding: 0.5rem 1.25rem;
-border-radius: 9999px;            /* Full pill */
-border: 1px solid var(--color-border);
-background: rgba(245, 245, 245, 0.82);   /* Light */
-backdrop-filter: blur(20px) saturate(180%);
-box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-```
-Dark mode: `background: rgba(22, 22, 22, 0.88); box-shadow: 0 2px 16px rgba(0,0,0,0.35);`
+**Mobile / tablet (`< lg`)**
 
-**Scrolled state** (`.pill-nav--scrolled .pill-nav`):
-```
-box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);
-Dark: box-shadow: 0 4px 28px rgba(0, 0, 0, 0.50);
-```
+- Slim top bar: logo, theme toggle, account
+- Fixed bottom tab bar: max 4–5 slots; Home + Links always; org destinations via **Org tools** sheet (`OrgToolsSheet`)
+- Safe area: `env(safe-area-inset-bottom)`
 
-**Logo** (`.pill-nav__logo`):
-- Font: Geist Mono, 15px, weight 700
-- Color: `var(--color-primary)` (light) / `var(--color-text)` (dark)
-- Hover: `var(--color-accent)`
-- Transition: `color 0.2s ease`
+**Account**
 
-**Nav links** (`.pill-nav__link`):
-- Font: Geist, 13px, weight 500
-- Color: `var(--color-text-muted)` → hover `var(--color-text)`
-- Transition: `color 0.2s ease`
+- Avatar menu: Settings, theme, sign out
+- Org switcher near account; same `active_org_id` behavior as the API `X-Active-Org-Id` header
 
-**CTA button** (`.pill-nav__cta`):
-- Font: Geist, 13px, weight 600
-- Padding: `0.35rem 0.875rem`
-- Border-radius: `9999px`
-- Background: `var(--color-accent)` (#DEAC4B), white text
-- Hover: `opacity: 0.88; transform: translateY(-1px)`
-- Transition: `opacity 0.2s ease, transform 0.15s ease`
+Nav resolution lives in `src/components/layout/app-nav.ts`.
 
-**Dark mode toggle** (`.pill-nav__toggle`):
-- Size: `30px × 30px`, border-radius `9999px`
-- Border: `1px solid var(--color-border)`
-- Background: transparent → surface on hover
-- Border-color: `var(--color-text)` on hover
-- Icon size: `14px × 14px` (h-3.5 w-3.5)
+### 6.2 Primitive kit (`src/components/ui/`)
 
-**User dropdown** (`.pill-nav__dropdown`):
-- Position: `absolute; top: calc(100% + 10px); right: 0;`
-- Width: `min-width: 210px`
-- Border-radius: `1rem`
-- Background: `var(--color-surface)`
-- Box-shadow: `0 8px 32px rgba(0,0,0,0.12)`; dark `0 8px 32px rgba(0,0,0,0.45)`
+Encode Wantap parity before view-level one-offs:
 
----
-
-### 6.2 Buttons
-
-Three button variants:
-
-**Primary CTA Button** (gold-filled):
-```
-background: #DEAC4B
-color: #ffffff
-font-family: Geist (Mono in dashboard/settings)
-font-weight: 700 (bold)
-font-size: 0.8125rem to 1.25rem (context-dependent)
-text-transform: uppercase
-letter-spacing: 0.05em to 0.1em
-border-radius: 9999px (nav CTA) / 0.75rem to 0.875rem (form buttons)
-padding: 0.35rem 0.875rem (nav) / 1rem 2rem (hero) / 0.75rem 1rem (auth)
-```
-
-States:
-- **Hover**: `opacity: 0.88` or `hover:brightness-110` + `translateY(-0.5px to -1px)`
-- **Active**: standard browser press
-- **Disabled**: `opacity: 0.70; cursor: not-allowed` + `animate-pulse` (loading state)
-- **Loading text**: label changes to `PROCESSING...` / `SAVING...` / `ENCRYPTING...`
-
-**Ghost / Outline Button** (border only):
-```
-background: transparent
-border: 2px solid var(--color-primary)   [or border-gray-200 for secondary]
-color: var(--color-primary)
-font-family: Geist Mono
-font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em
-border-radius: 0.5rem
-```
-Hover: `background: var(--color-primary); color: #ffffff`
-
-**Icon Buttons** (dashboard table actions):
-```
-padding: 0.5rem (p-2)
-border-radius: 9999px
-background: transparent → gray-100 on hover (dark: slate-600/30)
-transition: color 0.15s ease
-```
-Colors by action: Copy (gray), Analytics (emerald), Edit (blue/sky), Delete (red).
-
-**Toggle Button** (Login/Register tabs):
-- Active: `background: #34418F; color: white`
-- Inactive: `background: transparent; color: gray-400` → hover `color: #34418F`
-- Border-radius: `0.5rem`; Transition: `color 0.2s ease, background 0.2s ease`
-
----
-
-### 6.3 Input fields
-
-Two size variants:
-
-**Hero Input** (large, landing page):
-```
-border: 2px solid #D1D5DB (gray-300)
-border-radius: 1rem (rounded-2xl)
-padding: 1.25rem 1.75rem (px-7 py-5)
-font-size: 1.25rem (text-xl)
-font-family: Geist Mono (implied)
-background: #ffffff
-color: #0f172a (slate-900)
-```
-Focus: `border-color: #34418F`
-Dark: `border: slate-600; background: slate-900; focus: slate-500`
-
-**Standard Input** (auth, dashboard, settings):
-```
-border: 2px solid #E5E7EB (gray-200)
-border-radius: 0.5rem (rounded-lg)
-padding: 0.75rem 1rem (px-4 py-3)
-font-size: 0.875rem
-font-family: Geist Mono
-background: rgba(255,255,255,0.5)  [auth] / #F9FAFB (gray-50)  [settings]
-```
-Focus: `border-color: #34418F; background: #ffffff`
-Dark: `background: rgba(15,23,42,0.20); border: slate-600; focus: slate-500`
-
-**Prefixed Input** (slug editor in sidebar):
-```
-/* Wrapper: */
-border: 2px solid gray-200
-border-radius: 0.5rem
-padding: 0.75rem 1rem
-focus-within: border-color: #34418F
-
-/* Prefix span: */
-font-family: Geist Mono; font-weight: 700; color: #34418F; flex-shrink: 0
-
-/* Inner input: */
-background: transparent; border: none; outline: none; flex: 1
-```
-
-**Select Elements**: Same border/radius/font as standard input. Focus: `border-color: #34418F`.
-
----
-
-### 6.4 Cards and containers
-
-**Glassmorphism Card** (`.mica-card`):
-```
-Light:
-  background: rgba(255, 255, 255, 0.35)
-  backdrop-filter: blur(16px) saturate(150%)
-  border: 1px solid rgba(255, 255, 255, 0.60)
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07)
-
-Dark:
-  background: rgba(15, 23, 42, 0.25)
-  border: 1px solid rgba(51, 65, 85, 0.50)
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.20)
-```
-All glassmorphism cards use `border-radius: 1.5rem` (rounded-3xl, 24px).
-
-**Hardware Card motif** (corner screws):
-Four `8px × 8px` circles positioned at each corner (3px inset):
-```
-position: absolute; [top|bottom]: 3px; [left|right]: 3px;
-width: 8px; height: 8px;
-border-radius: 50%;
-background: #9CA3AF (gray-400);
-box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
-```
-Present on: Login card, 404 card, Hero monitor widget.
-
-**Settings Panel Card** (flat, not glass):
-```
-background: #ffffff; dark: rgba(15,23,42,0.60)
-border: 1px solid #D1D5DB; dark: slate-600
-box-shadow: 0 25px 50px rgba(0,0,0,0.25) (shadow-2xl)
-padding: 2.5rem (p-10) / 3rem (p-12) on md+
-border-radius: 0  /* settings panels; mica cards use 1.5rem */
-```
-Top accent bar: `height: 8px; background: #34418F; width: 100%; position: absolute; top: 0; left: 0;`
-
-**Dashboard Table Container**:
-```
-border-radius: 1rem (rounded-2xl)
-border: 1px solid gray-200 / slate-600
-overflow: hidden
-```
-Row hover: `background: rgba(255,255,255,0.5)` (light) / `rgba(15,23,42,0.25)` (dark)
-Row border: `1px solid gray-100` / `rgba(51,65,85,0.30)`
-
----
-
-### 6.5 Modals and slide panels
-
-**Backdrop** (shared pattern):
-```
-position: fixed; inset: 0;
-background: rgba(0,0,0,0.20) (light) / rgba(15,23,42,0.80) (dark)
-backdrop-filter: blur(4px)   /* Tailwind: backdrop-blur-sm */
-```
-Transition: `opacity 0.3s ease` (fade in/out)
-
-**Slide-out Panel** (Edit Sidebar, Analytics Panel):
-```
-position: fixed; top: 0; right: 0;
-height: 100%; overflow-y: auto;
-border-left: 1px solid [border-color];
-box-shadow: 0 25px 50px rgba(0,0,0,0.25) (shadow-2xl)
-```
-Panel widths: `max-w-md` (448px) for edit; `max-w-2xl` (672px) / `95vw` for analytics.
-Slide direction: enters from `translateX(100%)`, exits to `translateX(100%)`.
-Transition: `transform 0.4s cubic-bezier(0.2, 1, 0.3, 1)`.
-
-**Feedback channels** (see also §6.6):
-
-| Channel | When |
+| Primitive | Notes |
 |---|---|
-| Signal strip toast | Short async / clipboard outcome |
-| Inline field error | Client-side validation on a known input |
-| Info mica dialog | Must-read gate (e.g. check your inbox) |
-| Confirm mica dialog | Destructive or irreversible action |
+| `Button` | `primary` / `secondary` / `ghost` / `destructive`; sizes `sm` / `default` / `lg`; variants in `buttonVariants.ts` |
+| `Input`, `Textarea`, `Select` | Shared field classes (`fieldClasses.ts`); `h-11`, `rounded-xl`, gold ring |
+| `Card` | `rounded-2xl border bg-g-surface p-7 md:p-8` |
+| `Dialog` | Used by `DialogHost` for info / confirm |
+| `Switch` | Gold track when checked (`switchClasses.ts`) |
+| `Badge`, `Tabs`, `Avatar`, `EmptyState` | Shared suite grammar |
+| `ThemeToggle` | Persists `eypi_dark_mode` |
 
-**Mica Info / Confirm dialog** (`DialogHost`, z-index `10000`):
-```
-backdrop: fixed inset 0; bg-slate-900/20 (dark: slate-900/80); backdrop-blur-sm
-panel: .mica-card; max-width 448px; rounded-2xl; border g-border; padding 2rem
-```
-- Info primary CTA: APC Gold `#DEAC4B` (full width)
-- Confirm: Abort (border) + danger CTA `#ef4444` / hover `#dc2626`
-- Title: Geist sans, `text-g-text` (neutral; danger is the button, not a red title bar)
-- Type-to-confirm: optional `requireText` input for high-stakes deletes (org, event, campaign, leave org, transfer, re-raffle). Link delete and remove member use Confirm without typing.
-- Esc / backdrop: abort (Info dismisses). Focus trap; restore focus to opener.
-- API: `useDialog().info({ title, body, confirmLabel? })`, `useDialog().confirm({ title, body, confirmLabel?, requireText? })`
+Prefer importing the kit. Do not invent a second parallel style path.
 
-Do not use `window.confirm()` or `alert()` for product feedback.
+### 6.3 Buttons
 
----
+| Variant | Treatment |
+|---|---|
+| Primary | Gold fill `bg-g-primary`, ink text `text-g-primary-fg`, `rounded-full`, hover `brightness-110` |
+| Secondary | Transparent, `border-g-border`, hover `bg-g-bg` |
+| Ghost | Transparent muted text; hover text + wash |
+| Destructive | `bg-g-destructive` white text |
 
-### 6.6 Signal strip toast
+Heights: `h-9` (sm), `h-11` (default), `h-12` (lg). Loading: reduce opacity; uppercase data labels where already specified.
 
-Position: `fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999`
-Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
+### 6.4 Inputs
 
-**Strip**:
-```
-width: min(100vw - 2rem, 20rem)
-background: #ffffff; dark: mica-navy.modal
-border: 1px solid var(--color-border) / slate-600
-box-shadow: shadow-xl
-padding: 0.75rem
-border-radius: 0
-```
-Row: equalizer bars (4px-scale, type color) + Geist sentence-case message (+ optional detail line) + Geist Mono tag (`OK` / `ERR` / `INFO`).
-- Success bars/tag: `#10b981`
-- Error: `#ef4444`
-- Info: `#34418F`
-
-Durations: success/info **4s**, error **7s**. Click or × dismisses; hover pauses; Esc dismisses topmost.
-
-API: `useToast().success|error|info(message, durationOrOpts?)` where opts may include `{ detail?, duration? }`.
-
-**Enter animation**: `opacity: 0 → 1; transform: translateY(20px) scale(0.95) → none`
-**Exit animation**: `opacity: 0; transform: scale(0.95)`
-Both: `transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1)`
-
----
-
-### 6.7 Scroll-top button
+Standard field:
 
 ```
-position: fixed; bottom: 2rem; right: 2rem; z-index: 9998;
-width: 44px; height: 44px;
-border-radius: 9999px;
-border: 1px solid var(--color-border);
-background: var(--color-surface);
-color: var(--color-text);
-font-size: 1.1rem;
-backdrop-filter: blur(12px);
-box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-```
-Appears when `window.scrollY > 300`.
-Hover: `border-color: var(--color-accent); background: var(--color-accent); color: #ffffff; transform: translateY(-2px)`
-
----
-
-### 6.8 Footer
-
-The footer is always dark regardless of the current theme. It uses the `bg-dot-grid-dark` class.
-
-**Heading** (`.footer-heading`):
-```
-font-family: Geist; font-weight: 700;
-font-size: clamp(2.8rem, 8vw, 7rem);
-line-height: 0.95;
-color: #F5F5F5;
-letter-spacing: -0.04em;
-margin-bottom: clamp(3rem, 6vw, 5rem);
-max-width: 900px;
+h-11 w-full rounded-xl
+border border-g-border bg-g-surface
+px-4 text-base text-g-text
+focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]
 ```
 
-**Link Rows** (`.footer-link-row`): Full-width stacked rows with top border `#1f1f1f` and clamp type sizes:
-```
-display: flex; align-items: center; justify-content: space-between;
-padding: clamp(1.1rem, 2.5vw, 1.75rem) 0;
-border-top: 1px solid #1f1f1f;
-font-size: clamp(1.2rem, 3vw, 2rem);
-font-weight: 500; letter-spacing: -0.03em;
-color: #F5F5F5;
-transition: color 0.22s ease;
-```
-Hover: `color: #DEAC4B` (APC Gold)
-Arrow: `font-size: 0.85em; transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)`
-Arrow hover: `translate(4px, -4px)`.
+Textareas use the same border/radius/ring with `min-h-[6rem]` and `py-3`.
+
+### 6.5 Cards and glass
+
+**Section card** (`Card`): opaque `g-surface`, border `g-border`, radius `rounded-2xl`, padding `p-7`/`p-8`.
+
+**Glass panel** (`.glass-panel`): translucent surface mix + `backdrop-filter: blur(16px)` + token border. Prefer tokens over hard-coded rgba glass.
+
+No mica-card / pill-glass classes.
+
+### 6.6 Dialogs and feedback
+
+**DialogHost** (z-index `10000`): info and confirm via `useDialog()`.
+
+- Info: full-width primary (gold) CTA
+- Confirm: secondary abort + destructive confirm; optional `requireText`
+- Esc / backdrop aborts (info dismisses). Focus trap; restore focus to opener.
+- API: `useDialog().info(...)`, `useDialog().confirm(...)`
+- Do not use `window.confirm()` or `alert()` for product feedback
+
+**Signal strip toast** (`ToastContainer`, z `9999`):
+
+- Bottom-right stack; cap 3; dedup by type + message
+- `bg-g-surface`, border `g-border`, sentence-case message + mono tag (`OK` / `ERR` / `INFO`)
+- Durations: success/info 4s, error 7s
+- API: `useToast().success|error|info(...)`
+
+### 6.7 Marketing and auth
+
+**Marketing `/`**
+
+1. `MarketingHeader`: logo + Log in + Get started (gold) + theme toggle
+2. Hero: dominant eypi brand, one headline, one support line, CTA group, product mock
+3. One proof section
+4. Final CTA band + footer
+
+No stats strip, features carousel, or multi-section "why" dump.
+
+**Auth**
+
+Quiet bordered panel; low-opacity warm gold wash (no blue glow orb); Syne title; large controls. Keep APC email auth flows (login, verify, reset).
+
+### 6.8 Scroll-top and loader
+
+**ScrollTop**: fixed bottom-right utility; appears after scroll threshold; gold hover.
+
+**AppLoader**: fullscreen splash; Syne `eypi.cc` with brand-blue wordmark and gold dot; auto-dismiss ~1.4s.
 
 ---
 
@@ -644,159 +352,43 @@ Arrow hover: `translate(4px, -4px)`.
 
 ### 7.1 Easing curves
 
-Four easing curves:
+| Name | Cubic Bezier | Primary use |
+|---|---|---|
+| Spring Out | `cubic-bezier(0.16, 1, 0.3, 1)` | Scroll reveals, loader, soft chrome |
+| Quick In-Out | `cubic-bezier(0.2, 1, 0.3, 1)` | Slide panels, toasts |
+| Heavy Cinematic | `cubic-bezier(0.76, 0, 0.24, 1)` | Page transition wipe |
+| Linear ease | `ease` | Color/opacity micro-transitions |
 
-| Name | Cubic Bezier | Behavior | Primary Use |
-|---|---|---|---|
-| **Spring Out** | `cubic-bezier(0.16, 1, 0.3, 1)` | Fast start, long deceleration | Scroll reveals, pill nav transitions, cursor size, footer arrow |
-| **Quick In-Out** | `cubic-bezier(0.2, 1, 0.3, 1)` | Slightly slower ease-in than Spring Out | Slide panels, toast notifications |
-| **Heavy Cinematic** | `cubic-bezier(0.76, 0, 0.24, 1)` | Slow in and slow out | Page transition wipe (`clip-path` expand, `0.6s`) |
-| **Linear ease** | `ease` | Standard browser ease | Color/opacity micro-transitions |
+### 7.2 Scroll reveal
 
-### 7.2 Scroll reveal system
-
-Elements marked with `.reveal` are hidden by default and revealed by an `IntersectionObserver`.
-
-**Initial state** (`.reveal`):
-```css
-opacity: 0;
-transform: translateY(28px);
-transition:
-  opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-  transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-```
-
-**Revealed state** (`.reveal.is-visible`, added by JS):
-```css
-opacity: 1;
-transform: translateY(0);
-```
-
-**Staggered delays** (applied manually via class):
-```
-.delay-1 → transition-delay: 0.12s
-.delay-2 → transition-delay: 0.24s
-.delay-3 → transition-delay: 0.36s
-.delay-4 → transition-delay: 0.48s
-```
-
-**Observer config**: `{ threshold: 0.10, rootMargin: '0px 0px -40px 0px' }`. Elements trigger 40px before they reach the bottom of the viewport. Once revealed, they are `unobserved` (fire-once, not bi-directional).
+`.reveal` starts at `opacity: 0; translateY(28px)` and becomes `.is-visible` via IntersectionObserver. Stagger with `.delay-1` … `.delay-4`. Prefer 2–3 intentional moves per marketing composition, not noise.
 
 ### 7.3 Page transition wipe
 
-Triggered on authenticated login before router push. A full-screen `clip-path` animation:
+Authenticated login wipe (`AppTransition`): full-screen `clip-path` circle expand over ~600ms. Prefer brand/primary fill from tokens.
 
-```css
-/* Initial state (inactive) */
-.app-transition {
-  position: fixed; inset: 0;
-  z-index: 99997;
-  background-color: var(--color-primary);   /* APC Blue wipe */
-  clip-path: circle(0% at 50% 50%);        /* Collapsed to a point at center */
-  pointer-events: none;
-}
+### 7.4 Shell chrome
 
-/* Expanding state */
-.app-transition--expanding {
-  clip-path: circle(150% at 50% 50%);      /* Expands beyond all four corners */
-  transition: clip-path 0.6s cubic-bezier(0.76, 0, 0.24, 1);
-}
-```
+Short ease transitions on sidebar, bottom tabs, and Org tools sheet. No custom cursor theater. Native OS pointer always.
 
-**Timing sequence**:
-1. Element becomes visible (2 rAF delay for render)
-2. `clip-path` expands over `600ms` (Heavy Cinematic ease)
-3. After `500ms`, route navigation resolves
-4. After `900ms`, element is removed from DOM
+### 7.5 Slide panels
 
-### 7.4 Page load splash screen
+Analytics / editors: backdrop fade `0.3s ease`; panel `translateX(100%) → 0` over `0.4s` Quick In-Out.
 
-On first load, a fullscreen overlay displays `eypi.cc` in APC Blue with the dot in APC Gold:
+### 7.6 Hover and press
 
-```css
-@keyframes loader-scale-in {
-  0%   { opacity: 0; transform: scale(0.6); letter-spacing: 0.1em; }
-  40%  { opacity: 1; transform: scale(1);   letter-spacing: -0.04em; }
-  80%  { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.08); }
-}
-```
-Duration: `1.1s` with `cubic-bezier(0.16, 1, 0.3, 1)` fill-forwards.
-Auto-dismisses after `1400ms`.
-Exit: `opacity: 0` over `0.25s ease` (Vue Transition `leave-active`).
+- `.tap-scale:active` → `scale: 0.96`
+- Fine-pointer link hover opacity softens slightly
+- Primary buttons: brightness / subtle lift via kit classes
+- Scroll-top: slight lift + scale on hover
 
-### 7.5 Custom cursor (AppCursor)
+### 7.7 Loading
 
-The native OS pointer is hidden on desktop (`html.has-custom-cursor`). A custom circle follows the mouse at all times via `requestAnimationFrame`.
+`animate-pulse` placeholders while fetching. Buttons in loading state use reduced opacity (and pulse where already specified).
 
-**Default state**: 24×24px white circle with `mix-blend-mode: difference`.
+### 7.8 Theme toggle
 
-**Hover states** morph when over interactive elements (explicit `data-cursor` or auto-detected `a`, `button`, inputs, etc.):
-
-| State | Size | Color | Trigger |
-|---|---|---|---|
-| `default` | 24×24px | `#ffffff` (difference blend) | Non-interactive areas |
-| `nav` | 34×34px | `#DEAC4B` | Links, buttons, toggles |
-| `cta` | 48×48px | `#DEAC4B` | Submit buttons, primary CTAs |
-| `card` | 80×80px | `#34418F` | Card links |
-| `text` | 2×22px | `#DEAC4B` | Text inputs, textareas |
-
-**Spring physics**: `SPRING = 0.38` for follow rate.
-
-**Touch devices**: Not rendered when `pointer: coarse`; native pointer used.
-
-### 7.6 Slide panel transitions
-
-Used for the Edit Sidebar and Analytics Panel:
-
-**Backdrop**: `opacity: 0 → 1` over `0.3s ease`
-**Panel**: `translateX(100%) → translateX(0)` over `0.4s cubic-bezier(0.2, 1, 0.3, 1)`
-
-Exit reverses: panel slides back `translateX(100%)` and backdrop fades to `opacity: 0`.
-
-### 7.7 Navigation scroll behavior
-
-```js
-function onScroll() {
-  const y = window.scrollY
-  isScrolled = y > 20              // Adds deeper box-shadow
-  isNavVisible = y < lastScrollY || y < 50  // Hides on scroll down, shows on scroll up
-  lastScrollY = y
-}
-```
-The nav hides via `translateY(-80px)` + `opacity: 0` on the pill wrapper, not the pill itself.
-
-### 7.8 Hover lift pattern
-
-| Element | Hover transform |
-|---|---|
-| Pill nav CTA | `translateY(-1px)` |
-| Scroll-top button | `translateY(-2px)` |
-| 404 return CTA | `scale(1.05)` |
-| Dashboard shorten button | `scale(1.05)` |
-
-### 7.9 Loading / skeleton states
-
-The Analytics Panel uses `animate-pulse` (Tailwind) on placeholder rectangles while data is fetching:
-```
-background: gray-200 / dark: slate-800/60
-border-radius: 0.75rem
-animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite
-```
-
-Buttons in loading state use `animate-pulse` on the button itself (combined with reduced opacity).
-
-### 7.10 Dark mode toggle transition
-
-The icon switches between Moon (light mode) and Sun (dark mode) with a `v-if`/`v-else` swap (instant icon change). The page-wide color shift uses the `body` transition: `background-color 0.3s ease, color 0.3s ease`.
-
-### 7.11 Chevron rotation
-
-The dropdown chevron in the user button rotates on open:
-```css
-transition-duration: 200ms;   /* Tailwind: duration-200 */
-transform: rotate(180deg);    /* When open: .rotate-180 */
-```
+`ThemeToggle` swaps Moon/Sun. Page-wide color shift uses the `body` token transition (`0.3s ease`).
 
 ---
 
@@ -804,82 +396,55 @@ transform: rotate(180deg);    /* When open: .rotate-180 */
 
 ### Focus management
 
-Visible focus rings are applied site-wide:
+Visible focus rings site-wide:
+
 ```css
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
 ```
 
-A **Skip to content** link is the first focusable element (`href="#app-content"`), visible on focus.
+Kit controls also use `focus-visible:ring-2` with `--color-ring`. Skip-to-content link is first focusable (`href="#app-content"`).
 
 ### Reduced motion
 
-`@media (prefers-reduced-motion: reduce)` in `main.css` disables or shortens:
-- Scroll reveal animations (`.reveal` shown immediately)
-- Pill nav hide/show transitions
-- Slide-over panel transitions
-- Custom cursor (native pointer on touch only)
-- Page transition wipe (instant)
-- Animation loops (reveal, nav transitions)
+`@media (prefers-reduced-motion: reduce)` disables or shortens scroll reveal, slide-over transitions, page wipe, and animation loops.
 
 ### Live regions
 
-Toast notifications use `aria-live="polite"` and `role="status"` on each toast item.
+Toasts use `aria-live` (`polite` / `assertive` for errors) and `role="status"`.
 
-### ARIA attributes in use
+### ARIA patterns in use
 
 | Element | Attribute | Value |
 |---|---|---|
-| Pill nav `<nav>` | `aria-label` | `"Main navigation"` |
-| Pill nav separator | `aria-hidden` | `"true"` |
+| AppShell nav | `aria-label` | `"App"` / bottom tab labels |
 | Backdrop overlays | `aria-hidden` | `"true"` |
-| Loader | `aria-hidden` | `"true"` |
-| Page transition | `aria-hidden` | `"true"` |
-| Icon buttons (table) | `aria-label` | `"Copy link"`, `"Analytics"`, `"Edit"`, `"Delete"` |
-| Close buttons | `aria-label` | `"Close"` |
-| Dark mode toggle | `aria-label` | `"Toggle dark mode"` |
-| Scroll-top button | `aria-label` | `"Back to top"` |
-| Footer `<nav>` | `aria-label` | `"Footer navigation"` |
-
-### Semantic structure
-
-```
-<body>
-  <AppLoader aria-hidden>       ← z:99998, auto-dismisses
-  <AppTransition aria-hidden>   ← z:99997, page wipe overlay
-  <AppCursor>                   ← z:99999, decorative
-  <ScrollTop>                   ← z:9998, fixed utility
-  <div id="base-layer">         ← z:-10, dot grid background
-  <TheHeader>                   ← z:9990, fixed pill nav
-  <main id="app-content">       ← z:10, page content
-    <router-view />
-  </main>
-  <TheFooter>                   ← z:1, always-dark
-  <ToastContainer>              ← z:9999, Signal strip
-  <DialogHost>                  ← z:10000, mica Info/Confirm
-</body>
-```
+| Loader / page transition | `aria-hidden` | `"true"` |
+| Icon buttons | `aria-label` | Action name (`Copy link`, `Close`, …) |
+| Theme toggle | `aria-label` | Dark mode control |
+| Scroll-top | `aria-label` | `"Back to top"` |
+| Footer nav | `aria-label` | `"Footer"` |
 
 ### Color contrast
 
-| Pairing | Ratio (approx.) | Notes |
-|---|---|---|
-| `#0A0A0A` on `#F5F5F5` (body text, light) | ~18.5:1 | AAA |
-| `#F5F5F5` on `#000000` (body text, dark) | ~18.5:1 | AAA |
-| `#DEAC4B` on `#34418F` (gold on blue) | ~3.7:1 | Passes AA for large text |
-| `#DEAC4B` on `#000000` (gold CTA text) | ~7.8:1 | AAA |
-| `#ffffff` on `#DEAC4B` (button label) | ~3.2:1 | Passes AA for large/bold |
-| `#6B6B6B` on `#F5F5F5` (muted text) | ~4.8:1 | Passes AA |
+| Pairing | Notes |
+|---|---|
+| `#14110F` on `#F5F1EA` | Body text, light |
+| `#F4F1EA` on `#0A0E18` | Body text, dark |
+| `#1A1408` on `#DEAC4B` | Primary button label on gold |
+| `#6F675C` on `#F5F1EA` | Muted text, light |
+
+Verify gold-on-fill and brand-blue headings in both themes when changing tokens.
 
 ### Text selection
 
 ```css
 ::selection {
   background-color: #DEAC4B;
-  color: #000000;
+  color: #1A1408;
 }
 ```
 
@@ -887,76 +452,53 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 
 ## 9. Z-index architecture
 
-Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
-
 | Layer | Z-Index | Element |
 |---|---|---|
-| Background dot grid | `-10` | `#base-layer` (fixed) |
-| Page content | `10` | `<main>` (relative) |
-| Footer | `1` | `<footer>` (relative) |
-| Fixed nav | `9990` | Pill nav wrapper |
-| Scroll-top button | `9998` | Fixed bottom-right |
-| Toast container | `9999` | Signal strip (bottom-right) |
-| DialogHost | `10000` | Mica Info / Confirm |
+| Page content | `10` / flow | `<main>` / AppShell content |
+| Footer | flow | `<footer>` |
+| Mobile top bar | `40` | AppShell sticky header |
+| Bottom tabs / org sheet | shell local | AppShell mobile chrome |
+| Scroll-top button | `9998` | Fixed utility |
+| Toast container | `9999` | Signal strip |
+| DialogHost | `10000` | Info / Confirm |
+| Skip link (focused) | `100000` | Accessibility |
 | Slide panel backdrop | `99990` | Teleported overlay |
 | Slide panel | `99991` | Teleported panel |
 | Page transition wipe | `99997` | Full-screen clip-path |
-| Page load splash | `99998` | Full-screen loader |
-| Custom cursor | `99999` | Fixed, pointer-events:none |
+| Page load splash | `99998` | AppLoader |
 
 ---
 
 ## Appendix: Common pattern snippets
 
-### CTA Button (minimal spec)
-```css
-background: #DEAC4B;
-color: #ffffff;
-font-family: 'Geist', 'Geist Mono', sans-serif;
-font-weight: 700;
-font-size: 0.8125rem to 1.25rem;
-text-transform: uppercase;
-letter-spacing: 0.05em to 0.1em;
-border-radius: 0.75rem to 9999px;
-padding: 0.75rem 1.5rem;
-transition: opacity 0.2s ease, transform 0.15s ease;
+### Primary Button (kit)
 
-/* Hover: */
-opacity: 0.88;
-transform: translateY(-1px);
-
-/* Disabled: */
-opacity: 0.70;
-cursor: not-allowed;
-animation: pulse 2s infinite;
+```ts
+buttonVariants({ variant: 'primary', size: 'default' })
+// bg-g-primary text-g-primary-fg h-11 rounded-full
 ```
 
-### Glassmorphism Card (minimal spec)
-```css
-background: rgba(255, 255, 255, 0.35);
-backdrop-filter: blur(16px) saturate(150%);
-border: 1px solid rgba(255, 255, 255, 0.60);
-box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
-border-radius: 1.5rem;
+### Section Card (kit)
+
+```vue
+<Card>
+  <!-- p-7 md:p-8 rounded-2xl border-g-border bg-g-surface -->
+</Card>
 ```
 
-### Scroll Reveal (minimal spec)
-```css
-/* Apply to element: */
-opacity: 0;
-transform: translateY(28px);
-transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-            transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+### Glass panel
 
-/* JS adds .is-visible when element enters viewport: */
-opacity: 1;
-transform: translateY(0);
+```css
+.glass-panel {
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+}
 ```
 
-### Dot Grid Background (minimal spec)
+### Scroll reveal
+
 ```css
-background-color: var(--color-bg);
-background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
-background-size: 120px 120px;
-background-attachment: fixed;
+.reveal { opacity: 0; transform: translateY(28px); }
+.reveal.is-visible { opacity: 1; transform: translateY(0); }
 ```

@@ -1,49 +1,60 @@
 ﻿<template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
-    <header class="mb-10 border-b border-g-border pb-8">
-      <h1 class="text-page-title">
-        {{ userName ? `Hi, ${userName}` : 'Hi' }}.
+  <main class="mx-auto flex w-full max-w-5xl flex-col px-4 py-12 sm:px-6 lg:px-8 min-h-[calc(100vh-5rem)]">
+    <header>
+      <h1 class="font-display text-3xl font-bold text-g-text">
+        Good {{ period }}, {{ userName }}
       </h1>
+      <p class="mt-2 text-g-muted">Jump into a module.</p>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <button
-        v-for="mod in modules"
+    <div class="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <Card
+        v-for="mod in visibleModules"
         :key="mod.id"
-        type="button"
+        role="button"
+        tabindex="0"
+        className="cursor-pointer transition hover:-translate-y-1 hover:border-g-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-ring)]"
         @click="router.push(mod.route)"
-        class="mica-card rounded-2xl p-7 text-left transition-all duration-200 focus:outline-none hover:-translate-y-1 flex flex-col gap-4"
-        data-cursor="card"
-        :style="{ border: '1px solid var(--color-border)' }"
-        @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(222,172,75,0.5)'"
-        @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'"
+        @keydown.enter.prevent="router.push(mod.route)"
+        @keydown.space.prevent="router.push(mod.route)"
       >
-        <h2 class="text-card-title text-g-primary dark:text-white">
-          {{ mod.title }}
-        </h2>
-        <p class="text-sm text-g-muted">
-          {{ mod.description }}
-        </p>
-      </button>
+        <h2 class="font-display text-xl font-semibold text-g-text">{{ mod.title }}</h2>
+        <p class="mt-2 text-sm text-g-muted">{{ mod.description }}</p>
+      </Card>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useOrgMembership } from '@/composables/useOrgMembership'
+import Card from '@/components/ui/Card.vue'
 
 const router = useRouter()
 const { getUser } = useAuth()
+const { checkOrgMembership } = useOrgMembership()
 
 const userName = ref('')
-onMounted(() => {
-  const user = getUser()
-  if (user?.name) userName.value = user.name
+const hasOrgMembership = ref(false)
+
+const period = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'morning'
+  if (hour < 17) return 'afternoon'
+  return 'evening'
 })
 
-const modules = [
+interface DashModule {
+  id: string
+  title: string
+  description: string
+  route: string
+  requiresOrg?: boolean
+}
+
+const modules: DashModule[] = [
   {
     id: 'links',
     title: 'Links',
@@ -55,24 +66,38 @@ const modules = [
     title: 'Forms',
     description: 'Generate MOAs, letters of intent, and printable event documents.',
     route: '/forms',
+    requiresOrg: true,
   },
   {
     id: 'ticketing',
     title: 'Tix',
     description: 'Create events, manage guest lists, and run QR-code check-in.',
     route: '/manage/tix',
+    requiresOrg: true,
   },
   {
     id: 'frames',
     title: 'Frames',
     description: 'Upload a frame and share a link so anyone can make a matching profile picture.',
     route: '/manage/frames',
+    requiresOrg: true,
   },
   {
     id: 'orgs',
     title: 'Orgs',
     description: 'Edit your organization profile, manage members, and control public directory visibility.',
     route: '/orgs',
+    requiresOrg: true,
   },
 ]
+
+const visibleModules = computed(() =>
+  modules.filter((mod) => !mod.requiresOrg || hasOrgMembership.value),
+)
+
+onMounted(async () => {
+  const user = getUser()
+  userName.value = user?.name?.trim() || 'there'
+  hasOrgMembership.value = await checkOrgMembership()
+})
 </script>

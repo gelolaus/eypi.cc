@@ -31,16 +31,16 @@ onMounted(() => {
 }
 
 .app-loader__text {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Syne', ui-sans-serif, sans-serif;
   font-size: clamp(2.5rem, 8vw, 5rem);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-brand);
   letter-spacing: -0.04em;
   animation: loader-scale-in 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .app-loader__dot {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 @keyframes loader-scale-in {

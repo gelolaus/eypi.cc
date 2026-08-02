@@ -9,7 +9,7 @@
         v-for="toast in toasts"
         :key="toast.id"
         role="status"
-        class="pointer-events-auto relative flex cursor-pointer items-center gap-3 border border-g-border bg-white p-3 shadow-xl dark:border-slate-600 dark:bg-mica-navy-modal dark:backdrop-blur-xl"
+        class="pointer-events-auto relative flex cursor-pointer items-center gap-3 rounded-xl border border-g-border bg-g-surface p-3 shadow-xl"
         @click="dismiss(toast.id)"
         @mouseenter="pause(toast.id)"
         @mouseleave="resume(toast.id)"

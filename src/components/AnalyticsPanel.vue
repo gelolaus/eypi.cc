@@ -18,33 +18,35 @@
       role="dialog"
       aria-labelledby="analytics-panel-title"
       aria-modal="true"
-      class="fixed top-0 right-0 flex h-full max-h-screen w-[95vw] md:max-w-2xl flex-col overflow-y-auto bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl border-l border-gray-200 dark:border-slate-700/50 p-8 shadow-2xl"
+      class="fixed top-0 right-0 flex h-full max-h-screen w-[95vw] flex-col overflow-y-auto border-l border-g-border bg-g-surface p-8 shadow-2xl md:max-w-2xl"
       style="z-index: 99991"
     >
-      <button
+      <Button
         type="button"
-        class="absolute right-6 top-6 text-2xl text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        variant="ghost"
+        size="sm"
+        className="absolute right-4 top-4 !min-h-[44px] !min-w-[44px] !rounded-full !px-0 text-2xl leading-none"
         aria-label="Close"
         @click="$emit('close')"
       >
         &times;
-      </button>
+      </Button>
 
-      <h2 id="analytics-panel-title" class="mb-2 text-section-title text-slate-900 dark:text-slate-100">
+      <h2 id="analytics-panel-title" class="mb-2 font-display text-2xl font-semibold text-g-text">
         Analytics
       </h2>
-      <p class="text-data mb-8 truncate text-sm text-slate-600 dark:text-slate-400">
+      <p class="mb-8 truncate text-sm text-g-muted">
         {{ shortUrl }}
       </p>
 
       <!-- Loading State -->
       <template v-if="isLoading">
         <div class="space-y-6">
-          <div class="h-48 rounded-xl bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
+          <div class="h-48 animate-pulse rounded-xl bg-g-bg" />
           <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
-            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
-            <div class="h-32 rounded-lg bg-gray-200 dark:bg-slate-800/60 animate-pulse" />
+            <div class="h-32 animate-pulse rounded-lg bg-g-bg" />
+            <div class="h-32 animate-pulse rounded-lg bg-g-bg" />
+            <div class="h-32 animate-pulse rounded-lg bg-g-bg" />
           </div>
         </div>
       </template>
@@ -54,17 +56,16 @@
         <!-- Peak Engagement Quick Insight -->
         <div
           v-if="formattedPeak"
-          class="mica-card mb-6 rounded-xl border border-eypi-gold/30 bg-eypi-gold/10 p-4"
+          class="mb-6 rounded-xl border border-g-primary/30 bg-g-primary/10 p-4"
         >
-          <p class="font-mono text-sm text-slate-900 dark:text-slate-200">
-            <span class="text-eypi-gold">&#128293;</span>
+          <p class="text-sm text-g-text">
             <strong>Busiest time:</strong> <strong>{{ formattedPeak.day }}</strong> at <strong>{{ formattedPeak.time }}</strong>.
           </p>
         </div>
 
         <!-- Timeline Line Chart -->
         <div class="mb-8">
-          <h4 class="mb-4 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+          <h4 class="mb-4 text-xs font-bold uppercase tracking-widest text-g-muted">
             Clicks (Last 30 Days)
           </h4>
           <div class="h-48">
@@ -80,7 +81,7 @@
         <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
           <!-- Top OS -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 text-xs font-bold uppercase tracking-widest text-g-muted">
               Top OS
             </h4>
             <ul v-if="displayOs.length" class="space-y-2">
@@ -89,24 +90,24 @@
                 :key="item.os"
                 class="flex flex-col gap-1"
               >
-                <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.os || 'Unknown' }}</span>
-                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                <div class="flex items-baseline justify-between gap-2 font-mono text-base">
+                  <span class="min-w-0 break-words text-g-text">{{ item.os || 'Unknown' }}</span>
+                  <span class="shrink-0 text-g-muted">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-g-bg">
                   <div
-                    class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
+                    class="h-full rounded-full bg-[#DEAC4B] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
                   />
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
+            <p v-else class="text-sm text-g-muted">No data</p>
           </div>
 
           <!-- Top Country -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 text-xs font-bold uppercase tracking-widest text-g-muted">
               Top Country
             </h4>
             <ul v-if="displayCountry.length" class="space-y-2">
@@ -115,24 +116,24 @@
                 :key="item.country"
                 class="flex flex-col gap-1"
               >
-                <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.country || 'Unknown' }}</span>
-                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                <div class="flex items-baseline justify-between gap-2 font-mono text-base">
+                  <span class="min-w-0 break-words text-g-text">{{ item.country || 'Unknown' }}</span>
+                  <span class="shrink-0 text-g-muted">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-g-bg">
                   <div
-                    class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
+                    class="h-full rounded-full bg-[#DEAC4B] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
                   />
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
+            <p v-else class="text-sm text-g-muted">No data</p>
           </div>
 
           <!-- Top Referrers -->
           <div>
-            <h4 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+            <h4 class="mb-3 text-xs font-bold uppercase tracking-widest text-g-muted">
               Top Referrers
             </h4>
             <ul v-if="displayReferrer.length" class="space-y-2">
@@ -141,19 +142,19 @@
                 :key="item.referrer"
                 class="flex flex-col gap-1"
               >
-                <div class="flex justify-between items-baseline gap-2 font-mono text-base">
-                  <span class="text-slate-900 dark:text-slate-300 min-w-0 break-words">{{ item.display }}</span>
-                  <span class="text-slate-600 dark:text-slate-400 shrink-0">{{ item.count }} clicks</span>
+                <div class="flex items-baseline justify-between gap-2 font-mono text-base">
+                  <span class="min-w-0 break-words text-g-text">{{ item.display }}</span>
+                  <span class="shrink-0 text-g-muted">{{ item.count }} clicks</span>
                 </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-slate-700/50">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-g-bg">
                   <div
-                    class="h-full rounded-full bg-[#c9a84c] transition-all duration-300"
+                    class="h-full rounded-full bg-[#DEAC4B] transition-all duration-300"
                     :style="{ width: `${item.percent}%` }"
                   />
                 </div>
               </li>
             </ul>
-            <p v-else class="font-mono text-sm text-slate-500 dark:text-slate-400">No data</p>
+            <p v-else class="text-sm text-g-muted">No data</p>
           </div>
         </div>
       </template>
@@ -178,6 +179,7 @@ import {
 import { Line } from 'vue-chartjs'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { API_BASE_URL } from '@/config/api'
+import Button from '@/components/ui/Button.vue'
 
 ChartJS.register(
   Title,
@@ -360,8 +362,8 @@ const chartData = computed(() => {
       {
         label: 'Clicks',
         data: filled.map((t) => t.count),
-        borderColor: '#c9a84c',
-        backgroundColor: 'rgba(201, 168, 76, 0.2)',
+        borderColor: '#DEAC4B',
+        backgroundColor: 'rgba(222, 172, 75, 0.2)',
         fill: true,
         tension: 0.3,
       },

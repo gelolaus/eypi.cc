@@ -1,346 +1,335 @@
 <template>
   <div class="relative w-full">
     <div
-      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 pb-24 md:pt-16 md:pb-32"
+      class="mx-auto flex w-full max-w-5xl flex-col px-4 pt-8 pb-24 md:pt-16 md:pb-32"
     >
-    <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1
-          class="text-page-title"
-        >
+      <header class="mb-8">
+        <h1 class="font-display text-3xl font-bold text-g-text">
           Links
         </h1>
-      </div>
-    </header>
-
-    <!-- Top Bar (Create Link) -->
-    <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">
-      <div class="flex-1">
-        <input
-          v-model="longUrlInput"
-          type="url"
-          placeholder="Paste your long link here..."
-          class="w-full rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
-          :aria-invalid="Boolean(longUrlError)"
-          :aria-describedby="longUrlError ? 'long-url-error' : undefined"
-        />
-        <p v-if="longUrlError" id="long-url-error" class="mt-1 text-sm text-red-500">{{ longUrlError }}</p>
-      </div>
-      <button
-        type="button"
-        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-        :disabled="isShortening"
-        :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isShortening, 'hover:scale-105': !isShortening }"
-        @click="handleShorten"
-      >
-        {{ isShortening ? 'Processing...' : 'Shorten' }}
-      </button>
-    </div>
-
-    <input
-      v-model="searchQuery"
-      type="search"
-      placeholder="Search links..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
-    />
-
-    <!-- Unified Table (horizontal scroll on mobile) -->
-    <div class="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-    <div
-      class="mica-card w-full min-w-[600px] overflow-hidden rounded-2xl border border-g-border shadow-sm"
-    >
-      <!-- Table Header -->
-      <div
-        class="flex items-center justify-between border-b border-g-border bg-white/40 px-4 md:px-6 py-3 text-data text-xs font-semibold text-g-muted dark:bg-mica-navy-header"
-      >
-        <span class="flex-1">Short link</span>
-        <span class="w-32 text-center">Clicks</span>
-        <span class="w-40 text-center">Actions</span>
-      </div>
-
-      <!-- Table Rows -->
-      <template v-if="filteredLinks.length > 0">
-        <div
-          v-for="link in filteredLinks"
-          :key="link.id"
-          class="flex items-center justify-between border-b border-g-border px-4 md:px-6 py-5 transition-colors last:border-0 hover:bg-white/50 dark:border-slate-700/30 dark:bg-mica-navy-row dark:backdrop-blur-md dark:hover:bg-mica-navy-row-hover"
-        >
-          <div class="flex flex-1 flex-col truncate pr-4">
-            <span class="font-mono text-lg font-bold text-g-primary dark:text-slate-200">
-              {{ link.short }}
-            </span>
-            <span class="truncate font-mono text-sm text-gray-500 dark:text-slate-400">
-              {{ link.original }}
-            </span>
-          </div>
-          <div class="w-32 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
-            {{ link.clicks ?? 0 }} clicks
-          </div>
-          <div class="flex w-40 items-center justify-center gap-2">
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
-              aria-label="Copy link"
-              @click="copyToClipboard(link.short)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-emerald-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-slate-600/30"
-              aria-label="Analytics"
-              @click="activeAnalyticsLinkId = link.id; activeAnalyticsShortUrl = link.short; isAnalyticsOpen = true"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-g-muted transition-colors hover:bg-gray-100 hover:text-g-text dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
-              aria-label="Edit"
-              @click="openSidebar(link)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700 dark:hover:bg-slate-600/30"
-              aria-label="Delete"
-              @click="confirmDelete(link)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </template>
-      <div
-        v-else
-        class="flex flex-col items-center justify-center py-20 px-6 text-center"
-      >
-        <div class="w-16 h-16 mb-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 relative dark:border-slate-600 dark:text-slate-400">
-          <div class="absolute w-2 h-[1px] bg-gray-400"></div>
-          <div class="absolute h-2 w-[1px] bg-gray-400"></div>
-        </div>
-        <h3 class="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2">
-          {{ links.length ? 'No matching links' : 'No links yet' }}
-        </h3>
-        <p v-if="!links.length" class="text-sm text-gray-400 dark:text-slate-500 max-w-md leading-relaxed">
-          Create your first short link using the field above.
+        <p class="mt-2 text-g-muted">
+          Shorten URLs and track click analytics by OS, country, and referrer.
         </p>
-      </div>
-    </div>
-    </div>
+      </header>
 
-    <!-- Backdrop (separate fade transition) - Teleported to body to elevate above header/footer -->
-    <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="isSidebarOpen"
-        class="fixed inset-0 bg-black/20 backdrop-blur-sm"
-        style="z-index: 99990"
-        aria-hidden="true"
-        @click="isSidebarOpen = false"
-      />
-    </Transition>
-
-    <!-- Slide-out Panel (separate slide-right transition) -->
-    <Transition name="slide-right">
-      <div
-        v-if="isSidebarOpen"
-        role="dialog"
-        aria-labelledby="link-config-title"
-        aria-modal="true"
-        class="fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900"
-        style="z-index: 99991"
-      >
-        <button
-          type="button"
-          class="absolute right-6 top-6 font-mono text-2xl text-gray-500 transition-colors hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-          aria-label="Close"
-          @click="isSidebarOpen = false"
-        >
-          &times;
-        </button>
-
-        <h2 id="link-config-title" class="mb-8 text-section-title text-g-primary dark:text-slate-200">
-          Link configuration
-        </h2>
-
-        <div class="flex flex-1 flex-col">
-          <!-- Original Link Input -->
-          <div class="mb-4">
-            <input
-              v-model="sidebarOriginalUrl"
+      <Card className="mb-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-start">
+          <div class="min-w-0 flex-1">
+            <Input
+              :value="longUrlInput"
               type="url"
-              placeholder="Original URL"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-              :aria-invalid="Boolean(sidebarUrlError)"
-              :aria-describedby="sidebarUrlError ? 'sidebar-url-error' : undefined"
+              placeholder="Paste your long link here..."
+              className="font-mono"
+              :aria-invalid="Boolean(longUrlError)"
+              :aria-describedby="longUrlError ? 'long-url-error' : undefined"
+              @input="onLongUrlInput"
             />
-            <p v-if="sidebarUrlError" id="sidebar-url-error" class="mt-1 text-sm text-red-500">{{ sidebarUrlError }}</p>
+            <p v-if="longUrlError" id="long-url-error" class="mt-1 text-sm text-g-destructive">{{ longUrlError }}</p>
           </div>
-
-          <!-- Arrow -->
-          <div class="my-4 text-center font-black text-g-text dark:text-slate-300 text-4xl">
-            &darr;
-          </div>
-
-          <!-- Custom Slug Input (eypi.cc/ prefix + slug) -->
-          <div class="mb-6">
-            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-              <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
-              <input
-                :value="sidebarSlug"
-                type="text"
-                placeholder="custom-slug"
-                class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200 dark:placeholder-slate-400"
-                :aria-invalid="Boolean(slugError)"
-                :aria-describedby="slugError ? 'slug-error' : undefined"
-                @input="sanitizeSlugInput"
-              />
-            </div>
-            <p v-if="slugError" id="slug-error" class="mt-1 text-sm text-red-500">{{ slugError }}</p>
-          </div>
-
-          <!-- Optical Routing Matrix (QR Code Generator) -->
-          <div class="mt-8 mb-auto flex flex-col border-t border-gray-200 pt-8">
-            <h4 class="text-card-title mb-4 text-gray-400 dark:text-slate-400">
-              QR code
-            </h4>
-
-            <div class="flex justify-center mb-6">
-              <div class="p-2 bg-white border-2 border-gray-200 rounded-xl shadow-sm dark:bg-slate-800/50 dark:border-slate-600" ref="qrContainer"></div>
-            </div>
-
-            <div class="mb-6 flex flex-col gap-4 text-sm">
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Body shape</label>
-                <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                  <option value="square">Standard Square</option>
-                  <option value="dots">Dotted</option>
-                  <option value="rounded">Rounded</option>
-                  <option value="classy">Classy</option>
-                </select>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye frame</label>
-                  <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                    <option value="square">Square</option>
-                    <option value="dot">Dot</option>
-                    <option value="extra-rounded">Rounded</option>
-                  </select>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye ball</label>
-                  <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                    <option value="square">Square</option>
-                    <option value="dot">Dot</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Matrix color</label>
-                <div class="flex items-center gap-3">
-                  <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-g-accent transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
-                    <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
-                  </div>
-                  <input type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#DEAC4B" maxlength="7" />
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
-                <input type="file" @change="handleLogoUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined" />
-                <button
-                  v-if="qrConfig.logoDataUrl"
-                  type="button"
-                  class="self-start text-xs font-medium text-gray-500 underline-offset-2 hover:underline dark:text-slate-400"
-                  @click="clearLogo"
-                >
-                  Remove logo
-                </button>
-                <p v-if="logoError" id="logo-error" class="text-sm text-red-500">{{ logoError }}</p>
-                <p v-else-if="logoPersistHint" id="logo-persist-hint" class="text-sm text-amber-600 dark:text-amber-400">{{ logoPersistHint }}</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              :disabled="isExporting || isQrRendering"
-              @click="downloadQR"
-              class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary text-sm font-semibold rounded-lg hover:border-g-accent hover:text-g-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-            >
-              {{ isExporting ? 'Exporting…' : 'Export PNG' }}
-            </button>
-          </div>
-
-          <!-- Save Button -->
-          <div class="mt-6">
-            <button
-              type="button"
-              class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-              :disabled="isSaving"
-              :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
-              @click="handleSave"
-            >
-              {{ isSaving ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
+          <Button
+            type="button"
+            size="lg"
+            className="w-full shrink-0 md:w-auto"
+            :disabled="isShortening"
+            @click="handleShorten"
+          >
+            {{ isShortening ? 'Processing...' : 'Shorten' }}
+          </Button>
         </div>
+      </Card>
+
+      <Input
+        :value="searchQuery"
+        type="search"
+        placeholder="Search links..."
+        className="mb-6"
+        @input="onSearchInput"
+      />
+
+      <div class="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+        <Card className="!p-0 w-full min-w-[600px] overflow-hidden md:!p-0">
+          <div
+            class="flex items-center justify-between border-b border-g-border bg-g-bg px-4 py-3 text-xs font-semibold text-g-muted md:px-6"
+          >
+            <span class="flex-1">Short link</span>
+            <span class="w-32 text-center">Clicks</span>
+            <span class="w-40 text-center">Actions</span>
+          </div>
+
+          <template v-if="filteredLinks.length > 0">
+            <div
+              v-for="link in filteredLinks"
+              :key="link.id"
+              class="flex items-center justify-between border-b border-g-border px-4 py-5 transition-colors last:border-0 hover:bg-g-bg md:px-6"
+            >
+              <div class="flex flex-1 flex-col truncate pr-4">
+                <span class="font-mono text-lg font-bold text-g-text">
+                  {{ link.short }}
+                </span>
+                <span class="truncate font-mono text-sm text-g-muted">
+                  {{ link.original }}
+                </span>
+              </div>
+              <div class="w-32 text-center font-mono text-sm text-g-muted">
+                {{ link.clicks ?? 0 }} clicks
+              </div>
+              <div class="flex w-40 items-center justify-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="!min-h-[44px] !min-w-[44px] !rounded-full !px-0"
+                  aria-label="Copy link"
+                  @click="copyToClipboard(link.short)"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="!min-h-[44px] !min-w-[44px] !rounded-full !px-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                  aria-label="Analytics"
+                  @click="activeAnalyticsLinkId = link.id; activeAnalyticsShortUrl = link.short; isAnalyticsOpen = true"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="!min-h-[44px] !min-w-[44px] !rounded-full !px-0"
+                  aria-label="Edit"
+                  @click="openSidebar(link)"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="!min-h-[44px] !min-w-[44px] !rounded-full !px-0 text-g-destructive hover:text-g-destructive"
+                  aria-label="Delete"
+                  @click="confirmDelete(link)"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </Button>
+              </div>
+            </div>
+          </template>
+          <EmptyState
+            v-else
+            :title="links.length ? 'No matching links' : 'No links yet'"
+            :description="links.length ? undefined : 'Create your first short link using the field above.'"
+            className="py-20"
+          />
+        </Card>
       </div>
-    </Transition>
-    </Teleport>
-  </div>
+
+      <Teleport to="body">
+        <Transition name="fade">
+          <div
+            v-if="isSidebarOpen"
+            class="fixed inset-0 bg-black/20 backdrop-blur-sm"
+            style="z-index: 99990"
+            aria-hidden="true"
+            @click="isSidebarOpen = false"
+          />
+        </Transition>
+
+        <Transition name="slide-right">
+          <div
+            v-if="isSidebarOpen"
+            role="dialog"
+            aria-labelledby="link-config-title"
+            aria-modal="true"
+            class="fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-g-border bg-g-surface p-8 shadow-2xl"
+            style="z-index: 99991"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-4 top-4 !min-h-[44px] !min-w-[44px] !rounded-full !px-0 text-2xl leading-none"
+              aria-label="Close"
+              @click="isSidebarOpen = false"
+            >
+              &times;
+            </Button>
+
+            <h2 id="link-config-title" class="mb-8 font-display text-2xl font-semibold text-g-text">
+              Link configuration
+            </h2>
+
+            <div class="flex flex-1 flex-col">
+              <div class="mb-4">
+                <Input
+                  :value="sidebarOriginalUrl"
+                  type="url"
+                  placeholder="Original URL"
+                  :aria-invalid="Boolean(sidebarUrlError)"
+                  :aria-describedby="sidebarUrlError ? 'sidebar-url-error' : undefined"
+                  @input="onSidebarUrlInput"
+                />
+                <p v-if="sidebarUrlError" id="sidebar-url-error" class="mt-1 text-sm text-g-destructive">{{ sidebarUrlError }}</p>
+              </div>
+
+              <div class="my-4 text-center text-4xl font-black text-g-text">
+                &darr;
+              </div>
+
+              <div class="mb-6">
+                <div
+                  class="flex h-11 items-center rounded-xl border border-g-border bg-g-surface px-4 focus-within:ring-2 focus-within:ring-[var(--color-ring)]"
+                >
+                  <span class="shrink-0 font-mono font-bold text-g-text">eypi.cc/</span>
+                  <input
+                    :value="sidebarSlug"
+                    type="text"
+                    placeholder="custom-slug"
+                    class="min-w-0 flex-1 border-0 bg-transparent font-mono text-g-text outline-none placeholder:text-g-muted"
+                    :aria-invalid="Boolean(slugError)"
+                    :aria-describedby="slugError ? 'slug-error' : undefined"
+                    @input="sanitizeSlugInput"
+                  />
+                </div>
+                <p v-if="slugError" id="slug-error" class="mt-1 text-sm text-g-destructive">{{ slugError }}</p>
+              </div>
+
+              <div class="mb-auto mt-8 flex flex-col border-t border-g-border pt-8">
+                <h4 class="mb-4 font-display text-lg font-semibold text-g-muted">
+                  QR code
+                </h4>
+
+                <div class="mb-6 flex justify-center">
+                  <div class="rounded-xl border border-g-border bg-white p-2 shadow-sm" ref="qrContainer"></div>
+                </div>
+
+                <div class="mb-6 flex flex-col gap-4 text-sm">
+                  <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-g-muted">Body shape</label>
+                    <Select :value="qrConfig.dotType" @change="onDotTypeChange">
+                      <option value="square">Standard Square</option>
+                      <option value="dots">Dotted</option>
+                      <option value="rounded">Rounded</option>
+                      <option value="classy">Classy</option>
+                    </Select>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium text-g-muted">Eye frame</label>
+                      <Select :value="qrConfig.eyeFrameType" @change="onEyeFrameChange">
+                        <option value="square">Square</option>
+                        <option value="dot">Dot</option>
+                        <option value="extra-rounded">Rounded</option>
+                      </Select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                      <label class="text-sm font-medium text-g-muted">Eye ball</label>
+                      <Select :value="qrConfig.eyeBallType" @change="onEyeBallChange">
+                        <option value="square">Square</option>
+                        <option value="dot">Dot</option>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-g-muted">Matrix color</label>
+                    <div class="flex items-center gap-3">
+                      <div class="h-11 w-12 shrink-0 overflow-hidden rounded-xl border border-g-border focus-within:ring-2 focus-within:ring-[var(--color-ring)]">
+                        <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
+                      </div>
+                      <Input
+                        :value="qrConfig.color"
+                        type="text"
+                        className="font-mono uppercase"
+                        placeholder="#DEAC4B"
+                        maxlength="7"
+                        @input="onQrColorInput"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-g-muted">Center logo</label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      class="cursor-pointer text-xs file:mr-4 file:rounded-full file:border-0 file:bg-g-bg file:px-4 file:py-2 file:text-xs file:font-bold file:text-g-text hover:file:bg-g-border"
+                      :aria-invalid="Boolean(logoError)"
+                      :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined"
+                      @change="handleLogoUpload"
+                    />
+                    <Button
+                      v-if="qrConfig.logoDataUrl"
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="self-start !px-0 underline-offset-2 hover:underline"
+                      @click="clearLogo"
+                    >
+                      Remove logo
+                    </Button>
+                    <p v-if="logoError" id="logo-error" class="text-sm text-g-destructive">{{ logoError }}</p>
+                    <p v-else-if="logoPersistHint" id="logo-persist-hint" class="text-sm text-amber-600 dark:text-amber-400">{{ logoPersistHint }}</p>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  :disabled="isExporting || isQrRendering"
+                  @click="downloadQR"
+                >
+                  {{ isExporting ? 'Exporting…' : 'Export PNG' }}
+                </Button>
+              </div>
+
+              <div class="mt-6">
+                <Button
+                  type="button"
+                  className="w-full"
+                  :disabled="isSaving"
+                  @click="handleSave"
+                >
+                  {{ isSaving ? 'Saving...' : 'Save' }}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+    </div>
   </div>
 
   <AnalyticsPanel
@@ -357,6 +346,11 @@ import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
+import Card from '@/components/ui/Card.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
+import Select from '@/components/ui/Select.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { API_BASE_URL } from '@/config/api'
 import { isReservedSlug } from '@shared/reservedSlugs'
 import {
@@ -422,6 +416,28 @@ const sidebarUrlError = ref('')
 const slugError = ref('')
 const logoError = ref('')
 const logoPersistHint = ref('')
+
+function onLongUrlInput(e: Event) {
+  longUrlInput.value = (e.target as HTMLInputElement).value
+}
+function onSearchInput(e: Event) {
+  searchQuery.value = (e.target as HTMLInputElement).value
+}
+function onSidebarUrlInput(e: Event) {
+  sidebarOriginalUrl.value = (e.target as HTMLInputElement).value
+}
+function onQrColorInput(e: Event) {
+  qrConfig.value.color = (e.target as HTMLInputElement).value
+}
+function onDotTypeChange(e: Event) {
+  qrConfig.value.dotType = (e.target as HTMLSelectElement).value as LinkQrConfig['dotType']
+}
+function onEyeFrameChange(e: Event) {
+  qrConfig.value.eyeFrameType = (e.target as HTMLSelectElement).value as LinkQrConfig['eyeFrameType']
+}
+function onEyeBallChange(e: Event) {
+  qrConfig.value.eyeBallType = (e.target as HTMLSelectElement).value as LinkQrConfig['eyeBallType']
+}
 
 watch(longUrlInput, () => { longUrlError.value = '' })
 watch(sidebarOriginalUrl, () => { sidebarUrlError.value = '' })
@@ -856,7 +872,3 @@ onMounted(async () => {
   transform: translateX(100%);
 }
 </style>
-
-
-
-

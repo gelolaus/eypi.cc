@@ -2,101 +2,76 @@
   <section
     class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
   >
-    <!-- Auth Card -->
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
-    >
-      <!-- Corner screws -->
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--color-primary)_18%,transparent),transparent_70%)]"
+    />
 
-      <!-- Top toggles -->
-      <div class="mb-6 flex flex-row gap-2">
-        <button
-          type="button"
-          :class="[
-            'flex-1 rounded-lg px-4 py-2 font-mono text-sm font-bold transition-colors',
-            mode === 'login'
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-          ]"
-          @click="mode = 'login'"
-        >
-          Login
-        </button>
-        <button
-          type="button"
-          :class="[
-            'flex-1 rounded-lg px-4 py-2 font-mono text-sm font-bold transition-colors',
-            mode === 'register'
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-          ]"
-          @click="mode = 'register'"
-        >
-          Register
-        </button>
-      </div>
+    <Card className="relative w-full max-w-md">
+      <h1 class="mb-6 font-display text-2xl font-bold tracking-tight text-g-text">
+        {{ mode === 'login' ? 'Welcome back' : 'Create account' }}
+      </h1>
 
-      <!-- Form -->
-      <form @submit.prevent="onSubmit" class="flex flex-col">
-        <div v-if="mode === 'register'" class="mb-4">
-          <input
-            v-model="name"
+      <Tabs v-model="mode" :tabs="authTabs" className="mb-6" />
+
+      <form @submit.prevent="onSubmit" class="flex flex-col gap-4">
+        <div v-if="mode === 'register'">
+          <Input
+            :value="name"
             type="text"
             placeholder="Full Name"
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            autocomplete="name"
             :aria-invalid="Boolean(errors.name)"
             :aria-describedby="errors.name ? 'name-error' : undefined"
+            @input="onNameInput"
           />
-          <p v-if="errors.name" id="name-error" class="mt-1 text-sm text-red-500">{{ errors.name }}</p>
-        </div>
-        <div class="mb-4">
-          <input
-            v-model="email"
-            type="email"
-            placeholder="Email"
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-            :aria-invalid="Boolean(errors.email)"
-            :aria-describedby="errors.email ? 'email-error' : undefined"
-          />
-          <p v-if="errors.email" id="email-error" class="mt-1 text-sm text-red-500">{{ errors.email }}</p>
-        </div>
-        <div class="mb-6">
-          <input
-            v-model="password"
-            type="password"
-            placeholder="Password"
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-            :aria-invalid="Boolean(errors.password)"
-            :aria-describedby="errors.password ? 'password-error' : undefined"
-          />
-          <p v-if="errors.password" id="password-error" class="mt-1 text-sm text-red-500">{{ errors.password }}</p>
+          <p v-if="errors.name" id="name-error" class="mt-1.5 text-sm text-g-destructive">
+            {{ errors.name }}
+          </p>
         </div>
 
-        <!-- Submit button - use plain text, no bracketed formatting for CTAs -->
-        <button
-          type="submit"
-          :disabled="isAuthenticating"
-          :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
-            isAuthenticating ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
-          ]"
-        >
+        <div>
+          <Input
+            :value="email"
+            type="email"
+            placeholder="Email"
+            autocomplete="email"
+            :aria-invalid="Boolean(errors.email)"
+            :aria-describedby="errors.email ? 'email-error' : undefined"
+            @input="onEmailInput"
+          />
+          <p v-if="errors.email" id="email-error" class="mt-1.5 text-sm text-g-destructive">
+            {{ errors.email }}
+          </p>
+        </div>
+
+        <div>
+          <Input
+            :value="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="current-password"
+            :aria-invalid="Boolean(errors.password)"
+            :aria-describedby="errors.password ? 'password-error' : undefined"
+            @input="onPasswordInput"
+          />
+          <p v-if="errors.password" id="password-error" class="mt-1.5 text-sm text-g-destructive">
+            {{ errors.password }}
+          </p>
+        </div>
+
+        <Button type="submit" className="w-full" :disabled="isAuthenticating">
           {{ isAuthenticating ? 'Processing...' : mode === 'login' ? 'Login' : 'Register' }}
-        </button>
+        </Button>
+
         <router-link
           v-if="mode === 'login'"
           to="/reset-password"
-          class="mt-4 text-center font-mono text-xs text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
+          class="text-center text-sm text-g-muted transition-colors hover:text-g-text"
         >
           Need password help?
         </router-link>
       </form>
-    </div>
-
+    </Card>
   </section>
 </template>
 
@@ -107,6 +82,10 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
+import Card from '@/components/ui/Card.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
+import Tabs from '@/components/ui/Tabs.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -114,12 +93,27 @@ const toast = useToast()
 const dialog = useDialog()
 const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
 
-const mode = ref<'login' | 'register'>('login')
+const authTabs = [
+  { id: 'login', label: 'Login' },
+  { id: 'register', label: 'Register' },
+]
+
+const mode = ref('login')
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const isAuthenticating = ref(false)
 const errors = reactive({ name: '', email: '', password: '' })
+
+function onNameInput(e: Event) {
+  name.value = (e.target as HTMLInputElement).value
+}
+function onEmailInput(e: Event) {
+  email.value = (e.target as HTMLInputElement).value
+}
+function onPasswordInput(e: Event) {
+  password.value = (e.target as HTMLInputElement).value
+}
 
 watch(name, () => { errors.name = '' })
 watch(email, () => { errors.email = '' })

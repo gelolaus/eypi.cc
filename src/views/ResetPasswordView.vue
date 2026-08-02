@@ -3,28 +3,23 @@
     class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
   >
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
-    >
-      <!-- Corner screws -->
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--color-primary)_18%,transparent),transparent_70%)]"
+    />
 
-      <!-- Header -->
-      <h2 class="mb-6 text-center text-section-title text-[#34418F] dark:text-slate-200">
-        RESET PASSWORD
-      </h2>
-      <p class="mb-6 text-center text-sm leading-relaxed text-gray-500 dark:text-slate-400">
+    <Card className="relative w-full max-w-md">
+      <h1 class="mb-4 font-display text-2xl font-bold tracking-tight text-g-text">
+        Reset password
+      </h1>
+      <p class="mb-6 text-sm leading-relaxed text-g-muted">
         Self-service password reset is coming soon.
       </p>
 
-      <div class="mb-8 space-y-4 text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+      <div class="mb-8 space-y-4 text-sm leading-relaxed text-g-muted">
         <p>
           If you are already signed in, you can update your password from
           <router-link
             to="/settings"
-            class="text-[#34418F] underline transition-colors hover:text-[#DEAC4B] dark:text-slate-200 dark:hover:text-eypi-gold-dark"
+            class="text-g-brand underline transition-colors hover:text-g-primary"
           >
             Settings
           </router-link>.
@@ -33,7 +28,7 @@
           For account access issues, contact the admin via the
           <router-link
             to="/contact"
-            class="text-[#34418F] underline transition-colors hover:text-[#DEAC4B] dark:text-slate-200 dark:hover:text-eypi-gold-dark"
+            class="text-g-brand underline transition-colors hover:text-g-primary"
           >
             Contact
           </router-link>
@@ -41,13 +36,21 @@
         </p>
       </div>
 
-      <router-link
-        to="/login"
-        class="block text-center text-sm text-gray-500 transition-colors hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200"
-        data-cursor="nav"
-      >
-        ← Back to Login
-      </router-link>
-    </div>
+      <Button variant="secondary" className="w-full" @click="goLogin">
+        Back to login
+      </Button>
+    </Card>
   </section>
 </template>
+
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import Card from '@/components/ui/Card.vue'
+import Button from '@/components/ui/Button.vue'
+
+const router = useRouter()
+
+function goLogin() {
+  router.push('/login')
+}
+</script>

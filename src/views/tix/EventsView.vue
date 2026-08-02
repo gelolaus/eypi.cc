@@ -1,113 +1,106 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-6 py-16">
-    <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-12 sm:px-6">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1
-          class="text-page-title"
-        >
-          Tix
-        </h1>
-        <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
-          Manage tickets &amp; check-in
-        </p>
+        <h1 class="font-display text-3xl font-bold text-g-text">Tix</h1>
+        <p class="mt-2 text-g-muted">Manage tickets &amp; check-in</p>
       </div>
       <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
         <OrgSwitcher />
-        <router-link
-          to="/manage/tix/new"
-          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
-          data-cursor="cta"
-        >
-          New Event
-        </router-link>
+        <Button @click="router.push('/manage/tix/new')">New Event</Button>
       </div>
     </div>
 
-    <input
+    <Input
       v-if="!isLocked"
-      v-model="searchQuery"
+      :value="searchQuery"
       type="search"
       placeholder="Search events..."
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+      className="mb-6"
+      @input="onSearchInput"
     />
 
     <div v-if="loading" class="space-y-3">
-      <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
+      <Card v-for="i in 3" :key="i" className="h-20 animate-pulse" />
     </div>
 
     <div v-else-if="isLocked">
       <OrgLockout />
     </div>
 
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-500 dark:border-red-900/40 dark:bg-red-900/10">
+    <Card v-else-if="error" className="border-g-destructive/30 text-center text-sm text-g-destructive">
       {{ error }}
-    </div>
+    </Card>
 
-    <div
-      v-else-if="!filteredEvents.length"
-      class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
-    >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <p class="text-sm font-medium text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
-      <p class="mt-3 text-sm leading-relaxed text-g-muted">
-        {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
-      </p>
-    </div>
-
-    <div v-else class="overflow-x-auto rounded-2xl border border-g-border">
-      <div class="min-w-[520px]">
-      <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 text-data text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
-        <div class="col-span-8 sm:col-span-5">Event</div>
-        <div class="col-span-4 hidden sm:block">Date &amp; Time</div>
-        <div class="col-span-4 sm:col-span-3 text-right">Actions</div>
-      </div>
-
-      <div
-        v-for="event in filteredEvents"
-        :key="event.id as string"
-        class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 transition-colors hover:bg-white/40 dark:hover:bg-mica-navy-row-hover last:border-0"
+    <Card v-else-if="!filteredEvents.length">
+      <EmptyState
+        :title="events.length ? 'No matching events' : 'No events yet'"
+        :description="events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.'"
       >
-        <div class="col-span-8 sm:col-span-5">
-          <p class="text-base font-semibold text-g-text">{{ event.name }}</p>
+        <Button v-if="!events.length" @click="router.push('/manage/tix/new')">New Event</Button>
+      </EmptyState>
+    </Card>
+
+    <Card v-else className="!p-0 overflow-x-auto md:!p-0">
+      <div class="min-w-[520px]">
+        <div class="grid grid-cols-12 border-b border-g-border bg-g-bg px-4 py-3 text-data text-xs font-semibold text-g-muted">
+          <div class="col-span-8 sm:col-span-5">Event</div>
+          <div class="col-span-4 hidden sm:block">Date &amp; Time</div>
+          <div class="col-span-4 text-right sm:col-span-3">Actions</div>
         </div>
-        <div class="col-span-4 hidden sm:block">
-          <p class="text-data text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
-          <p class="text-data text-xs text-g-muted">{{ event.event_time }}</p>
-        </div>
-        <div class="col-span-4 sm:col-span-3 flex items-center justify-end gap-1.5">
-          <router-link
-            :to="`/manage/tix/${event.slug}`"
-            class="rounded-lg border border-g-border px-3 py-1.5 text-sm font-semibold text-g-text transition-colors hover:border-g-accent hover:text-g-accent"
-            data-cursor="nav"
-          >
-            Manage
-          </router-link>
-          <button
-            :disabled="deletingSlug === (event.slug as string)"
-            class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-400 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-500 disabled:opacity-40 dark:border-red-900/40 dark:text-red-400/70 dark:hover:border-red-700/60 dark:hover:bg-red-900/10 dark:hover:text-red-400"
-            @click="deleteEvent(event.slug as string, event.name as string)"
-          >
-            {{ deletingSlug === (event.slug as string) ? '...' : 'Delete' }}
-          </button>
+
+        <div
+          v-for="event in filteredEvents"
+          :key="event.id as string"
+          class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 transition-colors last:border-0 hover:bg-g-bg"
+        >
+          <div class="col-span-8 min-w-0 sm:col-span-5">
+            <p class="truncate text-base font-semibold text-g-text">{{ event.name }}</p>
+          </div>
+          <div class="col-span-4 hidden sm:block">
+            <p class="text-data text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
+            <p class="text-data text-xs text-g-muted">{{ event.event_time }}</p>
+          </div>
+          <div class="col-span-4 flex items-center justify-end gap-1.5 sm:col-span-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              @click="router.push(`/manage/tix/${event.slug}`)"
+            >
+              Manage
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              :disabled="deletingSlug === (event.slug as string)"
+              @click="deleteEvent(event.slug as string, event.name as string)"
+            >
+              {{ deletingSlug === (event.slug as string) ? '…' : 'Delete' }}
+            </Button>
+          </div>
         </div>
       </div>
-      </div>
-    </div>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_API_URL } from '@/config/tix-api'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
+import Card from '@/components/ui/Card.vue'
+import Button from '@/components/ui/Button.vue'
+import Input from '@/components/ui/Input.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 
+const router = useRouter()
 const toast = useToast()
 const dialog = useDialog()
 const { authHeaders } = useAuth()
@@ -135,9 +128,13 @@ const filteredEvents = computed(() => {
   return events.value.filter((event) =>
     String(event.name ?? '').toLowerCase().includes(q) ||
     String(event.slug ?? '').toLowerCase().includes(q) ||
-    String(event.location ?? '').toLowerCase().includes(q)
+    String(event.location ?? '').toLowerCase().includes(q),
   )
 })
+
+function onSearchInput(e: Event) {
+  searchQuery.value = (e.target as HTMLInputElement).value
+}
 
 function formatDate(d: string) {
   if (!d) return ''
@@ -191,4 +188,3 @@ onMounted(async () => {
   }
 })
 </script>
-
