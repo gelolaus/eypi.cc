@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-xl flex-col px-4 py-12">
+  <section class="relative mx-auto flex w-full max-w-xl flex-col px-4 py-12">
     <header class="mb-8 text-center">
       <h1 class="font-display text-3xl font-bold text-g-text">New Campaign</h1>
       <p class="mt-2 text-sm text-g-muted">Upload frames and share a public link.</p>

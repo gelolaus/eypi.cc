@@ -12,10 +12,12 @@
     <Transition name="org-sheet-panel">
       <div
         v-if="open"
+        ref="panelRef"
         class="fixed inset-x-0 bottom-0 z-[91] rounded-t-2xl border border-g-border bg-g-surface pb-[env(safe-area-inset-bottom)] shadow-2xl lg:hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="org-tools-sheet-title"
+        tabindex="-1"
       >
         <div class="flex items-center justify-between border-b border-g-border px-4 py-3">
           <h2 id="org-tools-sheet-title" class="font-display text-base font-semibold text-g-text">
@@ -49,17 +51,38 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick, onUnmounted, ref, watch } from 'vue'
 import NavIcon from '@/components/layout/NavIcon.vue'
 import type { AppNavItem } from '@/components/layout/app-nav'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   items: AppNavItem[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   close: []
 }>()
+
+const panelRef = ref<HTMLElement | null>(null)
+
+watch(
+  () => props.open,
+  async (isOpen) => {
+    if (!isOpen) return
+    await nextTick()
+    panelRef.value?.focus()
+  },
+)
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.open) emit('close')
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', onKeydown)
+  onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+}
 </script>
 
 <style scoped>

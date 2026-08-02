@@ -1,10 +1,21 @@
 <template>
-  <select
-    :class="selectClasses"
-    v-bind="attrsWithoutClass"
-  >
-    <slot />
-  </select>
+  <div class="relative">
+    <select
+      :class="selectClasses"
+      v-bind="attrsWithoutClass"
+    >
+      <slot />
+    </select>
+    <svg
+      class="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-g-muted"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6" />
+    </svg>
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -1,5 +1,5 @@
 <template>
-  <main class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-10 sm:px-6 lg:px-8">
+  <main class="mx-auto flex w-full max-w-5xl flex-col px-4 py-10 sm:px-6 lg:px-8">
     <header class="mb-6">
       <h1 class="font-display text-3xl font-bold text-g-text">Concessionaire</h1>
       <p class="mt-2 text-g-muted">Generate MOA, waiver, and related docs in one ZIP.</p>

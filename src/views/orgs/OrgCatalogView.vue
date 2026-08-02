@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-8 sm:px-6 md:py-16 lg:px-8">
+  <section class="relative mx-auto flex w-full max-w-5xl flex-col px-4 py-8 sm:px-6 md:py-16 lg:px-8">
     <header class="reveal mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
       <div>
         <h1 class="font-display text-3xl font-bold tracking-tight text-g-text sm:text-4xl">

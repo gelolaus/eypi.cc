@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-xl flex-col px-4 py-12">
+  <section class="relative mx-auto flex w-full max-w-xl flex-col px-4 py-12">
     <div v-if="loading" class="space-y-4">
       <div class="mx-auto h-8 w-1/2 animate-pulse rounded-lg bg-g-border" />
       <Card className="h-72 animate-pulse" />

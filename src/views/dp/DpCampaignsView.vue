@@ -1,5 +1,5 @@
 <template>
-  <section class="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-12 sm:px-6">
+  <section class="relative mx-auto flex w-full max-w-5xl flex-col px-4 py-12 sm:px-6">
     <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="font-display text-3xl font-bold text-g-text">Frames</h1>

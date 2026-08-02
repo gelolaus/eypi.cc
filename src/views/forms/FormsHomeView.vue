@@ -1,5 +1,5 @@
 <template>
-  <main class="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col px-4 py-12 sm:px-6 lg:px-8">
+  <main class="mx-auto flex w-full max-w-5xl flex-col px-4 py-12 sm:px-6 lg:px-8">
     <div v-if="loading" class="grid grid-cols-1 gap-6 md:grid-cols-2">
       <Card v-for="i in 2" :key="i" className="h-32 animate-pulse" />
     </div>
