@@ -327,9 +327,9 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Copy (exact):** title "Sign in to eypi.cc"; button "Sign in with Microsoft"; helper "Use your APC Microsoft 365 account (@apc.edu.ph or @student.apc.edu.ph)."; errors: `tenant`/`domain` → "Only APC Microsoft 365 accounts can sign in.", `cancelled` → "Sign-in was cancelled.", `state` → "Your sign-in link expired. Try again.", `disabled` → "This account is disabled. Contact the eypi.cc admin.", `server` → "Something went wrong signing you in. Try again."
 
-- [ ] **Step 1: Failing tests:** LoginView renders the button whose `href` is `${API_BASE_URL}/api/auth/microsoft/start?returnTo=<encoded>`; each `?error=` shows its copy; the guard sends anonymous users to `/login?returnTo=/links`; `localStorage.getItem('eypi_token')` is never read (`grep` in test).
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test && npm run build`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth): add Sign in with Microsoft to the SPA and remove password views`.
+- [x] **Step 1: Failing tests:** LoginView renders the button whose `href` is `${API_BASE_URL}/api/auth/microsoft/start?returnTo=<encoded>`; each `?error=` shows its copy; the guard sends anonymous users to `/login?returnTo=/links`; `localStorage.getItem('eypi_token')` is never read (`grep` in test).
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test && npm run build`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth): add Sign in with Microsoft to the SPA and remove password views`.
 
 ### Task 2.6: Cutover runbook and rehearsal
 
@@ -424,7 +424,7 @@ feat(db): add versioned migrations with a ledger and baseline
     - `POST /api/links/:slug/unlock { password }` → `{ url }`
     - `GET /api/links/resolve/:slug?r=` (SPA fallback; rate limited)
   - `LinkListItem = { id, slug, url, clicks, createdAt, expiresAt, disabledAt, disabledReason, protected, hasLogo }`; `LinkDetail = LinkListItem & { qrConfig }`
-- [ ] **Step 1: Failing tests** (`createTestApp`):
+- [x] **Step 1: Failing tests** (`createTestApp`):
   - DB error → 500 `internal` (not 401)
   - duplicate custom slug → 409 `slug_taken`
   - slug `a/b` → 422 `fields.slug`
@@ -439,8 +439,8 @@ feat(db): add versioned migrations with a ledger and baseline
   - expired link resolve → 410 `link_expired`
   - disabling a link removes the KV key; enabling restores it
   - `/links?url=` no longer auto-creates (front-end test in 4.5)
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(links): rebuild the links API with paging, quotas, protection, and expiry` (+ separate `fix(links): stop logging users out on database errors` if split).
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(links): rebuild the links API with paging, quotas, protection, and expiry` (+ separate `fix(links): stop logging users out on database errors` if split).
 
 ### Task 4.4: Analytics and CSV export (F-LINK-6, F-LINK-14)
 
@@ -519,7 +519,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `backend/src/routes/events.ts` (lookup key `lookup:${eventId}:${sha256(email)}` 10/15 min plus IP 60/15 min; passes bucket `pass:${attendeeId}` 20/hour; removed attendees get 404; 429 copy "Too many attempts. Wait a few minutes and try again."), `backend/src/lib/passes/context.ts` (only `events.pass_fields` columns; read by `attendees.csv_row_id`), `src/views/tix/EventDetailView.vue` (pass field picker).
 
-- [ ] Failing tests: 30 different students from one IP can each look up once; one email hammered → 429 with the distinct copy; pass context includes only allowlisted columns; removed attendee lookup → 404. Implement → PASS. Commit `fix(tix): key lookup limits by event and email and limit pass fields`.
+- [x] Failing tests: 30 different students from one IP can each look up once; one email hammered → 429 with the distinct copy; pass context includes only allowlisted columns; removed attendee lookup → 404. Implement → PASS. Commit `fix(tix): key lookup limits by event and email and limit pass fields`.
 
 ### Task 5.4: Check-in correctness and attendee actions (F-TIX-4, 5, 6, 9, 16, 19)
 
