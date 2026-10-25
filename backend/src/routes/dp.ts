@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { db, getUser, type Bindings } from '../lib/db'
+import { db, type Bindings } from '../lib/db'
 import type { Client } from '@libsql/client/web'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
@@ -94,7 +94,7 @@ async function requireOwner(client: Client, id: string, orgId: string | undefine
 // ── POST /api/dp ──────────────────────────────────────────────────────────────
 // Create a campaign with one or more frames.
 app.post('/api/dp', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const body = await c.req.json() as {
@@ -136,7 +136,7 @@ app.post('/api/dp', isOrgFeature, async (c) => {
 
   await client.execute({
     sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [id, user.sub!, orgId, title, slug, description || null, '', captionTemplate || null],
+    args: [id, user.id, orgId, title, slug, description || null, '', captionTemplate || null],
   })
   await client.batch(
     frames.map((f, i) => ({
@@ -151,7 +151,7 @@ app.post('/api/dp', isOrgFeature, async (c) => {
 // ── GET /api/dp ───────────────────────────────────────────────────────────────
 // List the creator's campaigns with frame + download counts (no heavy images).
 app.get('/api/dp', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const client = db(c)
@@ -182,7 +182,7 @@ app.get('/api/dp', isOrgFeature, async (c) => {
 // ── GET /api/dp/:slug/edit ────────────────────────────────────────────────────
 // Owner-only full payload (incl. frames) for the editor.
 app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')!
@@ -212,7 +212,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
 
 // ── POST /api/dp/:id/frames ───────────────────────────────────────────────────
 app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
@@ -241,7 +241,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────
 app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
@@ -266,7 +266,7 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
 // Owner-only reorder. Body { orderedIds } must be exactly this campaign's frame
 // ids; positions are rewritten to match the given order.
 app.patch('/api/dp/:id/frames/order', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
@@ -301,7 +301,7 @@ app.patch('/api/dp/:id/frames/order', isOrgFeature, async (c) => {
 // ── PATCH /api/dp/:id ─────────────────────────────────────────────────────────
 // Owner-only edit of title/description/caption/slug; bumps updated_at.
 app.patch('/api/dp/:id', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
@@ -357,7 +357,7 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
 
 // ── DELETE /api/dp/:id ────────────────────────────────────────────────────────
 app.delete('/api/dp/:id', isOrgFeature, async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!

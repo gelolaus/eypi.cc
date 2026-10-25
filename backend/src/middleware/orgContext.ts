@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono'
-import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import { db, getUserOrgId, type Bindings } from '../lib/db'
 
 declare module 'hono' {
   interface ContextVariableMap {
@@ -41,11 +41,7 @@ export async function ensureUserId(c: Context<{ Bindings: Bindings }>): Promise<
     if (sessionUser.email) c.set('userEmail', sessionUser.email)
     return sessionUser.id
   }
-  const jwtUser = await getUser(c)
-  if (!jwtUser?.sub) return null
-  c.set('userId', jwtUser.sub)
-  c.set('userEmail', jwtUser.email)
-  return jwtUser.sub
+  return null
 }
 
 // Resolves the active org once per request. A named header the user cannot

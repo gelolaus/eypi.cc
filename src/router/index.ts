@@ -3,11 +3,10 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useAuth } from '@/composables/useAuth'
-import { SUPER_ADMIN_EMAIL } from '@/config/admin'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
 
 const { checkOrgMembership } = useOrgMembership()
-const { getUser } = useAuth()
+const { sessionUser } = useAuth()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -304,12 +303,12 @@ router.beforeEach(async (to, _from, next) => {
 
   const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin)
   if (requiresSuperAdmin) {
-    const user = getUser()
+    const user = sessionUser()
     if (!user) {
       next({ name: 'login' })
       return
     }
-    if (user.email !== SUPER_ADMIN_EMAIL) {
+    if (user.role !== 'admin') {
       next({ name: 'settings-security', replace: true })
       return
     }

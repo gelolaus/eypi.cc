@@ -1,7 +1,16 @@
-export const REQUIRED_KEYS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'JWT_SECRET', 'PASS_TOKEN_SECRET']
+export const REQUIRED_KEYS = [
+  'TURSO_DATABASE_URL',
+  'TURSO_AUTH_TOKEN',
+  'PASS_TOKEN_SECRET',
+  'AUTH_COOKIE_SECRET',
+  'IP_HASH_SECRET',
+]
 
 export const OPTIONAL_KEYS = [
-  { key: 'RESEND_API_KEY', feature: 'verification emails' },
+  { key: 'MS_CLIENT_ID', feature: 'Microsoft sign-in' },
+  { key: 'MS_CLIENT_SECRET', feature: 'Microsoft sign-in' },
+  { key: 'MS_ALLOWED_TENANT_IDS', feature: 'Microsoft sign-in' },
+  { key: 'RESEND_API_KEY', feature: 'invite emails' },
   { key: 'APPLE_PASS_TYPE_ID', feature: 'Apple Wallet' },
   { key: 'APPLE_TEAM_ID', feature: 'Apple Wallet' },
   { key: 'APPLE_PASS_CERT_PEM', feature: 'Apple Wallet' },
@@ -51,13 +60,17 @@ export function checkDevVars(values, example) {
   return { requiredUnset, optionalUnset }
 }
 
-export function seedDevVars(exampleText, existingText, newSecret, passTokenSecret) {
+const GENERATED_SECRET_KEYS = ['PASS_TOKEN_SECRET', 'AUTH_COOKIE_SECRET', 'IP_HASH_SECRET']
+
+export function seedDevVars(exampleText, existingText, secrets) {
   if (existingText !== null) {
     return { text: existingText, changed: false }
   }
-  let text = exampleText.replace(/^[ \t]*JWT_SECRET[ \t]*=.*$/m, `JWT_SECRET=${newSecret}`)
-  if (passTokenSecret != null) {
-    text = text.replace(/^[ \t]*PASS_TOKEN_SECRET[ \t]*=.*$/m, `PASS_TOKEN_SECRET=${passTokenSecret}`)
+  let text = exampleText
+  for (const key of GENERATED_SECRET_KEYS) {
+    const value = secrets?.[key]
+    if (value == null) continue
+    text = text.replace(new RegExp(`^[ \\t]*${key}[ \\t]*=.*$`, 'm'), `${key}=${value}`)
   }
   return { text, changed: true }
 }

@@ -2,8 +2,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Hono } from 'hono'
-import { sign } from 'hono/jwt'
 import { createClient, type Client } from '@libsql/client/node'
+import { createSession, sessionCookieName } from '../lib/auth/session'
 import type { Client as RequestClient } from '@libsql/client/web'
 import api from '../index'
 import type { Bindings } from '../lib/db'
@@ -120,7 +120,6 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings & { MEDIA: ReturnT
   return {
     TURSO_DATABASE_URL: ':memory:',
     TURSO_AUTH_TOKEN: 'test-token',
-    JWT_SECRET: 'test-jwt-secret',
     PASS_TOKEN_SECRET: 'test-pass-secret',
     RESEND_API_KEY: 'test-resend',
     RATE_LIMIT_KV: memoryKv(),
@@ -144,11 +143,6 @@ export async function createTestApp(opts: CreateTestAppOptions = {}) {
 
   app.use('*', async (c, next) => {
     c.set('db', client as unknown as RequestClient)
-    if (opts.user) {
-      c.set('user', opts.user)
-      c.set('userId', opts.user.id)
-      c.set('userEmail', opts.user.email)
-    }
     await next()
   })
   app.route('/', api)
@@ -161,20 +155,35 @@ export async function createTestApp(opts: CreateTestAppOptions = {}) {
     props: {},
   }
 
+  let sessionCookie: string | null = null
+
+  async function sessionHeader(): Promise<string | null> {
+    if (!opts.user) return null
+    if (sessionCookie) return sessionCookie
+    const existing = await client.execute({
+      sql: 'SELECT id FROM users WHERE id = ?',
+      args: [opts.user.id],
+    })
+    if (existing.rows.length === 0) {
+      await client.execute({
+        sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)',
+        args: [opts.user.id, opts.user.email, opts.user.name, opts.user.role || 'user'],
+      })
+    }
+    const { token } = await createSession(
+      client as unknown as Parameters<typeof createSession>[0],
+      env,
+      opts.user.id,
+      new Request('https://eypi.cc/'),
+    )
+    sessionCookie = `${sessionCookieName(env)}=${token}`
+    return sessionCookie
+  }
+
   async function request(path: string, init?: RequestInit): Promise<Response> {
     const headers = new Headers(init?.headers)
-    if (opts.user && !headers.has('Authorization')) {
-      const token = await sign(
-        {
-          sub: opts.user.id,
-          email: opts.user.email,
-          name: opts.user.name,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60,
-        },
-        env.JWT_SECRET,
-      )
-      headers.set('Authorization', `Bearer ${token}`)
-    }
+    const cookie = await sessionHeader()
+    if (cookie && !headers.has('Cookie')) headers.set('Cookie', cookie)
     return app.request(path, { ...init, headers }, env, executionCtx)
   }
 

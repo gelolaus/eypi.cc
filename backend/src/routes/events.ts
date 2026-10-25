@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
-import { db, getUser, type Bindings } from '../lib/db'
+import { db, type Bindings } from '../lib/db'
 import { noOrgBody, orgContext } from '../middleware/orgContext'
+import { attachSession } from '../middleware/requireAuth'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
 import { buildApplePass } from '../lib/passes/applePass'
@@ -53,6 +54,8 @@ function eventRouteUsesOrg(path: string): boolean {
 }
 
 app.use('*', async (c, next) => {
+  const unavailable = await attachSession(c)
+  if (unavailable) return unavailable
   if (!eventRouteUsesOrg(c.req.path)) {
     await next()
     return
@@ -83,7 +86,7 @@ async function requireEventLead(client: Client, slug: string, orgId: string | un
 // Create event. When attendees is absent/empty, creates in selection mode
 // (selection_locked=0) and returns selectionLocked:false for frontend redirect.
 app.post('/api/events', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const body = await c.req.json() as {
@@ -126,7 +129,7 @@ app.post('/api/events', async (c) => {
 
   await client.execute({
     sql: 'INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [eventId, body.slug, user.sub, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
+    args: [eventId, body.slug, user.id, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
   })
 
   if (!hasAttendees) {
@@ -177,7 +180,7 @@ app.post('/api/events', async (c) => {
 
 // ── GET /api/events ───────────────────────────────────────────────────────────
 app.get('/api/events', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const client = db(c)
@@ -195,7 +198,7 @@ app.get('/api/events', async (c) => {
 // ── GET /api/events/:slug ─────────────────────────────────────────────────────
 app.get('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
-  const user = await getUser(c)
+  const user = c.var.user
 
   if (!user) {
     const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
@@ -246,7 +249,7 @@ app.get('/api/events/:slug', async (c) => {
 
 // ── GET /api/events/:slug/attendees ───────────────────────────────────────────
 app.get('/api/events/:slug/attendees', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -278,7 +281,7 @@ app.get('/api/events/:slug/attendees', async (c) => {
 // Store parsed CSV rows. Pre-finalization: replaces all unselected rows.
 // Post-finalization: appends (only deletes unselected rows, keeps selected).
 app.post('/api/events/:slug/upload-csv', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -341,7 +344,7 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
 // ── PATCH /api/events/:slug/column-mapping ───────────────────────────────────
 // Update the confirmed column mapping after the user has reviewed it in the wizard.
 app.patch('/api/events/:slug/column-mapping', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -382,7 +385,7 @@ app.patch('/api/events/:slug/column-mapping', async (c) => {
 // ── GET /api/events/:slug/csv-data ────────────────────────────────────────────
 // Returns stored CSV rows + column mapping + clusters for wizard resume.
 app.get('/api/events/:slug/csv-data', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -426,7 +429,7 @@ app.get('/api/events/:slug/csv-data', async (c) => {
 // ── POST /api/events/:slug/clusters ──────────────────────────────────────────
 // Save cluster configuration. Only before finalization.
 app.post('/api/events/:slug/clusters', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -463,7 +466,7 @@ app.post('/api/events/:slug/clusters', async (c) => {
 // ── GET /api/events/:slug/clusters ────────────────────────────────────────────
 // Returns cluster configs with live fill status.
 app.get('/api/events/:slug/clusters', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -522,7 +525,7 @@ app.get('/api/events/:slug/clusters', async (c) => {
 // ── POST /api/events/:slug/finalize ──────────────────────────────────────────
 // Create attendees from selected CSV row IDs. Locks the event.
 app.post('/api/events/:slug/finalize', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -651,7 +654,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
 // ── POST /api/events/:slug/clusters/:value/raffle ─────────────────────────────
 // Re-raffle a cluster to fill remaining slots from unselected eligible rows.
 app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -766,7 +769,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
 // ── DELETE /api/events/:slug ──────────────────────────────────────────────────
 app.delete('/api/events/:slug', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -791,7 +794,7 @@ app.delete('/api/events/:slug', async (c) => {
 
 // ── PATCH /api/events/:slug ───────────────────────────────────────────────────
 app.patch('/api/events/:slug', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -821,7 +824,7 @@ app.patch('/api/events/:slug', async (c) => {
 
 // ── GET /api/events/:slug/csv-rows/search ─────────────────────────────────────
 app.get('/api/events/:slug/csv-rows/search', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -850,7 +853,7 @@ app.get('/api/events/:slug/csv-rows/search', async (c) => {
 
 // ── POST /api/events/:slug/add-guest ─────────────────────────────────────────
 app.post('/api/events/:slug/add-guest', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -862,7 +865,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
   })
   if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
   const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
+  if (event.lead_user_id !== user.id) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
   if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
 
   // Capacity check (exclude removed attendees)
@@ -1110,7 +1113,7 @@ app.get('/api/events/:slug/passes/google', async (c) => {
 
 // ── POST /api/events/:slug/checkin ────────────────────────────────────────────
 app.post('/api/events/:slug/checkin', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -1154,7 +1157,7 @@ app.post('/api/events/:slug/checkin', async (c) => {
 
 // ── POST /api/events/:slug/checkin-manual ─────────────────────────────────────
 app.post('/api/events/:slug/checkin-manual', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -1193,7 +1196,7 @@ app.post('/api/events/:slug/checkin-manual', async (c) => {
 
 // ── POST /api/events/:slug/checkout ───────────────────────────────────────────
 app.post('/api/events/:slug/checkout', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -1221,7 +1224,7 @@ app.post('/api/events/:slug/checkout', async (c) => {
 
 // ── POST /api/events/:slug/remove ─────────────────────────────────────────────
 app.post('/api/events/:slug/remove', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -1250,7 +1253,7 @@ app.post('/api/events/:slug/remove', async (c) => {
 // ── PATCH /api/events/:slug/attendees/:id ─────────────────────────────────────
 // Update attendee cluster_value (lead only).
 app.patch('/api/events/:slug/attendees/:id', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
@@ -1275,7 +1278,7 @@ app.patch('/api/events/:slug/attendees/:id', async (c) => {
 // ── PATCH /api/events/:slug/clusters/:value/max-count ─────────────────────────
 // Set (or create) the max_count for a cluster. Creates the cluster row if ad-hoc.
 app.patch('/api/events/:slug/clusters/:value/max-count', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { db, getUser, type Bindings } from '../lib/db'
+import { db, type Bindings } from '../lib/db'
+import { attachSession } from '../middleware/requireAuth'
 import { hmacIp } from '../lib/ipHash'
 import { checkRateLimit } from '../lib/rateLimit'
 
@@ -58,7 +59,8 @@ app.post('/api/reports', async (c) => {
   if (found.rows.length === 0) {
     return c.json({ error: { code: 'not_found', message: 'Not found' } }, 404)
   }
-  const user = await getUser(c)
+  const unavailable = await attachSession(c)
+  if (unavailable) return unavailable
   const id = crypto.randomUUID()
 
   await client.execute({
@@ -72,7 +74,7 @@ app.post('/api/reports', async (c) => {
       reason,
       details ?? null,
       reporterIpHash,
-      user?.sub ?? null,
+      c.var.user?.id ?? null,
     ],
   })
 

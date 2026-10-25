@@ -7,7 +7,7 @@ const JWT_SECRET = 'jwt-secret'
 const PASS_TOKEN_SECRET = 'pass-secret'
 
 function env(): Bindings {
-  return { JWT_SECRET, PASS_TOKEN_SECRET } as Bindings
+  return { JWT_SECRET, PASS_TOKEN_SECRET } as unknown as Bindings
 }
 
 function passClaims(slug: string) {

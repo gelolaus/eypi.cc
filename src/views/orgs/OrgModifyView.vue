@@ -302,11 +302,11 @@ interface ProfileFormState {
 
 const route = useRoute()
 const router = useRouter()
-const { authHeaders, getUser } = useAuth()
+const { authHeaders, sessionUser } = useAuth()
 const { setActiveOrg } = useActiveOrg()
 const toast = useToast()
 const dialog = useDialog()
-const currentUser = getUser()
+const currentUser = sessionUser()
 
 const slug = computed(() => route.params.slug as string)
 const org = ref<OrgListItem | null>(null)

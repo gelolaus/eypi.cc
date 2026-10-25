@@ -37,7 +37,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const { getUser } = useAuth()
+const { sessionUser } = useAuth()
 
 function paintCardBorder(event: Event, color: string) {
   const el = event.currentTarget
@@ -46,7 +46,7 @@ function paintCardBorder(event: Event, color: string) {
 
 const userName = ref('')
 onMounted(() => {
-  const user = getUser()
+  const user = sessionUser()
   if (user?.name) userName.value = user.name
 })
 

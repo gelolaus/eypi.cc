@@ -1,10 +1,8 @@
 # Copy this file to backend/.dev.vars and fill in your values.
-# Used by: wrangler dev, npm run backfill-kv, node run-migration.mjs
+# Used by: wrangler dev, npm run backfill-kv, node scripts/migrate.mjs
 #
 # SECURITY — keep backend/.dev.vars gitignored and never commit real secrets.
 # This project intentionally uses the production Turso database for local dev.
-# Use a JWT_SECRET that matches production if you need tokens to interoperate,
-# or a local-only secret if you only test against a fresh local login session.
 #
 # Turso dashboard → your database → Connect:
 #   TURSO_DATABASE_URL = the libsql://... URL shown there
@@ -15,17 +13,28 @@
 TURSO_DATABASE_URL=libsql://your-database-name-your-org.turso.io
 TURSO_AUTH_TOKEN=your-turso-database-token
 
-# REQUIRED — login and auth routes fail without this (use the same value as the Cloudflare Worker secret)
-JWT_SECRET=your-local-only-jwt-secret-min-32-chars
-
-# REQUIRED — wallet pass tokens. Keep this different from JWT_SECRET.
+# REQUIRED — wallet pass tokens.
 # setup fills a fresh value when it creates backend/.dev.vars.
 PASS_TOKEN_SECRET=your-local-only-pass-token-secret-min-32-chars
 
-RESEND_API_KEY=your-resend-api-key
+# REQUIRED — HMAC for the short-lived Microsoft sign-in cookie.
+# setup fills a fresh value when it creates backend/.dev.vars.
+AUTH_COOKIE_SECRET=your-local-only-auth-cookie-secret-min-32-chars
 
-# Verification email links (defaults to https://eypi.cc when unset in production)
-FRONTEND_URL=http://localhost:5173
+# REQUIRED — HMAC for IP hashing (sessions, analytics, reports).
+# setup fills a fresh value when it creates backend/.dev.vars.
+IP_HASH_SECRET=your-local-only-ip-hash-secret-min-32-chars
+
+# Microsoft Entra sign-in. Empty values do not make /api/health return 503.
+MS_CLIENT_ID=
+MS_CLIENT_SECRET=
+MS_ALLOWED_TENANT_IDS=
+
+# SPA origin for sign-in redirects (local Vite, or https://eypi.cc).
+FRONTEND_ORIGIN=http://localhost:5173
+ENVIRONMENT=development
+
+RESEND_API_KEY=your-resend-api-key
 
 # Apple Wallet — Pass Type ID certificate + WWDR intermediate (PEM, single line or multiline)
 APPLE_PASS_TYPE_ID=pass.cc.eypi.event

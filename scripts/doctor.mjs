@@ -52,6 +52,11 @@ if (!existsSync(devVarsPath)) {
       console.log(`${feature}: disabled (missing ${key})`)
     }
   }
+
+  const microsoftKeys = ['MS_CLIENT_ID', 'MS_CLIENT_SECRET', 'MS_ALLOWED_TENANT_IDS']
+  if (microsoftKeys.some((key) => unsetOptional.has(key))) {
+    console.log('Microsoft sign-in keys are optional. /api/health does not require them.')
+  }
 }
 
 process.exit(failed ? 1 : 0)

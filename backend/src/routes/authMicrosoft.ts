@@ -89,7 +89,7 @@ async function finishVerifiedSignIn(
     if (disabled.rows[0]?.disabled_at != null && String(disabled.rows[0].disabled_at).length > 0) {
       return loginRedirect(c.env, 'disabled', true)
     }
-    c.executionCtx.waitUntil(handleUserOnboarding(identity.email, userId, client))
+    c.executionCtx.waitUntil(handleUserOnboarding({ id: userId, email: identity.email }, client))
     const session = await createSession(client, c.env, userId, c.req.raw)
     const origin = (c.env.FRONTEND_ORIGIN ?? '').replace(/\/$/, '')
     const headers = new Headers({ Location: `${origin}${returnTo}` })

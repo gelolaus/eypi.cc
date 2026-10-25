@@ -3,6 +3,7 @@ export interface AuthUser {
   email: string
   name?: string
   exp: number
+  role?: 'user' | 'admin'
 }
 
 export function useAuth() {
@@ -10,7 +11,7 @@ export function useAuth() {
     return localStorage.getItem('eypi_token')
   }
 
-  function getUser(): AuthUser | null {
+  function sessionUser(): AuthUser | null {
     const token = getToken()
     if (!token) return null
     try {
@@ -34,5 +35,5 @@ export function useAuth() {
     }
   }
 
-  return { getToken, getUser, authHeaders }
+  return { getToken, sessionUser, authHeaders }
 }

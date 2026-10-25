@@ -22,7 +22,7 @@ const normalizeUrl = (url: string) => {
   return trimmed
 }
 
-// Link Routes (require JWT)
+// Link routes require a session cookie.
 app.get('/api/links', requireAuth, async (c) => {
   try {
     const db = requestDb(c)

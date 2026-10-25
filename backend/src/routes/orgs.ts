@@ -1,9 +1,10 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { db, getUser } from '../lib/db'
+import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
 import type { Client, InStatement, InValue } from '@libsql/client/web'
-import { SUPER_ADMIN_EMAIL } from '../../../shared/admin'
+import { requireAdmin } from '../middleware/requireAdmin'
+import { requireAuth } from '../middleware/requireAuth'
 
 type Variables = {
   userId: string
@@ -28,10 +29,6 @@ const ORG_TYPE_VALUES = [
   'socio_civic',
   'performing_arts',
 ] as const
-
-function isSuperAdmin(email: string): boolean {
-  return email === SUPER_ADMIN_EMAIL
-}
 
 function validateImageUrl(value: string): boolean {
   if (!value) return true
@@ -268,15 +265,14 @@ app.get('/public/:slug', async (c) => {
   }
 })
 
-// Ensure requester is logged in for all routes below
+// Session required except the public catalog, which is registered above this middleware.
 app.use('*', async (c, next) => {
-  const user = await getUser(c)
-  if (!user) {
-    return c.json({ error: 'Unauthorized' }, 401)
+  const path = c.req.path
+  if (path.endsWith('/public') || path.includes('/public/')) {
+    await next()
+    return
   }
-  c.set('userId', user.sub)
-  c.set('userEmail', user.email)
-  await next()
+  return requireAuth(c, next)
 })
 
 // ==========================================
@@ -319,15 +315,10 @@ app.get('/', async (c) => {
 
 /**
  * POST /api/orgs
- * Create a new organization. Restricted to arlaus@student.apc.edu.ph.
+ * Create a new organization. Restricted to users.role = admin.
  */
-app.post('/', async (c) => {
+app.post('/', requireAdmin, async (c) => {
   const database = db(c)
-  const requesterEmail = c.var.userEmail
-
-  if (!isSuperAdmin(requesterEmail)) {
-    return c.json({ error: 'Forbidden. Admin access required.' }, 403)
-  }
 
   let body
   try {
@@ -478,20 +469,11 @@ app.post('/invites/:org_id/decline', async (c) => {
 // SUPER ADMIN — ORG MANAGEMENT
 // ==========================================
 
-function requireSuperAdmin(email: string): { ok: true } | { ok: false } {
-  if (!isSuperAdmin(email)) return { ok: false }
-  return { ok: true }
-}
-
 /**
  * GET /api/orgs/admin
- * List all organizations (super admin).
+ * List all organizations (admin).
  */
-app.get('/admin', async (c) => {
-  if (!requireSuperAdmin(c.var.userEmail).ok) {
-    return c.json({ error: 'Forbidden. Admin access required.' }, 403)
-  }
-
+app.get('/admin', requireAdmin, async (c) => {
   const database = db(c)
   try {
     const { rows } = await database.execute({
@@ -513,11 +495,7 @@ app.get('/admin', async (c) => {
 /**
  * GET /api/orgs/admin/:org_id
  */
-app.get('/admin/:org_id', async (c) => {
-  if (!requireSuperAdmin(c.var.userEmail).ok) {
-    return c.json({ error: 'Forbidden. Admin access required.' }, 403)
-  }
-
+app.get('/admin/:org_id', requireAdmin, async (c) => {
   const database = db(c)
   const orgId = c.req.param('org_id')
 
@@ -543,11 +521,7 @@ app.get('/admin/:org_id', async (c) => {
 /**
  * PATCH /api/orgs/admin/:org_id
  */
-app.patch('/admin/:org_id', async (c) => {
-  if (!requireSuperAdmin(c.var.userEmail).ok) {
-    return c.json({ error: 'Forbidden. Admin access required.' }, 403)
-  }
-
+app.patch('/admin/:org_id', requireAdmin, async (c) => {
   const database = db(c)
   const orgId = c.req.param('org_id')
   if (!orgId) return c.json({ error: 'Organization not found.' }, 404)
@@ -684,11 +658,7 @@ app.patch('/admin/:org_id', async (c) => {
 /**
  * DELETE /api/orgs/admin/:org_id
  */
-app.delete('/admin/:org_id', async (c) => {
-  if (!requireSuperAdmin(c.var.userEmail).ok) {
-    return c.json({ error: 'Forbidden. Admin access required.' }, 403)
-  }
-
+app.delete('/admin/:org_id', requireAdmin, async (c) => {
   const database = db(c)
   const orgId = c.req.param('org_id')
 

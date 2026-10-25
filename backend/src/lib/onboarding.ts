@@ -1,11 +1,13 @@
 import type { Client } from '@libsql/client/web'
 
 /**
- * Registration Auto-Claim Hook
- * Executes asynchronously upon a user's first login or verification.
+ * Maps pending org memberships onto a user after Microsoft sign-in.
  */
-export async function handleUserOnboarding(userEmail: string, userId: string, database: Client): Promise<void> {
-  const normalizedEmail = userEmail.toLowerCase().trim()
+export async function handleUserOnboarding(
+  user: { id: string; email: string },
+  database: Client,
+): Promise<void> {
+  const normalizedEmail = user.email.toLowerCase().trim()
 
   try {
     // 1. Check for pending pre-provisioned memberships
@@ -31,13 +33,13 @@ export async function handleUserOnboarding(userEmail: string, userId: string, da
         SET user_id = ? 
         WHERE email = ? AND user_id IS NULL
       `,
-      args: [userId, normalizedEmail]
+      args: [user.id, normalizedEmail]
     })
     
-    console.log(`[Auto-Claim] Successfully mapped ${result.rowsAffected} pre-provisioned org memberships for: ${normalizedEmail}`)
+    console.log(`[Auto-Claim] Successfully mapped ${result.rowsAffected} pre-provisioned org memberships for user ${user.id}`)
     
   } catch (error) {
     // We catch and log to prevent throwing errors into the critical authentication path
-    console.error(`[Auto-Claim] Critical failure during auto-claim hook for ${normalizedEmail}:`, error)
+    console.error(`[Auto-Claim] Critical failure during auto-claim hook for user ${user.id}:`, error)
   }
 }

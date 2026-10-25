@@ -140,7 +140,7 @@ import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTyp
 
 useReveal()
 
-const { getUser } = useAuth()
+const { sessionUser } = useAuth()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
 const orgs = ref<PublicOrgCatalogItem[]>([])
@@ -149,7 +149,7 @@ const error = ref('')
 const searchQuery = ref('')
 const selectedOrgType = ref<OrgType | null>(null)
 
-const isAuthenticated = computed(() => !!getUser())
+const isAuthenticated = computed(() => !!sessionUser())
 
 const typeFilterOptions = computed(() => [
   { value: null as OrgType | null, label: 'All' },

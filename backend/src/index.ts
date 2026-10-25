@@ -5,7 +5,6 @@ import { onError } from './lib/errors'
 import { missingRequiredEnv, requiredEnvError } from './lib/env'
 import { reportError } from './lib/reportError'
 import { allowedOrigins, csrf } from './middleware/csrf'
-import authRoutes from './routes/auth'
 import authMicrosoft from './routes/authMicrosoft'
 import linkRoutes from './routes/links'
 import meRoutes from './routes/me'
@@ -65,7 +64,6 @@ app.get('/api/health', async (c) => {
 app.use('/api/*', csrf)
 
 // Mount feature routers. Each declares its own full /api/... paths.
-app.route('/', authRoutes)
 app.route('/', authMicrosoft)
 app.route('/', meRoutes)
 app.route('/', linkRoutes)

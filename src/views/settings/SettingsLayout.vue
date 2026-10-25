@@ -42,13 +42,12 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
-import { SUPER_ADMIN_EMAIL } from '@/config/admin'
 
 useReveal()
 const route = useRoute()
-const { getUser } = useAuth()
+const { sessionUser } = useAuth()
 
-const isSuperAdmin = computed(() => getUser()?.email === SUPER_ADMIN_EMAIL)
+const isSuperAdmin = computed(() => sessionUser()?.role === 'admin')
 
 interface SettingsTab {
   name: string

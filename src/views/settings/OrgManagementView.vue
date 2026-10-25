@@ -53,7 +53,13 @@ import { api } from '@/lib/api'
 import { ref, onMounted } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import type { AdminOrgListItem } from '@/config/admin'
+interface AdminOrgListItem {
+  org_id: string
+  org_name: string
+  owner_email: string
+  is_public_catalog: number
+  created_at: string
+}
 
 const { authHeaders } = useAuth()
 const toast = useToast()

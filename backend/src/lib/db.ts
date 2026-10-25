@@ -1,5 +1,4 @@
 import type { Context } from 'hono'
-import { verify } from 'hono/jwt'
 import { createClient } from '@libsql/client/web'
 import type { Client } from '@libsql/client/web'
 
@@ -56,7 +55,6 @@ export async function getUserOrgId(
 export type Bindings = {
   TURSO_DATABASE_URL: string
   TURSO_AUTH_TOKEN: string
-  JWT_SECRET: string
   PASS_TOKEN_SECRET: string
   RESEND_API_KEY: string
   RATE_LIMIT_KV: KVNamespace
@@ -67,7 +65,9 @@ export type Bindings = {
   ENVIRONMENT?: string
   MS_CLIENT_ID?: string
   MS_CLIENT_SECRET?: string
+  /** Comma-separated Entra tenant ids allowed to sign in. */
   MS_ALLOWED_TENANT_IDS?: string
+  /** HMAC key for the short-lived Microsoft sign-in cookie. */
   AUTH_COOKIE_SECRET?: string
   /** SPA origin for Microsoft sign-in redirects. */
   FRONTEND_ORIGIN?: string
@@ -82,15 +82,6 @@ export type Bindings = {
   GOOGLE_WALLET_ISSUER_ID?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY?: string
-  /** SPA origin for verification emails (defaults to https://eypi.cc). */
-  FRONTEND_URL?: string
-}
-
-export type JWTPayload = {
-  sub: string
-  email: string
-  name?: string
-  exp: number
 }
 
 // One Turso/libSQL client per request, reused from c.var.db.
@@ -103,20 +94,4 @@ export function db<E extends { Bindings: Bindings }>(c: Context<E>): Client {
   })
   c.set('db', client)
   return client
-}
-
-// Verify the shared HS256 JWT (issued by /api/auth/login) and return its payload.
-export async function getUser(
-  c: { req: { header: (k: string) => string | undefined }; env: Bindings },
-): Promise<JWTPayload | null> {
-  const auth = c.req.header('Authorization')
-  if (!auth?.startsWith('Bearer ')) return null
-  try {
-    const payload = await verify(auth.slice(7), c.env.JWT_SECRET, 'HS256') as Record<string, unknown>
-    if (payload.typ !== undefined || typeof payload.email !== 'string') return null
-    if (typeof payload.exp === 'number' && Date.now() / 1000 > payload.exp) return null
-    return payload as JWTPayload
-  } catch {
-    return null
-  }
 }

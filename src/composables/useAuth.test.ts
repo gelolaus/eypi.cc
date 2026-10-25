@@ -22,11 +22,11 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('useAuth().getUser', () => {
+describe('useAuth().sessionUser', () => {
   it('returns the decoded payload for a valid, non-expired token', () => {
     stubToken(makeToken({ sub: 'user-1', email: 'user@student.apc.edu.ph', exp: Math.floor(Date.now() / 1000) + 3600 }))
 
-    expect(useAuth().getUser()).toEqual({
+    expect(useAuth().sessionUser()).toEqual({
       sub: 'user-1',
       email: 'user@student.apc.edu.ph',
       exp: expect.any(Number),
@@ -36,24 +36,24 @@ describe('useAuth().getUser', () => {
   it('returns null for an expired token', () => {
     stubToken(makeToken({ sub: 'user-1', email: 'user@student.apc.edu.ph', exp: Math.floor(Date.now() / 1000) - 10 }))
 
-    expect(useAuth().getUser()).toBeNull()
+    expect(useAuth().sessionUser()).toBeNull()
   })
 
   it('returns null for a malformed token (wrong number of segments)', () => {
     stubToken('not-a-jwt')
 
-    expect(useAuth().getUser()).toBeNull()
+    expect(useAuth().sessionUser()).toBeNull()
   })
 
   it('returns null for a token whose payload segment is not valid base64/JSON', () => {
     stubToken('aGVhZGVy.not-valid-base64!!.signature')
 
-    expect(useAuth().getUser()).toBeNull()
+    expect(useAuth().sessionUser()).toBeNull()
   })
 
   it('returns null when there is no token', () => {
     stubToken(null)
 
-    expect(useAuth().getUser()).toBeNull()
+    expect(useAuth().sessionUser()).toBeNull()
   })
 })
