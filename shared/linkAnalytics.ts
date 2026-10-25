@@ -108,22 +108,34 @@ export function getOS(userAgent: string | null): string {
 
 export type LinkClickMetadata = {
   linkId: string
-  slug: string
-  userAgent: string | null
-  referrer: string
+  os?: string
   country: string
+  referrer: string
+  source?: string | null
+  visitorHash?: string | null
+  // The SPA fallback still sends these until Task 4.3. The counter keys on linkId.
+  slug?: string
+  userAgent?: string | null
 }
 
 export async function logLinkClick(db: Client, meta: LinkClickMetadata): Promise<void> {
-  const os = getOS(meta.userAgent)
-  await Promise.all([
-    db.execute({
-      sql: 'INSERT INTO analytics (link_id, os, country, referrer) VALUES (?, ?, ?, ?)',
-      args: [meta.linkId, os, meta.country, meta.referrer],
-    }),
-    db.execute({
-      sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE slug = ?',
-      args: [meta.slug],
-    }),
-  ])
+  const os = meta.os ?? getOS(meta.userAgent ?? null)
+  await db.batch([
+    {
+      sql: `INSERT INTO analytics (link_id, os, country, referrer, visitor_hash, source)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [
+        meta.linkId,
+        os,
+        meta.country,
+        meta.referrer,
+        meta.visitorHash ?? null,
+        meta.source ?? null,
+      ],
+    },
+    {
+      sql: 'UPDATE links SET clicks = COALESCE(clicks, 0) + 1 WHERE id = ?',
+      args: [meta.linkId],
+    },
+  ], 'write')
 }

@@ -102,4 +102,87 @@ describe('edge short-link redirect', () => {
     expect(fetchAsset).toHaveBeenCalledWith(request)
     expect(logLinkClick).not.toHaveBeenCalled()
   })
+
+  it('sends an expired link to /expired and does not log', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}`, {
+        headers: { 'Sec-Fetch-Mode': 'navigate' },
+      }),
+      makeEnv({
+        [SLUG]: JSON.stringify({ v: 2, id: 'link-1', url: DESTINATION, exp: 1 }),
+      }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe('/expired')
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(fetchAsset).not.toHaveBeenCalled()
+  })
+
+  it('sends a protected link to /unlock/abc and does not log', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}`, {
+        headers: { 'Sec-Fetch-Mode': 'navigate' },
+      }),
+      makeEnv({
+        [SLUG]: JSON.stringify({ v: 2, id: 'link-1', url: DESTINATION, pw: 1 }),
+      }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe('/unlock/abc')
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(fetchAsset).not.toHaveBeenCalled()
+  })
+
+  it('strips src=qr from the destination and records source qr', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}`, {
+        headers: { 'Sec-Fetch-Mode': 'navigate', 'User-Agent': 'Mozilla/5.0 Chrome/121.0.0.0' },
+      }),
+      makeEnv({
+        [SLUG]: JSON.stringify({
+          v: 2,
+          id: 'link-1',
+          url: 'https://example.com/dest?src=qr',
+        }),
+      }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe('https://example.com/dest')
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
+    expect(logLinkClick).toHaveBeenCalledOnce()
+    expect(logLinkClick).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ linkId: 'link-1', source: 'qr' }),
+    )
+  })
+
+  it('does not log a click from a bot user agent', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}`, {
+        headers: {
+          'Sec-Fetch-Mode': 'navigate',
+          'User-Agent': 'Mozilla/5.0 (compatible; Discordbot/2.0)',
+        },
+      }),
+      makeEnv({ [SLUG]: slugEntry() }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe(DESTINATION)
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
+    expect(logLinkClick).not.toHaveBeenCalled()
+  })
 })

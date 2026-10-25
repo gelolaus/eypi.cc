@@ -67,7 +67,7 @@ beforeAll(async () => {
   jwk.alg = 'RS256'
   jwk.use = 'sig'
   jwk.kid = 'test-key'
-  publicJwk = jwk
+  publicJwk = jwk as Record<string, unknown>
 })
 
 afterEach(() => {

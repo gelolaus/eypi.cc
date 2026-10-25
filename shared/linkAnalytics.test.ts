@@ -44,27 +44,42 @@ describe('getOS', () => {
 })
 
 describe('logLinkClick', () => {
-  it('inserts an analytics row and increments the link click count', async () => {
-    const calls: { sql: string; args: unknown[] }[] = []
+  it('increments clicks by link id in one batch when the slug changed', async () => {
+    const batches: { stmts: { sql: string; args?: unknown[] }[]; mode?: string }[] = []
     const fakeClient = {
-      execute: async (query: { sql: string; args: unknown[] }) => {
-        calls.push(query)
-        return {} as unknown
+      execute: async () => {
+        throw new Error('logLinkClick must use one batch, not execute')
+      },
+      batch: async (stmts: { sql: string; args?: unknown[] }[], mode?: string) => {
+        batches.push({ stmts, mode })
+        return []
       },
     }
 
     await logLinkClick(fakeClient as never, {
       linkId: 'link-1',
-      slug: 'abc123',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-      referrer: 'Facebook',
+      slug: 'renamed-away',
+      os: 'Windows',
       country: 'PH',
+      referrer: 'Facebook',
+      source: 'qr',
+      visitorHash: '0123456789abcdef',
     })
 
-    expect(calls).toHaveLength(2)
-    expect(calls[0].sql).toContain('INSERT INTO analytics')
-    expect(calls[0].args).toEqual(['link-1', 'Windows', 'PH', 'Facebook'])
-    expect(calls[1].sql).toContain('UPDATE links SET clicks')
-    expect(calls[1].args).toEqual(['abc123'])
+    expect(batches).toHaveLength(1)
+    expect(batches[0].mode).toBe('write')
+    expect(batches[0].stmts).toHaveLength(2)
+    expect(batches[0].stmts[0].sql).toContain('INSERT INTO analytics')
+    expect(batches[0].stmts[0].args).toEqual([
+      'link-1',
+      'Windows',
+      'PH',
+      'Facebook',
+      '0123456789abcdef',
+      'qr',
+    ])
+    expect(batches[0].stmts[1].sql).toContain('UPDATE links SET clicks')
+    expect(batches[0].stmts[1].sql).toContain('WHERE id = ?')
+    expect(batches[0].stmts[1].args).toEqual(['link-1'])
   })
 })
