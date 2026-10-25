@@ -16,3 +16,5 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix backend
       - run: npm test
+      - run: npm run typecheck
+      - run: npm run release:check -- --allow-dirty --allow-branch

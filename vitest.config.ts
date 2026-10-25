@@ -13,6 +13,7 @@ export default defineConfig({
       'shared/**/*.test.ts',
       'src/**/*.test.ts',
       'backend/src/**/*.test.ts',
+      'scripts/**/*.test.mjs',
     ],
     environment: 'node',
   },

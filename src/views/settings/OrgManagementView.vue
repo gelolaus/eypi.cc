@@ -64,7 +64,7 @@ const loading = ref(true)
 onMounted(async () => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/admin`, { headers: authHeaders() })
-    const data = await res.json()
+    const data = await res.json() as { error?: string; orgs?: AdminOrgListItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load orgs.')
     orgs.value = data.orgs ?? []
   } catch (err) {

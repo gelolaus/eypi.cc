@@ -1,21 +1,13 @@
-```txt
-npm install
-npm run dev
-```
+# eypi.cc API
 
-```txt
-npm run deploy
-```
+Cloudflare Worker (`backend/`) serving `/api/*`. See the [root README](../README.md) for local setup.
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+| Command | What it does |
+|---|---|
+| `npm run dev` | Wrangler on `127.0.0.1:8787` (uses `backend/.dev.vars`) |
+| `npm run deploy` | Deploy this Worker to production |
+| `npm run backfill-kv` | Copy Turso links into `LINKS_KV` |
+| `node run-migration.mjs <file>` | Apply one `.sql` file to production Turso |
+| `npm run cf-typegen` | Generate Wrangler binding types |
 
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+`npm run setup` and `npm run doctor` live in the repo root. Do not commit `.dev.vars`.

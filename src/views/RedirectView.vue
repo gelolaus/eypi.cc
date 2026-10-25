@@ -30,7 +30,7 @@ onMounted(async () => {
   const fetchPromise = fetch(`${API_BASE_URL}/api/links/${currentSlug.value}`, {
     headers: clientReferrer ? { 'X-Client-Referrer': clientReferrer } : {},
   })
-    .then((r) => r.json())
+    .then((r) => r.json() as Promise<{ original_url?: string }>)
     .catch(() => null)
 
   const [, data] = await Promise.all([animationPromise, fetchPromise])
