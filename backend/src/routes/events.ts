@@ -5,7 +5,7 @@ import { attachSession } from '../middleware/requireAuth'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
 import { buildApplePass } from '../lib/passes/applePass'
-import { loadPassContext, signPassToken, verifyPassToken } from '../lib/passes/context'
+import { loadPassContext, parsePassFields, signPassToken, verifyPassToken } from '../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
 import { selectAttendees } from '../../../src/lib/tix/selection'
 import type { Client } from '@libsql/client/web'
@@ -43,9 +43,57 @@ const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
 const app = new Hono<{ Bindings: Bindings }>()
 
 const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
+const LOOKUP_LIMIT_MSG = 'Too many attempts. Wait a few minutes and try again.'
 const LOOKUP_RL_KEY = (ip: string) => `rl:tix-lookup:${ip}`
 const LOOKUP_RL_LIMIT = 10
 const LOOKUP_RL_WINDOW = 900
+const LOOKUP_EMAIL_LIMIT = 10
+const LOOKUP_EMAIL_WINDOW = 900
+const LOOKUP_IP_LIMIT = 60
+const LOOKUP_IP_WINDOW = 900
+const PASS_LIMIT = 20
+const PASS_WINDOW = 3600
+
+function lookupEmailKey(eventId: string, emailHash: string): string {
+  return `lookup:${eventId}:${emailHash}`
+}
+
+function lookupIpKey(eventId: string, ip: string): string {
+  return `lookup:${eventId}:ip:${ip}`
+}
+
+function passRateKey(attendeeId: string): string {
+  return `pass:${attendeeId}`
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function passFieldsFromBody(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  const names: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string') return null
+    const name = item.trim()
+    if (!name || names.includes(name)) continue
+    names.push(name)
+  }
+  return names
+}
+
+async function latestCheckInAction(client: Client, attendeeId: string): Promise<string | null> {
+  const res = await client.execute({
+    sql: `SELECT action FROM check_ins
+          WHERE attendee_id = ?
+          ORDER BY actioned_at DESC, rowid DESC
+          LIMIT 1`,
+    args: [attendeeId],
+  })
+  const action = res.rows[0]?.action
+  return typeof action === 'string' ? action : null
+}
 function eventRouteUsesOrg(path: string): boolean {
   if (path === '/api/events') return true
   if (!path.startsWith('/api/events/')) return false
@@ -217,7 +265,7 @@ app.get('/api/events/:slug', async (c) => {
   const client = db(c)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked FROM events WHERE slug = ?',
+    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields FROM events WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
@@ -243,6 +291,7 @@ app.get('/api/events/:slug', async (c) => {
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,
       attendeeCount,
+      passFields: parsePassFields(event.pass_fields),
     },
   })
 })
@@ -804,10 +853,23 @@ app.patch('/api/events/:slug', async (c) => {
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
-  const body = await c.req.json() as { maxAttendees?: number | null; name?: string; date?: string; time?: string; location?: string }
+  const body = await c.req.json() as {
+    maxAttendees?: number | null
+    name?: string
+    date?: string
+    time?: string
+    location?: string
+    passFields?: unknown
+  }
 
   const updates: string[] = []
   const args: unknown[] = []
+  if ('passFields' in body) {
+    const fields = passFieldsFromBody(body.passFields)
+    if (!fields) return c.json({ status: 'error', message: 'Pass fields must be a list of column names.' }, 400)
+    updates.push('pass_fields = ?')
+    args.push(JSON.stringify(fields))
+  }
   if ('maxAttendees' in body) { updates.push('max_attendees = ?'); args.push(body.maxAttendees ?? null) }
   if (body.name?.trim())     { updates.push('name = ?');           args.push(body.name.trim()) }
   if (body.date)             { updates.push('event_date = ?');     args.push(body.date) }
@@ -960,16 +1022,6 @@ app.post('/api/events/:slug/add-guest', async (c) => {
 // ── POST /api/events/:slug/lookup ─────────────────────────────────────────────
 app.post('/api/events/:slug/lookup', async (c) => {
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
   const slug = c.req.param('slug')
   const body = await c.req.json() as { firstName: string; lastName: string; email: string }
 
@@ -986,17 +1038,42 @@ app.post('/api/events/:slug/lookup', async (c) => {
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
   const event = evRes.rows[0]
+  const eventId = event.id as string
+  const email = body.email.trim().toLowerCase()
+
+  const ipAllowed = await checkRateLimit(
+    c.env.RATE_LIMIT_KV,
+    lookupIpKey(eventId, ip),
+    LOOKUP_IP_LIMIT,
+    LOOKUP_IP_WINDOW,
+  )
+  if (!ipAllowed) {
+    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
+  }
+
+  const emailAllowed = await checkRateLimit(
+    c.env.RATE_LIMIT_KV,
+    lookupEmailKey(eventId, await sha256Hex(email)),
+    LOOKUP_EMAIL_LIMIT,
+    LOOKUP_EMAIL_WINDOW,
+  )
+  if (!emailAllowed) {
+    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
+  }
 
   const aRes = await client.execute({
     sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value FROM attendees
           WHERE event_id = ? AND LOWER(email) = LOWER(?) AND LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)`,
-    args: [event.id, body.email.trim(), body.firstName.trim(), body.lastName.trim()],
+    args: [eventId, email, body.firstName.trim(), body.lastName.trim()],
   })
   if (aRes.rows.length === 0) {
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
 
   const a = aRes.rows[0]
+  if (await latestCheckInAction(client, a.id as string) === 'removed') {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+  }
   const missingEnv = missingRequiredEnv(c.env)
   if (missingEnv.includes('PASS_TOKEN_SECRET')) {
     console.error(requiredEnvError(missingEnv))
@@ -1024,17 +1101,6 @@ app.post('/api/events/:slug/lookup', async (c) => {
 
 // ── GET /api/events/:slug/passes/apple ─────────────────────────────────────────
 app.get('/api/events/:slug/passes/apple', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
   const slug = c.req.param('slug')
   const token = (c.req.query('token') ?? '').trim()
   if (!token) {
@@ -1051,6 +1117,16 @@ app.get('/api/events/:slug/passes/apple', async (c) => {
     const ctx = await loadPassContext(client, slug, claims.sub)
     if (!ctx || ctx.event.id !== claims.eventId) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+    }
+
+    const allowed = await checkRateLimit(
+      c.env.RATE_LIMIT_KV,
+      passRateKey(claims.sub),
+      PASS_LIMIT,
+      PASS_WINDOW,
+    )
+    if (!allowed) {
+      return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
     }
 
     const pkpass = await buildApplePass(ctx, c.env)
@@ -1071,17 +1147,6 @@ app.get('/api/events/:slug/passes/apple', async (c) => {
 
 // ── GET /api/events/:slug/passes/google ────────────────────────────────────────
 app.get('/api/events/:slug/passes/google', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
   const slug = c.req.param('slug')
   const token = (c.req.query('token') ?? '').trim()
   if (!token) {
@@ -1098,6 +1163,16 @@ app.get('/api/events/:slug/passes/google', async (c) => {
     const ctx = await loadPassContext(client, slug, claims.sub)
     if (!ctx || ctx.event.id !== claims.eventId) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+    }
+
+    const allowed = await checkRateLimit(
+      c.env.RATE_LIMIT_KV,
+      passRateKey(claims.sub),
+      PASS_LIMIT,
+      PASS_WINDOW,
+    )
+    if (!allowed) {
+      return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
     }
 
     const url = await buildGoogleWalletSaveUrl(ctx, c.env)

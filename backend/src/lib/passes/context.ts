@@ -76,45 +76,44 @@ export async function verifyPassToken(
   }
 }
 
-async function loadCustomFieldsByEmail(
+export function parsePassFields(raw: unknown): string[] {
+  if (typeof raw !== 'string' || raw.trim() === '') return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    const names: string[] = []
+    for (const item of parsed) {
+      if (typeof item !== 'string') continue
+      const name = item.trim()
+      if (name && !names.includes(name)) names.push(name)
+    }
+    return names
+  } catch {
+    return []
+  }
+}
+
+async function loadAllowlistedFields(
   client: Client,
   eventId: string,
-  attendeeEmail: string,
+  csvRowId: string | null,
+  passFieldsRaw: unknown,
 ): Promise<Record<string, string>> {
+  const allow = parsePassFields(passFieldsRaw)
+  if (allow.length === 0 || !csvRowId) return {}
   try {
-    const mappingRes = await client.execute({
-      sql: 'SELECT email_col FROM event_column_mappings WHERE event_id = ?',
-      args: [eventId],
-    })
-    const emailCol = mappingRes.rows[0]?.email_col as string | undefined
-    if (!emailCol) return {}
-
     const rowsRes = await client.execute({
-      sql: `SELECT raw_data FROM event_csv_rows
-            WHERE event_id = ?
-            ORDER BY is_selected DESC, row_index ASC`,
-      args: [eventId],
+      sql: 'SELECT raw_data FROM event_csv_rows WHERE id = ? AND event_id = ?',
+      args: [csvRowId, eventId],
     })
-
-    const normalizedEmail = attendeeEmail.trim().toLowerCase()
-    for (const row of rowsRes.rows) {
-      try {
-        const raw = JSON.parse(row.raw_data as string) as Record<string, unknown>
-        const rowEmail = String(raw[emailCol] ?? '').trim().toLowerCase()
-        if (rowEmail !== normalizedEmail) continue
-
-        const fields: Record<string, string> = {}
-        for (const [key, value] of Object.entries(raw)) {
-          if (typeof value === 'string' && value.trim() !== '') {
-            fields[key] = value.trim()
-          }
-        }
-        return fields
-      } catch {
-        continue
-      }
+    if (rowsRes.rows.length === 0) return {}
+    const raw = JSON.parse(rowsRes.rows[0].raw_data as string) as Record<string, unknown>
+    const fields: Record<string, string> = {}
+    for (const key of allow) {
+      const value = raw[key]
+      if (typeof value === 'string' && value.trim() !== '') fields[key] = value.trim()
     }
-    return {}
+    return fields
   } catch {
     return {}
   }
@@ -126,24 +125,34 @@ export async function loadPassContext(
   attendeeId: string,
 ): Promise<PassContext | null> {
   const evRes = await client.execute({
-    sql: 'SELECT id, name, event_date, event_time, location FROM events WHERE slug = ?',
+    sql: 'SELECT id, name, event_date, event_time, location, pass_fields FROM events WHERE slug = ?',
     args: [slug],
   })
   if (evRes.rows.length === 0) return null
   const event = evRes.rows[0]
 
   const aRes = await client.execute({
-    sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value FROM attendees
+    sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value, csv_row_id FROM attendees
           WHERE id = ? AND event_id = ?`,
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return null
   const a = aRes.rows[0]
 
-  const customFields = await loadCustomFieldsByEmail(
+  const latest = await client.execute({
+    sql: `SELECT action FROM check_ins
+          WHERE attendee_id = ?
+          ORDER BY actioned_at DESC, rowid DESC
+          LIMIT 1`,
+    args: [attendeeId],
+  })
+  if (latest.rows[0]?.action === 'removed') return null
+
+  const customFields = await loadAllowlistedFields(
     client,
     event.id as string,
-    a.email as string,
+    (a.csv_row_id as string | null) ?? null,
+    event.pass_fields,
   )
 
   return {

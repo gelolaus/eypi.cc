@@ -95,6 +95,37 @@
         </div>
       </div>
 
+      <fieldset v-if="event.isLead && passColumns.length" class="mb-6">
+        <legend class="mb-2 text-sm font-semibold text-gray-700 dark:text-slate-200">Pass fields</legend>
+        <p class="mb-3 text-sm text-gray-500 dark:text-slate-400">Checked columns are printed on the wallet pass.</p>
+        <div class="flex flex-wrap gap-2">
+          <label
+            v-for="column in passColumns"
+            :key="column"
+            class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
+            :class="passFieldSelection.includes(column)
+              ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
+              : 'border-gray-200 bg-white/60 dark:border-slate-600 dark:bg-slate-800/60'"
+          >
+            <input
+              type="checkbox"
+              :checked="passFieldSelection.includes(column)"
+              class="h-3.5 w-3.5 accent-[#34418F]"
+              @change="togglePassField(column)"
+            />
+            <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ column }}</span>
+          </label>
+        </div>
+        <button
+          type="button"
+          class="mt-3 rounded-lg bg-[#34418F] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700"
+          :disabled="savingPassFields"
+          @click="savePassFields"
+        >
+          {{ savingPassFields ? 'Saving…' : 'Save pass fields' }}
+        </button>
+      </fieldset>
+
       <!-- Cluster fill bars (lead only, only if clusters exist) -->
       <div v-if="event.isLead && clusters.length" class="mb-6">
         <button
@@ -557,6 +588,7 @@ const slug = route.params.id as string
 interface EventInfo {
   name: string; eventDate: string; eventTime: string; location: string; isLead: boolean
   maxAttendees: number | null; selectionLocked: boolean; attendeeCount: number
+  passFields?: string[]
 }
 interface Attendee {
   id: unknown; first_name: unknown; last_name: unknown; email: unknown
@@ -704,6 +736,40 @@ watch(guestSearch, (q) => {
 
 // Derive name/email from CSV row rawData using column mapping (best-effort)
 let csvColMapping: { firstNameCol?: string; lastNameCol?: string; fullNameCol?: string; emailCol?: string } = {}
+const csvColumns = ref<string[]>([])
+const passFieldSelection = ref<string[]>([])
+const savingPassFields = ref(false)
+
+const passColumns = computed(() => {
+  const names = new Set<string>([...csvColumns.value, ...passFieldSelection.value])
+  return [...names].filter((name) => name.trim() !== '').sort((a, b) => a.localeCompare(b))
+})
+
+function togglePassField(column: string) {
+  if (passFieldSelection.value.includes(column)) {
+    passFieldSelection.value = passFieldSelection.value.filter((name) => name !== column)
+  } else {
+    passFieldSelection.value = [...passFieldSelection.value, column]
+  }
+}
+
+async function savePassFields() {
+  savingPassFields.value = true
+  try {
+    const res = await api.raw(`/api/events/${slug}`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ passFields: passFieldSelection.value }),
+    })
+    const data = await res.json() as { message?: string }
+    if (!res.ok) throw new Error(data.message ?? 'Could not save pass fields. Try again.')
+    toast.success('Pass fields saved.')
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : 'Could not save pass fields. Try again.')
+  } finally {
+    savingPassFields.value = false
+  }
+}
 function guestRowName(row: CsvSearchRow): string {
   if (csvColMapping.firstNameCol && csvColMapping.lastNameCol) {
     return `${row.rawData[csvColMapping.firstNameCol] ?? ''} ${row.rawData[csvColMapping.lastNameCol] ?? ''}`.trim()
@@ -1257,6 +1323,7 @@ onMounted(async () => {
     if (!data.event!.selectionLocked) { router.replace(`/manage/tix/${slug}/select`); return }
 
     event.value = data.event!
+    passFieldSelection.value = [...(data.event!.passFields ?? [])]
   } catch {
     event.value = null
     loadingEvent.value = false
@@ -1295,8 +1362,18 @@ async function fetchCsvMeta() {
   try {
     const res = await api.raw(`/api/events/${slug}/csv-data`)
     if (!res.ok) return
-    const data = await res.json() as { rows?: unknown[]; columnMapping?: typeof csvColMapping }
+    const data = await res.json() as {
+      rows?: { rawData?: Record<string, unknown> }[]
+      columnMapping?: typeof csvColMapping
+    }
     hasCsvRows.value = (data.rows?.length ?? 0) > 0
+    const names = new Set<string>()
+    for (const row of data.rows ?? []) {
+      for (const key of Object.keys(row.rawData ?? {})) {
+        if (key.trim()) names.add(key)
+      }
+    }
+    csvColumns.value = [...names]
     if (data.columnMapping) {
       csvColMapping = data.columnMapping
       // Default to search tab when CSV exists
