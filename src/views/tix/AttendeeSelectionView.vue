@@ -277,12 +277,20 @@
       </div>
 
       <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromFilter">← Back</button>
         <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
-          @click="currentStep = 'guarantee'"
+          :disabled="savingCriteria"
+          class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400"
+          @click="leaveCriteria('back')"
+        >← Back</button>
+        <button
+          :disabled="savingCriteria"
+          :class="[
+            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
+            savingCriteria ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5',
+          ]"
+          @click="leaveCriteria('forward')"
         >
-          Continue →
+          {{ savingCriteria ? 'Saving…' : 'Continue →' }}
         </button>
       </div>
     </div>
@@ -474,6 +482,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
+import { selectAttendees } from '@/lib/tix/selection'
 import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
 
 const route  = useRoute()
@@ -698,6 +707,19 @@ function clusterRawCount(value: string): number {
   return allRows.value.filter(r => r.rawData[col] === value).length
 }
 
+async function persistClusters() {
+  const res = await api.raw(`/api/events/${slug}/clusters`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      clusterCol: columnMapping.value!.clusterCol,
+      clusters: clusters.value.map(c => ({ value: c.value, maxCount: c.maxCount, filters: c.filters })),
+    }),
+  })
+  const data = await res.json() as { status: string; message?: string }
+  if (!res.ok) throw new Error(data.message ?? 'Failed to save clusters.')
+}
+
 async function saveClusters() {
   clusterError.value = ''
   if (clusters.value.some(c => (c.maxCount ?? 0) <= 0)) {
@@ -706,16 +728,7 @@ async function saveClusters() {
   }
   savingClusters.value = true
   try {
-    const res = await api.raw(`/api/events/${slug}/clusters`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        clusterCol: columnMapping.value!.clusterCol,
-        clusters: clusters.value.map(c => ({ value: c.value, maxCount: c.maxCount, filters: c.filters })),
-      }),
-    })
-    const data = await res.json() as { status: string; message?: string }
-    if (!res.ok) throw new Error(data.message ?? 'Failed to save clusters.')
+    await persistClusters()
     currentStep.value = 'cluster-filter'
   } catch (err: unknown) {
     clusterError.value = err instanceof Error ? err.message : 'Failed to save.'
@@ -819,6 +832,59 @@ function backFromFilter() {
   currentStep.value = columnMapping.value?.clusterCol ? 'clusters' : 'map-columns'
 }
 
+const savingCriteria = ref(false)
+
+function syncClusterFiltersFromMap() {
+  for (const cl of clusters.value) {
+    const selected = filters.value.get(cl.value)
+    if (!selected) continue
+    const record: Record<string, string[]> = {}
+    for (const [col, vals] of selected) {
+      if (vals.size > 0) record[col] = [...vals]
+    }
+    cl.filters = record
+  }
+}
+
+function hydrateCriteriaFilters(clusterList: ClusterConfig[]) {
+  const next = new Map<string, Map<string, Set<string>>>()
+  for (const cl of clusterList) {
+    const selected = new Map<string, Set<string>>()
+    for (const [col, vals] of Object.entries(cl.filters ?? {})) {
+      if (vals.length > 0) selected.set(col, new Set(vals))
+    }
+    next.set(cl.value, selected)
+  }
+  filters.value = next
+}
+
+async function leaveCriteria(direction: 'back' | 'forward') {
+  syncClusterFiltersFromMap()
+  if (clusters.value.length && columnMapping.value?.clusterCol) {
+    savingCriteria.value = true
+    try {
+      await persistClusters()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save criteria.')
+      return
+    } finally {
+      savingCriteria.value = false
+    }
+  }
+  if (direction === 'back') backFromFilter()
+  else currentStep.value = 'guarantee'
+}
+
+function globalFilterRecord(): Record<string, string[]> {
+  const selected = filters.value.get(GLOBAL)
+  const record: Record<string, string[]> = {}
+  if (!selected) return record
+  for (const [col, vals] of selected) {
+    if (vals.size > 0) record[col] = [...vals]
+  }
+  return record
+}
+
 // ── guarantee ─────────────────────────────────────────────────────────────────
 const guaranteeSearch        = ref('')
 const guaranteedRowIds       = ref<Set<string>>(new Set())
@@ -899,44 +965,27 @@ function unfilledSlotsForCluster(clusterValue: string): number {
 const hasUnfilledClusters = computed(() => clusters.value.some(c => unfilledSlotsForCluster(c.value) > 0))
 
 // ── raffle algorithm ──────────────────────────────────────────────────────────
-function fisherYates<T>(arr: T[]): T[] {
-  const r = [...arr]
-  for (let i = r.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[r[i], r[j]] = [r[j], r[i]]
-  }
-  return r
-}
-
 function buildSelectedRows(): { rowId: string; clusterValue: string | null }[] {
-  const selected: { rowId: string; clusterValue: string | null }[] = []
-
-  if (clusters.value.length) {
-    for (const cl of clusters.value) {
-      // Guaranteed first
-      const guaranteed = [...guaranteedRowIds.value].filter(id => clusterForRow(id) === cl.value)
-      for (const id of guaranteed) selected.push({ rowId: id, clusterValue: cl.value })
-
-      // Raffle from eligible non-guaranteed
-      const pool = eligibleNonGuaranteedForCluster(cl.value)
-      const slots = remainingSlotsForCluster(cl.value)
-      const winners = slots >= pool.length ? pool : fisherYates(pool).slice(0, slots)
-      for (const r of winners) selected.push({ rowId: r.id, clusterValue: cl.value })
-    }
-  } else {
-    // No clusters: guaranteed + raffle from global eligible
-    for (const id of guaranteedRowIds.value) selected.push({ rowId: id, clusterValue: null })
-    const guaranteed = new Set(guaranteedRowIds.value)
-    const pool = globalEligibleRows.value.filter(r => !guaranteed.has(r.id))
-    const max = maxAttendeesEdit.value
-    const slots = max !== null ? Math.max(0, max - guaranteed.size) : pool.length
-    const winners = slots >= pool.length ? pool : fisherYates(pool).slice(0, slots)
-    for (const r of winners) selected.push({ rowId: r.id, clusterValue: null })
-  }
-
-  // Deduplicate by rowId
-  const seen = new Set<string>()
-  return selected.filter(s => { if (seen.has(s.rowId)) return false; seen.add(s.rowId); return true })
+  const mapping = columnMapping.value
+  if (!mapping) return []
+  syncClusterFiltersFromMap()
+  const { selected } = selectAttendees(allRows.value, {
+    mapping,
+    clusters: clusters.value.map(cl => ({
+      value: cl.value,
+      maxCount: cl.maxCount,
+      filters: cl.filters,
+    })),
+    globalFilters: globalFilterRecord(),
+    guaranteed: [...guaranteedRowIds.value],
+    seed: crypto.randomUUID(),
+    maxAttendees: clusters.value.length ? null : maxAttendeesEdit.value,
+  })
+  const clusterCol = mapping.clusterCol
+  return selected.filter(row => row.id).map(row => ({
+    rowId: row.id,
+    clusterValue: clusterCol ? (row.rawData[clusterCol] ?? null) : null,
+  }))
 }
 
 // ── finalize ──────────────────────────────────────────────────────────────────
@@ -1059,6 +1108,7 @@ onMounted(async () => {
       }
       if (data.clusters.length) {
         clusters.value = data.clusters
+        hydrateCriteriaFilters(data.clusters)
         currentStep.value = 'cluster-filter'
       } else if (data.columnMapping) {
         currentStep.value = 'filter'

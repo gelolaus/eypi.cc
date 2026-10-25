@@ -6,7 +6,21 @@ import { checkRateLimit } from '../lib/rateLimit'
 import { buildApplePass } from '../lib/passes/applePass'
 import { loadPassContext, signPassToken, verifyPassToken } from '../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
+import { selectAttendees } from '../../../src/lib/tix/selection'
 import type { Client } from '@libsql/client/web'
+
+// Latest check-in wins. A removed attendee does not occupy a cluster slot.
+const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
+    FROM attendees a
+    WHERE a.event_id = ? AND a.cluster_value = ?
+      AND NOT EXISTS (
+        SELECT 1 FROM check_ins ci
+        WHERE ci.attendee_id = a.id
+          AND ci.action = 'removed'
+          AND ci.actioned_at = (
+            SELECT MAX(actioned_at) FROM check_ins WHERE attendee_id = a.id
+          )
+      )`
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
@@ -458,22 +472,10 @@ app.get('/api/events/:slug/clusters', async (c) => {
     args: [event.id],
   })
 
-  const activeCountSql = `SELECT COUNT(*) as cnt
-    FROM attendees a
-    WHERE a.event_id = ? AND a.cluster_value = ?
-      AND NOT EXISTS (
-        SELECT 1 FROM check_ins ci
-        WHERE ci.attendee_id = a.id
-          AND ci.action = 'removed'
-          AND ci.actioned_at = (
-            SELECT MAX(actioned_at) FROM check_ins WHERE attendee_id = a.id
-          )
-      )`
-
   const knownValues = new Set(clustersRes.rows.map(r => r.value as string))
 
   const clusters = await Promise.all(clustersRes.rows.map(async (cl) => {
-    const countRes = await client.execute({ sql: activeCountSql, args: [event.id, cl.value] })
+    const countRes = await client.execute({ sql: ACTIVE_CLUSTER_COUNT_SQL, args: [event.id, cl.value] })
     const currentCount = Number(countRes.rows[0]?.cnt ?? 0)
     const maxCount = cl.max_count !== null ? Number(cl.max_count) : null
     return {
@@ -496,7 +498,7 @@ app.get('/api/events/:slug/clusters', async (c) => {
   for (const row of adHocRes.rows) {
     const val = row.cluster_value as string
     if (knownValues.has(val)) continue
-    const countRes = await client.execute({ sql: activeCountSql, args: [event.id, val] })
+    const countRes = await client.execute({ sql: ACTIVE_CLUSTER_COUNT_SQL, args: [event.id, val] })
     clusters.push({
       id:             null as unknown as string,
       clusterCol:     '',
@@ -656,7 +658,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   const cluster = clusterRes.rows[0]
 
   const countRes = await client.execute({
-    sql: 'SELECT COUNT(*) as cnt FROM attendees WHERE event_id = ? AND cluster_value = ?',
+    sql: ACTIVE_CLUSTER_COUNT_SQL,
     args: [event.id, clusterValue],
   })
   const currentCount = Number(countRes.rows[0]?.cnt ?? 0)
@@ -670,8 +672,10 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   })
   if (!mappingRes.rows.length) return c.json({ status: 'error', message: 'Column mapping not found.' }, 400)
   const m = mappingRes.rows[0]
+  const emailCol = (m.email_col as string | null) ?? ''
 
-  // Fetch all unselected rows, filter in application code
+  // Fetch all unselected rows. selectAttendees applies the cluster filters,
+  // dedupes by email, then fills only the remaining active slots.
   const allUnselected = await client.execute({
     sql: 'SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND is_selected = 0',
     args: [event.id],
@@ -679,40 +683,38 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   const filters: Record<string, string[]> = JSON.parse(cluster.filters as string ?? '{}')
 
-  const eligible = allUnselected.rows.filter(r => {
-    const raw: Record<string, string> = JSON.parse(r.raw_data as string)
-    // Must match cluster column value
-    if (m.cluster_col && raw[m.cluster_col as string] !== clusterValue) return false
-    // Must pass all cluster filters (AND across columns, OR within column values)
-    for (const [col, vals] of Object.entries(filters)) {
-      if (vals.length > 0 && !vals.includes(raw[col] ?? '')) return false
-    }
-    return true
-  })
-
-  if (!eligible.length) return c.json({ status: 'error', message: 'No eligible unselected respondents remain for this cluster.' }, 404)
-
-  // Fisher-Yates shuffle and slice
-  const shuffled = [...eligible]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  const winners = shuffled.slice(0, remaining)
-
-  // Get existing emails to avoid duplicates
   const existingEmailRes = await client.execute({
     sql: 'SELECT email FROM attendees WHERE event_id = ?',
     args: [event.id],
   })
   const existingEmails = new Set(existingEmailRes.rows.map(r => (r.email as string).toLowerCase()))
 
+  const available = allUnselected.rows.flatMap((row) => {
+    const raw = JSON.parse(row.raw_data as string) as Record<string, string>
+    const email = (emailCol ? raw[emailCol] ?? '' : '').trim().toLowerCase()
+    if (!email || existingEmails.has(email)) return []
+    return [{ id: row.id as string, rawData: raw }]
+  })
+
+  const { selected } = selectAttendees(available, {
+    mapping: {
+      emailCol,
+      clusterCol: (m.cluster_col as string | null) ?? null,
+    },
+    clusters: [{ value: clusterValue, maxCount: remaining, filters }],
+    globalFilters: {},
+    guaranteed: [],
+    seed: crypto.randomUUID(),
+  })
+
+  if (!selected.length) return c.json({ status: 'error', message: 'No eligible unselected respondents remain for this cluster.' }, 404)
+
   const newAttendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string }[] = []
   const winnerIds: string[] = []
 
-  for (const w of winners) {
-    const raw: Record<string, string> = JSON.parse(w.raw_data as string)
-    const emailRaw = (m.email_col ? raw[m.email_col as string] ?? '' : '').trim().toLowerCase()
+  for (const winner of selected) {
+    const raw = winner.rawData
+    const emailRaw = (emailCol ? raw[emailCol] ?? '' : '').trim().toLowerCase()
     if (!emailRaw || existingEmails.has(emailRaw)) continue
     existingEmails.add(emailRaw)
 
@@ -727,7 +729,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
     }
 
     newAttendees.push({ id: crypto.randomUUID(), qrToken: crypto.randomUUID(), firstName, lastName, email: emailRaw })
-    winnerIds.push(w.id as string)
+    winnerIds.push(winner.id)
   }
 
   if (!newAttendees.length) return c.json({ status: 'error', message: 'No new eligible attendees could be added.' }, 404)
