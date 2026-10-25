@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useAuth } from '@/composables/useAuth'
 import { SUPER_ADMIN_EMAIL } from '@/config/admin'
+import { reloadOnceForChunkError } from '@/lib/chunkReload'
 
 const { checkOrgMembership } = useOrgMembership()
 const { getUser } = useAuth()
@@ -299,6 +300,10 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   next()
+})
+
+router.onError((error, to) => {
+  reloadOnceForChunkError(error, to.fullPath)
 })
 
 export default router

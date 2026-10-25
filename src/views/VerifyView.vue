@@ -46,9 +46,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,7 +68,7 @@ async function confirmVerification() {
   error.value = ''
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
+    const response = await api.raw(`/api/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: token.value }),

@@ -49,8 +49,8 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import type { AdminOrgListItem } from '@/config/admin'
@@ -63,7 +63,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin`, { headers: authHeaders() })
     const data = await res.json() as { error?: string; orgs?: AdminOrgListItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load orgs.')
     orgs.value = data.orgs ?? []

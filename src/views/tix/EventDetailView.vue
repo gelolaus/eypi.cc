@@ -520,12 +520,12 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { ClusterConfig } from '@/types/selection'
 import {
@@ -581,8 +581,8 @@ async function saveClusterMax(value: string) {
   if (editingMaxCluster.value !== value) return
   editingMaxCluster.value = ''
   try {
-    const res = await fetch(
-      `${TIX_API_URL}/api/events/${slug}/clusters/${encodeURIComponent(value)}/max-count`,
+    const res = await api.raw(
+      `/api/events/${slug}/clusters/${encodeURIComponent(value)}/max-count`,
       { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ maxCount: clusterMaxEditValue.value ?? null }) },
     )
     if (!res.ok) throw new Error((await res.json() as { message?: string }).message ?? 'Failed.')
@@ -606,8 +606,8 @@ async function saveAttendeeCluster(id: string) {
   editingClusterAttendee.value = ''
   const newVal = attendeeClusterEditValue.value.trim() || null
   try {
-    const res = await fetch(
-      `${TIX_API_URL}/api/events/${slug}/attendees/${id}`,
+    const res = await api.raw(
+      `/api/events/${slug}/attendees/${id}`,
       { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ clusterValue: newVal }) },
     )
     if (!res.ok) throw new Error((await res.json() as { message?: string }).message ?? 'Failed.')
@@ -660,7 +660,7 @@ function startEditMax() {
 }
 async function saveMax() {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, {
+    const res = await api.raw(`/api/events/${slug}`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ maxAttendees: maxEditValue.value ?? null }),
@@ -691,7 +691,7 @@ watch(guestSearch, (q) => {
   if (!q.trim()) { guestSearchResults.value = []; return }
   guestSearchTimer = setTimeout(async () => {
     try {
-      const res = await fetch(`${TIX_API_URL}/api/events/${slug}/csv-rows/search?q=${encodeURIComponent(q.trim())}`, { headers: authHeaders() })
+      const res = await api.raw(`/api/events/${slug}/csv-rows/search?q=${encodeURIComponent(q.trim())}`, { headers: authHeaders() })
       const data = await res.json() as { rows?: CsvSearchRow[] }
       guestSearchResults.value = data.rows ?? []
     } catch { /* ignore */ }
@@ -714,7 +714,7 @@ function guestRowEmail(row: CsvSearchRow): string {
 async function addGuestFromCsv(csvRowId: string) {
   addingGuest.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/add-guest`, {
+    const res = await api.raw(`/api/events/${slug}/add-guest`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ csvRowId }),
@@ -739,7 +739,7 @@ async function addGuestFreeform() {
   if (!guestForm.value.firstName.trim() || !guestForm.value.email.trim()) return
   addingGuest.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/add-guest`, {
+    const res = await api.raw(`/api/events/${slug}/add-guest`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -792,7 +792,7 @@ async function reRaffle(clusterValue: string) {
   if (!ok) return
   rafflingCluster.value = clusterValue
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/clusters/${encodeURIComponent(clusterValue)}/raffle`, {
+    const res = await api.raw(`/api/events/${slug}/clusters/${encodeURIComponent(clusterValue)}/raffle`, {
       method: 'POST',
       headers: authHeaders(),
     })
@@ -918,7 +918,7 @@ function onDecoded(raw: string | null) {
 }
 
 function submitScan(qrToken: string) {
-  fetch(`${TIX_API_URL}/api/events/${slug}/checkin`, {
+  api.raw(`/api/events/${slug}/checkin`, {
     method: 'POST',
     headers: authHeaders(),
     body: JSON.stringify({ qrToken }),
@@ -1252,7 +1252,7 @@ function countForTab(filter: string | null) {
 // ── data fetching ─────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}`, { headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string; event?: EventInfo }
     if (!res.ok) throw new Error(data.message ?? 'Event not found.')
 
@@ -1276,7 +1276,7 @@ onMounted(async () => {
 async function fetchAttendees() {
   loadingAttendees.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/attendees`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/attendees`, { headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string; attendees?: Attendee[] }
     if (!res.ok) throw new Error(data.message ?? 'Failed to load attendees.')
     attendees.value = data.attendees ?? []
@@ -1289,7 +1289,7 @@ async function fetchAttendees() {
 
 async function fetchClusters() {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/clusters`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/clusters`, { headers: authHeaders() })
     if (!res.ok) return
     const data = await res.json() as { clusters?: typeof clusters.value }
     clusters.value = data.clusters ?? []
@@ -1298,7 +1298,7 @@ async function fetchClusters() {
 
 async function fetchCsvMeta() {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/csv-data`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
     if (!res.ok) return
     const data = await res.json() as { rows?: unknown[]; columnMapping?: typeof csvColMapping }
     hasCsvRows.value = (data.rows?.length ?? 0) > 0
@@ -1318,7 +1318,7 @@ async function remove(attendeeId: string)   { await doAction('remove',   { atten
 async function doAction(action: string, body: object) {
   actionPending.value = action
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/${action}`, {
+    const res = await api.raw(`/api/events/${slug}/${action}`, {
       method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
     })
     const data = await res.json() as { status: string; message: string }
@@ -1383,7 +1383,7 @@ async function confirmDeleteEvent() {
   if (!ok) return
   deletingEvent.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, {
+    const res = await api.raw(`/api/events/${slug}`, {
       method: 'DELETE',
       headers: authHeaders(),
     })

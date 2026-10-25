@@ -129,9 +129,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 
 const route = useRoute()
@@ -176,7 +176,7 @@ async function lookup() {
   lookupError.value = ''
   lookingUp.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/lookup`, {
+    const res = await api.raw(`/api/events/${slug}/lookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value),
@@ -223,8 +223,8 @@ async function saveToGoogleWallet() {
   walletError.value = ''
   savingGoogleWallet.value = true
   try {
-    const res = await fetch(
-      `${TIX_API_URL}/api/events/${slug}/passes/google?token=${encodeURIComponent(passToken.value)}`,
+    const res = await api.raw(
+      `/api/events/${slug}/passes/google?token=${encodeURIComponent(passToken.value)}`,
     )
     const data = await res.json() as { status: string; message?: string; url?: string }
     if (!res.ok || !data.url) {

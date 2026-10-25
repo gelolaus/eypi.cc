@@ -89,8 +89,8 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
@@ -138,7 +138,7 @@ async function remove(id: string, title: string) {
   if (!ok) return
   deletingId.value = id
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${id}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${id}`, { method: 'DELETE', headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     campaigns.value = campaigns.value.filter(c => c.id !== id)
@@ -152,7 +152,7 @@ async function remove(id: string, title: string) {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp`, { headers: authHeaders() })
+    const res = await api.raw(`/api/dp`, { headers: authHeaders() })
     if (res.status === 403) {
       isLocked.value = true
       return

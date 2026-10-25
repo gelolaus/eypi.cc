@@ -212,10 +212,10 @@ feat(db): add versioned migrations with a ledger and baseline
   - `useSession()` returns `{ user: Ref<SessionUser|null>, status: Ref<'idle'|'loading'|'ready'>, load(): Promise<void>, reset(): void, logout(): Promise<void> }`; `SessionUser = { id, email, name, role: 'user'|'admin' }`
   - `isChunkLoadError(err) → boolean`
 
-- [ ] **Step 1: Failing tests.** `api.test.ts`: sends `credentials:'include'` and the active org header; parses `{error:{code,message,fields}}` into `ApiError`; an HTML 502 body becomes `ApiError(502,'http_error',…)`; a 401 calls `session.reset` once and navigates to login with `returnTo`. `session.test.ts`: `load()` dedupes concurrent calls. `router` test: `isChunkLoadError(new TypeError('Failed to fetch dynamically imported module'))` true; on chunk error the router reloads once per target path (guard key `eypi_chunk_reload:<path>` in `sessionStorage`).
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement**, then migrate call sites view by view (no behavior change). `grep -rn "fetch(" src --include=*.vue --include=*.ts` must only show `src/lib/api.ts` afterwards.
-- [ ] **Step 4: Run** `npm test && npm run typecheck && npm run build`. Expected: PASS.
-- [ ] **Step 5: Commit** `refactor(platform): route all SPA requests through one API client` (bullets: api client, ApiError, 401 handling, chunk-reload recovery, global error handler, call-site migration, tests).
+- [x] **Step 1: Failing tests.** `api.test.ts`: sends `credentials:'include'` and the active org header; parses `{error:{code,message,fields}}` into `ApiError`; an HTML 502 body becomes `ApiError(502,'http_error',…)`; a 401 calls `session.reset` once and navigates to login with `returnTo`. `session.test.ts`: `load()` dedupes concurrent calls. `router` test: `isChunkLoadError(new TypeError('Failed to fetch dynamically imported module'))` true; on chunk error the router reloads once per target path (guard key `eypi_chunk_reload:<path>` in `sessionStorage`).
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement**, then migrate call sites view by view (no behavior change). `grep -rn "fetch(" src --include=*.vue --include=*.ts` must only show `src/lib/api.ts` afterwards.
+- [x] **Step 4: Run** `npm test && npm run typecheck && npm run build`. Expected: PASS.
+- [x] **Step 5: Commit** `refactor(platform): route all SPA requests through one API client` (bullets: api client, ApiError, 401 handling, chunk-reload recovery, global error handler, call-site migration, tests).
 
 ### Task 1.5: CI, lint, and dependency upgrades (F-OPS-1, F-OPS-2, F-DEP-1..3)
 

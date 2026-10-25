@@ -129,8 +129,8 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
 import { useActiveOrg } from '@/composables/useActiveOrg'
@@ -179,7 +179,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/public`)
+    const res = await api.raw(`/api/orgs/public`)
     const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
     orgs.value = data.orgs ?? []

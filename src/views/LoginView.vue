@@ -101,11 +101,11 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, inject, onMounted, watch, type Ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const router = useRouter()
@@ -156,7 +156,7 @@ const handleLogin = async () => {
   isAuthenticating.value = true
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    const response = await api.raw(`/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value }),
@@ -205,7 +205,7 @@ const handleRegister = async () => {
   isAuthenticating.value = true
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    const response = await api.raw(`/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value, password: password.value, name: name.value.trim() || undefined }),

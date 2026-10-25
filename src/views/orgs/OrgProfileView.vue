@@ -203,9 +203,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
 import { renderMarkdown } from '@/composables/useMarkdown'
 import {
@@ -283,7 +283,7 @@ function loadPreviewDraft(slug: string): PublicOrgProfile | null {
 
 async function fetchEvents(slug: string) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
+    const res = await api.raw(`/api/orgs/public/${encodeURIComponent(slug)}`)
     const data = await res.json() as PublicOrgProfileResponse
     if (res.ok) {
       events.value = data.events ?? { upcoming: [], past: [] }
@@ -310,7 +310,7 @@ async function fetchProfile(slug: string) {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
+    const res = await api.raw(`/api/orgs/public/${encodeURIComponent(slug)}`)
     const data = await res.json() as PublicOrgProfileResponse & { error?: string }
     if (!res.ok) throw new Error(data.error || 'Organization not found.')
     profile.value = data.org

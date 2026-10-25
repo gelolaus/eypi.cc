@@ -138,11 +138,11 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { reactive, ref } from 'vue'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
-import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -191,7 +191,7 @@ async function generateDocuments() {
 
   isGenerating.value = true
   try {
-    const response = await fetch(`${API_BASE_URL}/api/forms/templates/letter_of_intent_and_waiver.docx`, {
+    const response = await api.raw(`/api/forms/templates/letter_of_intent_and_waiver.docx`, {
       headers: authHeaders(),
     })
     if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)

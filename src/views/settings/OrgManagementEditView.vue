@@ -77,9 +77,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -120,7 +120,7 @@ async function loadOrg() {
   if (isCreate.value) return
   const orgId = route.params.orgId as string
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${orgId}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin/${orgId}`, { headers: authHeaders() })
     const data = await res.json() as AdminOrgResponse
     if (!res.ok) throw new Error(data.error || 'Failed to load org.')
     form.value = {
@@ -139,7 +139,7 @@ async function save() {
   saving.value = true
   try {
     if (isCreate.value) {
-      const res = await fetch(`${API_BASE_URL}/api/orgs`, {
+      const res = await api.raw(`/api/orgs`, {
         method: 'POST',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,7 +162,7 @@ async function save() {
       const newId = form.value.id.toLowerCase().trim()
       if (newId !== orgId) payload.id = newId
 
-      const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${orgId}`, {
+      const res = await api.raw(`/api/orgs/admin/${orgId}`, {
         method: 'PATCH',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -192,7 +192,7 @@ async function deleteOrg() {
   if (!ok) return
   deleting.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${route.params.orgId}`, {
+    const res = await api.raw(`/api/orgs/admin/${route.params.orgId}`, {
       method: 'DELETE',
       headers: authHeaders(),
     })
@@ -223,7 +223,7 @@ async function confirmTransfer() {
 async function executeTransfer() {
   transferring.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${route.params.orgId}/transfer`, {
+    const res = await api.raw(`/api/orgs/${route.params.orgId}/transfer`, {
       method: 'POST',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),

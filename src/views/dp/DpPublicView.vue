@@ -161,10 +161,10 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { saveAs } from 'file-saver'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
 import { useDpCanvas } from '@/composables/useDpCanvas'
@@ -272,7 +272,7 @@ async function download() {
     const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
     saveAs(blob, `eypi-dp-${safe}${suffix}.png`)
     toast.success('Downloaded. Share your new profile picture.')
-    fetch(`${API_BASE_URL}/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
+    api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')
   } finally {
@@ -302,7 +302,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 // ── Load campaign ─────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${slug}`)
+    const res = await api.raw(`/api/dp/${slug}`)
     let data: { status?: string; message?: string; campaign?: Campaign } = {}
     try { data = await res.json() } catch { /* non-JSON */ }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Campaign not found.')

@@ -44,9 +44,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import { useAuth } from '@/composables/useAuth'
 
 interface FormCatalogItem {
@@ -97,7 +97,7 @@ const filteredForms = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/forms`, { headers: authHeaders() })
+    const res = await api.raw(`/api/forms`, { headers: authHeaders() })
     if (res.ok) {
       const data = await res.json() as { forms?: FormCatalogItem[] }
       if (data.forms?.length) {

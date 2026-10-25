@@ -1,8 +1,8 @@
+import { api } from '@/lib/api'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
-import { API_BASE_URL } from '@/config/api'
 import type { OrgListItem } from '@/types/orgs'
 
 /** Shared across every caller — nav, OrgSwitcher, and org pages must stay in sync. */
@@ -18,7 +18,7 @@ export function useActiveOrg() {
   async function fetchOrgs() {
     isLoading.value = true
     try {
-      const res = await fetch(`${API_BASE_URL}/api/orgs`, {
+      const res = await api.raw(`/api/orgs`, {
         headers: authHeaders(),
       })
       const data = (await res.json()) as { orgs?: OrgListItem[] }

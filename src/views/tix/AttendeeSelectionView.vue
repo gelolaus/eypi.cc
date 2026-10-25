@@ -463,11 +463,11 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
 
@@ -624,7 +624,7 @@ async function uploadCsv() {
   uploading.value = true
   try {
     const mapping = buildMapping()
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/upload-csv`, {
+    const res = await api.raw(`/api/events/${slug}/upload-csv`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ rows: allRows.value.map(r => r.rawData), columnMapping: mapping }),
@@ -651,7 +651,7 @@ async function confirmMapping() {
   const mapping = buildMapping()
   columnMapping.value = mapping
   // Persist the confirmed mapping to DB so finalize uses the correct column names
-  fetch(`${TIX_API_URL}/api/events/${slug}/column-mapping`, {
+  api.raw(`/api/events/${slug}/column-mapping`, {
     method: 'PATCH',
     headers: authHeaders(),
     body: JSON.stringify({
@@ -701,7 +701,7 @@ async function saveClusters() {
   }
   savingClusters.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/clusters`, {
+    const res = await api.raw(`/api/events/${slug}/clusters`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -945,7 +945,7 @@ async function finalize() {
     // If rows are missing server IDs (uploaded in this session without a refresh),
     // fetch them now before building the selected set.
     if (allRows.value.some(r => !r.id)) {
-      const csvRes = await fetch(`${TIX_API_URL}/api/events/${slug}/csv-data`, { headers: authHeaders() })
+      const csvRes = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
       const csvData = await csvRes.json() as { status: string; rows: CsvRow[] }
       if (csvRes.ok && csvData.rows.length) allRows.value = csvData.rows
     }
@@ -954,7 +954,7 @@ async function finalize() {
     if (!selectedRows.length) throw new Error('No attendees selected.')
 
     finalizingLabel.value = 'Saving selection…'
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/finalize`, {
+    const res = await api.raw(`/api/events/${slug}/finalize`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -1014,7 +1014,7 @@ async function finalize() {
 onMounted(async () => {
   // Fetch event name
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}`, { headers: authHeaders() })
     const data = await res.json() as { status: string; event?: { name: string; isLead: boolean; selectionLocked: boolean } }
     if (res.ok && data.event) {
       eventName.value = data.event.name
@@ -1025,7 +1025,7 @@ onMounted(async () => {
 
   // Try to resume from previously uploaded CSV
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/csv-data`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
     const data = await res.json() as {
       status: string
       columnMapping: ColumnMapping | null

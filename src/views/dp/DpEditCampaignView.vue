@@ -86,9 +86,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useReveal } from '@/composables/useReveal'
@@ -123,7 +123,7 @@ async function saveDetails() {
   if (saving.value || !form.title.trim()) return
   saving.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({
@@ -147,7 +147,7 @@ async function saveDetails() {
 async function onAddFrame(dataUrl: string) {
   frameBusyIndex.value = frames.value.length
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({ imageData: dataUrl }),
@@ -169,7 +169,7 @@ async function onRemoveFrame(index: number) {
   if (frames.value.length <= 1) { toast.error('A campaign needs at least one frame.'); return }
   frameBusyIndex.value = index
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE', headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Could not remove frame.')
     frames.value.splice(index, 1)
@@ -187,7 +187,7 @@ async function onReorderFrame(from: number, to: number) {
   const [moved] = arr.splice(from, 1)
   arr.splice(to, 0, moved) // optimistic
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames/order`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames/order`, {
       method: 'PATCH',
       headers: authHeaders(),
       body: JSON.stringify({ orderedIds: arr.map(f => f.id as string) }),
@@ -212,7 +212,7 @@ async function removeCampaign() {
   })
   if (!ok) return
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${campaignId.value}`, { method: 'DELETE', headers: authHeaders() })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     toast.success('Campaign deleted.')
@@ -224,7 +224,7 @@ async function removeCampaign() {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${slug}/edit`, { headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${slug}/edit`, { headers: authHeaders() })
     let data: { status?: string; message?: string; campaign?: { id: string; title: string; slug: string; description: string | null; captionTemplate: string | null; frames: DpFrame[] } } = {}
     try { data = await res.json() } catch { /* non-JSON */ }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Campaign not found.')

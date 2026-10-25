@@ -3,9 +3,9 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { inject, onMounted, ref, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const route = useRoute()
@@ -27,7 +27,7 @@ onMounted(async () => {
 
   const animationPromise = appTransition?.value?.trigger() ?? Promise.resolve()
 
-  const fetchPromise = fetch(`${API_BASE_URL}/api/links/${currentSlug.value}`, {
+  const fetchPromise = api.raw(`/api/links/${currentSlug.value}`, {
     headers: clientReferrer ? { 'X-Client-Referrer': clientReferrer } : {},
   })
     .then((r) => r.json() as Promise<{ original_url?: string }>)

@@ -352,12 +352,12 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
-import { API_BASE_URL } from '@/config/api'
 import { isReservedSlug } from '@shared/reservedSlugs'
 import {
   DEFAULT_LINK_QR_CONFIG,
@@ -564,7 +564,7 @@ async function fetchLinks() {
     return
   }
   try {
-    const response = await fetch(`${API_BASE_URL}/api/links`, {
+    const response = await api.raw(`/api/links`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -665,7 +665,7 @@ async function handleShorten() {
 
   isShortening.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/links`, {
+    const res = await api.raw(`/api/links`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -716,7 +716,7 @@ async function onSave(): Promise<void> {
     return
   }
   try {
-    const res = await fetch(`${API_BASE_URL}/api/links/${activeLink.value.id}`, {
+    const res = await api.raw(`/api/links/${activeLink.value.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -803,7 +803,7 @@ async function executeDelete(link: Link): Promise<void> {
     return
   }
   try {
-    const res = await fetch(`${API_BASE_URL}/api/links/${linkId}`, {
+    const res = await api.raw(`/api/links/${linkId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })

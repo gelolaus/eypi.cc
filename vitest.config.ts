@@ -17,5 +17,8 @@ export default defineConfig({
       'backend/scripts/**/*.test.mjs',
     ],
     environment: 'node',
+    // Vitest 4 no longer reads this key. src/**/*.test.ts also declares
+    // @vitest-environment happy-dom, which is what Vitest 4 applies.
+    environmentMatchGlobs: [['src/**/*.test.ts', 'happy-dom']],
   },
 })

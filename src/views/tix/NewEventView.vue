@@ -202,11 +202,11 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
 import { useReveal } from '@/composables/useReveal'
 import { useToast } from '@/composables/useToast'
 import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import { useRouter } from 'vue-router'
 
@@ -313,7 +313,7 @@ async function submit() {
   try {
     // Selection mode: create event without attendees, redirect to selection wizard
     if (useSelectionMode.value) {
-      const res = await fetch(`${TIX_API_URL}/api/events`, {
+      const res = await api.raw(`/api/events`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({
@@ -334,7 +334,7 @@ async function submit() {
     }
 
     // Legacy mode: create event + attendees, generate QR codes
-    const res = await fetch(`${TIX_API_URL}/api/events`, {
+    const res = await api.raw(`/api/events`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({

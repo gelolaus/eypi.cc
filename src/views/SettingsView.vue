@@ -81,10 +81,10 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
-import { API_BASE_URL } from '@/config/api'
 
 const toast = useToast()
 useReveal()
@@ -114,7 +114,7 @@ const handleUpdatePassword = async () => {
 
   isSaving.value = true
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/password`, {
+    const response = await api.raw(`/api/auth/password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

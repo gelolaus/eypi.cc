@@ -100,11 +100,11 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
@@ -158,7 +158,7 @@ async function deleteEvent(slug: string, name: string) {
 
   deletingSlug.value = slug
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, {
+    const res = await api.raw(`/api/events/${slug}`, {
       method: 'DELETE',
       headers: authHeaders(),
     })
@@ -175,7 +175,7 @@ async function deleteEvent(slug: string, name: string) {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events`, { headers: authHeaders() })
     if (res.status === 403) {
       isLocked.value = true
       return

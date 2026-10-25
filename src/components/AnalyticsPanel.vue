@@ -163,6 +163,7 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, watch, computed } from 'vue'
 import {
   Chart as ChartJS,
@@ -177,7 +178,6 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { useDarkMode } from '@/composables/useDarkMode'
-import { API_BASE_URL } from '@/config/api'
 
 ChartJS.register(
   Title,
@@ -449,7 +449,7 @@ watch(
       return
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/api/links/${linkId}/analytics`, {
+      const res = await api.raw(`/api/links/${linkId}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.status === 401) {

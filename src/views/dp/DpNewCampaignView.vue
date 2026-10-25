@@ -119,8 +119,8 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, computed } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
 import { useAuth } from '@/composables/useAuth'
@@ -168,7 +168,7 @@ async function submit() {
   if (!canSubmit.value || submitting.value) return
   submitting.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp`, {
+    const res = await api.raw(`/api/dp`, {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify({
