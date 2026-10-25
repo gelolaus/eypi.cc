@@ -758,7 +758,6 @@ async function savePassFields() {
   try {
     const res = await api.raw(`/api/events/${slug}`, {
       method: 'PATCH',
-      headers: authHeaders(),
       body: JSON.stringify({ passFields: passFieldSelection.value }),
     })
     const data = await res.json() as { message?: string }

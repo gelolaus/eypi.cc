@@ -105,7 +105,7 @@ describe('ticket lookup rate limits', () => {
     expect(other.status).toBe(200)
 
     const emailHash = await sha256Hex('ada@x.com')
-    const stored = await env.RATE_LIMIT_KV.get(`lookup:event-email:${emailHash}`)
+    const stored = await env.RATE_LIMIT_KV.get(`rl:lookup:event-email:${emailHash}`)
     expect(stored?.startsWith('10:')).toBe(true)
   })
 
@@ -132,7 +132,7 @@ describe('ticket lookup rate limits', () => {
       const other = await passDownload(request, 'passes', 'google', tokenB)
       expect(other.status).not.toBe(429)
 
-      const stored = await env.RATE_LIMIT_KV.get(`pass:${ada.id}`)
+      const stored = await env.RATE_LIMIT_KV.get(`rl:pass:${ada.id}`)
       expect(stored?.startsWith('20:')).toBe(true)
     } finally {
       errorLog.mockRestore()
