@@ -31,29 +31,29 @@
         <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-8 md:p-10 dark:border-slate-600">
           <!-- Title -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
-            <input v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
+            <input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
+            <label for="edit-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
-              <input v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
+              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
             </div>
           </div>
 
           <!-- Description -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <input v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Caption -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <textarea v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Save metadata -->
@@ -67,7 +67,7 @@
 
           <!-- Frames (persisted immediately) -->
           <div class="border-t border-gray-200 pt-5 dark:border-slate-700">
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</label>
+            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</p>
             <p class="mb-3 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
             <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
           </div>

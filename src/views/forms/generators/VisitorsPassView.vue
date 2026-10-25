@@ -122,9 +122,9 @@
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-1.5 block text-sm font-medium text-g-muted">
+            <p class="mb-1.5 block text-sm font-medium text-g-muted">
               Visitors List (CSV)
-            </label>
+            </p>
             <label
               for="csvFile"
               class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-g-accent"

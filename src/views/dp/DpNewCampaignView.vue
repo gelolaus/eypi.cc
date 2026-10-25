@@ -46,8 +46,9 @@
       >
         <!-- Title -->
         <div>
-          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
+          <label for="new-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
           <input
+            id="new-campaign-title"
             v-model="form.title"
             type="text"
             maxlength="200"
@@ -59,10 +60,11 @@
 
         <!-- Slug -->
         <div>
-          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
+          <label for="new-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
           <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
             <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
             <input
+              id="new-campaign-slug"
               v-model="form.slug"
               type="text"
               maxlength="60"
@@ -76,8 +78,9 @@
 
         <!-- Description -->
         <div>
-          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+          <label for="new-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
           <input
+            id="new-campaign-description"
             v-model="form.description"
             type="text"
             maxlength="1000"
@@ -88,8 +91,9 @@
 
         <!-- Caption template -->
         <div>
-          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+          <label for="new-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
           <textarea
+            id="new-campaign-caption"
             v-model="form.captionTemplate"
             rows="3"
             maxlength="2000"
@@ -100,7 +104,7 @@
 
         <!-- Frames -->
         <div>
-          <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></label>
+          <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></p>
           <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
         </div>
 

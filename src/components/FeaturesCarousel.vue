@@ -11,6 +11,7 @@
         </h2>
       </div>
 
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- carousel region pauses on hover; focus pauses it for keyboard users -->
       <div
         ref="carouselRegionRef"
         class="features-carousel reveal delay-1"
@@ -382,7 +383,7 @@ function onScroll() {
     scrollRaf = null
   })
 
-  if (!isDragging) scheduleSettle()
+  if (!isDragging.value) scheduleSettle()
 }
 
 function goPrev() {

@@ -21,6 +21,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search frames..."
+      aria-label="Search frames"
       class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 

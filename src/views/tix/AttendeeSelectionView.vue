@@ -38,6 +38,7 @@
       <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Upload Spreadsheet</h2>
       <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.</p>
 
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
       <div
         class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors"
         :class="csvFile
@@ -52,7 +53,7 @@
         <template v-else>
           <p class="text-sm text-gray-500 dark:text-slate-400">Drop .xlsx or click to upload</p>
         </template>
-        <input ref="fileInput" type="file" accept=".xlsx" class="hidden" @change="onFileChange" />
+        <input ref="fileInput" type="file" accept=".xlsx" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
         <button
           type="button"
           class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
@@ -97,6 +98,7 @@
           <span class="truncate font-mono text-xs text-gray-700 dark:text-slate-300 pr-2">{{ col }}</span>
           <select
             :value="getColRole(col)"
+            :aria-label="`Role for ${col}`"
             class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
             @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
           >
@@ -148,8 +150,9 @@
             <p class="font-mono text-[0.65rem] text-gray-400 dark:text-slate-500 uppercase tracking-wide">{{ clusterRawCount(cl.value) }} respondents</p>
           </div>
           <div class="flex items-center gap-2">
-            <label class="font-mono text-xs text-gray-500 dark:text-slate-400">Max:</label>
+            <label :for="`cluster-max-${cl.value}`" class="font-mono text-xs text-gray-500 dark:text-slate-400">Max:</label>
             <input
+              :id="`cluster-max-${cl.value}`"
               :value="cl.maxCount"
               type="number"
               min="0"
@@ -300,6 +303,7 @@
           v-model="guaranteeSearch"
           type="text"
           placeholder="Search by name or email…"
+          aria-label="Search guarantees"
           class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
         />
       </div>
@@ -380,8 +384,9 @@
 
       <!-- Max attendees edit -->
       <div class="mb-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input">
-        <label class="text-sm font-semibold text-gray-600 dark:text-slate-400">Max Attendees:</label>
+        <label for="selection-max-attendees" class="text-sm font-semibold text-gray-600 dark:text-slate-400">Max Attendees:</label>
         <input
+          id="selection-max-attendees"
           v-model.number="maxAttendeesEdit"
           type="number"
           min="1"

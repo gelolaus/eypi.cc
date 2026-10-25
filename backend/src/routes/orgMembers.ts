@@ -12,7 +12,7 @@ const app = new Hono<{ Bindings: Bindings, Variables: Variables }>()
 
 // Ensure requester is logged in
 app.use('*', async (c, next) => {
-  const user = await getUser(c as any)
+  const user = await getUser(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

@@ -1,6 +1,12 @@
 <template>
   <div v-if="orgs.length > 0" class="relative inline-block">
-    <div v-if="isOpen" class="fixed inset-0 z-40" @click="isOpen = false" />
+    <button
+      v-if="isOpen"
+      type="button"
+      class="fixed inset-0 z-40 cursor-default border-0 bg-transparent p-0"
+      aria-label="Close organization menu"
+      @click="isOpen = false"
+    />
 
     <button
       type="button"

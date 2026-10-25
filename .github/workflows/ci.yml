@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm ci --prefix backend
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx wrangler deploy --dry-run --config dist/eypicc_frontend/wrangler.json
+      - run: npx wrangler deploy --dry-run --config backend/wrangler.jsonc
+      # xlsx and node-forge stay until WS5. Any other high or critical advisory fails.
+      - run: node scripts/audit-prod.mjs
+      - run: node scripts/audit-prod.mjs backend

@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc --port 8787 --ip 127.0.0.1",
+    "predeploy": "node ../scripts/release-check.mjs",
     "deploy": "wrangler deploy --minify --config wrangler.jsonc",
     "backfill-kv": "node scripts/backfill-links-kv.mjs",
     "migrate": "node scripts/migrate.mjs",

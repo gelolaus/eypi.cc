@@ -226,14 +226,14 @@
         </div>
 
         <form class="mb-6 flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
-          <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" class="field-input min-w-0 flex-1" />
+          <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
           <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-g-primary px-4 py-3 text-sm font-semibold text-white">
             {{ sendingInvite ? 'Inviting...' : 'Invite' }}
           </button>
         </form>
 
         <form class="flex flex-col gap-2 border-t border-g-border pt-6 sm:flex-row" @submit.prevent="confirmTransfer">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
+          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" aria-label="New owner email" class="field-input min-w-0 flex-1" />
           <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
             {{ transferring ? 'Transferring...' : 'Transfer ownership' }}
           </button>

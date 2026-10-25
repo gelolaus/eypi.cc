@@ -32,10 +32,17 @@ app.use('*', async (c, next) => {
   return orgContext(c, next)
 })
 
-async function requireEventLead(client: Client, slug: string, orgId: string | undefined): Promise<{ ok: true, event: any } | { ok: false, status: 403 | 404, message: string }> {
+type EventLeadRow = {
+  id: string
+  org_id: string
+  selection_locked: number | bigint | null
+  max_attendees: number | bigint | null
+}
+
+async function requireEventLead(client: Client, slug: string, orgId: string | undefined): Promise<{ ok: true, event: EventLeadRow } | { ok: false, status: 403 | 404, message: string }> {
   const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees FROM events WHERE slug = ?', args: [slug] })
   if (evRes.rows.length === 0) return { ok: false, status: 404, message: 'Event not found.' }
-  const event = evRes.rows[0]
+  const event = evRes.rows[0] as unknown as EventLeadRow
 
   if (!orgId || event.org_id !== orgId) {
     return { ok: false, status: 403, message: 'Forbidden.' }

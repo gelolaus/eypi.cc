@@ -66,7 +66,7 @@
       <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="confirmTransfer">
         <h3 class="text-card-title text-red-500">Transfer ownership</h3>
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
+          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" aria-label="New owner email" class="field-input min-w-0 flex-1" />
           <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
             {{ transferring ? 'Transferring...' : 'Transfer' }}
           </button>

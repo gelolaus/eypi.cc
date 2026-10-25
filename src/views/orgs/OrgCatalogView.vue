@@ -25,6 +25,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search organizations..."
+        aria-label="Search organizations"
         class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
       />
 

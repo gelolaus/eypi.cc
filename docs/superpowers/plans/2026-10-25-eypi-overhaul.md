@@ -224,11 +224,11 @@ feat(db): add versioned migrations with a ledger and baseline
 - Delete: `.github/workflows/test.yml`
 - Modify: `package.json` (`"lint": "eslint ."`, deploy script runs `vue-tsc -b`), `backend/package.json` (`"predeploy": "node ../scripts/release-check.mjs"`), `tsconfig.json` (reference `tsconfig.node.json`), both lockfiles
 
-- [ ] **Step 1:** Add ESLint 9 flat config: `typescript-eslint` recommended, `eslint-plugin-vue` `flat/recommended`, `eslint-plugin-vuejs-accessibility` `flat/recommended`; ignore `dist`, `backend/worker-configuration.d.ts`. Fix or locally disable (with reason) every error; warnings are allowed.
-- [ ] **Step 2:** `npm audit fix` in root and `backend/`; upgrade `hono` to ≥ 4.13.14, `dompurify` latest, `wrangler` and `@cloudflare/vite-plugin` latest; remove `@tursodatabase/database`. Leave `xlsx` for WS5 Task 5.5 and `node-forge` for Task 5.6.
-- [ ] **Step 3:** `ci.yml` on push and pull_request: Node 22; `npm ci`; `npm ci --prefix backend`; `npm run lint`; `npm run typecheck`; `npm test`; `npm run build`; `npx wrangler deploy --dry-run --config dist/eypicc_frontend/wrangler.json`; `npx wrangler deploy --dry-run --config backend/wrangler.jsonc`; `npm audit --omit=dev --audit-level=high` (root and backend; temporarily allow the documented `xlsx`/`node-forge` advisories via `--omit` notes until WS5).
-- [ ] **Step 4: Run** the same commands locally. Expected: all exit 0.
-- [ ] **Step 5: Commit** `ci: run lint, typecheck, tests, build, and audit on Node 22` (separate commit `chore(deps): upgrade hono, dompurify, and wrangler and fix audit findings`).
+- [x] **Step 1:** Add ESLint 9 flat config: `typescript-eslint` recommended, `eslint-plugin-vue` `flat/recommended`, `eslint-plugin-vuejs-accessibility` `flat/recommended`; ignore `dist`, `backend/worker-configuration.d.ts`. Fix or locally disable (with reason) every error; warnings are allowed.
+- [x] **Step 2:** `npm audit fix` in root and `backend/`; upgrade `hono` to ≥ 4.13.14, `dompurify` latest, `wrangler` and `@cloudflare/vite-plugin` latest; remove `@tursodatabase/database`. Leave `xlsx` for WS5 Task 5.5 and `node-forge` for Task 5.6.
+- [x] **Step 3:** `ci.yml` on push and pull_request: Node 22; `npm ci`; `npm ci --prefix backend`; `npm run lint`; `npm run typecheck`; `npm test`; `npm run build`; `npx wrangler deploy --dry-run --config dist/eypicc_frontend/wrangler.json`; `npx wrangler deploy --dry-run --config backend/wrangler.jsonc`; `npm audit --omit=dev --audit-level=high` (root and backend; temporarily allow the documented `xlsx`/`node-forge` advisories via `--omit` notes until WS5).
+- [x] **Step 4: Run** the same commands locally. Expected: all exit 0.
+- [x] **Step 5: Commit** `ci: run lint, typecheck, tests, build, and audit on Node 22` (separate commit `chore(deps): upgrade hono, dompurify, and wrangler and fix audit findings`).
 
 ---
 

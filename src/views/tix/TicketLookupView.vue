@@ -81,6 +81,7 @@
             v-model="form.firstName"
             type="text"
             placeholder="First Name"
+            aria-label="First Name"
             required
             class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
@@ -88,6 +89,7 @@
             v-model="form.lastName"
             type="text"
             placeholder="Last Name"
+            aria-label="Last Name"
             required
             class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
@@ -95,6 +97,7 @@
             v-model="form.email"
             type="email"
             placeholder="Email"
+            aria-label="Email"
             required
             class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />

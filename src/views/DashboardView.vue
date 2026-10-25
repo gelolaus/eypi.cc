@@ -15,8 +15,10 @@
         class="mica-card rounded-2xl p-7 text-left transition-all duration-200 focus:outline-none hover:-translate-y-1 flex flex-col gap-4"
         data-cursor="card"
         :style="{ border: '1px solid var(--color-border)' }"
-        @mouseenter="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(222,172,75,0.5)'"
-        @mouseleave="(e) => (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)'"
+        @mouseenter="paintCardBorder($event, 'rgba(222,172,75,0.5)')"
+        @focus="paintCardBorder($event, 'rgba(222,172,75,0.5)')"
+        @mouseleave="paintCardBorder($event, 'var(--color-border)')"
+        @blur="paintCardBorder($event, 'var(--color-border)')"
       >
         <h2 class="text-card-title text-g-primary dark:text-white">
           {{ mod.title }}
@@ -36,6 +38,11 @@ import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { getUser } = useAuth()
+
+function paintCardBorder(event: Event, color: string) {
+  const el = event.currentTarget
+  if (el instanceof HTMLElement) el.style.borderColor = color
+}
 
 const userName = ref('')
 onMounted(() => {

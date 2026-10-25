@@ -125,7 +125,7 @@ app.post('/api/auth/register', async (c) => {
       message: 'Account created. Check your APC email to verify before logging in.',
     }, 201)
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration failed:', error)
     return c.json({ status: 'error', message: 'Registration failed. Please try again.' }, 500)
   }

@@ -270,7 +270,7 @@ app.get('/public/:slug', async (c) => {
 
 // Ensure requester is logged in for all routes below
 app.use('*', async (c, next) => {
-  const user = await getUser(c as any)
+  const user = await getUser(c)
   if (!user) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

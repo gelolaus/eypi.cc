@@ -20,6 +20,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search forms..."
+        aria-label="Search forms"
         class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
       />
 

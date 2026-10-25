@@ -53,6 +53,7 @@
                   ref="maxEditInput"
                   v-model.number="maxEditValue"
                   type="number"
+                  aria-label="Max attendees"
                   min="1"
                   placeholder="∞"
                   class="w-20 rounded-md border border-[#34418F] px-2 py-0.5 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
@@ -119,6 +120,7 @@
                     <input
                       v-model.number="clusterMaxEditValue"
                       type="number"
+                      :aria-label="`Max for ${cl.value}`"
                       min="1"
                       placeholder="∞"
                       class="w-14 rounded border border-[#34418F] px-1 py-0 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
@@ -259,6 +261,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search by name, email, or group…"
+            aria-label="Search attendees"
             class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-slate-400"
           />
           <button
@@ -312,6 +315,7 @@
                   <input
                     v-model="attendeeClusterEditValue"
                     type="text"
+                    aria-label="Cluster"
                     list="cluster-suggestions"
                     placeholder="Cluster…"
                     class="mt-0.5 w-full rounded border border-[#34418F] px-1.5 py-0.5 font-mono text-[0.6rem] outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
@@ -321,11 +325,12 @@
                   />
                 </template>
                 <template v-else>
-                  <p
-                    class="mt-0.5 cursor-pointer font-mono text-[0.6rem] text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                  <button
+                    type="button"
+                    class="mt-0.5 cursor-pointer border-0 bg-transparent p-0 text-left font-mono text-[0.6rem] text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
                     :title="a.cluster_value ? 'Click to edit cluster' : 'Click to assign cluster'"
                     @click="startEditAttendeeCluster(a.id as string, a.cluster_value as string)"
-                  >{{ a.cluster_value || '+ cluster' }}</p>
+                  >{{ a.cluster_value || '+ cluster' }}</button>
                 </template>
               </div>
               <div class="col-span-3 hidden sm:block">
@@ -413,7 +418,7 @@
     <Transition name="panel">
       <div v-if="showAddGuest" class="fixed inset-x-0 bottom-0 top-20 z-50 flex justify-end">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="showAddGuest = false" />
+        <button type="button" class="absolute inset-0 cursor-default border-0 bg-black/30 p-0 backdrop-blur-sm" aria-label="Close add guest" @click="showAddGuest = false" />
         <!-- Panel -->
         <div class="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl dark:bg-slate-900">
           <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
@@ -447,6 +452,7 @@
                 v-model="guestSearch"
                 type="text"
                 placeholder="Search by name or email…"
+                aria-label="Search CSV rows"
                 class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
               />
               <div v-if="guestSearchResults.length" class="space-y-1">
@@ -476,20 +482,21 @@
             <!-- Free-form -->
             <div v-if="guestMode === 'freeform'" class="flex flex-col gap-4">
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First Name *</label>
-                <input v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label for="guest-first-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First Name *</label>
+                <input id="guest-first-name" v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last Name</label>
-                <input v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label for="guest-last-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last Name</label>
+                <input id="guest-last-name" v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
-                <input v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
+                <label for="guest-email" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
+                <input id="guest-email" v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200" />
               </div>
               <div>
-                <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
+                <label for="guest-cluster" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
                 <input
+                  id="guest-cluster"
                   v-model="guestForm.clusterValue"
                   type="text"
                   list="cluster-suggestions"

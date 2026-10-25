@@ -7,6 +7,7 @@
         role="presentation"
         @mousedown.self="onBackdrop"
       >
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
         <div
           ref="panelRef"
           class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left shadow-2xl"

@@ -6,7 +6,7 @@ export const requireAuth = async <P extends string>(
   c: Context<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }, P>,
   next: Next,
 ) => {
-  const user = await getUser(c as any)
+  const user = await getUser(c)
   if (!user) {
     return c.json({ error: 'Unauthorized', message: 'Missing or invalid token' }, 401)
   }

@@ -3,6 +3,7 @@
     <!-- Thumbnail strip -->
     <p v-if="frames.length > 1" class="mb-2 text-xs font-medium text-gray-400 dark:text-slate-500">Drag to reorder</p>
     <div v-if="frames.length" class="mb-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- pointer drag reorder; remove stays a button -->
       <div
         v-for="(frame, i) in frames"
         :key="frame.id ?? i"
@@ -40,14 +41,18 @@
       v-if="frames.length < max"
       class="dp-dropzone relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition-colors"
       :class="dragging ? 'dp-dropzone--active' : ''"
+      role="button"
+      tabindex="0"
       :aria-invalid="Boolean(uploadError)"
       :aria-describedby="uploadError ? 'frame-upload-error' : undefined"
       @click="fileInput?.click()"
+      @keydown.enter.prevent="fileInput?.click()"
+      @keydown.space.prevent="fileInput?.click()"
       @dragover.prevent="dragging = true"
       @dragleave.prevent="dragging = false"
       @drop.prevent="onDrop"
     >
-      <input ref="fileInput" type="file" accept="image/png, image/x-png, .png" multiple class="hidden" @change="onPicked" />
+      <input ref="fileInput" type="file" accept="image/png, image/x-png, .png" multiple class="hidden" aria-hidden="true" tabindex="-1" @change="onPicked" />
       <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 dark:border-slate-600 dark:text-slate-500">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
       </div>

@@ -91,8 +91,9 @@
           </label>
 
           <div v-if="headshot" class="flex items-center gap-4">
-            <span class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</span>
+            <label for="frame-zoom" class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</label>
             <input
+              id="frame-zoom"
               v-model.number="zoomPercent"
               type="range"
               min="20"

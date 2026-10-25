@@ -20,6 +20,7 @@
           v-model="longUrlInput"
           type="url"
           placeholder="Paste your long link here..."
+          aria-label="Long link"
           class="w-full rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
           :aria-invalid="Boolean(longUrlError)"
           :aria-describedby="longUrlError ? 'long-url-error' : undefined"
@@ -41,6 +42,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search links..."
+      aria-label="Search links"
       class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
@@ -220,6 +222,7 @@
               v-model="sidebarOriginalUrl"
               type="url"
               placeholder="Original URL"
+              aria-label="Original URL"
               class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
               :aria-invalid="Boolean(sidebarUrlError)"
               :aria-describedby="sidebarUrlError ? 'sidebar-url-error' : undefined"
@@ -240,6 +243,7 @@
                 :value="sidebarSlug"
                 type="text"
                 placeholder="custom-slug"
+                aria-label="Custom slug"
                 class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200 dark:placeholder-slate-400"
                 :aria-invalid="Boolean(slugError)"
                 :aria-describedby="slugError ? 'slug-error' : undefined"
@@ -261,8 +265,8 @@
 
             <div class="mb-6 flex flex-col gap-4 text-sm">
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Body shape</label>
-                <select v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                <label for="qr-body-shape" class="text-sm font-medium text-gray-500 dark:text-slate-400">Body shape</label>
+                <select id="qr-body-shape" v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                   <option value="square">Standard Square</option>
                   <option value="dots">Dotted</option>
                   <option value="rounded">Rounded</option>
@@ -272,16 +276,16 @@
 
               <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye frame</label>
-                  <select v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                  <label for="qr-eye-frame" class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye frame</label>
+                  <select id="qr-eye-frame" v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
                     <option value="extra-rounded">Rounded</option>
                   </select>
                 </div>
                 <div class="flex flex-col gap-1">
-                  <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye ball</label>
-                  <select v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
+                  <label for="qr-eye-ball" class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye ball</label>
+                  <select id="qr-eye-ball" v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
                     <option value="square">Square</option>
                     <option value="dot">Dot</option>
                   </select>
@@ -289,18 +293,18 @@
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Matrix color</label>
+                <label for="qr-matrix-color" class="text-sm font-medium text-gray-500 dark:text-slate-400">Matrix color</label>
                 <div class="flex items-center gap-3">
                   <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-g-accent transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
-                    <input type="color" v-model="qrConfig.color" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
+                    <input type="color" v-model="qrConfig.color" aria-label="Matrix color picker" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
                   </div>
-                  <input type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#DEAC4B" maxlength="7" />
+                  <input id="qr-matrix-color" type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#DEAC4B" maxlength="7" />
                 </div>
               </div>
 
               <div class="flex flex-col gap-1">
-                <label class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
-                <input type="file" @change="handleLogoUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined" />
+                <label for="qr-center-logo" class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
+                <input id="qr-center-logo" type="file" @change="handleLogoUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined" />
                 <button
                   v-if="qrConfig.logoDataUrl"
                   type="button"

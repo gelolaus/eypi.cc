@@ -71,8 +71,9 @@
         <form class="flex flex-col gap-4" @submit.prevent="submit">
           <!-- Event Name -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
+            <label for="event-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
             <input
+              id="event-name"
               v-model="form.name"
               type="text"
               placeholder="e.g. JPCS General Assembly"
@@ -83,10 +84,11 @@
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
+            <label for="event-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
               <input
+                id="event-slug"
                 v-model="form.slug"
                 type="text"
                 placeholder="bwai2026"
@@ -103,8 +105,9 @@
           <!-- Date + Time -->
           <div class="flex flex-col gap-4 md:flex-row">
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
+              <label for="event-date" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
               <input
+                id="event-date"
                 v-model="form.date"
                 type="date"
                 required
@@ -112,8 +115,9 @@
               />
             </div>
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
+              <label for="event-time" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
               <input
+                id="event-time"
                 v-model="form.time"
                 type="time"
                 required
@@ -124,8 +128,9 @@
 
           <!-- Location -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
+            <label for="event-location" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
             <input
+              id="event-location"
               v-model="form.location"
               type="text"
               placeholder="e.g. APC Auditorium"
@@ -136,7 +141,8 @@
 
           <!-- CSV Upload (simple mode only) -->
           <div v-if="!useSelectionMode">
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</label>
+            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</p>
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
             <div
               class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
               :class="csvFile
@@ -155,7 +161,7 @@
                 <p class="text-sm text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
                 <p class="mt-2 font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
               </template>
-              <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileChange" />
+              <input ref="fileInput" type="file" accept=".csv" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
               <button
                 type="button"
                 class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
@@ -172,8 +178,9 @@
             <p class="mb-3 font-mono text-xs text-[#34418F] dark:text-slate-300">
               You'll upload the CSV and configure clusters &amp; criteria on the next page.
             </p>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
+            <label for="event-max-attendees" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
             <input
+              id="event-max-attendees"
               v-model.number="maxAttendeesValue"
               type="number"
               min="1"
