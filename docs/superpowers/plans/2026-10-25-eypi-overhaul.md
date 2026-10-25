@@ -292,7 +292,7 @@ feat(db): add versioned migrations with a ledger and baseline
   - `GET /api/me` → `{ user, pendingInviteCount, needsConsent: [], orgs }` (`needsConsent` filled by WS8)
   - `POST /api/auth/logout`
   - CSRF: non-safe methods need `Origin` ∈ allowlist else 403 `bad_origin`
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - legacy user `juan@student.apc.edu.ph` with a link: `resolveUser` with a new `oid` returns the **same** `userId`, and an identity row is inserted
   - a second sign-in with the same `oid` but a changed email updates `users.email`
   - a new email creates a user with `role='user'`
@@ -303,8 +303,8 @@ feat(db): add versioned migrations with a ledger and baseline
   - POST from `https://eypi.cc` → passes
   - `GET /api/me` anonymous → 401
   - `requireAdmin` for a user → 403 `admin_only`
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth): add cookie sessions, CSRF origin check, and /api/me`.
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth): add cookie sessions, CSRF origin check, and /api/me`.
 
 ### Task 2.4: Move every route onto `c.var.user` and roles
 
@@ -402,9 +402,9 @@ feat(db): add versioned migrations with a ledger and baseline
   - `isBot(userAgent) → boolean` (case-insensitive list: `bot`, `crawler`, `spider`, `facebookexternalhit`, `Discordbot`, `WhatsApp`, `Slackbot`, `Twitterbot`, `TelegramBot`, `LinkedInBot`, `SkypeUriPreview`, `Googlebot`, `bingbot`, `preview`)
   - `logLinkClick(client, { linkId, os, country, referrer, source, visitorHash })` runs one batch: insert analytics + `UPDATE links SET clicks = clicks + 1 WHERE id = ?`
   - Worker flow per §6.2 (`exp` past → 302 `/expired`; `pw` → 302 `/unlock/:slug`; strip `src=qr` → `source='qr'`)
-- [ ] **Step 1: Failing tests:** v1 value decodes; v2 roundtrip; `isBot('Mozilla/5.0 (compatible; Discordbot/2.0)')` true and a normal Chrome UA false; `logLinkClick` increments by id even when the slug changed; worker: expired → `/expired`, protected → `/unlock/abc`, `?src=qr` stripped from the destination, bot UA not logged.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(links): add v2 edge contract with expiry, protection, and bot-free counting`.
+- [x] **Step 1: Failing tests:** v1 value decodes; v2 roundtrip; `isBot('Mozilla/5.0 (compatible; Discordbot/2.0)')` true and a normal Chrome UA false; `logLinkClick` increments by id even when the slug changed; worker: expired → `/expired`, protected → `/unlock/abc`, `?src=qr` stripped from the destination, bot UA not logged.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(links): add v2 edge contract with expiry, protection, and bot-free counting`.
 
 ### Task 4.3: Links API rewrite (F-LINK-1, 2, 4, 5, 9, 10, 11, 13)
 
@@ -505,7 +505,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Create `backend/migrations/0007_tix.sql`. Modify `backend/src/routes/events.ts` finalize, upload, clusters and raffle to single batches; chunk `IN` lists (≤ 200). Test `backend/src/routes/events.finalize.test.ts`.
 
-- [ ] Failing tests: concurrent finalize → exactly one 200, the other 409 `already_finalized`, attendee count = selected rows; a failure mid-batch leaves the event unlocked with zero attendees; a duplicate email in the selection → one attendee. Implement → PASS. Commit `fix(tix): make finalize atomic and idempotent`.
+- [x] Failing tests: concurrent finalize → exactly one 200, the other 409 `already_finalized`, attendee count = selected rows; a failure mid-batch leaves the event unlocked with zero attendees; a duplicate email in the selection → one attendee. Implement → PASS. Commit `fix(tix): make finalize atomic and idempotent`.
 
 ### Task 5.2: Pure selection module and criteria persistence (F-TIX-1, 7, 8)
 
