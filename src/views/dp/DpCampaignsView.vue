@@ -94,14 +94,12 @@ import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 
 const campaigns = ref<DpCampaignSummary[]>([])
 const loading = ref(true)
@@ -139,7 +137,7 @@ async function remove(id: string, title: string) {
   if (!ok) return
   deletingId.value = id
   try {
-    const res = await api.raw(`/api/dp/${id}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${id}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     campaigns.value = campaigns.value.filter(c => c.id !== id)
@@ -153,7 +151,7 @@ async function remove(id: string, title: string) {
 
 onMounted(async () => {
   try {
-    const res = await api.raw(`/api/dp`, { headers: authHeaders() })
+    const res = await api.raw(`/api/dp`)
     if (res.status === 403) {
       isLocked.value = true
       return

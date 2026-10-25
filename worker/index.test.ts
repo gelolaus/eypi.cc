@@ -284,6 +284,20 @@ describe('public media route', () => {
     expect(fetchAsset).not.toHaveBeenCalled()
   })
 
+  it('redirects retired password routes to /login with 301', async () => {
+    const fetchAsset = vi.fn(async () => new Response('app-shell', { status: 200 }))
+    const env = makeEnv({ verify: slugEntry(), 'reset-password': slugEntry() }, fetchAsset)
+
+    for (const path of ['/verify', '/reset-password']) {
+      const response = await worker.fetch(new Request(`https://eypi.cc${path}`), env, ctx())
+      expect(response.status).toBe(301)
+      expect(response.headers.get('Location')).toBe('/login')
+    }
+
+    expect(fetchAsset).not.toHaveBeenCalled()
+    expect(logLinkClick).not.toHaveBeenCalled()
+  })
+
   it('still serves the reserved /media slug from the app shell', async () => {
     const fetchAsset = vi.fn(async () => new Response('app-shell', { status: 200 }))
     const response = await worker.fetch(

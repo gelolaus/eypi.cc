@@ -4,6 +4,6 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     requiresOrg?: boolean
-    requiresSuperAdmin?: boolean
+    requiresAdmin?: boolean
   }
 }

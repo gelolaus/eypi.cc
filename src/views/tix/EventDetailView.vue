@@ -532,7 +532,6 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useAuth } from '@/composables/useAuth'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import type { ClusterConfig } from '@/types/selection'
 import {
@@ -550,7 +549,6 @@ import {
 
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 const route = useRoute()
 const router = useRouter()
 
@@ -590,7 +588,7 @@ async function saveClusterMax(value: string) {
   try {
     const res = await api.raw(
       `/api/events/${slug}/clusters/${encodeURIComponent(value)}/max-count`,
-      { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ maxCount: clusterMaxEditValue.value ?? null }) },
+      { method: 'PATCH', body: JSON.stringify({ maxCount: clusterMaxEditValue.value ?? null }) },
     )
     if (!res.ok) throw new Error((await res.json() as { message?: string }).message ?? 'Failed.')
     await fetchClusters()
@@ -615,7 +613,7 @@ async function saveAttendeeCluster(id: string) {
   try {
     const res = await api.raw(
       `/api/events/${slug}/attendees/${id}`,
-      { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ clusterValue: newVal }) },
+      { method: 'PATCH', body: JSON.stringify({ clusterValue: newVal }) },
     )
     if (!res.ok) throw new Error((await res.json() as { message?: string }).message ?? 'Failed.')
     const a = attendees.value.find(x => x.id === id)
@@ -669,7 +667,6 @@ async function saveMax() {
   try {
     const res = await api.raw(`/api/events/${slug}`, {
       method: 'PATCH',
-      headers: authHeaders(),
       body: JSON.stringify({ maxAttendees: maxEditValue.value ?? null }),
     })
     if (!res.ok) throw new Error((await res.json() as { message?: string }).message ?? 'Failed.')
@@ -698,7 +695,7 @@ watch(guestSearch, (q) => {
   if (!q.trim()) { guestSearchResults.value = []; return }
   guestSearchTimer = setTimeout(async () => {
     try {
-      const res = await api.raw(`/api/events/${slug}/csv-rows/search?q=${encodeURIComponent(q.trim())}`, { headers: authHeaders() })
+      const res = await api.raw(`/api/events/${slug}/csv-rows/search?q=${encodeURIComponent(q.trim())}`)
       const data = await res.json() as { rows?: CsvSearchRow[] }
       guestSearchResults.value = data.rows ?? []
     } catch { /* ignore */ }
@@ -723,7 +720,6 @@ async function addGuestFromCsv(csvRowId: string) {
   try {
     const res = await api.raw(`/api/events/${slug}/add-guest`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({ csvRowId }),
     })
     const data = await res.json() as { status: string; message?: string; attendee?: { firstName: string; lastName: string; email: string; qrToken: string } }
@@ -748,7 +744,6 @@ async function addGuestFreeform() {
   try {
     const res = await api.raw(`/api/events/${slug}/add-guest`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({
         firstName:    guestForm.value.firstName.trim(),
         lastName:     guestForm.value.lastName.trim(),
@@ -801,8 +796,7 @@ async function reRaffle(clusterValue: string) {
   try {
     const res = await api.raw(`/api/events/${slug}/clusters/${encodeURIComponent(clusterValue)}/raffle`, {
       method: 'POST',
-      headers: authHeaders(),
-    })
+      })
     const data = await res.json() as { status: string; message?: string; attendees?: { firstName: string; lastName: string; qrToken: string }[] }
     if (!res.ok) throw new Error(data.message ?? 'Re-raffle failed.')
 
@@ -927,7 +921,6 @@ function onDecoded(raw: string | null) {
 function submitScan(qrToken: string) {
   api.raw(`/api/events/${slug}/checkin`, {
     method: 'POST',
-    headers: authHeaders(),
     body: JSON.stringify({ qrToken }),
   })
     .then(async (res) => {
@@ -1254,7 +1247,7 @@ function countForTab(filter: string | null) {
 // ── data fetching ─────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const res = await api.raw(`/api/events/${slug}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}`)
     const data = await res.json() as { status: string; message?: string; event?: EventInfo }
     if (!res.ok) throw new Error(data.message ?? 'Event not found.')
 
@@ -1278,7 +1271,7 @@ onMounted(async () => {
 async function fetchAttendees() {
   loadingAttendees.value = true
   try {
-    const res = await api.raw(`/api/events/${slug}/attendees`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/attendees`)
     const data = await res.json() as { status: string; message?: string; attendees?: Attendee[] }
     if (!res.ok) throw new Error(data.message ?? 'Failed to load attendees.')
     attendees.value = data.attendees ?? []
@@ -1291,7 +1284,7 @@ async function fetchAttendees() {
 
 async function fetchClusters() {
   try {
-    const res = await api.raw(`/api/events/${slug}/clusters`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/clusters`)
     if (!res.ok) return
     const data = await res.json() as { clusters?: typeof clusters.value }
     clusters.value = data.clusters ?? []
@@ -1300,7 +1293,7 @@ async function fetchClusters() {
 
 async function fetchCsvMeta() {
   try {
-    const res = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/csv-data`)
     if (!res.ok) return
     const data = await res.json() as { rows?: unknown[]; columnMapping?: typeof csvColMapping }
     hasCsvRows.value = (data.rows?.length ?? 0) > 0
@@ -1321,7 +1314,7 @@ async function doAction(action: string, body: object) {
   actionPending.value = action
   try {
     const res = await api.raw(`/api/events/${slug}/${action}`, {
-      method: 'POST', headers: authHeaders(), body: JSON.stringify(body),
+      method: 'POST', body: JSON.stringify(body),
     })
     const data = await res.json() as { status: string; message: string }
     if (!res.ok) throw new Error(data.message)
@@ -1385,10 +1378,7 @@ async function confirmDeleteEvent() {
   if (!ok) return
   deletingEvent.value = true
   try {
-    const res = await api.raw(`/api/events/${slug}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
+    const res = await api.raw(`/api/events/${slug}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     toast.success('Event deleted.')

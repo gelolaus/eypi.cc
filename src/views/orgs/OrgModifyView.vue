@@ -262,7 +262,7 @@
 import { api } from '@/lib/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -302,11 +302,11 @@ interface ProfileFormState {
 
 const route = useRoute()
 const router = useRouter()
-const { authHeaders, sessionUser } = useAuth()
+const session = useSession()
 const { setActiveOrg } = useActiveOrg()
 const toast = useToast()
 const dialog = useDialog()
-const currentUser = sessionUser()
+const currentUser = computed(() => session.user.value)
 
 const slug = computed(() => route.params.slug as string)
 const org = ref<OrgListItem | null>(null)
@@ -349,7 +349,7 @@ async function loadOrgContext() {
   org.value = null
   profileForm.value = null
   try {
-    const listRes = await api.raw(`/api/orgs`, { headers: authHeaders() })
+    const listRes = await api.raw(`/api/orgs`)
     const listData = await listRes.json() as { error?: string; orgs?: OrgListItem[] }
     if (!listRes.ok) throw new Error(listData.error || 'Failed to load org.')
 
@@ -371,7 +371,7 @@ async function loadOrgContext() {
     org.value = match
     setActiveOrg(match)
 
-    const profileRes = await api.raw(`/api/orgs/${slug.value}/profile`, { headers: authHeaders() })
+    const profileRes = await api.raw(`/api/orgs/${slug.value}/profile`)
     const profileData = await profileRes.json() as { error?: string; profile: OrgProfileSettings }
     if (!profileRes.ok) throw new Error(profileData.error || 'Failed to load profile.')
     profileForm.value = mapProfileToForm(profileData.profile)
@@ -387,7 +387,7 @@ async function loadOrgContext() {
 async function fetchMembers() {
   loadingMembers.value = true
   try {
-    const res = await api.raw(`/api/orgs/${slug.value}/members`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/${slug.value}/members`)
     const data = await res.json() as { members?: OrgMember[] }
     if (res.ok) members.value = data.members ?? []
   } catch {
@@ -432,7 +432,7 @@ async function togglePublicCatalog() {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/profile`, {
       method: 'PATCH',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublicCatalog: next }),
     })
     const data = await res.json() as { error?: string; profile: OrgProfileSettings }
@@ -468,7 +468,7 @@ async function saveProfile() {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/profile`, {
       method: 'PATCH',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tagline: profileForm.value.tagline.trim() || null,
         orgType: profileForm.value.orgType || null,
@@ -494,7 +494,7 @@ async function sendInvite() {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/members`, {
       method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail.value.toLowerCase().trim() }),
     })
     const data = await res.json() as { error?: string }
@@ -519,7 +519,7 @@ async function removeMember(email: string) {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/members`, {
       method: 'DELETE',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
     const data = await res.json() as { error?: string }
@@ -548,7 +548,7 @@ async function executeTransfer() {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/transfer`, {
       method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
     })
     const data = await res.json() as { error?: string }
@@ -575,8 +575,7 @@ async function leaveOrg() {
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/leave`, {
       method: 'POST',
-      headers: authHeaders(),
-    })
+      })
     const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Could not leave org.')
     toast.success('You left the org.')

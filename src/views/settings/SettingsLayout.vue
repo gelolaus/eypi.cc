@@ -41,13 +41,13 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useReveal } from '@/composables/useReveal'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 
 useReveal()
 const route = useRoute()
-const { sessionUser } = useAuth()
+const session = useSession()
 
-const isSuperAdmin = computed(() => sessionUser()?.role === 'admin')
+const isSuperAdmin = computed(() => session.user.value?.role === 'admin')
 
 interface SettingsTab {
   name: string
@@ -57,7 +57,7 @@ interface SettingsTab {
 
 const tabs = computed<SettingsTab[]>(() => {
   const items: SettingsTab[] = [
-    { name: 'settings-security', label: 'Account Security' },
+    { name: 'settings-security', label: 'Account' },
   ]
   if (isSuperAdmin.value) {
     items.push({ name: 'settings-org-management', label: 'Org Management', prefix: '/settings/org-management' })

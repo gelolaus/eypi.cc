@@ -51,7 +51,6 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import { ref, onMounted } from 'vue'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 interface AdminOrgListItem {
   org_id: string
@@ -61,7 +60,6 @@ interface AdminOrgListItem {
   created_at: string
 }
 
-const { authHeaders } = useAuth()
 const toast = useToast()
 
 const orgs = ref<AdminOrgListItem[]>([])
@@ -69,7 +67,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await api.raw(`/api/orgs/admin`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin`)
     const data = await res.json() as { error?: string; orgs?: AdminOrgListItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load orgs.')
     orgs.value = data.orgs ?? []

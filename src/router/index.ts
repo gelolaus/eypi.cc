@@ -2,11 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
 
 const { checkOrgMembership } = useOrgMembership()
-const { sessionUser } = useAuth()
+const session = useSession()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,7 +17,7 @@ const router = createRouter({
   },
   routes: [
     { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
-    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Log in' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Sign in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {
@@ -222,19 +222,19 @@ const router = createRouter({
           path: 'org-management',
           name: 'settings-org-management',
           component: () => import('@/views/settings/OrgManagementView.vue'),
-          meta: { requiresSuperAdmin: true, title: 'Org management' },
+          meta: { requiresAdmin: true, title: 'Org management' },
         },
         {
           path: 'org-management/new',
           name: 'settings-org-management-new',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true, title: 'New organization' },
+          meta: { requiresAdmin: true, title: 'New organization' },
         },
         {
           path: 'org-management/:orgId',
           name: 'settings-org-management-edit',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true, title: 'Edit organization' },
+          meta: { requiresAdmin: true, title: 'Edit organization' },
         },
       ],
     },
@@ -256,19 +256,6 @@ const router = createRouter({
       component: () => import('@/views/ContactView.vue'),
       meta: { title: 'Contact' },
     },
-    {
-      path: '/reset-password',
-      name: 'reset-password',
-      component: () => import('@/views/ResetPasswordView.vue'),
-      meta: { title: 'Reset password' },
-    },
-    {
-      path: '/verify',
-      name: 'verify',
-      component: () => import('@/views/VerifyView.vue'),
-      meta: { title: 'Verify' },
-    },
-
     {
       path: '/unlock/:slug',
       name: 'unlock',
@@ -305,15 +292,16 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, _from, next) => {
-  const isAuthenticated = !!localStorage.getItem('eypi_token')
+  await session.load()
+  const signedIn = session.user.value
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: 'login' })
+  if (to.name === 'login' && signedIn) {
+    next({ name: 'dashboard' })
     return
   }
 
-  if (to.name === 'login' && isAuthenticated) {
-    next({ name: 'dashboard' })
+  if (to.meta.requiresAuth && !signedIn) {
+    next({ name: 'login', query: { returnTo: to.fullPath } })
     return
   }
 
@@ -331,14 +319,13 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin)
-  if (requiresSuperAdmin) {
-    const user = sessionUser()
-    if (!user) {
-      next({ name: 'login' })
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
+  if (requiresAdmin) {
+    if (!signedIn) {
+      next({ name: 'login', query: { returnTo: to.fullPath } })
       return
     }
-    if (user.role !== 'admin') {
+    if (signedIn.role !== 'admin') {
       next({ name: 'settings-security', replace: true })
       return
     }

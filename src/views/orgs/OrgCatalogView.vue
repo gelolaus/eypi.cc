@@ -133,14 +133,14 @@
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useReveal } from '@/composables/useReveal'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
 import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 useReveal()
 
-const { sessionUser } = useAuth()
+const session = useSession()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
 const orgs = ref<PublicOrgCatalogItem[]>([])
@@ -149,7 +149,7 @@ const error = ref('')
 const searchQuery = ref('')
 const selectedOrgType = ref<OrgType | null>(null)
 
-const isAuthenticated = computed(() => !!sessionUser())
+const isAuthenticated = computed(() => session.user.value !== null)
 
 const typeFilterOptions = computed(() => [
   { value: null as OrgType | null, label: 'All' },

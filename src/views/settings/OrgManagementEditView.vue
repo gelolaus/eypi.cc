@@ -80,7 +80,6 @@
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
@@ -98,7 +97,6 @@ interface AdminOrgResponse {
 
 const route = useRoute()
 const router = useRouter()
-const { authHeaders } = useAuth()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -120,7 +118,7 @@ async function loadOrg() {
   if (isCreate.value) return
   const orgId = route.params.orgId as string
   try {
-    const res = await api.raw(`/api/orgs/admin/${orgId}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin/${orgId}`)
     const data = await res.json() as AdminOrgResponse
     if (!res.ok) throw new Error(data.error || 'Failed to load org.')
     form.value = {
@@ -141,7 +139,7 @@ async function save() {
     if (isCreate.value) {
       const res = await api.raw(`/api/orgs`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: form.value.id.toLowerCase().trim(),
           name: form.value.name.trim(),
@@ -164,7 +162,7 @@ async function save() {
 
       const res = await api.raw(`/api/orgs/admin/${orgId}`, {
         method: 'PATCH',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const data = await res.json() as AdminOrgResponse
@@ -192,10 +190,7 @@ async function deleteOrg() {
   if (!ok) return
   deleting.value = true
   try {
-    const res = await api.raw(`/api/orgs/admin/${route.params.orgId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
+    const res = await api.raw(`/api/orgs/admin/${route.params.orgId}`, { method: 'DELETE' })
     const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Delete failed.')
     toast.success('Org deleted.')
@@ -225,7 +220,7 @@ async function executeTransfer() {
   try {
     const res = await api.raw(`/api/orgs/${route.params.orgId}/transfer`, {
       method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
     })
     const data = await res.json() as { error?: string }

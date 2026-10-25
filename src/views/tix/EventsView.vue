@@ -105,13 +105,11 @@ import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useAuth } from '@/composables/useAuth'
 import OrgLockout from '@/components/OrgLockout.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 
 interface Event {
   id: unknown
@@ -159,10 +157,7 @@ async function deleteEvent(slug: string, name: string) {
 
   deletingSlug.value = slug
   try {
-    const res = await api.raw(`/api/events/${slug}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
+    const res = await api.raw(`/api/events/${slug}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     events.value = events.value.filter(e => e.slug !== slug)
@@ -176,7 +171,7 @@ async function deleteEvent(slug: string, name: string) {
 
 onMounted(async () => {
   try {
-    const res = await api.raw(`/api/events`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events`)
     if (res.status === 403) {
       isLocked.value = true
       return

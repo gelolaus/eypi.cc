@@ -1,12 +1,9 @@
 import { API_BASE_URL } from '@/config/api'
 import { useSession } from '@/stores/session'
 
-const CREDENTIAL_PATHS = new Set([
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/verify',
-  '/api/auth/password',
-])
+function pathnameOf(path: string): string {
+  return new URL(path, 'https://api.eypi.cc').pathname
+}
 
 export type ApiRequestOptions = {
   headers?: HeadersInit
@@ -33,17 +30,12 @@ function resolveUrl(path: string): string {
   return `${base}${path.startsWith('/') ? path : `/${path}`}`
 }
 
-function isCredentialPath(path: string): boolean {
-  const pathname = new URL(path, 'https://api.eypi.cc').pathname
-  return CREDENTIAL_PATHS.has(pathname)
+function isSessionProbe(path: string): boolean {
+  return pathnameOf(path) === '/api/me'
 }
 
 function applyHeaders(init?: RequestInit): Headers {
   const headers = new Headers(init?.headers)
-  const token = localStorage.getItem('eypi_token')
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
   const orgId = localStorage.getItem('active_org_id')
   if (orgId && !headers.has('X-Active-Org-Id')) {
     headers.set('X-Active-Org-Id', orgId)
@@ -70,7 +62,7 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
     headers,
     credentials: 'include',
   })
-  if (res.status === 401 && !isCredentialPath(path)) {
+  if (res.status === 401 && !isSessionProbe(path)) {
     await redirectToLogin()
   }
   return res

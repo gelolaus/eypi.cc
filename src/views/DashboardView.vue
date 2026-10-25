@@ -32,23 +32,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 
 const router = useRouter()
-const { sessionUser } = useAuth()
+const session = useSession()
 
 function paintCardBorder(event: Event, color: string) {
   const el = event.currentTarget
   if (el instanceof HTMLElement) el.style.borderColor = color
 }
 
-const userName = ref('')
-onMounted(() => {
-  const user = sessionUser()
-  if (user?.name) userName.value = user.name
-})
+const userName = computed(() => session.user.value?.name ?? '')
 
 const modules = [
   {

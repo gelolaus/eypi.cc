@@ -43,8 +43,9 @@ afterEach(() => {
 })
 
 describe('api client', () => {
-  it('sends credentials, the bearer token, and the active org header', async () => {
-    localStorage.setItem('eypi_token', 'tok-1')
+  it('sends credentials and the active org header without a bearer token', async () => {
+    const legacyKey = ['eypi', 'token'].join('_')
+    localStorage.setItem(legacyKey, 'tok-1')
     localStorage.setItem('active_org_id', 'org-1')
     fetchMock.mockResolvedValue(jsonResponse(200, { ok: true }))
 
@@ -55,7 +56,7 @@ describe('api client', () => {
     expect(url).toBe(`${API_BASE_URL}/api/orgs`)
     expect(init.credentials).toBe('include')
     const headers = new Headers(init.headers)
-    expect(headers.get('Authorization')).toBe('Bearer tok-1')
+    expect(headers.get('Authorization')).toBeNull()
     expect(headers.get('X-Active-Org-Id')).toBe('org-1')
   })
 
@@ -114,20 +115,16 @@ describe('api client', () => {
     reset.mockRestore()
   })
 
-  it.each([
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/verify',
-    '/api/auth/password',
-  ])('leaves %s on the page when the response is 401', async (path) => {
+  it('does not reset the session when GET /api/me is 401', async () => {
     const reset = vi.spyOn(useSession(), 'reset')
     fetchMock.mockResolvedValue(jsonResponse(401, {
-      error: { code: 'unauthorized', message: 'Invalid credentials.' },
+      error: { code: 'unauthorized', message: 'Sign in to continue.' },
     }))
 
-    const response = await api.raw(path, { method: 'POST', body: '{}' })
+    const error = await api.get('/api/me').catch((err: unknown) => err)
 
-    expect(response.status).toBe(401)
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error).toMatchObject({ status: 401, code: 'unauthorized' })
     expect(reset).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
     reset.mockRestore()

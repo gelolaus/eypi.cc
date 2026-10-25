@@ -480,7 +480,6 @@ import { api } from '@/lib/api'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
-import { useAuth } from '@/composables/useAuth'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import { selectAttendees } from '@/lib/tix/selection'
 import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
@@ -488,7 +487,6 @@ import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
 const route  = useRoute()
 const router = useRouter()
 const toast  = useToast()
-const { authHeaders } = useAuth()
 
 const slug = route.params.id as string
 
@@ -640,7 +638,6 @@ async function uploadCsv() {
     const mapping = buildMapping()
     const res = await api.raw(`/api/events/${slug}/upload-csv`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({ rows: allRows.value.map(r => r.rawData), columnMapping: mapping }),
     })
     const data = await res.json() as { status: string; message?: string; rowIds?: string[] }
@@ -667,7 +664,6 @@ async function confirmMapping() {
   // Persist the confirmed mapping to DB so finalize uses the correct column names
   api.raw(`/api/events/${slug}/column-mapping`, {
     method: 'PATCH',
-    headers: authHeaders(),
     body: JSON.stringify({
       emailCol:        mapping.emailCol,
       firstNameCol:    mapping.firstNameCol,
@@ -710,7 +706,6 @@ function clusterRawCount(value: string): number {
 async function persistClusters() {
   const res = await api.raw(`/api/events/${slug}/clusters`, {
     method: 'POST',
-    headers: authHeaders(),
     body: JSON.stringify({
       clusterCol: columnMapping.value!.clusterCol,
       clusters: clusters.value.map(c => ({ value: c.value, maxCount: c.maxCount, filters: c.filters })),
@@ -999,7 +994,7 @@ async function finalize() {
     // If rows are missing server IDs (uploaded in this session without a refresh),
     // fetch them now before building the selected set.
     if (allRows.value.some(r => !r.id)) {
-      const csvRes = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
+      const csvRes = await api.raw(`/api/events/${slug}/csv-data`)
       const csvData = await csvRes.json() as { status: string; rows: CsvRow[] }
       if (csvRes.ok && csvData.rows.length) allRows.value = csvData.rows
     }
@@ -1010,7 +1005,6 @@ async function finalize() {
     finalizingLabel.value = 'Saving selection…'
     const res = await api.raw(`/api/events/${slug}/finalize`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({
         selectedRows,
         maxAttendees: maxAttendeesEdit.value ?? null,
@@ -1068,7 +1062,7 @@ async function finalize() {
 onMounted(async () => {
   // Fetch event name
   try {
-    const res = await api.raw(`/api/events/${slug}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}`)
     const data = await res.json() as { status: string; event?: { name: string; isLead: boolean; selectionLocked: boolean } }
     if (res.ok && data.event) {
       eventName.value = data.event.name
@@ -1079,7 +1073,7 @@ onMounted(async () => {
 
   // Try to resume from previously uploaded CSV
   try {
-    const res = await api.raw(`/api/events/${slug}/csv-data`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events/${slug}/csv-data`)
     const data = await res.json() as {
       status: string
       columnMapping: ColumnMapping | null

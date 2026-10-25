@@ -33,7 +33,6 @@ vi.mock('vue-router', () => ({
 beforeEach(() => {
   localStorage.clear()
   push.mockReset()
-  localStorage.setItem('eypi_token', 'tok-1')
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ links: [] }), {
     status: 401,
     headers: { 'Content-Type': 'application/json' },

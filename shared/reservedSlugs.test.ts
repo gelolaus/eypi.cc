@@ -63,9 +63,9 @@ describe('isReservedSlug', () => {
       'privacy',
       'terms',
       'contact',
-      'reset-password',
-      'verify',
     ]))
+    expect(isReservedSlug('verify')).toBe(true)
+    expect(isReservedSlug('reset-password')).toBe(true)
 
     for (const segment of segments) {
       expect(isReservedSlug(segment), segment).toBe(true)

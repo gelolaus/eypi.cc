@@ -198,11 +198,9 @@ import { reactive, ref } from 'vue'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
-const { authHeaders } = useAuth()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -252,7 +250,7 @@ async function generateDocuments() {
   try {
     const responses = await Promise.all(
       TEMPLATES.map((name) =>
-        api.raw(`/api/forms/templates/${name}`, { headers: authHeaders() })
+        api.raw(`/api/forms/templates/${name}`)
       )
     )
     const buffers = await Promise.all(

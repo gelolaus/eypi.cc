@@ -48,7 +48,6 @@
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
 
 interface FormCatalogItem {
   id: string
@@ -79,7 +78,6 @@ const FALLBACK_FORMS: FormCatalogItem[] = [
 ]
 
 const router = useRouter()
-const { authHeaders } = useAuth()
 
 const loading = ref(true)
 const availableForms = ref<FormCatalogItem[]>(FALLBACK_FORMS)
@@ -98,7 +96,7 @@ const filteredForms = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await api.raw(`/api/forms`, { headers: authHeaders() })
+    const res = await api.raw(`/api/forms`)
     if (res.ok) {
       const data = await res.json() as { forms?: FormCatalogItem[] }
       if (data.forms?.length) {

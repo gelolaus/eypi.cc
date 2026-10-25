@@ -1,10 +1,21 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import router from './index'
+import { useSession } from '@/stores/session'
+
+beforeEach(() => {
+  useSession().reset()
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+    error: { code: 'unauthorized', message: 'Sign in to continue.' },
+  }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json' },
+  })))
+})
 
 const pages: Record<string, string> = {
   home: 'Home',
-  login: 'Log in',
+  login: 'Sign in',
   dashboard: 'Dashboard',
   links: 'Links',
   forms: 'Forms',
@@ -31,8 +42,6 @@ const pages: Record<string, string> = {
   privacy: 'Privacy',
   terms: 'Terms',
   contact: 'Contact',
-  'reset-password': 'Reset password',
-  verify: 'Verify',
   unlock: 'Unlock',
   expired: 'Expired',
   report: 'Report',

@@ -192,11 +192,9 @@ import { reactive, ref } from 'vue'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
-const { authHeaders } = useAuth()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -253,9 +251,7 @@ function chunkIntoPairs(names: string[]) {
 async function generateDocument() {
   isGenerating.value = true
   try {
-    const response = await api.raw(`/api/forms/templates/visitors_pass.docx`, {
-      headers: authHeaders(),
-    })
+    const response = await api.raw(`/api/forms/templates/visitors_pass.docx`)
     if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)
     const buffer = await response.arrayBuffer()
 

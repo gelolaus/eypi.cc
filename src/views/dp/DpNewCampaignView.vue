@@ -127,12 +127,10 @@ import { api } from '@/lib/api'
 import { ref, reactive, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useReveal } from '@/composables/useReveal'
-import { useAuth } from '@/composables/useAuth'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import type { DpUploaderFrame } from '@/types/dp'
 
 const toast = useToast()
-const { authHeaders } = useAuth()
 useReveal()
 
 const form = reactive({
@@ -174,7 +172,6 @@ async function submit() {
   try {
     const res = await api.raw(`/api/dp`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({
         title: form.title.trim(),
         slug: form.slug.trim().replace(/^-+|-+$/g, ''),

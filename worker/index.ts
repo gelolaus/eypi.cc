@@ -71,6 +71,13 @@ export default {
     }
 
     const { pathname } = new URL(request.url)
+    const retired = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+    if (retired === '/verify' || retired === '/reset-password') {
+      return new Response(null, {
+        status: 301,
+        headers: { Location: '/login' },
+      })
+    }
 
     if (pathname.startsWith('/media/') && pathname.length > '/media/'.length) {
       return servePublicMedia(request, env, pathname)

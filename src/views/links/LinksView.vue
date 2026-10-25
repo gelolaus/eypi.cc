@@ -562,19 +562,8 @@ const filteredLinks = computed(() => {
 })
 
 async function fetchLinks() {
-  const token = localStorage.getItem('eypi_token')
-  if (!token) {
-    router.push('/login')
-    return
-  }
   try {
-    const response = await api.raw(`/api/links`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    const response = await api.raw('/api/links', { method: 'GET' })
     const data = await response.json() as { links?: Link[] }
     links.value = (data.links || []).map((link) => ({
       ...link,
@@ -656,20 +645,10 @@ async function handleShorten() {
     return
   }
 
-  const token = localStorage.getItem('eypi_token')
-  if (!token) {
-    toast.error('Please log in to create links')
-    return
-  }
-
   isShortening.value = true
   try {
-    const res = await api.raw(`/api/links`, {
+    const res = await api.raw('/api/links', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({ original_url: urlToProcess }),
     })
     const data = await res.json() as { status?: string; error?: string; link?: Link }
@@ -706,18 +685,9 @@ async function onSave(): Promise<void> {
     ? sidebarSlug.value.trim()
     : hashToSlug(sidebarOriginalUrl.value)
   const originalUrl = sidebarOriginalUrl.value.trim()
-  const token = localStorage.getItem('eypi_token')
-  if (!token) {
-    toast.error('Please log in to update links')
-    return
-  }
   try {
     const res = await api.raw(`/api/links/${activeLink.value.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify({
         original_url: originalUrl,
         slug,
@@ -793,16 +763,8 @@ async function confirmDelete(link: Link): Promise<void> {
 
 async function executeDelete(link: Link): Promise<void> {
   const linkId = link.id
-  const token = localStorage.getItem('eypi_token')
-  if (!token) {
-    toast.error('Log in to delete this link.')
-    return
-  }
   try {
-    const res = await api.raw(`/api/links/${linkId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const res = await api.raw(`/api/links/${linkId}`, { method: 'DELETE' })
     const data = await res.json() as { status?: string; error?: string }
     if (res.ok && data.status === 'success') {
       links.value = links.value.filter((l) => l.id !== linkId)

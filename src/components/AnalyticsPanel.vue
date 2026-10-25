@@ -443,15 +443,8 @@ watch(
     }
     isLoading.value = true
     analyticsData.value = null
-    const token = localStorage.getItem('eypi_token')
-    if (!token) {
-      isLoading.value = false
-      return
-    }
     try {
-      const res = await api.raw(`/api/links/${linkId}/analytics`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await api.raw(`/api/links/${linkId}/analytics`)
       if (res.status === 401) {
         isLoading.value = false
         return

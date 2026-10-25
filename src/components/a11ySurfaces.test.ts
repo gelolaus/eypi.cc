@@ -8,6 +8,7 @@ import NavSidebar from './NavSidebar.vue'
 import TheFooter from './TheFooter.vue'
 import TheHeader from './TheHeader.vue'
 import router from '@/router'
+import { useSession } from '@/stores/session'
 
 function media(matches: boolean) {
   return {
@@ -26,7 +27,14 @@ function media(matches: boolean) {
 
 beforeEach(() => {
   vi.stubGlobal('matchMedia', () => media(false))
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+    error: { code: 'unauthorized', message: 'Sign in to continue.' },
+  }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json' },
+  })))
   localStorage.clear()
+  useSession().reset()
 })
 
 describe('accessibility surfaces', () => {

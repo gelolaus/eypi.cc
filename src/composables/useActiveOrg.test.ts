@@ -24,12 +24,6 @@ vi.mock('@/composables/useToast', () => ({
   }),
 }))
 
-vi.mock('@/composables/useAuth', () => ({
-  useAuth: () => ({
-    authHeaders: () => ({ 'Content-Type': 'application/json' }),
-  }),
-}))
-
 import { useActiveOrg } from './useActiveOrg'
 import type { OrgListItem } from '@/types/orgs'
 

@@ -143,11 +143,9 @@ import { reactive, ref } from 'vue'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
-const { authHeaders } = useAuth()
 const toast = useToast()
 const dialog = useDialog()
 
@@ -191,9 +189,7 @@ async function generateDocuments() {
 
   isGenerating.value = true
   try {
-    const response = await api.raw(`/api/forms/templates/letter_of_intent_and_waiver.docx`, {
-      headers: authHeaders(),
-    })
+    const response = await api.raw(`/api/forms/templates/letter_of_intent_and_waiver.docx`)
     if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)
     const buffer = await response.arrayBuffer()
 
