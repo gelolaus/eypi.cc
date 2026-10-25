@@ -313,9 +313,9 @@ feat(db): add versioned migrations with a ledger and baseline
 - Delete: `shared/admin.ts`, `src/config/admin.ts`, `backend/src/routes/auth.ts` (password routes), `backend/src/lib/emails/verifyAccount*`, `backend/src/routes/orgMembers.ts` (F-ORG-11)
 - Modify: `backend/package.json` (remove `bcryptjs`, `@types/bcryptjs`), `backend/src/lib/env.ts` (remove `JWT_SECRET`, `FRONTEND_URL`; add the §3.10 keys), `scripts/doctor.mjs`, `scripts/setup.mjs`, `backend/.dev.vars.example`
 
-- [ ] **Step 1: Failing tests:** route authz matrix in `backend/src/routes/authz.test.ts`. For one representative route per router (links create, org update, event create, dp create, forms catalog, admin org create): anonymous → 401, user → expected status, admin-only route as user → 403, as admin → 2xx. Super admin checks use `role`.
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement**; `grep -rn "SUPER_ADMIN_EMAIL\|getUser(\|JWT_SECRET" backend src shared` returns nothing (except pass tokens using `PASS_TOKEN_SECRET`). **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth)!: replace password login with Microsoft sessions on every route` with a `BREAKING CHANGE:` paragraph: password endpoints and `JWT_SECRET` removed.
+- [x] **Step 1: Failing tests:** route authz matrix in `backend/src/routes/authz.test.ts`. For one representative route per router (links create, org update, event create, dp create, forms catalog, admin org create): anonymous → 401, user → expected status, admin-only route as user → 403, as admin → 2xx. Super admin checks use `role`.
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement**; `grep -rn "SUPER_ADMIN_EMAIL\|getUser(\|JWT_SECRET" backend src shared` returns nothing (except pass tokens using `PASS_TOKEN_SECRET`). **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth)!: replace password login with Microsoft sessions on every route` with a `BREAKING CHANGE:` paragraph: password endpoints and `JWT_SECRET` removed.
 
 ### Task 2.5: Frontend sign-in, session store, and route guards
 
@@ -551,7 +551,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Interfaces:** `putImage(env, { prefix, id, bytes, allowed: ('png'|'jpeg'|'webp')[], maxBytes, requireSquare?, minSize? }) → Promise<{ key, width, height }>` (magic-byte sniff, dimension parse, key `${prefix}/${id}-${sha8}.${ext}`); `deleteObject(env, key)`; `mediaUrl(key) → '/media/' + key`.
 
-- [ ] Failing tests: an SVG renamed to `.png` → `ApiError(422,'invalid_image')`; a 3.1 MB PNG → `file_too_large`; a non-square frame with `requireSquare` → `not_square`; worker refuses `/media/templates/x.docx` (404). Implement → PASS. Commit `feat(platform): add R2 media storage with validated uploads`.
+- [x] Failing tests: an SVG renamed to `.png` → `ApiError(422,'invalid_image')`; a 3.1 MB PNG → `file_too_large`; a non-square frame with `requireSquare` → `not_square`; worker refuses `/media/templates/x.docx` (404). Implement → PASS. Commit `feat(platform): add R2 media storage with validated uploads`.
 
 ### Task 6.2: Frames on R2 and public page fixes (F-FRAME-1..10)
 
@@ -603,7 +603,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Create `src/composables/useFocusTrap.ts` (+ test). Modify gold button classes (≈31 sites; add a `btn-gold` utility with dark text in `main.css`), focus ring tokens, dark-mode blue token, `NavSidebar.vue` (`role="dialog" aria-modal="true"`, trap, restore focus), `DialogHost.vue` (restore focus; stop Esc propagation to toasts), `ToastContainer.vue`, `FeaturesCarousel.vue` (`inert` hidden slides; pause button), `TheFooter.vue` (`aria-hidden` on ↗), `TheHeader.vue` (`aria-pressed`), `ContactView.vue` headings, `router/index.ts` (`afterEach` title + live region; reduced-motion scroll), `DESIGN_SYSTEM.md` (contrast rules).
 
-- [ ] Failing tests: `useFocusTrap` cycles Tab within the container and restores focus on release; Esc in a dialog doesn't dismiss a toast; each route sets `document.title` to `<Page> · eypi.cc`. ESLint vuejs-accessibility has no errors. Commit `fix(ui): meet WCAG contrast and focus requirements`.
+- [x] Failing tests: `useFocusTrap` cycles Tab within the container and restores focus on release; Esc in a dialog doesn't dismiss a toast; each route sets `document.title` to `<Page> · eypi.cc`. ESLint vuejs-accessibility has no errors. Commit `fix(ui): meet WCAG contrast and focus requirements`.
 
 ### Task 7.4: UX polish (F-UX-2, 3, 4, F-HYG-2)
 
