@@ -247,9 +247,9 @@ feat(db): add versioned migrations with a ledger and baseline
   - `hmacIp(secret, ip) → Promise<string>` (hex, 32 chars)
   - `visitorHash(secret, dayYYYYMMDD, ip, ua) → Promise<string>` (16 hex)
   - Schema exactly as §3.8: 0003 adds the identities and sessions tables, `role`/`last_login_at`/`disabled_at`, and seeds admin; 0004 nulls `org_members.user_id` for unverified users, deletes unverified users, and drops `password_hash`, `verification_token`, `is_verified` via `ALTER TABLE … DROP COLUMN`.
-- [ ] **Step 1: Failing tests:** `apcIdentity` domain cases above; `ipHash` deterministic and secret-dependent. Migration test via `createTestApp`: after all migrations, `PRAGMA table_info(users)` has no `password_hash` and has `role`; seeding a user plus a link, then applying 0004, keeps the link (`SELECT COUNT(*) FROM links` unchanged).
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth): add identity and session schema and APC identity rules`.
+- [x] **Step 1: Failing tests:** `apcIdentity` domain cases above; `ipHash` deterministic and secret-dependent. Migration test via `createTestApp`: after all migrations, `PRAGMA table_info(users)` has no `password_hash` and has `role`; seeding a user plus a link, then applying 0004, keeps the link (`SELECT COUNT(*) FROM links` unchanged).
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth): add identity and session schema and APC identity rules`.
 
 ### Task 2.2: OAuth start and callback with tenant pinning
 

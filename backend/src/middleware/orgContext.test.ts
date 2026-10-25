@@ -26,8 +26,8 @@ const userU: TestUser = {
 
 async function insertUser(client: Client, id: string, email: string, name: string) {
   await client.execute({
-    sql: `INSERT INTO users (id, email, password_hash, name, is_verified) VALUES (?, ?, ?, ?, 1)`,
-    args: [id, email, 'p'.repeat(60), name],
+    sql: `INSERT INTO users (id, email, name) VALUES (?, ?, ?)`,
+    args: [id, email, name],
   })
 }
 

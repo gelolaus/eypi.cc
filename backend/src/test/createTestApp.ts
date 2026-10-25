@@ -96,16 +96,20 @@ function memoryR2() {
   }
 }
 
-async function applyMigrations(client: Client): Promise<void> {
+export async function applyMigrations(client: Client, names?: readonly string[]): Promise<void> {
   assertMigrationsDir(migrationsDir)
-  let names: string[]
-  try {
-    names = (await readdir(migrationsDir)).filter((name) => name.endsWith('.sql')).sort()
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return
-    throw err
+  let files: string[]
+  if (names) {
+    files = [...names]
+  } else {
+    try {
+      files = (await readdir(migrationsDir)).filter((name) => name.endsWith('.sql')).sort()
+    } catch (err) {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return
+      throw err
+    }
   }
-  for (const name of names) {
+  for (const name of files) {
     const sql = await readFile(join(migrationsDir, name), 'utf8')
     if (sql.trim()) await client.executeMultiple(sql)
   }
