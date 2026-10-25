@@ -151,12 +151,12 @@ fix(forms): stop serving templates around the org gate
 **Interfaces:**
 - Produces: `npm run migrate --prefix backend -- [--status|--dry-run|--yes|--baseline|--allow-destructive]`; exported `planMigrations(files: {name,sql}[], applied: {version,checksum}[]) → { pending, mismatched }`, `splitStatements(sql) → string[]`, `isDestructive(stmt) → boolean`; ledger table `schema_migrations(version TEXT PRIMARY KEY, name TEXT NOT NULL, checksum TEXT NOT NULL, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`.
 
-- [ ] **Step 1: Write failing tests** in `migrate.test.mjs`: `planMigrations` returns pending files in numeric order; reports a checksum mismatch for an applied file whose SQL changed; `isDestructive('DROP TABLE x')` true, `isDestructive('DELETE FROM x')` true, `isDestructive('DELETE FROM x WHERE id=1')` false; `splitStatements` keeps a `CREATE TRIGGER … BEGIN …; END;` as one statement.
-- [ ] **Step 2: Run** `npx vitest run backend/scripts/migrate.test.mjs`. Expected: FAIL.
-- [ ] **Step 3: Implement `migrate.mjs`.** Reads `backend/.dev.vars` for `TURSO_*`; prints DB host + pending list; without `--yes` it only prints; each file runs in one `client.batch(stmts, 'write')` plus its ledger insert; refuses destructive statements unless `--allow-destructive`; `--baseline` records `0001` without executing.
-- [ ] **Step 4: Write `0002_hygiene.sql`.** `DROP TABLE IF EXISTS` for the 9 `board_*` tables; `CREATE INDEX IF NOT EXISTS` for: `links(user_id, created_at DESC)`, `analytics(link_id, created_at)`, `org_members(user_id)`, `org_members(email)`, `events(org_id)`, `dp_campaigns(org_id)`, `dp_frames(campaign_id, position)`, `check_ins(attendee_id, actioned_at)`.
+- [x] **Step 1: Write failing tests** in `migrate.test.mjs`: `planMigrations` returns pending files in numeric order; reports a checksum mismatch for an applied file whose SQL changed; `isDestructive('DROP TABLE x')` true, `isDestructive('DELETE FROM x')` true, `isDestructive('DELETE FROM x WHERE id=1')` false; `splitStatements` keeps a `CREATE TRIGGER … BEGIN …; END;` as one statement.
+- [x] **Step 2: Run** `npx vitest run backend/scripts/migrate.test.mjs`. Expected: FAIL.
+- [x] **Step 3: Implement `migrate.mjs`.** Reads `backend/.dev.vars` for `TURSO_*`; prints DB host + pending list; without `--yes` it only prints; each file runs in one `client.batch(stmts, 'write')` plus its ledger insert; refuses destructive statements unless `--allow-destructive`; `--baseline` records `0001` without executing.
+- [x] **Step 4: Write `0002_hygiene.sql`.** `DROP TABLE IF EXISTS` for the 9 `board_*` tables; `CREATE INDEX IF NOT EXISTS` for: `links(user_id, created_at DESC)`, `analytics(link_id, created_at)`, `org_members(user_id)`, `org_members(email)`, `events(org_id)`, `dp_campaigns(org_id)`, `dp_frames(campaign_id, position)`, `check_ins(attendee_id, actioned_at)`.
 - [ ] **Step 5: Run** `npm test`. Expected: PASS. Then (owner-approved, read-write token) `npm run migrate --prefix backend -- --baseline --yes` and `npm run migrate --prefix backend -- --yes --allow-destructive` (0002 drops empty tables). Expected `--status`: 0001, 0002 applied.
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```
 feat(db): add versioned migrations with a ledger and baseline

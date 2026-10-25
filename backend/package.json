@@ -5,6 +5,7 @@
     "dev": "wrangler dev --config wrangler.jsonc --port 8787 --ip 127.0.0.1",
     "deploy": "wrangler deploy --minify --config wrangler.jsonc",
     "backfill-kv": "node scripts/backfill-links-kv.mjs",
+    "migrate": "node scripts/migrate.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {

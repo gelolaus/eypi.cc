@@ -14,6 +14,7 @@ export default defineConfig({
       'src/**/*.test.ts',
       'backend/src/**/*.test.ts',
       'scripts/**/*.test.mjs',
+      'backend/scripts/**/*.test.mjs',
     ],
     environment: 'node',
   },

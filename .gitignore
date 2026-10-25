@@ -38,6 +38,7 @@ dist-ssr
 
 # Database migrations — keep schema out of the (to-be-public) repo
 *.sql
+!backend/migrations/*.sql
 backend/assets/forms/templates/*.docx
 
 # Local agent session knowledge base (not for the public repo)
