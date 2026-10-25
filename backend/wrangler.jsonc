@@ -13,6 +13,12 @@
       "id": "4634074c1831474fbb18209665da5165"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "eypi-media"
+    }
+  ],
   "assets": {
     "directory": "./assets",
     "binding": "ASSETS",

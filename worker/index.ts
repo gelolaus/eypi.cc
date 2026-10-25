@@ -6,9 +6,13 @@ import { getOS, logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKv } from '../shared/linksKv'
 import { isReservedSlug } from '../shared/reservedSlugs'
 
+const PUBLIC_MEDIA_PREFIXES = ['frames/', 'orgs/', 'qr-logos/']
+const IMMUTABLE_MEDIA_CACHE = 'public, max-age=31536000, immutable'
+
 export interface Env {
   ASSETS: Fetcher
   LINKS_KV: KVNamespace
+  MEDIA: R2Bucket
   TURSO_DATABASE_URL: string
   TURSO_AUTH_TOKEN: string
   IP_HASH_SECRET?: string
@@ -28,6 +32,38 @@ function utcDay(now: Date): string {
   return now.toISOString().slice(0, 10).replace(/-/g, '')
 }
 
+function contentTypeForKey(key: string): string | null {
+  const extension = key.slice(key.lastIndexOf('.') + 1).toLowerCase()
+  if (extension === 'png') return 'image/png'
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg'
+  if (extension === 'webp') return 'image/webp'
+  return null
+}
+
+function publicMediaKey(pathname: string): string | null {
+  const marker = '/media/'
+  if (!pathname.startsWith(marker) || pathname.length === marker.length) return null
+  const key = pathname.slice(marker.length)
+  if (key.includes('\\') || key.includes('\0')) return null
+  const segments = key.split('/')
+  if (segments.some((segment) => segment.length === 0 || segment === '.' || segment === '..')) return null
+  if (!PUBLIC_MEDIA_PREFIXES.some((prefix) => key.startsWith(prefix))) return null
+  return key
+}
+
+async function servePublicMedia(request: Request, env: Env, pathname: string): Promise<Response> {
+  const key = publicMediaKey(pathname)
+  if (!key) return new Response(null, { status: 404 })
+  const object = await env.MEDIA.get(key)
+  if (!object) return new Response(null, { status: 404 })
+
+  const headers = new Headers({ 'Cache-Control': IMMUTABLE_MEDIA_CACHE })
+  const contentType = object.httpMetadata?.contentType || contentTypeForKey(key)
+  if (contentType) headers.set('Content-Type', contentType)
+  if (request.method === 'HEAD') return new Response(null, { status: 200, headers })
+  return new Response(object.body, { status: 200, headers })
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -35,6 +71,10 @@ export default {
     }
 
     const { pathname } = new URL(request.url)
+
+    if (pathname.startsWith('/media/') && pathname.length > '/media/'.length) {
+      return servePublicMedia(request, env, pathname)
+    }
 
     if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) {
       return env.ASSETS.fetch(request)

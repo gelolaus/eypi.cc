@@ -64,9 +64,17 @@ function memoryR2() {
     return new Uint8Array(buffer)
   }
   return {
-    put: async (key: string, value: ArrayBuffer | ArrayBufferView | string | Blob | ReadableStream | null) => {
+    put: async (
+      key: string,
+      value: ArrayBuffer | ArrayBufferView | string | Blob | ReadableStream | null,
+      options?: { httpMetadata?: { contentType?: string } },
+    ) => {
       const body = await toBytes(value)
-      objects.set(key, { body })
+      const contentType = options?.httpMetadata?.contentType
+      objects.set(key, {
+        body,
+        httpMetadata: contentType ? { contentType } : undefined,
+      })
       return { key, size: body.byteLength }
     },
     get: async (key: string) => {
@@ -116,7 +124,7 @@ export async function applyMigrations(client: Client, names?: readonly string[])
   }
 }
 
-function testEnv(overrides: Partial<Bindings> = {}): Bindings & { MEDIA: ReturnType<typeof memoryR2> } {
+function testEnv(overrides: Partial<Bindings> = {}): Bindings {
   return {
     TURSO_DATABASE_URL: ':memory:',
     TURSO_AUTH_TOKEN: 'test-token',
@@ -125,7 +133,7 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings & { MEDIA: ReturnT
     RATE_LIMIT_KV: memoryKv(),
     LINKS_KV: memoryKv(),
     ASSETS: { fetch: async () => new Response(null, { status: 404 }) } as unknown as Bindings['ASSETS'],
-    MEDIA: memoryR2(),
+    MEDIA: memoryR2() as unknown as R2Bucket,
     ...overrides,
   }
 }
@@ -187,5 +195,5 @@ export async function createTestApp(opts: CreateTestAppOptions = {}) {
     return app.request(path, { ...init, headers }, env, executionCtx)
   }
 
-  return { app, client, request }
+  return { app, client, request, env }
 }

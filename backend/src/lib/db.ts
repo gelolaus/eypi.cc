@@ -72,6 +72,8 @@ export type Bindings = {
   /** SPA origin for Microsoft sign-in redirects. */
   FRONTEND_ORIGIN?: string
   ASSETS: Fetcher
+  /** Public and private objects in the eypi-media bucket. */
+  MEDIA: R2Bucket
   // Apple Wallet (.pkpass)
   APPLE_PASS_TYPE_ID?: string
   APPLE_TEAM_ID?: string

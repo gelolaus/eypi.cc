@@ -186,3 +186,114 @@ describe('edge short-link redirect', () => {
     expect(logLinkClick).not.toHaveBeenCalled()
   })
 })
+
+function mediaEnv(
+  objects: Record<string, Uint8Array>,
+  fetchAsset: Fetcher['fetch'],
+  get: (key: string) => Promise<{ body: Uint8Array } | null> = async (key) => {
+    const body = objects[key]
+    if (!body) return null
+    return { body }
+  },
+): Env {
+  return {
+    ...makeEnv({}, fetchAsset),
+    MEDIA: { get },
+  } as unknown as Env
+}
+
+describe('public media route', () => {
+  it('refuses /media/templates/x.docx with 404 and does not read the bucket or the app shell', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const get = vi.fn(async () => ({ body: new Uint8Array([1, 2, 3]) }))
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/media/templates/x.docx'),
+      mediaEnv({ 'templates/x.docx': new Uint8Array([1, 2, 3]) }, fetchAsset, get),
+      ctx(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(fetchAsset).not.toHaveBeenCalled()
+    expect(get).not.toHaveBeenCalled()
+    expect(logLinkClick).not.toHaveBeenCalled()
+  })
+
+  it('serves frames, orgs, and qr logos with an immutable cache', async () => {
+    const frames = new Uint8Array([9, 8, 7])
+    const logo = new Uint8Array([4, 5])
+    const qr = new Uint8Array([6])
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const env = mediaEnv({
+      'frames/camp/a.png': frames,
+      'orgs/org-1/logo.webp': logo,
+      'qr-logos/link-1.png': qr,
+    }, fetchAsset)
+
+    const frameResponse = await worker.fetch(
+      new Request('https://eypi.cc/media/frames/camp/a.png'),
+      env,
+      ctx(),
+    )
+    const logoResponse = await worker.fetch(
+      new Request('https://eypi.cc/media/orgs/org-1/logo.webp'),
+      env,
+      ctx(),
+    )
+    const qrResponse = await worker.fetch(
+      new Request('https://eypi.cc/media/qr-logos/link-1.png'),
+      env,
+      ctx(),
+    )
+
+    expect(frameResponse.status).toBe(200)
+    expect(frameResponse.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(frameResponse.headers.get('Content-Type')).toBe('image/png')
+    expect(new Uint8Array(await frameResponse.arrayBuffer())).toEqual(frames)
+    expect(logoResponse.headers.get('Content-Type')).toBe('image/webp')
+    expect(new Uint8Array(await logoResponse.arrayBuffer())).toEqual(logo)
+    expect(qrResponse.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(new Uint8Array(await qrResponse.arrayBuffer())).toEqual(qr)
+    expect(fetchAsset).not.toHaveBeenCalled()
+    expect(logLinkClick).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 when a public media object is missing', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/media/frames/missing.png'),
+      mediaEnv({}, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get('Cache-Control')).not.toBe('public, max-age=31536000, immutable')
+    expect(fetchAsset).not.toHaveBeenCalled()
+  })
+
+  it('returns 200 with an empty body for HEAD on a public object', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/media/frames/camp/a.png', { method: 'HEAD' }),
+      mediaEnv({ 'frames/camp/a.png': new Uint8Array([1, 2, 3, 4]) }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(await response.arrayBuffer()).toEqual(new ArrayBuffer(0))
+    expect(fetchAsset).not.toHaveBeenCalled()
+  })
+
+  it('still serves the reserved /media slug from the app shell', async () => {
+    const fetchAsset = vi.fn(async () => new Response('app-shell', { status: 200 }))
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/media'),
+      mediaEnv({}, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('app-shell')
+    expect(fetchAsset).toHaveBeenCalledOnce()
+  })
+})
