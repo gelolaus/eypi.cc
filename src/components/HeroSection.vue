@@ -4,7 +4,7 @@
   >
     <div class="mx-auto flex w-full max-w-5xl flex-col items-center justify-center text-center">
       <h1
-        class="reveal hero-title mb-6"
+        class="hero-title mb-6"
       >
         The toolkit for <span class="text-[#DEAC4B]">APC</span> orgs.
       </h1>

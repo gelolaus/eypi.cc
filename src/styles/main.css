@@ -45,12 +45,6 @@
     overflow: hidden;
   }
 
-  /* Custom cursor — hide native pointer on desktop when AppCursor is active */
-  html.has-custom-cursor,
-  html.has-custom-cursor * {
-    cursor: none !important;
-  }
-
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;

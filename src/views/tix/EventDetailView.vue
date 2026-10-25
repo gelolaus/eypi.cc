@@ -1031,12 +1031,7 @@ function beginCameraStreamRequest(): Promise<MediaStream> {
 }
 
 async function loadQrScannerModule(): Promise<QrScannerModule> {
-  const [{ default: QrScanner }, { default: workerUrl }] = await Promise.all([
-    import('qr-scanner'),
-    import('qr-scanner/qr-scanner-worker.min.js?url'),
-  ])
-  // Same-origin worker URL satisfies CSP worker-src 'self' (blob: workers are blocked).
-  QrScanner.WORKER_PATH = workerUrl
+  const { default: QrScanner } = await import('qr-scanner')
   return QrScanner
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <footer id="footer" data-section class="footer-dark bg-dot-grid-dark">
+  <footer id="footer" class="footer-dark bg-dot-grid-dark">
     <div class="footer-inner">
 
       <!-- Heading -->
