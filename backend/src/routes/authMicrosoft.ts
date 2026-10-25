@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import {
   clearOAuthCookieHeader,
   oauthCookieHeader,
@@ -6,14 +6,20 @@ import {
   safeReturnTo,
   signOAuthCookie,
 } from '../lib/auth/cookies'
+import { resolveUser } from '../lib/auth/identity'
 import {
   AuthError,
   buildAuthorizeUrl,
   exchangeAuthorizationCode,
   verifyIdToken,
   type OAuthEnv,
+  type VerifiedIdentity,
 } from '../lib/auth/oauth'
+import { createSession } from '../lib/auth/session'
+import { db, type Bindings } from '../lib/db'
+import { handleUserOnboarding } from '../lib/onboarding'
 import { checkRateLimit } from '../lib/rateLimit'
+import { reportError } from '../lib/reportError'
 
 const app = new Hono<{ Bindings: OAuthEnv }>()
 
@@ -68,9 +74,32 @@ async function underLimit(env: OAuthEnv, bucket: 'start' | 'callback', ip: strin
   }
 }
 
-function finishVerifiedSignIn(env: OAuthEnv): Response {
-  // Task 2.3: create the session here.
-  return loginRedirect(env, 'server', true)
+async function finishVerifiedSignIn(
+  c: Context<{ Bindings: OAuthEnv }>,
+  identity: VerifiedIdentity,
+  returnTo: string,
+): Promise<Response> {
+  try {
+    const client = db(c as unknown as Context<{ Bindings: Bindings }>)
+    const { userId } = await resolveUser(client, identity)
+    const disabled = await client.execute({
+      sql: 'SELECT disabled_at FROM users WHERE id = ? LIMIT 1',
+      args: [userId],
+    })
+    if (disabled.rows[0]?.disabled_at != null && String(disabled.rows[0].disabled_at).length > 0) {
+      return loginRedirect(c.env, 'disabled', true)
+    }
+    c.executionCtx.waitUntil(handleUserOnboarding(identity.email, userId, client))
+    const session = await createSession(client, c.env, userId, c.req.raw)
+    const origin = (c.env.FRONTEND_ORIGIN ?? '').replace(/\/$/, '')
+    const headers = new Headers({ Location: `${origin}${returnTo}` })
+    headers.append('Set-Cookie', clearOAuthCookieHeader())
+    headers.append('Set-Cookie', session.cookie)
+    return new Response(null, { status: 302, headers })
+  } catch (err) {
+    reportError(c, err)
+    return loginRedirect(c.env, 'server', true)
+  }
 }
 
 app.get('/api/auth/microsoft/start', async (c) => {
@@ -138,12 +167,12 @@ app.get('/api/auth/microsoft/callback', async (c) => {
         redirectUri: requestRedirectUri(c.req.url),
       },
     )
-    await verifyIdToken(
+    const identity = await verifyIdToken(
       { MS_CLIENT_ID: clientId, MS_ALLOWED_TENANT_IDS: c.env.MS_ALLOWED_TENANT_IDS },
       idToken,
       { nonce: stored.nonce },
     )
-    return finishVerifiedSignIn(c.env)
+    return finishVerifiedSignIn(c, identity, stored.returnTo)
   } catch (err) {
     if (err instanceof AuthError && (err.code === 'tenant' || err.code === 'domain')) {
       return loginRedirect(c.env, err.code, true)

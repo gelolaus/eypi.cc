@@ -71,7 +71,7 @@ describe('re-raffle count', () => {
 
     const raffle = await request('/api/events/raffle-night/clusters/A/raffle', {
       method: 'POST',
-      headers,
+      headers: { ...headers, Origin: 'https://eypi.cc' },
     })
     expect(raffle.status).toBe(200)
     const raffleBody = await raffle.json() as { attendees: { email: string }[] }

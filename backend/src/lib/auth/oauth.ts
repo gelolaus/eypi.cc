@@ -8,6 +8,8 @@ export type OAuthEnv = {
   AUTH_COOKIE_SECRET?: string
   FRONTEND_ORIGIN?: string
   MS_REDIRECT_URI?: string
+  ENVIRONMENT?: string
+  IP_HASH_SECRET?: string
   RATE_LIMIT_KV: KVNamespace
 }
 

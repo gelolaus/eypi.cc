@@ -63,6 +63,14 @@ export type Bindings = {
   LINKS_KV: KVNamespace
   /** HMAC key for IP hashing. Reports store the hash, never the raw IP. */
   IP_HASH_SECRET?: string
+  /** `production` drops localhost from the CORS and CSRF allowlists. */
+  ENVIRONMENT?: string
+  MS_CLIENT_ID?: string
+  MS_CLIENT_SECRET?: string
+  MS_ALLOWED_TENANT_IDS?: string
+  AUTH_COOKIE_SECRET?: string
+  /** SPA origin for Microsoft sign-in redirects. */
+  FRONTEND_ORIGIN?: string
   ASSETS: Fetcher
   // Apple Wallet (.pkpass)
   APPLE_PASS_TYPE_ID?: string

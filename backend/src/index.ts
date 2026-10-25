@@ -4,8 +4,11 @@ import { db, type Bindings } from './lib/db'
 import { onError } from './lib/errors'
 import { missingRequiredEnv, requiredEnvError } from './lib/env'
 import { reportError } from './lib/reportError'
+import { allowedOrigins, csrf } from './middleware/csrf'
 import authRoutes from './routes/auth'
+import authMicrosoft from './routes/authMicrosoft'
 import linkRoutes from './routes/links'
+import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
 import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
@@ -18,15 +21,11 @@ const app = new Hono<{ Bindings: Bindings }>()
 // CORS so the eypi.cc SPA can talk to this API (must be first middleware).
 // Everything now lives under one origin (eypi.cc) plus localhost for dev.
 app.use('/api/*', cors({
-  origin: (origin) => {
-    const allowed = [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'https://eypi.cc',
-    ]
-    return allowed.includes(origin ?? '') ? origin! : null
+  origin: (origin, c) => {
+    const allowed = allowedOrigins(c.env.ENVIRONMENT)
+    return allowed.includes(origin) ? origin : null
   },
-  allowHeaders: ['Content-Type', 'Authorization', 'X-Client-Referrer', 'X-Active-Org-Id'],
+  allowHeaders: ['Content-Type', 'X-Active-Org-Id'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: true,
   maxAge: 86400,
@@ -62,8 +61,13 @@ app.get('/api/health', async (c) => {
   return c.json({ ok: true, db: true })
 })
 
+// Unsafe methods need an allowlisted Origin. Safe methods pass through.
+app.use('/api/*', csrf)
+
 // Mount feature routers. Each declares its own full /api/... paths.
 app.route('/', authRoutes)
+app.route('/', authMicrosoft)
+app.route('/', meRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)
 app.route('/', eventRoutes)

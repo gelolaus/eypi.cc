@@ -49,6 +49,7 @@ function report(reason: string, extra: Record<string, unknown> = {}, ip = REPORT
     headers: {
       'Content-Type': 'application/json',
       'CF-Connecting-IP': ip,
+      Origin: 'https://eypi.cc',
     },
     body: JSON.stringify({ slug: 'promo', reason, ...extra }),
   } satisfies RequestInit
@@ -84,7 +85,11 @@ describe('POST /api/reports', () => {
 
     const res = await request('/api/reports', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': REPORTER_IP },
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Connecting-IP': REPORTER_IP,
+        Origin: 'https://eypi.cc',
+      },
       body: JSON.stringify({ slug: 'missing', reason: 'phishing' }),
     })
 

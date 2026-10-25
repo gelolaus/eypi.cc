@@ -1,8 +1,9 @@
-import { exportJWK, generateKeyPair, SignJWT } from 'jose'
+import { exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose'
 import { Hono } from 'hono'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { readOAuthCookie, signOAuthCookie } from '../lib/auth/cookies'
 import type { OAuthEnv } from '../lib/auth/oauth'
+import { createTestApp } from '../test/createTestApp'
 import microsoftAuth from './authMicrosoft'
 
 const APC_TENANT = 'aeb745e6-8166-4f8f-9233-179e8109c49e'
@@ -57,7 +58,7 @@ async function sha256Base64Url(value: string): Promise<string> {
 }
 
 let privateKey: Awaited<ReturnType<typeof generateKeyPair>>['privateKey']
-let publicJwk: Record<string, unknown>
+let publicJwk: JWK
 
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true })
@@ -265,8 +266,7 @@ describe('GET /api/auth/microsoft/callback', () => {
     expect(body.get('client_id')).toBe(CLIENT_ID)
   })
 
-  it('redirects a verified sign-in to login?error=server until sessions exist', async () => {
-    const app = testApp()
+  it('sets only a session cookie and redirects a verified sign-in to returnTo', async () => {
     const idToken = await signIdToken({
       tid: APC_TENANT,
       oid: 'oid-1',
@@ -281,15 +281,76 @@ describe('GET /api/auth/microsoft/callback', () => {
       verifier: 'verifier-1',
       returnTo: '/links',
     })
+    const { request, client } = await createTestApp({ env: oauthEnv() })
 
-    const res = await app.request(
+    const res = await request(
       `${ORIGIN}/api/auth/microsoft/callback?code=auth-code&state=state-1`,
       { headers: { Cookie: `eypi_oauth=${signed}` } },
-      oauthEnv(),
     )
 
     expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe(`${FRONTEND}/login?error=server`)
-    expect(res.headers.get('location')).not.toContain('/links')
+    expect(res.headers.get('location')).toBe(`${FRONTEND}/links`)
+    const cookies = res.headers.getSetCookie()
+    const sessionCookie = cookies.find((cookie) => cookie.startsWith('eypi_session='))
+    expect(sessionCookie).toContain('HttpOnly')
+    expect(sessionCookie).toContain('Secure')
+    expect(sessionCookie).toContain('SameSite=Lax')
+    expect(sessionCookie).toContain('Path=/')
+    expect(sessionCookie).toContain('Max-Age=2592000')
+    expect(cookies.some((cookie) => cookie.startsWith('eypi_oauth=') && cookie.includes('Max-Age=0'))).toBe(true)
+    expect(sessionCookie).not.toContain('Bearer')
+
+    const token = sessionCookie?.split(';')[0]?.slice('eypi_session='.length) ?? ''
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+    const hash = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+    const sessions = await client.execute('SELECT id, user_id FROM sessions')
+    expect(sessions.rows).toHaveLength(1)
+    expect(sessions.rows[0]?.id).toBe(hash)
+    expect(sessions.rows[0]?.id).not.toBe(token)
+
+    const users = await client.execute({
+      sql: 'SELECT id, email, role FROM users WHERE email = ?',
+      args: ['ada@apc.edu.ph'],
+    })
+    expect(users.rows[0]).toMatchObject({ email: 'ada@apc.edu.ph', role: 'user' })
+    expect(sessions.rows[0]?.user_id).toBe(users.rows[0]?.id)
+  })
+
+  it('redirects a disabled user to login?error=disabled without a session', async () => {
+    const idToken = await signIdToken({
+      tid: APC_TENANT,
+      oid: 'oid-disabled',
+      email: 'ada@apc.edu.ph',
+      name: 'Ada',
+      nonce: 'nonce-1',
+    })
+    stubMicrosoft(idToken)
+    const signed = await signOAuthCookie(COOKIE_SECRET, {
+      state: 'state-1',
+      nonce: 'nonce-1',
+      verifier: 'verifier-1',
+      returnTo: '/links',
+    })
+    const { request, client } = await createTestApp({
+      env: oauthEnv(),
+      seed: async (db) => {
+        await db.execute({
+          sql: 'INSERT INTO users (id, email, name, disabled_at) VALUES (?, ?, ?, ?)',
+          args: ['ada-id', 'ada@apc.edu.ph', 'Ada', '2026-10-01T00:00:00.000Z'],
+        })
+      },
+    })
+
+    const res = await request(
+      `${ORIGIN}/api/auth/microsoft/callback?code=auth-code&state=state-1`,
+      { headers: { Cookie: `eypi_oauth=${signed}` } },
+    )
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(`${FRONTEND}/login?error=disabled`)
+    const cookies = res.headers.getSetCookie()
+    expect(cookies.some((cookie) => cookie.includes('Max-Age=2592000'))).toBe(false)
+    const sessions = await client.execute('SELECT COUNT(*) AS n FROM sessions')
+    expect(Number(sessions.rows[0]?.n)).toBe(0)
   })
 })
