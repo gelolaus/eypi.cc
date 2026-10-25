@@ -5,7 +5,7 @@ import type { Bindings } from '../lib/db'
 const app = new Hono<{ Bindings: Bindings }>()
 
 app.get('/api/stats', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const [orgsRes, linksRes, eventsRes] = await Promise.all([
     database.execute('SELECT COUNT(*) as c FROM organizations'),
     database.execute('SELECT COUNT(*) as c FROM links'),

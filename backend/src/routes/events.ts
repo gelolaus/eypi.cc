@@ -61,7 +61,7 @@ app.post('/api/events', async (c) => {
     // Non-empty validation only for legacy (when attendees key is present and non-null)
   }
 
-  const client = db(c.env)
+  const client = db(c)
   const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
   if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
 
@@ -130,7 +130,7 @@ app.get('/api/events', async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const client = db(c.env)
+  const client = db(c)
   const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
   if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
 
@@ -161,7 +161,7 @@ app.get('/api/events/:slug', async (c) => {
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
 
-  const client = db(c.env)
+  const client = db(c)
 
   const result = await client.execute({
     sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked FROM events WHERE slug = ?',
@@ -200,7 +200,7 @@ app.get('/api/events/:slug/attendees', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -232,7 +232,7 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -303,7 +303,7 @@ app.patch('/api/events/:slug/column-mapping', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -344,7 +344,7 @@ app.get('/api/events/:slug/csv-data', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -388,7 +388,7 @@ app.post('/api/events/:slug/clusters', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -425,7 +425,7 @@ app.get('/api/events/:slug/clusters', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -496,7 +496,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -619,7 +619,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   const slug = c.req.param('slug')
   const clusterValue = decodeURIComponent(c.req.param('value'))
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -737,7 +737,7 @@ app.delete('/api/events/:slug', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -762,7 +762,7 @@ app.patch('/api/events/:slug', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -793,7 +793,7 @@ app.get('/api/events/:slug/csv-rows/search', async (c) => {
 
   const slug = c.req.param('slug')
   const q = (c.req.query('q') ?? '').trim()
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -821,7 +821,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
   const evRes = await client.execute({
     sql: 'SELECT id, lead_user_id, selection_locked, max_attendees FROM events WHERE slug = ?',
@@ -941,7 +941,7 @@ app.post('/api/events/:slug/lookup', async (c) => {
     return c.json({ status: 'error', message: 'First name, last name, and email are required.' }, 400)
   }
 
-  const client = db(c.env)
+  const client = db(c)
   const evRes = await client.execute({
     sql: 'SELECT id, name, event_date, event_time, location FROM events WHERE slug = ?',
     args: [slug],
@@ -1011,7 +1011,7 @@ app.get('/api/events/:slug/passes/apple', async (c) => {
       return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
     }
 
-    const client = db(c.env)
+    const client = db(c)
     const ctx = await loadPassContext(client, slug, claims.sub)
     if (!ctx || ctx.event.id !== claims.eventId) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
@@ -1058,7 +1058,7 @@ app.get('/api/events/:slug/passes/google', async (c) => {
       return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
     }
 
-    const client = db(c.env)
+    const client = db(c)
     const ctx = await loadPassContext(client, slug, claims.sub)
     if (!ctx || ctx.event.id !== claims.eventId) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
@@ -1084,7 +1084,7 @@ app.post('/api/events/:slug/checkin', async (c) => {
   const { qrToken } = await c.req.json() as { qrToken: string }
   if (!qrToken) return c.json({ status: 'error', message: 'qrToken required.' }, 400)
 
-  const client = db(c.env)
+  const client = db(c)
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
@@ -1128,7 +1128,7 @@ app.post('/api/events/:slug/checkin-manual', async (c) => {
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
+  const client = db(c)
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
@@ -1167,7 +1167,7 @@ app.post('/api/events/:slug/checkout', async (c) => {
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
+  const client = db(c)
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
@@ -1195,7 +1195,7 @@ app.post('/api/events/:slug/remove', async (c) => {
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
+  const client = db(c)
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
@@ -1222,7 +1222,7 @@ app.patch('/api/events/:slug/attendees/:id', async (c) => {
 
   const slug = c.req.param('slug')
   const attendeeId = c.req.param('id')
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
@@ -1247,7 +1247,7 @@ app.patch('/api/events/:slug/clusters/:value/max-count', async (c) => {
 
   const slug = c.req.param('slug')
   const value = decodeURIComponent(c.req.param('value'))
-  const client = db(c.env)
+  const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)

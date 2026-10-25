@@ -177,11 +177,11 @@ feat(db): add versioned migrations with a ledger and baseline
 **Interfaces:**
 - Produces: `class ApiError extends Error { constructor(status: number, code: string, message: string, fields?: Record<string,string>) }`; helpers `badRequest(code,msg,fields?)`, `unauthorized()`, `forbidden(code,msg)`, `notFound(msg?)`, `conflict(code,msg)`, `tooMany(msg?)`; `onError(err, c)` that returns the Global Constraints body; `reportError(c, err, extra?)` writes one `console.error(JSON.stringify({level:'error',route,code,message,requestId}))` with no emails, tokens or IPs; `db(c): Client`; `createTestApp(opts?: { user?: {id,email,name,role}, seed?: (client) => Promise<void> }) → Promise<{ app, client, request(path, init?) }>`, an in-memory libSQL with every migration in `backend/migrations` applied, mounting the real `index.ts` app with bindings stubbed (KV = in-memory Map fake, R2 = Map fake).
 
-- [ ] **Step 1: Write failing tests.** `errors.test.ts`: a thrown `conflict('slug_taken','That slug is taken.')` returns 409 `{error:{code:'slug_taken',message:'That slug is taken.'}}`; an unknown thrown Error returns 500 `{error:{code:'internal',message:'Something went wrong.'}}`. `health.test.ts`: `GET /api/health` → 200 `{ ok: true, db: true }` using `createTestApp()`.
-- [ ] **Step 2: Run.** Expected: FAIL.
-- [ ] **Step 3: Implement** the files above. Replace inline `createClient` calls in `auth.ts` and `links.ts` with `db(c)`.
-- [ ] **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
-- [ ] **Step 5: Commit** `feat(platform): add API error contract, JSON logging, and route test harness` (bullets: errors module, onError/notFound, health DB ping, observability on, `createTestApp` on in-memory libSQL, tests).
+- [x] **Step 1: Write failing tests.** `errors.test.ts`: a thrown `conflict('slug_taken','That slug is taken.')` returns 409 `{error:{code:'slug_taken',message:'That slug is taken.'}}`; an unknown thrown Error returns 500 `{error:{code:'internal',message:'Something went wrong.'}}`. `health.test.ts`: `GET /api/health` → 200 `{ ok: true, db: true }` using `createTestApp()`.
+- [x] **Step 2: Run.** Expected: FAIL.
+- [x] **Step 3: Implement** the files above. Replace inline `createClient` calls in `auth.ts` and `links.ts` with `db(c)`.
+- [x] **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
+- [x] **Step 5: Commit** `feat(platform): add API error contract, JSON logging, and route test harness` (bullets: errors module, onError/notFound, health DB ping, observability on, `createTestApp` on in-memory libSQL, tests).
 
 ### Task 1.3: Org context middleware (F-ORG-4)
 

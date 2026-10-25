@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import type { Bindings } from './lib/db'
+import { db, type Bindings } from './lib/db'
+import { onError } from './lib/errors'
 import { missingRequiredEnv, requiredEnvError } from './lib/env'
+import { reportError } from './lib/reportError'
 import authRoutes from './routes/auth'
 import linkRoutes from './routes/links'
 import eventRoutes from './routes/events'
@@ -45,12 +47,18 @@ app.use('*', async (c, next) => {
 })
 
 app.get('/', (c) => c.text('eypi.cc API is online.'))
-app.get('/api/health', (c) => {
+app.get('/api/health', async (c) => {
   const missing = missingRequiredEnv(c.env)
   if (missing.length) {
     return c.text(requiredEnvError(missing), 503)
   }
-  return c.text('OK')
+  try {
+    await db(c).execute({ sql: 'SELECT 1' })
+  } catch (err) {
+    reportError(c, err)
+    return c.json({ ok: false, db: false }, 503)
+  }
+  return c.json({ ok: true, db: true })
 })
 
 // Mount feature routers. Each declares its own full /api/... paths.
@@ -62,6 +70,10 @@ app.route('/api/orgs', orgsRoutes)
 app.route('/', formsRoutes)
 app.route('/', statsRoutes)
 
+app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404))
+
 app.all('*', (c) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404))
+
+app.onError(onError)
 
 export default app

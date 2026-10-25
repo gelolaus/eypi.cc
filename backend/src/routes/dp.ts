@@ -123,7 +123,7 @@ app.post('/api/dp', isOrgFeature, async (c) => {
     if (err) return c.json({ status: 'error', message: err }, 400)
   }
 
-  const client = db(c.env)
+  const client = db(c)
   const resolved = await resolveSlug(client, body.slug, title)
   if (resolved.error) return c.json({ status: 'error', message: resolved.error }, resolved.status ?? 400)
   const slug = resolved.slug!
@@ -154,7 +154,7 @@ app.get('/api/dp', isOrgFeature, async (c) => {
   const user = await getUser(c)
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const client = db(c.env)
+  const client = db(c)
   const orgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
 
@@ -186,7 +186,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')!
-  const client = db(c.env)
+  const client = db(c)
 
   const camp = await client.execute({ sql: 'SELECT id, org_id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?', args: [slug] })
   if (camp.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
@@ -216,7 +216,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
-  const client = db(c.env)
+  const client = db(c)
   const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
@@ -246,7 +246,7 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
 
   const id = c.req.param('id')!
   const frameId = c.req.param('frameId')!
-  const client = db(c.env)
+  const client = db(c)
   const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
@@ -270,7 +270,7 @@ app.patch('/api/dp/:id/frames/order', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
-  const client = db(c.env)
+  const client = db(c)
   const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
@@ -305,7 +305,7 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
-  const client = db(c.env)
+  const client = db(c)
   const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
@@ -361,7 +361,7 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const id = c.req.param('id')!
-  const client = db(c.env)
+  const client = db(c)
   const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
@@ -377,7 +377,7 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
 // Public, best-effort counter bump fired after a successful client-side export.
 app.post('/api/dp/:id/download', async (c) => {
   const id = c.req.param('id')!
-  const result = await db(c.env).execute({
+  const result = await db(c).execute({
     sql: 'UPDATE dp_campaigns SET download_count = download_count + 1 WHERE id = ?',
     args: [id],
   })
@@ -391,7 +391,7 @@ app.post('/api/dp/:id/download', async (c) => {
 // on segment count, so order is not strictly required, but this reads clearly).
 app.get('/api/dp/:slug', async (c) => {
   const slug = c.req.param('slug')!
-  const client = db(c.env)
+  const client = db(c)
   const result = await client.execute({
     sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
     args: [slug],

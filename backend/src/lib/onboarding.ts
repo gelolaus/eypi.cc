@@ -1,14 +1,12 @@
-import type { Bindings } from './db'
-import { db } from './db'
+import type { Client } from '@libsql/client/web'
 
 /**
  * Registration Auto-Claim Hook
  * Executes asynchronously upon a user's first login or verification.
  */
-export async function handleUserOnboarding(userEmail: string, userId: string, env: Bindings): Promise<void> {
+export async function handleUserOnboarding(userEmail: string, userId: string, database: Client): Promise<void> {
   const normalizedEmail = userEmail.toLowerCase().trim()
-  const database = db(env)
-  
+
   try {
     // 1. Check for pending pre-provisioned memberships
     // This read operation is cheap and prevents unnecessary writes

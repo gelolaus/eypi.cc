@@ -9,7 +9,7 @@ export const isOrgFeature = async (c: Context<{ Bindings: Bindings, Variables: {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const database = db(c.env)
+  const database = db(c)
 
   try {
     const { rows } = await database.execute({

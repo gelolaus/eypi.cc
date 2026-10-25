@@ -181,7 +181,7 @@ async function requireOrgCoordinator(
  * List organizations opted into the public catalog.
  */
 app.get('/public', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   try {
     const { rows } = await database.execute({
       sql: `
@@ -212,7 +212,7 @@ app.get('/public', async (c) => {
  * Public organization profile with upcoming/past events.
  */
 app.get('/public/:slug', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const slug = c.req.param('slug')
 
   try {
@@ -288,7 +288,7 @@ app.use('*', async (c, next) => {
  * Fetch all organizations the user is an active member of or owns.
  */
 app.get('/', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userId = c.var.userId
 
   try {
@@ -321,7 +321,7 @@ app.get('/', async (c) => {
  * Create a new organization. Restricted to arlaus@student.apc.edu.ph.
  */
 app.post('/', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterEmail = c.var.userEmail
 
   if (!isSuperAdmin(requesterEmail)) {
@@ -400,7 +400,7 @@ app.post('/', async (c) => {
 // ==========================================
 
 app.get('/invites', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userEmail = c.var.userEmail
 
   try {
@@ -422,7 +422,7 @@ app.get('/invites', async (c) => {
 })
 
 app.post('/invites/:org_id/accept', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userEmail = c.var.userEmail
   const userId = c.var.userId
   const orgId = c.req.param('org_id')
@@ -449,7 +449,7 @@ app.post('/invites/:org_id/accept', async (c) => {
 })
 
 app.post('/invites/:org_id/decline', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userEmail = c.var.userEmail
   const orgId = c.req.param('org_id')
 
@@ -491,7 +491,7 @@ app.get('/admin', async (c) => {
     return c.json({ error: 'Forbidden. Admin access required.' }, 403)
   }
 
-  const database = db(c.env)
+  const database = db(c)
   try {
     const { rows } = await database.execute({
       sql: `
@@ -517,7 +517,7 @@ app.get('/admin/:org_id', async (c) => {
     return c.json({ error: 'Forbidden. Admin access required.' }, 403)
   }
 
-  const database = db(c.env)
+  const database = db(c)
   const orgId = c.req.param('org_id')
 
   try {
@@ -547,7 +547,7 @@ app.patch('/admin/:org_id', async (c) => {
     return c.json({ error: 'Forbidden. Admin access required.' }, 403)
   }
 
-  const database = db(c.env)
+  const database = db(c)
   const orgId = c.req.param('org_id')
   if (!orgId) return c.json({ error: 'Organization not found.' }, 404)
 
@@ -688,7 +688,7 @@ app.delete('/admin/:org_id', async (c) => {
     return c.json({ error: 'Forbidden. Admin access required.' }, 403)
   }
 
-  const database = db(c.env)
+  const database = db(c)
   const orgId = c.req.param('org_id')
 
   try {
@@ -726,7 +726,7 @@ app.delete('/admin/:org_id', async (c) => {
  * GET /api/orgs/:org_id/profile
  */
 app.get('/:org_id/profile', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userId = c.var.userId
   const orgId = c.req.param('org_id')
 
@@ -758,7 +758,7 @@ app.get('/:org_id/profile', async (c) => {
  * PATCH /api/orgs/:org_id/profile
  */
 app.patch('/:org_id/profile', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userId = c.var.userId
   const orgId = c.req.param('org_id')
   if (!orgId) return c.json({ error: 'Organization not found.' }, 404)
@@ -845,7 +845,7 @@ app.patch('/:org_id/profile', async (c) => {
  * Active member leaves the organization (owners must transfer first).
  */
 app.post('/:org_id/leave', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const userId = c.var.userId
   const userEmail = c.var.userEmail
   const orgId = c.req.param('org_id')
@@ -881,7 +881,7 @@ app.post('/:org_id/leave', async (c) => {
  * GET /api/orgs/:org_id/members
  */
 app.get('/:org_id/members', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterId = c.var.userId
   const orgId = c.req.param('org_id')
 
@@ -921,7 +921,7 @@ app.get('/:org_id/members', async (c) => {
  * POST /api/orgs/:org_id/members
  */
 app.post('/:org_id/members', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterId = c.var.userId
   const orgId = c.req.param('org_id')
 
@@ -982,7 +982,7 @@ app.post('/:org_id/members', async (c) => {
  * DELETE /api/orgs/:org_id/members
  */
 app.delete('/:org_id/members', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterId = c.var.userId
   const orgId = c.req.param('org_id')
 
@@ -1044,7 +1044,7 @@ app.delete('/:org_id/members', async (c) => {
  * POST /api/orgs/:org_id/transfer
  */
 app.post('/:org_id/transfer', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterId = c.var.userId
   const orgId = c.req.param('org_id')
 

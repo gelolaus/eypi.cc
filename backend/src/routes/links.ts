@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
-import { createClient } from '@libsql/client/web'
-import type { Bindings } from '../lib/db'
+import { db as requestDb, type Bindings } from '../lib/db'
 import { requireAuth } from '../middleware/requireAuth'
 import { validateDestinationUrl } from '../lib/validateDestinationUrl'
 import { isReservedSlug } from '../../../shared/reservedSlugs'
@@ -26,10 +25,7 @@ const normalizeUrl = (url: string) => {
 // Link Routes (require JWT)
 app.get('/api/links', requireAuth, async (c) => {
   try {
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
     const result = await db.execute({
       sql: 'SELECT id, original_url, slug, clicks, qr_config FROM links WHERE user_id = ? ORDER BY created_at DESC',
       args: [c.var.userId],
@@ -60,10 +56,7 @@ app.get('/api/links', requireAuth, async (c) => {
 app.get('/api/links/:id/analytics', requireAuth, async (c) => {
   const id = c.req.param('id')
   try {
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
     const ownership = await db.execute({
       sql: 'SELECT id FROM links WHERE id = ? AND user_id = ?',
       args: [id, c.var.userId],
@@ -122,10 +115,7 @@ app.get('/api/links/:id/analytics', requireAuth, async (c) => {
 // Public redirect lookup (no auth required) — SPA fallback when edge KV misses
 app.get('/api/links/:slug', async (c) => {
   const slug = c.req.param('slug')
-  const db = createClient({
-    url: c.env.TURSO_DATABASE_URL,
-    authToken: c.env.TURSO_AUTH_TOKEN,
-  })
+  const db = requestDb(c)
   const result = await db.execute({
     sql: 'SELECT id, original_url FROM links WHERE slug = ?',
     args: [slug],
@@ -177,10 +167,7 @@ app.put('/api/links/:id', requireAuth, async (c) => {
     const prepared = prepareQrConfigForSave(parseLinkQrConfig(body.qr_config ?? null))
     const qrConfigJson = serializeLinkQrConfig(prepared.config)
 
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
     const existing = await db.execute({
       sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
       args: [id, c.var.userId],
@@ -224,10 +211,7 @@ app.put('/api/links/:id', requireAuth, async (c) => {
 app.delete('/api/links/:id', requireAuth, async (c) => {
   const id = c.req.param('id')
   try {
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
     const existing = await db.execute({
       sql: 'SELECT slug FROM links WHERE id = ? AND user_id = ?',
       args: [id, c.var.userId],
@@ -267,10 +251,7 @@ app.post('/api/links', requireAuth, async (c) => {
     if (!validateDestinationUrl(normalizedUrl)) {
       return c.json({ error: 'Destination URL is not allowed.' }, 400)
     }
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
     let slug = generateSlug()
     for (let attempt = 0; attempt < 10; attempt++) {
       if (!isReservedSlug(slug)) {

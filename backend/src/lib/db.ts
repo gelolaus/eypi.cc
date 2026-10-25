@@ -1,6 +1,13 @@
+import type { Context } from 'hono'
 import { verify } from 'hono/jwt'
 import { createClient } from '@libsql/client/web'
 import type { Client } from '@libsql/client/web'
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    db?: Client
+  }
+}
 
 export async function getUserOrgId(
   client: Client,
@@ -66,9 +73,16 @@ export type JWTPayload = {
   exp: number
 }
 
-// Single Turso/libSQL client factory shared across all route modules.
-export function db(env: Bindings) {
-  return createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN })
+// One Turso/libSQL client per request, reused from c.var.db.
+export function db<E extends { Bindings: Bindings }>(c: Context<E>): Client {
+  const existing = c.var.db
+  if (existing) return existing
+  const client = createClient({
+    url: c.env.TURSO_DATABASE_URL,
+    authToken: c.env.TURSO_AUTH_TOKEN,
+  })
+  c.set('db', client)
+  return client
 }
 
 // Verify the shared HS256 JWT (issued by /api/auth/login) and return its payload.

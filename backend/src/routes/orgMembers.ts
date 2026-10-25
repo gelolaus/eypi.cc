@@ -31,7 +31,7 @@ const inviteSchema = z.object({
  * Handles invitation and silent pre-provisioning of members.
  */
 app.post('/', async (c) => {
-  const database = db(c.env)
+  const database = db(c)
   const requesterId = c.var.userId
   
   let body

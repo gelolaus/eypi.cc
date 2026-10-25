@@ -2,7 +2,7 @@ import { checkResponse } from './lib/smoke.mjs'
 
 const TARGETS = [
   { url: 'https://eypi.cc/', status: 200, contentTypePrefix: 'text/html' },
-  { url: 'https://api.eypi.cc/api/health', status: 200, contentTypePrefix: 'text/plain' },
+  { url: 'https://api.eypi.cc/api/health', status: 200, contentTypePrefix: 'application/json' },
 ]
 
 let failed = false

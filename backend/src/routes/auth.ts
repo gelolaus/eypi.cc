@@ -1,10 +1,9 @@
 import { Hono } from 'hono'
 import { sign, verify } from 'hono/jwt'
-import { createClient } from '@libsql/client/web'
 import * as bcrypt from 'bcryptjs'
 import { Resend } from 'resend'
 import { z } from 'zod'
-import type { Bindings } from '../lib/db'
+import { db as requestDb, type Bindings } from '../lib/db'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { handleUserOnboarding } from '../lib/onboarding'
 import { checkRateLimit } from '../lib/rateLimit'
@@ -67,10 +66,7 @@ app.post('/api/auth/register', async (c) => {
     const verificationToken = crypto.randomUUID()
 
     // Connect to Turso
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
 
     // 1. Check for existing user before INSERT
     const existing = await db.execute({
@@ -154,10 +150,7 @@ app.post('/api/auth/verify', async (c) => {
   const token = (typeof rawToken === 'string' ? rawToken : '').trim()
   if (!token) return c.json({ error: 'Missing verification token.' }, 400)
 
-  const db = createClient({
-    url: c.env.TURSO_DATABASE_URL,
-    authToken: c.env.TURSO_AUTH_TOKEN,
-  })
+  const db = requestDb(c)
 
   const check = await db.execute({
     sql: 'SELECT id FROM users WHERE verification_token = ?',
@@ -178,7 +171,7 @@ app.post('/api/auth/verify', async (c) => {
   const userRowResult = await db.execute({ sql: 'SELECT id, email FROM users WHERE id = ?', args: [result.rows[0].id] })
   if (userRowResult.rows.length > 0) {
     const user = userRowResult.rows[0] as unknown as { id: string, email: string }
-    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, c.env))
+    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, db))
   }
 
   return c.json({ status: 'success', message: 'Account verified.' })
@@ -208,10 +201,7 @@ app.post('/api/auth/login', async (c) => {
     }
 
     // Connect to Turso
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
 
     // Fetch user from DB
     const result = await db.execute({
@@ -251,7 +241,7 @@ app.post('/api/auth/login', async (c) => {
     const token = await sign(payload, c.env.JWT_SECRET)
 
     // Fire-and-forget the onboarding hook
-    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, c.env))
+    c.executionCtx.waitUntil(handleUserOnboarding(user.email, user.id, db))
 
     return c.json({
       status: 'success',
@@ -297,10 +287,7 @@ app.put('/api/auth/password', async (c) => {
       }, 400)
     }
 
-    const db = createClient({
-      url: c.env.TURSO_DATABASE_URL,
-      authToken: c.env.TURSO_AUTH_TOKEN,
-    })
+    const db = requestDb(c)
 
     // Fetch current user to check old password
     const userResult = await db.execute({
