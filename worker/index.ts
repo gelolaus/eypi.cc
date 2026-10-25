@@ -41,20 +41,28 @@ export default {
       return env.ASSETS.fetch(request)
     }
 
-    const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf
-    ctx.waitUntil(
-      logLinkClick(
-        createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN }),
-        {
-          linkId: entry.id,
-          slug,
-          userAgent: request.headers.get('User-Agent'),
-          referrer: sanitizeReferrer(request.headers.get('Referer') ?? undefined),
-          country: cf?.country ?? 'Unknown',
-        },
-      ).catch(() => {}),
-    )
+    if (request.method === 'GET') {
+      const cf = (request as Request & { cf?: IncomingRequestCfProperties }).cf
+      ctx.waitUntil(
+        logLinkClick(
+          createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN }),
+          {
+            linkId: entry.id,
+            slug,
+            userAgent: request.headers.get('User-Agent'),
+            referrer: sanitizeReferrer(request.headers.get('Referer') ?? undefined),
+            country: cf?.country ?? 'Unknown',
+          },
+        ).catch(() => {}),
+      )
+    }
 
-    return Response.redirect(entry.url, 301)
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: entry.url,
+        'Cache-Control': 'private, max-age=0',
+      },
+    })
   },
 }

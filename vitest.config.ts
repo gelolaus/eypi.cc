@@ -15,6 +15,7 @@ export default defineConfig({
       'shared/**/*.test.ts',
       'src/**/*.test.ts',
       'backend/src/**/*.test.ts',
+      'worker/**/*.test.ts',
       'scripts/**/*.test.mjs',
       'backend/scripts/**/*.test.mjs',
     ],
