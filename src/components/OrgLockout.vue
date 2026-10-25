@@ -25,7 +25,7 @@
 
       <router-link
         to="/orgs/modify"
-        class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 sm:px-8 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:scale-105 sm:px-8"
         data-cursor="cta"
       >
         Manage orgs

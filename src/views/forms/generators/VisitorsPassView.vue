@@ -153,7 +153,7 @@
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+ class="btn-gold flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <svg
                 v-if="isGenerating"

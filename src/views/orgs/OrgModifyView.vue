@@ -137,7 +137,7 @@
                 </div>
                 <div
                   v-else
-                  class="flex h-24 w-24 items-center justify-center rounded-2xl border border-g-border bg-[#34418F]/10 text-lg font-bold text-[#34418F]"
+                  class="flex h-24 w-24 items-center justify-center rounded-2xl border border-g-border bg-[#34418F]/10 text-lg font-bold text-g-primary"
                 >
                   {{ orgInitials(org.org_name) }}
                 </div>
@@ -184,7 +184,7 @@
             </div>
           </div>
 
-          <button type="submit" :disabled="savingProfile" class="btn-primary" data-cursor="cta">
+          <button type="submit" :disabled="savingProfile" class="btn-primary btn-gold" data-cursor="cta">
             {{ savingProfile ? 'Saving...' : 'Save profile' }}
           </button>
         </form>
@@ -227,7 +227,7 @@
 
         <form class="mb-6 flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
           <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-g-primary px-4 py-3 text-sm font-semibold text-white">
+          <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-[#34418F] px-4 py-3 text-sm font-semibold text-white">
             {{ sendingInvite ? 'Inviting...' : 'Invite' }}
           </button>
         </form>
@@ -597,6 +597,6 @@ watch(slug, loadOrgContext)
   @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 .btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+ @apply rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
 }
 </style>

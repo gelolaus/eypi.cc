@@ -22,7 +22,8 @@ function onScroll() {
 }
 
 function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
 }
 
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
@@ -58,7 +59,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 .scroll-top-btn:hover {
   border-color: var(--color-accent);
   background-color: var(--color-accent);
-  color: #fff;
+  color: #1a1a2e;
   transform: translateY(-2px);
 }
 

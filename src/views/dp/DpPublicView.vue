@@ -135,7 +135,7 @@
           <button
             type="button"
             :disabled="!headshot || exporting"
-            class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold w-full rounded-xl px-8 py-4 text-sm font-semibold transition-all"
             :class="(!headshot || exporting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
             @click="download"
           >{{ exporting ? 'Rendering…' : 'Download' }}</button>

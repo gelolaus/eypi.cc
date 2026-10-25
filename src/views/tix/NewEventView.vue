@@ -27,7 +27,7 @@
         </p>
         <router-link
           :to="`/manage/tix/${form.slug}`"
-          class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
+ class="btn-gold inline-block rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           data-cursor="cta"
         >
           Go to Event →
@@ -195,7 +195,7 @@
             type="submit"
             :disabled="loading"
             :class="[
-              'mt-2 w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+              'btn-gold mt-2 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"

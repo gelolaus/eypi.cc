@@ -29,7 +29,7 @@
       </div>
       <button
         type="button"
-        class="rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold rounded-xl px-8 py-4 font-semibold transition-all"
         :disabled="isShortening"
         :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isShortening, 'hover:scale-105': !isShortening }"
         @click="handleShorten"
@@ -332,7 +332,7 @@
           <div class="mt-6">
             <button
               type="button"
-              class="w-full rounded-xl bg-[#DEAC4B] px-8 py-4 font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold w-full rounded-xl px-8 py-4 font-semibold transition-all"
               :disabled="isSaving"
               :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
               @click="handleSave"

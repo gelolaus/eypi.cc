@@ -4,7 +4,7 @@
       <p class="text-sm text-g-muted">Create and manage every org on eypi.cc.</p>
       <router-link
         to="/settings/org-management/new"
-        class="inline-flex rounded-xl bg-g-accent px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90"
+ class="btn-gold inline-flex rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90"
         data-cursor="cta"
       >
         New org

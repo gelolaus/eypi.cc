@@ -10,7 +10,7 @@
         <OrgSwitcher />
         <router-link
           to="/manage/frames/new"
-          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
           data-cursor="cta"
         >New Campaign</router-link>
       </div>

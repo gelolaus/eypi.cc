@@ -28,7 +28,7 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <router-link
             :to="`/frames/${createdSlug}`"
-            class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
             data-cursor="cta"
           >Open Public Page →</router-link>
           <router-link
@@ -112,7 +112,7 @@
         <button
           type="submit"
           :disabled="!canSubmit || submitting"
-          class="mt-2 w-full rounded-xl bg-[#DEAC4B] px-8 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold mt-2 w-full rounded-xl px-8 py-4 text-sm font-semibold transition-all"
           :class="(!canSubmit || submitting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
         >
           {{ submitting ? 'Creating…' : 'Create Campaign' }}

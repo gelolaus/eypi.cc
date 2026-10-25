@@ -18,14 +18,14 @@
       <div class="reveal delay-2 mb-12 flex flex-wrap items-center justify-center gap-4">
         <router-link
           to="/login"
-          class="tap-scale inline-flex items-center rounded-full bg-[#DEAC4B] px-8 py-4 text-base font-bold uppercase tracking-wide text-white shadow-md transition-all hover:-translate-y-0.5 hover:opacity-90"
+ class="btn-gold tap-scale inline-flex items-center rounded-full px-8 py-4 text-base font-bold uppercase tracking-wide shadow-md transition-all hover:-translate-y-0.5 hover:opacity-90"
           data-cursor="cta"
         >
           Get started
         </router-link>
         <a
           href="#features"
-          class="tap-scale inline-flex items-center rounded-full border-2 border-[#34418F] px-8 py-4 text-base font-semibold text-[#34418F] transition-all hover:bg-[#34418F] hover:text-white dark:border-g-border dark:text-g-text dark:hover:border-g-accent dark:hover:bg-g-accent dark:hover:text-white"
+          class="tap-scale inline-flex items-center rounded-full border-2 border-[#34418F] px-8 py-4 text-base font-semibold text-[#34418F] transition-all hover:bg-[#34418F] hover:text-white dark:border-g-border dark:text-g-text dark:hover:border-g-accent dark:hover:bg-g-accent dark:hover:text-[#1a1a2e]"
           data-cursor="nav"
           @click.prevent="scrollToFeatures"
         >

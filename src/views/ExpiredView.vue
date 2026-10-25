@@ -30,7 +30,7 @@
       </p>
       <router-link
         to="/"
-        class="mt-8 inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold mt-8 inline-block rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:brightness-110"
       >
         Back to home
       </router-link>

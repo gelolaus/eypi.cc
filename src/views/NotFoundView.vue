@@ -14,7 +14,7 @@
 
       <!-- Error Code -->
       <h1
-        class="text-data mb-2 text-7xl font-black leading-none text-[#34418F] sm:text-8xl md:text-9xl"
+        class="text-data mb-2 text-7xl font-black leading-none text-g-primary sm:text-8xl md:text-9xl"
       >
         404
       </h1>
@@ -36,7 +36,7 @@
       <!-- CTA -->
       <router-link
         to="/"
-        class="rounded-xl bg-[#DEAC4B] px-6 py-3 font-mono font-semibold text-white shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
+ class="btn-gold rounded-xl px-6 py-3 font-mono font-semibold shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
       >
         Back to home
       </router-link>

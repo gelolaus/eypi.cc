@@ -14,8 +14,11 @@
       <aside
         v-if="isOpen"
         id="site-nav-sidebar"
+        ref="panelRef"
         class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-g-border bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:bg-slate-900/95 sm:max-w-md sm:p-8"
         style="z-index: 99991"
+        role="dialog"
+        aria-modal="true"
         aria-label="Site navigation"
         :class="itemsVisible ? 'nav-sidebar--visible' : ''"
       >
@@ -116,8 +119,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import OrgLogo from '@/components/OrgLogo.vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import type { OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
@@ -152,6 +156,8 @@ const publicLinks = [
 ]
 
 const itemsVisible = ref(false)
+const panelRef = ref<HTMLElement | null>(null)
+const { activate, release } = useFocusTrap(panelRef)
 
 function onPanelEnter() {
   itemsVisible.value = true
@@ -159,8 +165,14 @@ function onPanelEnter() {
 
 watch(
   () => props.isOpen,
-  (open) => {
-    if (!open) itemsVisible.value = false
+  async (open) => {
+    if (!open) {
+      itemsVisible.value = false
+      release()
+      return
+    }
+    await nextTick()
+    activate()
   },
 )
 </script>
@@ -226,7 +238,7 @@ watch(
   border: 1px solid transparent;
   border-radius: 9999px;
   background: var(--color-accent);
-  color: #fff;
+  color: #1a1a2e;
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -234,7 +246,7 @@ watch(
 }
 
 .nav-sidebar-link--cta:hover {
-  color: #fff;
+  color: #1a1a2e;
   opacity: 0.92;
 }
 

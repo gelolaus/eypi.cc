@@ -1,0 +1,95 @@
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from 'vitest'
+import router from './index'
+
+const pages: Record<string, string> = {
+  home: 'Home',
+  login: 'Log in',
+  dashboard: 'Dashboard',
+  links: 'Links',
+  forms: 'Forms',
+  'forms-concessionaire': 'Concessionaire form',
+  'forms-visitors-pass': 'Visitors pass',
+  'forms-letter-of-intent': 'Letter of intent',
+  'dp-campaigns': 'Frames',
+  'dp-new': 'New frame',
+  'dp-edit': 'Edit frame',
+  'dp-public': 'Frame',
+  events: 'Tix',
+  'event-new': 'New event',
+  'event-select': 'Attendee selection',
+  'event-manage': 'Event',
+  'ticket-lookup': 'Ticket lookup',
+  'orgs-modify-index': 'Org settings',
+  'orgs-modify': 'Org settings',
+  'org-catalog': 'Orgs',
+  'org-profile': 'Organization',
+  'settings-security': 'Settings',
+  'settings-org-management': 'Org management',
+  'settings-org-management-new': 'New organization',
+  'settings-org-management-edit': 'Edit organization',
+  privacy: 'Privacy',
+  terms: 'Terms',
+  contact: 'Contact',
+  'reset-password': 'Reset password',
+  verify: 'Verify',
+  unlock: 'Unlock',
+  expired: 'Expired',
+  report: 'Report',
+  redirect: 'Redirect',
+  'not-found': 'Page not found',
+}
+
+function media(matches: boolean) {
+  return {
+    matches,
+    media: '',
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent() {
+      return false
+    },
+  }
+}
+
+describe('route titles', () => {
+  it('sets document.title to Page · eypi.cc for each route and announces it', async () => {
+    const named = router.getRoutes().filter((record) => typeof record.name === 'string')
+    expect(named.map((record) => String(record.name)).sort()).toEqual(Object.keys(pages).sort())
+
+    for (const record of named) {
+      const name = String(record.name)
+      expect(record.meta.title, name).toBe(pages[name])
+    }
+
+    await router.push('/privacy')
+    expect(document.title).toBe('Privacy · eypi.cc')
+
+    const region = document.getElementById('route-announcer')
+    expect(region?.getAttribute('aria-live')).toBe('polite')
+    expect(region?.textContent).toBe('Privacy · eypi.cc')
+
+    await router.push('/contact')
+    expect(document.title).toBe('Contact · eypi.cc')
+    expect(document.getElementById('route-announcer')?.textContent).toBe('Contact · eypi.cc')
+  })
+
+  it('scrolls without smooth behavior when reduced motion is requested', () => {
+    vi.stubGlobal('matchMedia', (query: string) => media(query.includes('prefers-reduced-motion')))
+    const current = router.currentRoute.value
+    const reduced = router.options.scrollBehavior?.(current, current, null)
+    expect(reduced).toEqual({ top: 0, behavior: 'auto' })
+
+    vi.stubGlobal('matchMedia', () => media(false))
+    const smooth = router.options.scrollBehavior?.(
+      current,
+      current,
+      null,
+    ) as { top: number; behavior: ScrollBehavior }
+    expect(smooth).toEqual({ top: 0, behavior: 'smooth' })
+    vi.unstubAllGlobals()
+  })
+})

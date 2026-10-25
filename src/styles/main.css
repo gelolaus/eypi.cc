@@ -30,6 +30,7 @@
     --color-text-muted: #6B6B6B;
     --color-accent:     #DEAC4B;  /* APC Gold */
     --color-primary:    #34418F;  /* APC Blue */
+    --color-focus:      #34418F;  /* navy ring on light grey, 8.38:1 */
     --color-dot:        #000000;
   }
 
@@ -40,7 +41,8 @@
     --color-text:       #F5F5F5;
     --color-text-muted: #AAAAAA;
     --color-accent:     #DEAC4B;  /* gold never changes */
-    --color-primary:    #34418F;
+    --color-primary:    #8FA0E8;  /* light APC blue, 8.36:1 on black */
+    --color-focus:      #DEAC4B;  /* gold ring on black, 10.11:1 */
     --color-dot:        #ffffff;
   }
 
@@ -62,7 +64,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: 0.5rem;
   }
@@ -162,7 +164,7 @@
     z-index: 100000;
     padding: 0.625rem 1rem;
     border-radius: 0.5rem;
-    background: var(--color-primary);
+    background: #34418F;
     color: #fff;
     font-family: 'Geist', system-ui, sans-serif;
     font-size: 0.875rem;
@@ -174,6 +176,30 @@
 
   .skip-link:focus {
     transform: translateY(0);
+  }
+
+  /* Gold controls: #1a1a2e on #DEAC4B is 8.21:1. White on gold is 2.08:1. */
+  .btn-gold {
+    background-color: #DEAC4B;
+    color: #1a1a2e;
+  }
+
+  .btn-gold:hover,
+  .btn-gold:focus,
+  .btn-gold:focus-visible {
+    color: #1a1a2e;
+  }
+
+  #route-announcer {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
@@ -379,7 +405,7 @@
     padding: 0.35rem 0.875rem;
     border-radius: 9999px;
     background: var(--color-accent);
-    color: #fff;
+    color: #1a1a2e;
     text-decoration: none;
     transition: opacity 0.2s ease, transform 0.15s ease;
     flex-shrink: 0;

@@ -216,7 +216,7 @@
                 </p>
                 <button
                   type="button"
-                  class="rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 dark:bg-eypi-gold-dark"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:brightness-110"
                   @click="onEnableCameraClick"
                 >
                   {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry Camera' : 'Enable Camera' }}
@@ -510,7 +510,7 @@
               <button
                 :disabled="addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()"
                 :class="[
-                  'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+                  'btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
                   (addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110',
                 ]"
                 @click="addGuestFreeform"

@@ -76,7 +76,7 @@
 
           <span
             v-if="orgTypeDisplay"
-            class="inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-semibold"
             :class="profile.tagline ? 'mt-2' : 'mt-3'"
           >
             {{ orgTypeDisplay }}

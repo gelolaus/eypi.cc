@@ -34,8 +34,10 @@
         </button>
 
         <button
+          type="button"
           class="pill-nav__toggle tap-scale"
           aria-label="Toggle dark mode"
+          :aria-pressed="isDark ? 'true' : 'false'"
           data-cursor="nav"
           @click="toggleDark"
         >
@@ -202,11 +204,5 @@ watch(isAuthenticated, (newVal) => {
 
 watch(isSidebarOpen, (open) => {
   setBodyScrollLock(open)
-  if (open) {
-    requestAnimationFrame(() => {
-      const closeBtn = document.querySelector<HTMLButtonElement>('#site-nav-sidebar button[aria-label="Close navigation"]')
-      closeBtn?.focus()
-    })
-  }
 })
 </script>

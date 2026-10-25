@@ -462,7 +462,7 @@
         <button
           :disabled="finalizing"
           :class="[
-            'flex-1 rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark',
+            'btn-gold flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
             finalizing ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
           ]"
           @click="finalize"

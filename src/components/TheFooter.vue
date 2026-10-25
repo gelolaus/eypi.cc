@@ -9,15 +9,15 @@
       <nav class="footer-links-full" aria-label="Footer navigation">
         <router-link to="/contact" class="footer-link-row" data-cursor="nav">
           <span>Contact</span>
-          <span class="footer-arrow">↗</span>
+          <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
         <router-link to="/privacy" class="footer-link-row" data-cursor="nav">
           <span>Privacy</span>
-          <span class="footer-arrow">↗</span>
+          <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
         <router-link to="/terms" class="footer-link-row" data-cursor="nav">
           <span>Terms</span>
-          <span class="footer-arrow">↗</span>
+          <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
         <a
           href="https://gelolaus.com"
@@ -27,7 +27,7 @@
           data-cursor="nav"
         >
           <span>Creator: gelolaus.com</span>
-          <span class="footer-arrow">↗</span>
+          <span class="footer-arrow" aria-hidden="true">↗</span>
         </a>
       </nav>
 

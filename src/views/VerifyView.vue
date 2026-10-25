@@ -33,7 +33,7 @@
           type="button"
           :disabled="isVerifying"
           :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-4 font-mono text-base font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+            'btn-gold w-full rounded-lg px-4 py-4 font-mono text-base font-semibold transition-all duration-200',
             isVerifying ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
           ]"
           @click="confirmVerification"

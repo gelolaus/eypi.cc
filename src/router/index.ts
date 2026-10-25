@@ -11,18 +11,20 @@ const { sessionUser } = useAuth()
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior() {
-    return { top: 0, behavior: 'smooth' }
+    const reduce = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    return { top: 0, behavior: reduce ? 'auto' : 'smooth' }
   },
   routes: [
-    { path: '/', name: 'home', component: HomeView },
-    { path: '/login', name: 'login', component: LoginView },
+    { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Log in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Dashboard' },
     },
 
     // ── Links module ─────────────────────────────────────────────────────────
@@ -30,7 +32,7 @@ const router = createRouter({
       path: '/links',
       name: 'links',
       component: () => import('@/views/links/LinksView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Links' },
     },
 
     // ── Forms module ─────────────────────────────────────────────────────────
@@ -43,21 +45,25 @@ const router = createRouter({
           path: '',
           name: 'forms',
           component: () => import('@/views/forms/FormsHomeView.vue'),
+          meta: { title: 'Forms' },
         },
         {
           path: 'concessionaire',
           name: 'forms-concessionaire',
           component: () => import('@/views/forms/generators/ConcessionaireView.vue'),
+          meta: { title: 'Concessionaire form' },
         },
         {
           path: 'visitors-pass',
           name: 'forms-visitors-pass',
           component: () => import('@/views/forms/generators/VisitorsPassView.vue'),
+          meta: { title: 'Visitors pass' },
         },
         {
           path: 'letter-of-intent',
           name: 'forms-letter-of-intent',
           component: () => import('@/views/forms/generators/LetterOfIntentView.vue'),
+          meta: { title: 'Letter of intent' },
         },
       ],
     },
@@ -73,16 +79,19 @@ const router = createRouter({
           path: '',
           name: 'dp-campaigns',
           component: () => import('@/views/dp/DpCampaignsView.vue'),
+          meta: { title: 'Frames' },
         },
         {
           path: 'new',
           name: 'dp-new',
           component: () => import('@/views/dp/DpNewCampaignView.vue'),
+          meta: { title: 'New frame' },
         },
         {
           path: ':slug/edit',
           name: 'dp-edit',
           component: () => import('@/views/dp/DpEditCampaignView.vue'),
+          meta: { title: 'Edit frame' },
         },
       ],
     },
@@ -91,6 +100,7 @@ const router = createRouter({
       path: '/frames/:slug',
       name: 'dp-public',
       component: () => import('@/views/dp/DpPublicView.vue'),
+      meta: { title: 'Frame' },
     },
 
     // ── Tix module (ticketing) ───────────────────────────────────────────────
@@ -105,21 +115,25 @@ const router = createRouter({
           path: '',
           name: 'events',
           component: () => import('@/views/tix/EventsView.vue'),
+          meta: { title: 'Tix' },
         },
         {
           path: 'new',
           name: 'event-new',
           component: () => import('@/views/tix/NewEventView.vue'),
+          meta: { title: 'New event' },
         },
         {
           path: ':id/select',
           name: 'event-select',
           component: () => import('@/views/tix/AttendeeSelectionView.vue'),
+          meta: { title: 'Attendee selection' },
         },
         {
           path: ':id',
           name: 'event-manage',
           component: () => import('@/views/tix/EventDetailView.vue'),
+          meta: { title: 'Event' },
         },
       ],
     },
@@ -128,6 +142,7 @@ const router = createRouter({
       path: '/tix/:eventId',
       name: 'ticket-lookup',
       component: () => import('@/views/tix/TicketLookupView.vue'),
+      meta: { title: 'Ticket lookup' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────
@@ -140,6 +155,7 @@ const router = createRouter({
         {
           path: '',
           name: 'orgs-modify-index',
+          meta: { title: 'Org settings' },
           redirect: () => {
             const activeOrgId = localStorage.getItem('active_org_id')
             if (activeOrgId) {
@@ -152,6 +168,7 @@ const router = createRouter({
           path: ':slug',
           name: 'orgs-modify',
           component: () => import('@/views/orgs/OrgModifyView.vue'),
+          meta: { title: 'Org settings' },
         },
       ],
     },
@@ -161,11 +178,13 @@ const router = createRouter({
       path: '/orgs',
       name: 'org-catalog',
       component: () => import('@/views/orgs/OrgCatalogView.vue'),
+      meta: { title: 'Orgs' },
     },
     {
       path: '/orgs/:slug',
       name: 'org-profile',
       component: () => import('@/views/orgs/OrgProfileView.vue'),
+      meta: { title: 'Organization' },
     },
 
     // ── Account & legal ──────────────────────────────────────────────────────
@@ -182,6 +201,7 @@ const router = createRouter({
           path: 'security',
           name: 'settings-security',
           component: () => import('@/views/SettingsView.vue'),
+          meta: { title: 'Settings' },
         },
         {
           path: 'organizations',
@@ -202,19 +222,19 @@ const router = createRouter({
           path: 'org-management',
           name: 'settings-org-management',
           component: () => import('@/views/settings/OrgManagementView.vue'),
-          meta: { requiresSuperAdmin: true },
+          meta: { requiresSuperAdmin: true, title: 'Org management' },
         },
         {
           path: 'org-management/new',
           name: 'settings-org-management-new',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true },
+          meta: { requiresSuperAdmin: true, title: 'New organization' },
         },
         {
           path: 'org-management/:orgId',
           name: 'settings-org-management-edit',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true },
+          meta: { requiresSuperAdmin: true, title: 'Edit organization' },
         },
       ],
     },
@@ -222,42 +242,50 @@ const router = createRouter({
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/views/PrivacyView.vue'),
+      meta: { title: 'Privacy' },
     },
     {
       path: '/terms',
       name: 'terms',
       component: () => import('@/views/TermsView.vue'),
+      meta: { title: 'Terms' },
     },
     {
       path: '/contact',
       name: 'contact',
       component: () => import('@/views/ContactView.vue'),
+      meta: { title: 'Contact' },
     },
     {
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('@/views/ResetPasswordView.vue'),
+      meta: { title: 'Reset password' },
     },
     {
       path: '/verify',
       name: 'verify',
       component: () => import('@/views/VerifyView.vue'),
+      meta: { title: 'Verify' },
     },
 
     {
       path: '/unlock/:slug',
       name: 'unlock',
       component: () => import('@/views/UnlockView.vue'),
+      meta: { title: 'Unlock' },
     },
     {
       path: '/expired',
       name: 'expired',
       component: () => import('@/views/ExpiredView.vue'),
+      meta: { title: 'Expired' },
     },
     {
       path: '/report',
       name: 'report',
       component: () => import('@/views/ReportView.vue'),
+      meta: { title: 'Report' },
     },
 
     // ── Link shortener redirect — MUST stay second-to-last ───────────────────
@@ -265,11 +293,13 @@ const router = createRouter({
       path: '/:slug',
       name: 'redirect',
       component: () => import('@/views/RedirectView.vue'),
+      meta: { title: 'Redirect' },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
+      meta: { title: 'Page not found' },
     },
   ],
 })
@@ -315,6 +345,24 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   next()
+})
+
+router.afterEach((to) => {
+  const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')
+  const page = typeof titled?.meta.title === 'string' ? titled.meta.title : 'Page'
+  const title = `${page} · eypi.cc`
+  document.title = title
+
+  let region = document.getElementById('route-announcer')
+  if (!region && document.body) {
+    region = document.createElement('div')
+    region.id = 'route-announcer'
+    region.setAttribute('role', 'status')
+    region.setAttribute('aria-live', 'polite')
+    region.setAttribute('aria-atomic', 'true')
+    document.body.appendChild(region)
+  }
+  if (region) region.textContent = title
 })
 
 router.onError((error, to) => {

@@ -114,7 +114,7 @@
             type="submit"
             :disabled="lookingUp"
             :class="[
-              'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100',
+              'btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
               lookingUp ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"

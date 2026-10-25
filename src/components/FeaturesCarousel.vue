@@ -67,7 +67,8 @@
             :ref="(el) => setCardRef(el as HTMLElement | null, displayIndex)"
             class="features-carousel__card mica-card"
             :class="{ 'features-carousel__card--active': activeIndex === slide.realIndex }"
-            :aria-hidden="activeIndex !== slide.realIndex"
+            :aria-hidden="activeIndex !== slide.realIndex || slide.isClone"
+            :inert="activeIndex !== slide.realIndex || slide.isClone"
             data-cursor="card"
             @click="onCardClick(displayIndex, $event)"
           >
@@ -104,8 +105,17 @@
           </article>
         </div>
 
-        <div class="features-carousel__indicator" aria-live="polite">
-          <span class="features-carousel__index text-data">
+        <div class="features-carousel__indicator">
+          <button
+            type="button"
+            class="features-carousel__pause tap-scale"
+            :aria-pressed="autoplayPaused || prefersReducedMotion ? 'true' : 'false'"
+            :aria-label="autoplayPaused || prefersReducedMotion ? 'Play features' : 'Pause features'"
+            @click="toggleAutoplay"
+          >
+            {{ autoplayPaused || prefersReducedMotion ? 'Play' : 'Pause' }}
+          </button>
+          <span class="features-carousel__index text-data" aria-live="polite">
             {{ String(activeIndex + 1).padStart(2, '0') }} / {{ String(features.length).padStart(2, '0') }}
           </span>
           <div class="features-carousel__segments" role="tablist" aria-label="Feature slides">
@@ -483,6 +493,12 @@ function pauseAutoplay() {
   autoplayPaused.value = true
 }
 
+function toggleAutoplay() {
+  if (prefersReducedMotion.value) return
+  autoplayPaused.value = !autoplayPaused.value
+  if (!autoplayPaused.value) startAutoplay()
+}
+
 function resumeAutoplay() {
   autoplayPaused.value = false
 }
@@ -577,8 +593,18 @@ onUnmounted(() => {
 .features-carousel__nav:hover {
   border-color: var(--color-accent);
   background: var(--color-accent);
-  color: #fff;
+  color: #1a1a2e;
   transform: translateY(-2px);
+}
+
+.features-carousel__pause {
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .features-carousel__track {
@@ -707,7 +733,7 @@ html.dark .features-carousel__icon {
 }
 
 .features-carousel:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 4px;
   border-radius: 0.5rem;
 }

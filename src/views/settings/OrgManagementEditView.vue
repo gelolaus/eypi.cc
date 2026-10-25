@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-          <button type="submit" :disabled="saving" class="btn-primary" data-cursor="cta">
+          <button type="submit" :disabled="saving" class="btn-primary btn-gold" data-cursor="cta">
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
           </button>
           <button
@@ -247,6 +247,6 @@ onMounted(loadOrg)
   @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 .btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+ @apply rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
 }
 </style>

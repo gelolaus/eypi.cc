@@ -90,7 +90,8 @@ function tagClass(type: ToastType) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return
+  if (e.key !== 'Escape' || e.defaultPrevented) return
+  if (document.querySelector('[aria-modal="true"]')) return
   const top = toasts.value[toasts.value.length - 1]
   if (top) dismiss(top.id)
 }

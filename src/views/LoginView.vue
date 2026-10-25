@@ -84,7 +84,7 @@
           type="submit"
           :disabled="isAuthenticating"
           :class="[
-            'w-full rounded-lg bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+            'btn-gold w-full rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200',
             isAuthenticating ? 'opacity-70 cursor-not-allowed' : 'hover:brightness-110',
           ]"
         >

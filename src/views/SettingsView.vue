@@ -71,7 +71,7 @@
           type="submit"
           :disabled="isSaving"
           :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:-translate-y-0.5 hover:opacity-90': !isSaving }"
-          class="mt-8 w-full rounded-xl bg-g-accent px-6 py-4 text-sm font-semibold text-white transition-all dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold mt-8 w-full rounded-xl px-6 py-4 text-sm font-semibold transition-all"
           data-cursor="cta"
         >
           {{ isSaving ? 'Saving...' : 'Update password' }}

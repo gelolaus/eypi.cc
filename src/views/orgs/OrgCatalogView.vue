@@ -12,7 +12,7 @@
       <div v-if="isAuthenticated && activeOrg" class="flex flex-wrap items-center gap-3">
         <router-link
           :to="`/orgs/modify/${activeOrg.org_id}`"
-          class="tap-scale inline-flex items-center gap-2 rounded-xl bg-[#DEAC4B] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold tap-scale inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-md transition-all hover:scale-105"
           data-cursor="cta"
         >
           Modify {{ activeOrg.org_name }}
@@ -37,7 +37,7 @@
           class="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           :class="
             selectedOrgType === option.value
-              ? 'border-g-accent bg-g-accent text-white dark:bg-eypi-gold-dark dark:text-slate-100'
+              ? 'btn-gold border-g-accent'
               : 'border-g-border bg-g-surface text-g-muted hover:border-g-accent/40 hover:text-g-text'
           "
           data-cursor="nav"
@@ -119,7 +119,7 @@
           </p>
           <span
             v-if="orgTypeLabel(org.orgType)"
-            class="mt-2 inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold mt-2 inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-semibold"
           >
             {{ orgTypeLabel(org.orgType) }}
           </span>
