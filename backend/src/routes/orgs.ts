@@ -305,6 +305,7 @@ app.get('/', async (c) => {
         FROM organizations o
         LEFT JOIN org_members m ON o.id = m.org_id
         WHERE o.owner_id = ? OR (m.user_id = ? AND m.activated_at IS NOT NULL)
+        ORDER BY o.name
       `,
       args: [userId, userId, userId],
     })

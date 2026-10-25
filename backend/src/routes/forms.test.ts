@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import type { Bindings } from '../lib/db'
 
 vi.mock('../middleware/orgGuard', () => ({
-  isOrgFeature: async (_c: unknown, next: () => Promise<void>) => {
+  isOrgFeature: async (c: { set: (key: string, value: string) => void }, next: () => Promise<void>) => {
+    c.set('orgId', 'org-test')
     await next()
   },
 }))

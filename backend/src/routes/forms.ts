@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { isOrgFeature } from '../middleware/orgGuard'
+import { noOrgBody } from '../middleware/orgContext'
 import type { Bindings } from '../lib/db'
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -36,10 +37,14 @@ const TEMPLATE_ALLOWLIST = new Set([
 ])
 
 app.get('/api/forms', isOrgFeature, (c) => {
-  return c.json({ status: 'ok', forms: FORM_CATALOG })
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
+  return c.json({ status: 'ok', orgId, forms: FORM_CATALOG })
 })
 
 app.get('/api/forms/templates/:filename', isOrgFeature, async (c) => {
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
   const filename = c.req.param('filename')
   if (!filename || !TEMPLATE_ALLOWLIST.has(filename)) {
     return c.json({ status: 'error', message: 'Template not found.' }, 404)

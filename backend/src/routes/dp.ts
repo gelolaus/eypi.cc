@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
-import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import { db, getUser, type Bindings } from '../lib/db'
 import type { Client } from '@libsql/client/web'
 import { isOrgFeature } from '../middleware/orgGuard'
+import { noOrgBody } from '../middleware/orgContext'
 
 // DP Blast — Twibbonize-style profile-frame campaigns. Mounted into the unified
 // eypi.cc Worker in index.ts; CORS, preflight, and security headers are applied
@@ -81,13 +82,12 @@ async function resolveSlug(
 }
 
 // Shared owner guard: returns the campaign row id or a typed failure.
-async function requireOwner(client: Client, id: string, userId: string, requestedOrgId?: string): Promise<{ ok: true } | { ok: false; status: 403 | 404; message: string }> {
+async function requireOwner(client: Client, id: string, orgId: string | undefined): Promise<{ ok: true } | { ok: false; status: 403 | 404; message: string }> {
   const existing = await client.execute({ sql: 'SELECT org_id FROM dp_campaigns WHERE id = ?', args: [id] })
   if (existing.rows.length === 0) return { ok: false, status: 404, message: 'Campaign not found.' }
   const campaignOrgId = existing.rows[0].org_id
-  
-  const userOrgId = await getUserOrgId(client, userId, requestedOrgId)
-  if (!userOrgId || campaignOrgId !== userOrgId) return { ok: false, status: 403, message: 'Forbidden.' }
+
+  if (!orgId || campaignOrgId !== orgId) return { ok: false, status: 403, message: 'Forbidden.' }
   return { ok: true }
 }
 
@@ -131,8 +131,8 @@ app.post('/api/dp', isOrgFeature, async (c) => {
   const id = crypto.randomUUID()
   // frame_image_url is a vestigial NOT NULL column from 0003; '' satisfies it
   // while frames now live in dp_frames.
-  const orgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
-  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
 
   await client.execute({
     sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -155,8 +155,8 @@ app.get('/api/dp', isOrgFeature, async (c) => {
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const client = db(c)
-  const orgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
-  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
 
   const result = await client.execute({
     sql: `SELECT c.id, c.title, c.slug, c.description, c.download_count, c.created_at,
@@ -192,7 +192,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
   if (camp.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
   const row = camp.rows[0]
 
-  const userOrgId = await getUserOrgId(client, user.sub!, c.req.header('X-Active-Org-Id'))
+  const userOrgId = c.var.orgId
   if (!userOrgId || row.org_id !== userOrgId) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
 
   const frames = await client.execute({ sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at', args: [row.id] })
@@ -217,7 +217,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
 
   const id = c.req.param('id')!
   const client = db(c)
-  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
+  const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as { imageData?: string; label?: string }
@@ -247,7 +247,7 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   const id = c.req.param('id')!
   const frameId = c.req.param('frameId')!
   const client = db(c)
-  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
+  const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const countRes = await client.execute({ sql: 'SELECT COUNT(*) AS cnt FROM dp_frames WHERE campaign_id = ?', args: [id] })
@@ -271,7 +271,7 @@ app.patch('/api/dp/:id/frames/order', isOrgFeature, async (c) => {
 
   const id = c.req.param('id')!
   const client = db(c)
-  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
+  const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as { orderedIds?: string[] }
@@ -306,7 +306,7 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
 
   const id = c.req.param('id')!
   const client = db(c)
-  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
+  const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as {
@@ -362,7 +362,7 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
 
   const id = c.req.param('id')!
   const client = db(c)
-  const owner = await requireOwner(client, id, user.sub!, c.req.header('X-Active-Org-Id'))
+  const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   await client.batch([

@@ -193,9 +193,9 @@ feat(db): add versioned migrations with a ledger and baseline
 - Consumes: `c.var.user` (from `requireAuth`; until WS2 it is `{ id: userId, email: userEmail }`).
 - Produces: `orgContext` sets `c.var.orgId: string`; responds 403 `org_not_accessible` when `X-Active-Org-Id` names an org the user can't access; 403 `no_org` when the user has none.
 
-- [ ] **Step 1: Failing tests** (`createTestApp` seeds user U in orgs A and B): header `B` → `orgId` B; header `C` (not a member) → 403 `org_not_accessible`; no header → first org by name; user with zero orgs → 403 `no_org`; pending (not activated) membership doesn't count.
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test`. Expected: PASS.
-- [ ] **Step 5: Commit** `fix(orgs): reject inaccessible active org headers instead of falling back`.
+- [x] **Step 1: Failing tests** (`createTestApp` seeds user U in orgs A and B): header `B` → `orgId` B; header `C` (not a member) → 403 `org_not_accessible`; no header → first org by name; user with zero orgs → 403 `no_org`; pending (not activated) membership doesn't count.
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement.** **Step 4: Run** `npm test`. Expected: PASS.
+- [x] **Step 5: Commit** `fix(orgs): reject inaccessible active org headers instead of falling back`.
 
 ### Task 1.4: Frontend API client, session store shell, and error recovery (F-PLAT-2, F-PLAT-3)
 

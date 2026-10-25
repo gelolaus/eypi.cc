@@ -17,24 +17,34 @@ export async function getUserOrgId(
   if (requestedOrgId) {
     const r = await client.execute({
       sql: `
-        SELECT id FROM (
-          SELECT id FROM organizations WHERE id = ? AND owner_id = ?
-          UNION
-          SELECT org_id AS id FROM org_members WHERE org_id = ? AND user_id = ? AND activated_at IS NOT NULL
-        ) LIMIT 1
+        SELECT o.id AS id
+        FROM organizations o
+        WHERE o.id = ?
+          AND (
+            o.owner_id = ?
+            OR EXISTS (
+              SELECT 1 FROM org_members m
+              WHERE m.org_id = o.id AND m.user_id = ? AND m.activated_at IS NOT NULL
+            )
+          )
+        LIMIT 1
       `,
-      args: [requestedOrgId, userId, requestedOrgId, userId],
+      args: [requestedOrgId, userId, userId],
     })
-    if (r.rows.length > 0) return r.rows[0].id as string
+    return r.rows.length > 0 ? r.rows[0].id as string : null
   }
 
   const r = await client.execute({
     sql: `
-      SELECT id FROM (
-        SELECT id FROM organizations WHERE owner_id = ?
-        UNION
-        SELECT org_id AS id FROM org_members WHERE user_id = ? AND activated_at IS NOT NULL
-      ) LIMIT 1
+      SELECT o.id AS id
+      FROM organizations o
+      WHERE o.owner_id = ?
+         OR EXISTS (
+           SELECT 1 FROM org_members m
+           WHERE m.org_id = o.id AND m.user_id = ? AND m.activated_at IS NOT NULL
+         )
+      ORDER BY o.name
+      LIMIT 1
     `,
     args: [userId, userId],
   })
