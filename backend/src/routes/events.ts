@@ -9,6 +9,20 @@ import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
 import { selectAttendees } from '../../../src/lib/tix/selection'
 import type { Client } from '@libsql/client/web'
 
+const SQL_IN_CHUNK = 200
+
+const ALREADY_FINALIZED = {
+  status: 'error' as const,
+  message: 'Event is already finalized.',
+  error: { code: 'already_finalized', message: 'Event is already finalized.' },
+}
+
+function inChunks<T>(items: readonly T[], size = SQL_IN_CHUNK): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size))
+  return chunks
+}
+
 // Latest check-in wins. A removed attendee does not occupy a cluster slot.
 const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
     FROM attendees a
@@ -289,45 +303,37 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
   if (!body.rows?.length) return c.json({ status: 'error', message: 'No rows provided.' }, 400)
   if (!body.columnMapping?.emailCol) return c.json({ status: 'error', message: 'columnMapping.emailCol is required.' }, 400)
 
-  // Delete unselected rows (safe for both pre- and post-finalization)
-  await client.execute({ sql: 'DELETE FROM event_csv_rows WHERE event_id = ? AND is_selected = 0', args: [event.id] })
-
-  // Upsert column mapping
-  const mappingId = crypto.randomUUID()
-  await client.execute({
-    sql: `INSERT INTO event_column_mappings (id, event_id, first_name_col, last_name_col, full_name_col, email_col, cluster_col, criteria_cols)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(event_id) DO UPDATE SET
-            first_name_col = excluded.first_name_col,
-            last_name_col  = excluded.last_name_col,
-            full_name_col  = excluded.full_name_col,
-            email_col      = excluded.email_col,
-            cluster_col    = excluded.cluster_col,
-            criteria_cols  = excluded.criteria_cols`,
-    args: [
-      mappingId, event.id as string,
-      body.columnMapping.firstNameCol ?? null,
-      body.columnMapping.lastNameCol ?? null,
-      body.columnMapping.fullNameCol ?? null,
-      body.columnMapping.emailCol,
-      body.columnMapping.clusterCol ?? null,
-      JSON.stringify(body.columnMapping.criteriaColumns ?? []),
-    ],
-  })
-
   // Pre-generate IDs so we can return them to the frontend
+  const mappingId = crypto.randomUUID()
   const rowEntries = body.rows.map((row, i) => ({ id: crypto.randomUUID(), rowIndex: i, row }))
 
-  const chunkSize = 100
-  for (let i = 0; i < rowEntries.length; i += chunkSize) {
-    const chunk = rowEntries.slice(i, i + chunkSize)
-    await client.batch(
-      chunk.map(entry => ({
-        sql: 'INSERT INTO event_csv_rows (id, event_id, row_index, raw_data) VALUES (?, ?, ?, ?)',
-        args: [entry.id, event.id as string, entry.rowIndex, JSON.stringify(entry.row)],
-      }))
-    )
-  }
+  await client.batch([
+    { sql: 'DELETE FROM event_csv_rows WHERE event_id = ? AND is_selected = 0', args: [event.id] },
+    {
+      sql: `INSERT INTO event_column_mappings (id, event_id, first_name_col, last_name_col, full_name_col, email_col, cluster_col, criteria_cols)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(event_id) DO UPDATE SET
+              first_name_col = excluded.first_name_col,
+              last_name_col  = excluded.last_name_col,
+              full_name_col  = excluded.full_name_col,
+              email_col      = excluded.email_col,
+              cluster_col    = excluded.cluster_col,
+              criteria_cols  = excluded.criteria_cols`,
+      args: [
+        mappingId, event.id as string,
+        body.columnMapping.firstNameCol ?? null,
+        body.columnMapping.lastNameCol ?? null,
+        body.columnMapping.fullNameCol ?? null,
+        body.columnMapping.emailCol,
+        body.columnMapping.clusterCol ?? null,
+        JSON.stringify(body.columnMapping.criteriaColumns ?? []),
+      ],
+    },
+    ...rowEntries.map(entry => ({
+      sql: 'INSERT INTO event_csv_rows (id, event_id, row_index, raw_data) VALUES (?, ?, ?, ?)',
+      args: [entry.id, event.id as string, entry.rowIndex, JSON.stringify(entry.row)],
+    })),
+  ], 'write')
 
   return c.json({ status: 'ok', rowCount: body.rows.length, rowIds: rowEntries.map(e => e.id) })
 })
@@ -439,8 +445,8 @@ app.post('/api/events/:slug/clusters', async (c) => {
 
   const totalMax = body.clusters.reduce((s, c) => s + (c.maxCount || 0), 0)
 
-  await client.execute({ sql: 'DELETE FROM event_clusters WHERE event_id = ?', args: [event.id] })
   await client.batch([
+    { sql: 'DELETE FROM event_clusters WHERE event_id = ?', args: [event.id] },
     ...body.clusters.map(cl => ({
       sql: 'INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count, filters) VALUES (?, ?, ?, ?, ?, ?)',
       args: [crypto.randomUUID(), event.id as string, body.clusterCol, cl.value, cl.maxCount, JSON.stringify(cl.filters ?? {})],
@@ -449,7 +455,7 @@ app.post('/api/events/:slug/clusters', async (c) => {
       sql: 'UPDATE events SET max_attendees = ? WHERE id = ?',
       args: [totalMax, event.id],
     },
-  ])
+  ], 'write')
 
   return c.json({ status: 'ok' })
 })
@@ -525,7 +531,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
-  if (event.selection_locked === 1) return c.json({ status: 'error', message: 'Event is already finalized.' }, 409)
+  if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {
     selectedRows: { rowId: string; clusterValue: string | null }[]
@@ -558,18 +564,22 @@ app.post('/api/events/:slug/finalize', async (c) => {
     m = mappingRes.rows[0] as unknown as typeof m
   }
 
-  // Validate all row IDs belong to this event
+  // Validate all row IDs belong to this event. Chunk the IN list under SQLite's variable limit.
   const rowIds = body.selectedRows.map(r => r.rowId)
-  const placeholders = rowIds.map(() => '?').join(',')
-  const rowsRes = await client.execute({
-    sql: `SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND id IN (${placeholders})`,
-    args: [event.id, ...rowIds],
-  })
-
-  const rowMap = new Map(rowsRes.rows.map(r => [r.id as string, JSON.parse(r.raw_data as string) as Record<string, string>]))
+  const rowMap = new Map<string, Record<string, string>>()
+  for (const chunk of inChunks(rowIds)) {
+    const placeholders = chunk.map(() => '?').join(',')
+    const rowsRes = await client.execute({
+      sql: `SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND id IN (${placeholders})`,
+      args: [event.id, ...chunk],
+    })
+    for (const row of rowsRes.rows) {
+      rowMap.set(row.id as string, JSON.parse(row.raw_data as string) as Record<string, string>)
+    }
+  }
 
   const seen = new Set<string>()
-  const attendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string; clusterValue: string | null }[] = []
+  const attendees: { id: string; csvRowId: string; qrToken: string; firstName: string; lastName: string; email: string; clusterValue: string | null }[] = []
 
   for (const sel of body.selectedRows) {
     const raw = rowMap.get(sel.rowId)
@@ -592,6 +602,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
 
     attendees.push({
       id:           crypto.randomUUID(),
+      csvRowId:     sel.rowId,
       qrToken:      crypto.randomUUID(),
       firstName,
       lastName,
@@ -602,32 +613,34 @@ app.post('/api/events/:slug/finalize', async (c) => {
 
   if (!attendees.length) return c.json({ status: 'error', message: 'No valid attendees could be derived from selected rows.' }, 400)
 
-  // Batch insert attendees
-  const chunkSize = 100
-  for (let i = 0; i < attendees.length; i += chunkSize) {
-    const chunk = attendees.slice(i, i + chunkSize)
-    await client.batch(
-      chunk.map(a => ({
-        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, a.clusterValue],
-      }))
-    )
-  }
-
-  // Mark rows as selected
-  for (let i = 0; i < rowIds.length; i += chunkSize) {
-    const chunk = rowIds.slice(i, i + chunkSize)
-    const ph = chunk.map(() => '?').join(',')
-    await client.execute({
-      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${ph})`,
-      args: [event.id, ...chunk],
-    })
-  }
-
-  await client.execute({
-    sql: 'UPDATE events SET selection_locked = 1, max_attendees = ? WHERE id = ?',
-    args: [body.maxAttendees ?? null, event.id],
+  const locked = await client.execute({
+    sql: 'UPDATE events SET selection_locked = 1 WHERE id = ? AND selection_locked = 0',
+    args: [event.id],
   })
+  if (Number(locked.rowsAffected) !== 1) return c.json(ALREADY_FINALIZED, 409)
+
+  try {
+    await client.batch([
+      ...attendees.map(a => ({
+        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, a.clusterValue, a.csvRowId],
+      })),
+      ...inChunks(rowIds).map(chunk => ({
+        sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${chunk.map(() => '?').join(',')})`,
+        args: [event.id, ...chunk],
+      })),
+      {
+        sql: 'UPDATE events SET max_attendees = ? WHERE id = ?',
+        args: [body.maxAttendees ?? null, event.id],
+      },
+    ], 'write')
+  } catch (error) {
+    await client.batch([
+      { sql: 'DELETE FROM attendees WHERE event_id = ?', args: [event.id] },
+      { sql: 'UPDATE events SET selection_locked = 0 WHERE id = ?', args: [event.id] },
+    ], 'write')
+    throw error
+  }
 
   return c.json({
     status: 'ok',
@@ -709,7 +722,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   if (!selected.length) return c.json({ status: 'error', message: 'No eligible unselected respondents remain for this cluster.' }, 404)
 
-  const newAttendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string }[] = []
+  const newAttendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string; csvRowId: string }[] = []
   const winnerIds: string[] = []
 
   for (const winner of selected) {
@@ -728,7 +741,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
       lastName  = parts.slice(1).join(' ')
     }
 
-    newAttendees.push({ id: crypto.randomUUID(), qrToken: crypto.randomUUID(), firstName, lastName, email: emailRaw })
+    newAttendees.push({ id: crypto.randomUUID(), qrToken: crypto.randomUUID(), firstName, lastName, email: emailRaw, csvRowId: winner.id })
     winnerIds.push(winner.id)
   }
 
@@ -736,18 +749,14 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   await client.batch([
     ...newAttendees.map(a => ({
-      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, clusterValue],
+      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, clusterValue, a.csvRowId],
     })),
-  ])
-
-  if (winnerIds.length) {
-    const ph = winnerIds.map(() => '?').join(',')
-    await client.execute({
-      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${ph})`,
-      args: [event.id, ...winnerIds],
-    })
-  }
+    ...inChunks(winnerIds).map(chunk => ({
+      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${chunk.map(() => '?').join(',')})`,
+      args: [event.id, ...chunk],
+    })),
+  ], 'write')
 
   return c.json({
     status: 'ok',
