@@ -263,7 +263,7 @@ feat(db): add versioned migrations with a ledger and baseline
   - `signOAuthCookie(secret, payload) / readOAuthCookie(secret, value)` (HMAC-SHA256, 10-min expiry, payload `{ state, nonce, verifier, returnTo }`)
   - `safeReturnTo(raw) → string` (must start with `/`, not `//`, no `\`; default `/dashboard`)
   - Routes `GET /api/auth/microsoft/start`, `GET /api/auth/microsoft/callback`; errors redirect to `${FRONTEND_ORIGIN}/login?error=<tenant|domain|state|cancelled|disabled|server>`
-- [ ] **Step 1: Failing tests** (sign test id_tokens with a local JWK set passed as `jwks`):
+- [x] **Step 1: Failing tests** (sign test id_tokens with a local JWK set passed as `jwks`):
   - `rejects a token from another tenant even with an @apc.edu.ph email` → `AuthError('tenant')`
   - `rejects an issuer that does not match the tid`
   - `rejects a wrong aud, wrong nonce, expired token`
@@ -272,8 +272,8 @@ feat(db): add versioned migrations with a ledger and baseline
   - `safeReturnTo('//evil.com')` → `/dashboard`
   - callback with mismatched state → 302 `…/login?error=state`
   - callback `?error=access_denied` → `…?error=cancelled`
-- [ ] **Step 2: Run.** Expected: FAIL. **Step 3: Implement** with `jose` (`createRemoteJWKSet('https://login.microsoftonline.com/common/discovery/v2.0/keys')` in prod) and PKCE S256 via WebCrypto. Rate limit `start` and `callback` 30/10 min/IP. **Step 4: Run.** Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth): add Microsoft sign-in pinned to the APC tenant`.
+- [x] **Step 2: Run.** Expected: FAIL. **Step 3: Implement** with `jose` (`createRemoteJWKSet('https://login.microsoftonline.com/common/discovery/v2.0/keys')` in prod) and PKCE S256 via WebCrypto. Rate limit `start` and `callback` 30/10 min/IP. **Step 4: Run.** Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth): add Microsoft sign-in pinned to the APC tenant`.
 
 ### Task 2.3: Identity resolution, sessions, and middleware
 
@@ -474,8 +474,8 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Copy:** unlock title "This link is password protected", button "Continue"; expired title "This link has expired"; report title "Report a link", success "Thanks. We'll review this link."
 
-- [ ] **Step 1–4:** failing tests (wrong password shows the inline error; success calls `location.replace(url)`; report validates reason; 6th report → 429) → implement → PASS.
-- [ ] **Step 5: Commit** `feat(links): add unlock, expired, and abuse report pages`.
+- [x] **Step 1–4:** failing tests (wrong password shows the inline error; success calls `location.replace(url)`; report validates reason; 6th report → 429) → implement → PASS.
+- [x] **Step 5: Commit** `feat(links): add unlock, expired, and abuse report pages`.
 
 ### Task 4.7: Optional Safe Browsing check
 
@@ -513,7 +513,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Interfaces:** `selectAttendees(rows: Row[], opts: { mapping, clusters: { value, maxCount, filters }[], globalFilters, guaranteed: string[], seed: string }) → { selected: Row[], byCluster: Record<string, number> }` (dedupe by lowercased email before quotas; deterministic for a seed).
 
-- [ ] Failing tests: duplicate emails count once; filters exclude ineligible rows; guaranteed rows are kept within quota; same seed → same result; the server re-raffle count excludes removed attendees consistently with GET clusters. Implement → PASS. Commit `fix(tix): persist raffle criteria and extract a tested selection module`.
+- [x] Failing tests: duplicate emails count once; filters exclude ineligible rows; guaranteed rows are kept within quota; same seed → same result; the server re-raffle count excludes removed attendees consistently with GET clusters. Implement → PASS. Commit `fix(tix): persist raffle criteria and extract a tested selection module`.
 
 ### Task 5.3: Lookup and pass rate limits, pass data allowlist (F-TIX-3, F-TIX-10, F-TIX-17)
 
