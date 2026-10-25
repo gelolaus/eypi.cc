@@ -26,6 +26,7 @@ export type TestUser = {
 export type CreateTestAppOptions = {
   user?: TestUser
   seed?: (client: Client) => Promise<void>
+  env?: Partial<Bindings>
 }
 
 type StoredObject = {
@@ -115,7 +116,7 @@ export async function applyMigrations(client: Client, names?: readonly string[])
   }
 }
 
-function testEnv(): Bindings & { MEDIA: ReturnType<typeof memoryR2> } {
+function testEnv(overrides: Partial<Bindings> = {}): Bindings & { MEDIA: ReturnType<typeof memoryR2> } {
   return {
     TURSO_DATABASE_URL: ':memory:',
     TURSO_AUTH_TOKEN: 'test-token',
@@ -126,6 +127,7 @@ function testEnv(): Bindings & { MEDIA: ReturnType<typeof memoryR2> } {
     LINKS_KV: memoryKv(),
     ASSETS: { fetch: async () => new Response(null, { status: 404 }) } as unknown as Bindings['ASSETS'],
     MEDIA: memoryR2(),
+    ...overrides,
   }
 }
 
@@ -134,7 +136,7 @@ export async function createTestApp(opts: CreateTestAppOptions = {}) {
   await applyMigrations(client)
   if (opts.seed) await opts.seed(client)
 
-  const env = testEnv()
+  const env = testEnv(opts.env)
   const app = new Hono<{
     Bindings: Bindings
     Variables: { db?: RequestClient; user?: TestUser; userId?: string; userEmail?: string }

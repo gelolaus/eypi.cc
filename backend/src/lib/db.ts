@@ -61,6 +61,8 @@ export type Bindings = {
   RESEND_API_KEY: string
   RATE_LIMIT_KV: KVNamespace
   LINKS_KV: KVNamespace
+  /** HMAC key for IP hashing. Reports store the hash, never the raw IP. */
+  IP_HASH_SECRET?: string
   ASSETS: Fetcher
   // Apple Wallet (.pkpass)
   APPLE_PASS_TYPE_ID?: string

@@ -245,6 +245,22 @@ const router = createRouter({
       component: () => import('@/views/VerifyView.vue'),
     },
 
+    {
+      path: '/unlock/:slug',
+      name: 'unlock',
+      component: () => import('@/views/UnlockView.vue'),
+    },
+    {
+      path: '/expired',
+      name: 'expired',
+      component: () => import('@/views/ExpiredView.vue'),
+    },
+    {
+      path: '/report',
+      name: 'report',
+      component: () => import('@/views/ReportView.vue'),
+    },
+
     // ── Link shortener redirect — MUST stay second-to-last ───────────────────
     {
       path: '/:slug',

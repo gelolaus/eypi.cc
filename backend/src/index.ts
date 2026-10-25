@@ -6,6 +6,7 @@ import { missingRequiredEnv, requiredEnvError } from './lib/env'
 import { reportError } from './lib/reportError'
 import authRoutes from './routes/auth'
 import linkRoutes from './routes/links'
+import reportRoutes from './routes/reports'
 import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
 import orgsRoutes from './routes/orgs'
@@ -64,6 +65,7 @@ app.get('/api/health', async (c) => {
 // Mount feature routers. Each declares its own full /api/... paths.
 app.route('/', authRoutes)
 app.route('/', linkRoutes)
+app.route('/', reportRoutes)
 app.route('/', eventRoutes)
 app.route('/', dpRoutes)
 app.route('/api/orgs', orgsRoutes)
