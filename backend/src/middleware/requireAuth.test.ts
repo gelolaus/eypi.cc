@@ -65,4 +65,38 @@ describe('requireAuth', () => {
 
     expect(next).not.toHaveBeenCalled()
   })
+
+  it('rejects a token whose payload has typ', async () => {
+    const token = await sign(
+      { sub: 'attendee-1', email: 'guest@example.com', exp: Math.floor(Date.now() / 1000) + 3600, typ: 'pass' },
+      JWT_SECRET,
+    )
+    const c = makeContext({ Authorization: `Bearer ${token}` })
+    const next = vi.fn(async () => {})
+
+    const result = await requireAuth(c as never, next)
+
+    expect(next).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      body: { error: 'Unauthorized', message: 'Missing or invalid token' },
+      status: 401,
+    })
+  })
+
+  it('rejects a token without email', async () => {
+    const token = await sign(
+      { sub: 'user-1', exp: Math.floor(Date.now() / 1000) + 3600 },
+      JWT_SECRET,
+    )
+    const c = makeContext({ Authorization: `Bearer ${token}` })
+    const next = vi.fn(async () => {})
+
+    const result = await requireAuth(c as never, next)
+
+    expect(next).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      body: { error: 'Unauthorized', message: 'Missing or invalid token' },
+      status: 401,
+    })
+  })
 })

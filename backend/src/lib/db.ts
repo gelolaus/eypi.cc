@@ -40,6 +40,7 @@ export type Bindings = {
   TURSO_DATABASE_URL: string
   TURSO_AUTH_TOKEN: string
   JWT_SECRET: string
+  PASS_TOKEN_SECRET: string
   RESEND_API_KEY: string
   RATE_LIMIT_KV: KVNamespace
   LINKS_KV: KVNamespace
@@ -77,9 +78,10 @@ export async function getUser(
   const auth = c.req.header('Authorization')
   if (!auth?.startsWith('Bearer ')) return null
   try {
-    const payload = await verify(auth.slice(7), c.env.JWT_SECRET, 'HS256') as JWTPayload
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null
-    return payload
+    const payload = await verify(auth.slice(7), c.env.JWT_SECRET, 'HS256') as Record<string, unknown>
+    if (payload.typ !== undefined || typeof payload.email !== 'string') return null
+    if (typeof payload.exp === 'number' && Date.now() / 1000 > payload.exp) return null
+    return payload as JWTPayload
   } catch {
     return null
   }

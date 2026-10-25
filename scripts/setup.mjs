@@ -40,9 +40,10 @@ if (!existsSync(devVarsPath)) {
     readFileSync(examplePath, 'utf8'),
     null,
     randomBytes(32).toString('base64url'),
+    randomBytes(32).toString('base64url'),
   )
   writeFileSync(devVarsPath, seeded.text, 'utf8')
-  console.log('Created backend/.dev.vars from the example (JWT_SECRET filled). Fill the remaining keys.')
+  console.log('Created backend/.dev.vars from the example (JWT_SECRET and PASS_TOKEN_SECRET filled). Fill the remaining keys.')
 } else {
   console.log('backend/.dev.vars already exists — left unchanged.')
 }

@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
-import { sign } from 'hono/jwt'
 import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
 import { buildApplePass } from '../lib/passes/applePass'
-import { PASS_TOKEN_TTL_SEC, loadPassContext, verifyPassToken } from '../lib/passes/context'
+import { loadPassContext, signPassToken, verifyPassToken } from '../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
 import type { Client } from '@libsql/client/web'
 
@@ -961,14 +961,16 @@ app.post('/api/events/:slug/lookup', async (c) => {
   }
 
   const a = aRes.rows[0]
-  const exp = Math.floor(Date.now() / 1000) + PASS_TOKEN_TTL_SEC
-  const passToken = await sign({
-    typ: 'pass',
-    sub: a.id as string,
+  const missingEnv = missingRequiredEnv(c.env)
+  if (missingEnv.includes('PASS_TOKEN_SECRET')) {
+    console.error(requiredEnvError(missingEnv))
+    return c.json({ status: 'error', message: 'Server misconfigured: add PASS_TOKEN_SECRET to backend/.dev.vars.' }, 503)
+  }
+  const passToken = await signPassToken(c.env, {
+    attendeeId: a.id as string,
     eventId: event.id as string,
     slug,
-    exp,
-  }, c.env.JWT_SECRET)
+  })
 
   return c.json({
     status: 'ok',

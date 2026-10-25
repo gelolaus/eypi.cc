@@ -18,6 +18,10 @@ TURSO_AUTH_TOKEN=your-turso-database-token
 # REQUIRED — login and auth routes fail without this (use the same value as the Cloudflare Worker secret)
 JWT_SECRET=your-local-only-jwt-secret-min-32-chars
 
+# REQUIRED — wallet pass tokens. Keep this different from JWT_SECRET.
+# setup fills a fresh value when it creates backend/.dev.vars.
+PASS_TOKEN_SECRET=your-local-only-pass-token-secret-min-32-chars
+
 RESEND_API_KEY=your-resend-api-key
 
 # Verification email links (defaults to https://eypi.cc when unset in production)

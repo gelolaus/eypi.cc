@@ -1,4 +1,4 @@
-import { verify } from 'hono/jwt'
+import { sign, verify } from 'hono/jwt'
 import type { Client } from '@libsql/client/web'
 import type { Bindings } from '../db'
 
@@ -40,13 +40,33 @@ export function buildBackFields(customFields: Record<string, string>): BackField
     .map(([label, value]) => ({ label, value: value.trim() }))
 }
 
+export async function signPassToken(
+  env: Bindings,
+  claims: { attendeeId: string; eventId: string; slug: string },
+): Promise<string> {
+  const secret = env.PASS_TOKEN_SECRET?.trim()
+  if (!secret) {
+    throw new Error('PASS_TOKEN_SECRET is not configured')
+  }
+  const exp = Math.floor(Date.now() / 1000) + PASS_TOKEN_TTL_SEC
+  return sign({
+    typ: 'pass',
+    sub: claims.attendeeId,
+    eventId: claims.eventId,
+    slug: claims.slug,
+    exp,
+  }, secret)
+}
+
 export async function verifyPassToken(
   env: Bindings,
   token: string,
   slug: string,
 ): Promise<PassTokenPayload | null> {
+  const secret = env.PASS_TOKEN_SECRET?.trim()
+  if (!secret) return null
   try {
-    const payload = await verify(token, env.JWT_SECRET, 'HS256') as Partial<PassTokenPayload>
+    const payload = await verify(token, secret, 'HS256') as Partial<PassTokenPayload>
     if (payload.typ !== 'pass' || !payload.sub || !payload.eventId || !payload.slug) return null
     if (payload.slug !== slug) return null
     if (payload.exp && Date.now() / 1000 > payload.exp) return null

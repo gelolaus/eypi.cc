@@ -98,13 +98,13 @@ eslint.config.js, .github/workflows/ci.yml
 - Test: `backend/src/middleware/requireAuth.test.ts`, `backend/src/lib/passes/context.test.ts` (new)
 
 **Interfaces:**
-- Produces: env `PASS_TOKEN_SECRET` (required); `signPassToken(env, { attendeeId, slug }): Promise<string>` and `verifyPassToken(env, token, slug)` both use `PASS_TOKEN_SECRET`.
+- Produces: env `PASS_TOKEN_SECRET` (required); `signPassToken(env, { attendeeId, eventId, slug }): Promise<string>` and `verifyPassToken(env, token, slug)` both use `PASS_TOKEN_SECRET`.
 
-- [ ] **Step 1: Write failing tests.** `requireAuth.test.ts`: `it('rejects a token whose payload has typ')`: a JWT `{sub,email,exp,typ:'pass'}` signed with `JWT_SECRET` → 401. `it('rejects a token without email')` → 401. `context.test.ts`: `it('rejects a pass token signed with JWT_SECRET')`, `it('accepts a pass token signed with PASS_TOKEN_SECRET for the matching slug')`, `it('rejects a pass token for another slug')`.
-- [ ] **Step 2: Run** `npx vitest run backend/src/middleware/requireAuth.test.ts backend/src/lib/passes/context.test.ts`. Expected: the new cases FAIL.
-- [ ] **Step 3: Implement.** In `getUser`, return `null` when `payload.typ !== undefined` or `typeof payload.email !== 'string'`. Sign and verify pass tokens with `PASS_TOKEN_SECRET`. Add `PASS_TOKEN_SECRET` to required env (doctor, `.dev.vars.example`, setup seeding).
-- [ ] **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Write failing tests.** `requireAuth.test.ts`: `it('rejects a token whose payload has typ')`: a JWT `{sub,email,exp,typ:'pass'}` signed with `JWT_SECRET` → 401. `it('rejects a token without email')` → 401. `context.test.ts`: `it('rejects a pass token signed with JWT_SECRET')`, `it('accepts a pass token signed with PASS_TOKEN_SECRET for the matching slug')`, `it('rejects a pass token for another slug')`.
+- [x] **Step 2: Run** `npx vitest run backend/src/middleware/requireAuth.test.ts backend/src/lib/passes/context.test.ts`. Expected: the new cases FAIL.
+- [x] **Step 3: Implement.** In `getUser`, return `null` when `payload.typ !== undefined` or `typeof payload.email !== 'string'`. Sign and verify pass tokens with `PASS_TOKEN_SECRET`. Add `PASS_TOKEN_SECRET` to required env (doctor, `.dev.vars.example`, setup seeding).
+- [x] **Step 4: Run** `npm test && npm run typecheck`. Expected: PASS.
+- [x] **Step 5: Commit**
 
 ```
 fix(auth): reject wallet pass tokens as session tokens

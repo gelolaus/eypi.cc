@@ -1,4 +1,4 @@
-export const REQUIRED_KEYS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'JWT_SECRET']
+export const REQUIRED_KEYS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'JWT_SECRET', 'PASS_TOKEN_SECRET']
 
 export const OPTIONAL_KEYS = [
   { key: 'RESEND_API_KEY', feature: 'verification emails' },
@@ -51,10 +51,13 @@ export function checkDevVars(values, example) {
   return { requiredUnset, optionalUnset }
 }
 
-export function seedDevVars(exampleText, existingText, newSecret) {
+export function seedDevVars(exampleText, existingText, newSecret, passTokenSecret) {
   if (existingText !== null) {
     return { text: existingText, changed: false }
   }
-  const text = exampleText.replace(/^[ \t]*JWT_SECRET[ \t]*=.*$/m, `JWT_SECRET=${newSecret}`)
+  let text = exampleText.replace(/^[ \t]*JWT_SECRET[ \t]*=.*$/m, `JWT_SECRET=${newSecret}`)
+  if (passTokenSecret != null) {
+    text = text.replace(/^[ \t]*PASS_TOKEN_SECRET[ \t]*=.*$/m, `PASS_TOKEN_SECRET=${passTokenSecret}`)
+  }
   return { text, changed: true }
 }
