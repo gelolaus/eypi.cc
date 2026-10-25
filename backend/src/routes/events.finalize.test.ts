@@ -12,6 +12,7 @@ const lead: TestUser = {
 const headers = {
   'Content-Type': 'application/json',
   'X-Active-Org-Id': 'org-1',
+  Origin: 'https://eypi.cc',
 }
 
 type CsvSeed = { id: string; email: string; first: string; last: string }
