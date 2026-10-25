@@ -84,6 +84,18 @@ import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
+interface AdminOrgRow {
+  org_id: string
+  org_name: string
+  owner_email: string
+  is_public_catalog: number
+}
+
+interface AdminOrgResponse {
+  error?: string
+  org?: AdminOrgRow
+}
+
 const route = useRoute()
 const router = useRouter()
 const { authHeaders } = useAuth()
@@ -109,13 +121,13 @@ async function loadOrg() {
   const orgId = route.params.orgId as string
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${orgId}`, { headers: authHeaders() })
-    const data = await res.json()
+    const data = await res.json() as AdminOrgResponse
     if (!res.ok) throw new Error(data.error || 'Failed to load org.')
     form.value = {
-      id: data.org.org_id,
-      name: data.org.org_name,
-      ownerEmail: data.org.owner_email,
-      isPublicCatalog: Number(data.org.is_public_catalog) === 1,
+      id: data.org!.org_id,
+      name: data.org!.org_name,
+      ownerEmail: data.org!.owner_email,
+      isPublicCatalog: Number(data.org!.is_public_catalog) === 1,
     }
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Failed to load org.')
@@ -136,7 +148,7 @@ async function save() {
           ownerEmail: form.value.ownerEmail.toLowerCase().trim(),
         }),
       })
-      const data = await res.json()
+      const data = await res.json() as AdminOrgResponse
       if (!res.ok) throw new Error(data.error || 'Create failed.')
       toast.success('Org created.')
       router.push({ name: 'settings-org-management-edit', params: { orgId: form.value.id.toLowerCase().trim() } })
@@ -155,7 +167,7 @@ async function save() {
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await res.json() as AdminOrgResponse
       if (!res.ok) throw new Error(data.error || 'Save failed.')
       toast.success('Org updated.')
       if (data.org?.org_id && data.org.org_id !== orgId) {
@@ -184,7 +196,7 @@ async function deleteOrg() {
       method: 'DELETE',
       headers: authHeaders(),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Delete failed.')
     toast.success('Org deleted.')
     router.push('/settings/org-management')
@@ -216,7 +228,7 @@ async function executeTransfer() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Transfer failed.')
     toast.success('Ownership transferred.')
     await loadOrg()

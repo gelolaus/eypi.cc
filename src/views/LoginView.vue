@@ -162,7 +162,7 @@ const handleLogin = async () => {
       body: JSON.stringify({ email: email.value, password: password.value }),
     })
 
-    const data = await response.json()
+    const data = await response.json() as { message?: string; token: string }
 
     if (!response.ok) {
       throw new Error(data.message || 'Authentication failed')
@@ -211,7 +211,7 @@ const handleRegister = async () => {
       body: JSON.stringify({ email: email.value, password: password.value, name: name.value.trim() || undefined }),
     })
 
-    const data = await response.json()
+    const data = await response.json() as { message?: string }
 
     if (!response.ok) {
       throw new Error(data.message || 'Registration failed')

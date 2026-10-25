@@ -3,9 +3,10 @@
  * Sets VITE_API_BASE_URL for the frontend only — production default is unchanged.
  */
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { parseEnvFile, checkDevVars } from './lib/envFile.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const backendDir = path.join(root, 'backend')
@@ -45,6 +46,22 @@ function shutdown(code = 0) {
 
 process.on('SIGINT', () => shutdown(0))
 process.on('SIGTERM', () => shutdown(0))
+
+function loadEnvFile(filePath) {
+  if (!existsSync(filePath)) return {}
+  return parseEnvFile(readFileSync(filePath, 'utf8'))
+}
+
+const { requiredUnset } = checkDevVars(
+  loadEnvFile(path.join(backendDir, '.dev.vars')),
+  loadEnvFile(path.join(backendDir, '.dev.vars.example')),
+)
+if (requiredUnset.length > 0) {
+  console.error(`[dev:local] Missing in backend/.dev.vars: ${requiredUnset.join(', ')}`)
+  console.error('[dev:local] Run npm run setup')
+  process.exit(1)
+}
+console.log('[dev:local] Using the production Turso database (see CONTEXT.md).')
 
 const wranglerBin = requireBin(backendDir, 'wrangler', 'wrangler.js')
 const viteBin = requireBin(root, 'vite', 'vite.js')

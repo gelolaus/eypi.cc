@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { db, getUser } from '../lib/db'
 import type { Bindings } from '../lib/db'
-import type { Client } from '@libsql/client/web'
+import type { Client, InStatement, InValue } from '@libsql/client/web'
 import { SUPER_ADMIN_EMAIL } from '../../../shared/admin'
 
 type Variables = {
@@ -549,6 +549,7 @@ app.patch('/admin/:org_id', async (c) => {
 
   const database = db(c.env)
   const orgId = c.req.param('org_id')
+  if (!orgId) return c.json({ error: 'Organization not found.' }, 404)
 
   let body
   try {
@@ -607,7 +608,7 @@ app.patch('/admin/:org_id', async (c) => {
       newOrgId = data.id
     }
 
-    const statements: { sql: string; args: unknown[] }[] = []
+    const statements: InStatement[] = []
 
     if (newOrgId !== orgId) {
       statements.push(
@@ -618,7 +619,7 @@ app.patch('/admin/:org_id', async (c) => {
     }
 
     const updates: string[] = []
-    const updateArgs: unknown[] = []
+    const updateArgs: InValue[] = []
 
     if (newOrgId !== orgId) {
       updates.push('id = ?')
@@ -760,6 +761,7 @@ app.patch('/:org_id/profile', async (c) => {
   const database = db(c.env)
   const userId = c.var.userId
   const orgId = c.req.param('org_id')
+  if (!orgId) return c.json({ error: 'Organization not found.' }, 404)
 
   const access = await requireOrgCoordinator(database, orgId, userId)
   if (!access.ok) return c.json({ error: access.message }, access.status)
@@ -778,7 +780,7 @@ app.patch('/:org_id/profile', async (c) => {
 
   const data = validation.data
   const updates: string[] = []
-  const args: unknown[] = []
+  const args: InValue[] = []
 
   if (data.isPublicCatalog !== undefined) {
     updates.push('is_public_catalog = ?')

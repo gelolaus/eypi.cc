@@ -673,7 +673,7 @@ async function handleShorten() {
       },
       body: JSON.stringify({ original_url: urlToProcess }),
     })
-    const data = await res.json()
+    const data = await res.json() as { status?: string; error?: string; link?: Link }
 
     if (res.status === 401) {
       toast.error('Session expired. Please log in again.')
@@ -807,7 +807,7 @@ async function executeDelete(link: Link): Promise<void> {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     })
-    const data = await res.json()
+    const data = await res.json() as { status?: string; error?: string }
     if (res.ok && data.status === 'success') {
       links.value = links.value.filter((l) => l.id !== linkId)
       toast.success('Link deleted')

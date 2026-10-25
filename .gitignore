@@ -15,6 +15,9 @@ dist-ssr
 # Claude Code
 .claude
 
+# TypeScript incremental build info (rewritten by vue-tsc)
+*.tsbuildinfo
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

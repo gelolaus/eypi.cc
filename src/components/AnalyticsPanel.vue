@@ -202,14 +202,16 @@ defineEmits<{
   close: []
 }>()
 
-const isLoading = ref(false)
-const analyticsData = ref<{
+interface AnalyticsPayload {
   os: { os: string; count: number }[]
   country: { country: string; count: number }[]
   referrer: { referrer: string; count: number }[]
   timeline: { date: string; count: number }[]
   peakEngagement?: { peakDay: string; peakHour: string; count: number } | null
-} | null>(null)
+}
+
+const isLoading = ref(false)
+const analyticsData = ref<AnalyticsPayload | null>(null)
 
 /** Generate last 30 days as YYYY-MM-DD strings */
 function getLast30Dates(): string[] {
@@ -454,7 +456,7 @@ watch(
         isLoading.value = false
         return
       }
-      const data = await res.json()
+      const data = await res.json() as AnalyticsPayload
       analyticsData.value = data
     } catch {
       analyticsData.value = null

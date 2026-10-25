@@ -212,6 +212,7 @@ import {
   orgInitials,
   type PublicOrgProfile,
   type PublicOrgEvent,
+  type PublicOrgProfileResponse,
   type OrgSocialLinks,
 } from '@/types/orgs'
 import { orgTypeLabel } from '@/constants/orgTypes'
@@ -283,7 +284,7 @@ function loadPreviewDraft(slug: string): PublicOrgProfile | null {
 async function fetchEvents(slug: string) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
-    const data = await res.json()
+    const data = await res.json() as PublicOrgProfileResponse
     if (res.ok) {
       events.value = data.events ?? { upcoming: [], past: [] }
     }
@@ -310,7 +311,7 @@ async function fetchProfile(slug: string) {
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/public/${encodeURIComponent(slug)}`)
-    const data = await res.json()
+    const data = await res.json() as PublicOrgProfileResponse & { error?: string }
     if (!res.ok) throw new Error(data.error || 'Organization not found.')
     profile.value = data.org
     events.value = data.events ?? { upcoming: [], past: [] }

@@ -126,7 +126,7 @@ const handleUpdatePassword = async () => {
       }),
     })
 
-    const data = await response.json()
+    const data = await response.json() as { error?: string; message?: string }
 
     if (!response.ok) {
       toast.error(data.error || data.message || 'Failed to update password.')

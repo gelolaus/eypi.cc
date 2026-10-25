@@ -180,7 +180,7 @@ onMounted(async () => {
 
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/public`)
-    const data = await res.json()
+    const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
     orgs.value = data.orgs ?? []
   } catch (err) {

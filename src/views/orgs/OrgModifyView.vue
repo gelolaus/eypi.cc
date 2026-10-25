@@ -350,7 +350,7 @@ async function loadOrgContext() {
   profileForm.value = null
   try {
     const listRes = await fetch(`${API_BASE_URL}/api/orgs`, { headers: authHeaders() })
-    const listData = await listRes.json()
+    const listData = await listRes.json() as { error?: string; orgs?: OrgListItem[] }
     if (!listRes.ok) throw new Error(listData.error || 'Failed to load org.')
 
     userOrgs.value = listData.orgs ?? []
@@ -372,7 +372,7 @@ async function loadOrgContext() {
     setActiveOrg(match)
 
     const profileRes = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/profile`, { headers: authHeaders() })
-    const profileData = await profileRes.json()
+    const profileData = await profileRes.json() as { error?: string; profile: OrgProfileSettings }
     if (!profileRes.ok) throw new Error(profileData.error || 'Failed to load profile.')
     profileForm.value = mapProfileToForm(profileData.profile)
 
@@ -388,7 +388,7 @@ async function fetchMembers() {
   loadingMembers.value = true
   try {
     const res = await fetch(`${API_BASE_URL}/api/orgs/${slug.value}/members`, { headers: authHeaders() })
-    const data = await res.json()
+    const data = await res.json() as { members?: OrgMember[] }
     if (res.ok) members.value = data.members ?? []
   } catch {
     toast.error('Failed to load members.')
@@ -435,7 +435,7 @@ async function togglePublicCatalog() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ isPublicCatalog: next }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string; profile: OrgProfileSettings }
     if (!res.ok) throw new Error(data.error || 'Update failed.')
     profileForm.value.isPublicCatalog = data.profile.isPublicCatalog
     toast.success(next ? 'Listed in /orgs directory.' : 'Removed from directory.')
@@ -478,7 +478,7 @@ async function saveProfile() {
         socialLinks: socialHandlesToUrls(profileForm.value.socialHandles),
       }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string; profile: OrgProfileSettings }
     if (!res.ok) throw new Error(data.error || 'Save failed.')
     profileForm.value = mapProfileToForm(data.profile)
     toast.success('Profile saved.')
@@ -497,7 +497,7 @@ async function sendInvite() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail.value.toLowerCase().trim() }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Invite failed.')
     toast.success('Invitation sent.')
     inviteEmail.value = ''
@@ -522,7 +522,7 @@ async function removeMember(email: string) {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Remove failed.')
     await fetchMembers()
   } catch (err) {
@@ -551,7 +551,7 @@ async function executeTransfer() {
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Transfer failed.')
     toast.success('Ownership transferred.')
     router.push('/orgs/modify')
@@ -577,7 +577,7 @@ async function leaveOrg() {
       method: 'POST',
       headers: authHeaders(),
     })
-    const data = await res.json()
+    const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Could not leave org.')
     toast.success('You left the org.')
     router.push('/orgs/modify')

@@ -41,7 +41,7 @@ app.get('/api/forms', isOrgFeature, (c) => {
 
 app.get('/api/forms/templates/:filename', isOrgFeature, async (c) => {
   const filename = c.req.param('filename')
-  if (!TEMPLATE_ALLOWLIST.has(filename)) {
+  if (!filename || !TEMPLATE_ALLOWLIST.has(filename)) {
     return c.json({ status: 'error', message: 'Template not found.' }, 404)
   }
 
