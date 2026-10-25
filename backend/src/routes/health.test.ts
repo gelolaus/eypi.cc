@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { createTestApp } from '../test/createTestApp'
+import { createTestApp, migrationsDir } from '../test/createTestApp'
+
+describe('createTestApp migrations', () => {
+  it('resolves the migrations directory to backend/migrations', () => {
+    expect(
+      migrationsDir.endsWith('backend/migrations') || migrationsDir.endsWith('backend\\migrations'),
+    ).toBe(true)
+  })
+})
 
 describe('GET /api/health', () => {
   it('returns ok when the database ping succeeds', async () => {

@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Hono } from 'hono'
 import { sign } from 'hono/jwt'
@@ -8,7 +8,13 @@ import type { Client as RequestClient } from '@libsql/client/web'
 import api from '../index'
 import type { Bindings } from '../lib/db'
 
-const migrationsDir = join(fileURLToPath(import.meta.url), '..', '..', 'migrations')
+export const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'migrations')
+
+function assertMigrationsDir(dir: string): void {
+  if (!dir.endsWith('backend/migrations') && !dir.endsWith('backend\\migrations')) {
+    throw new Error(`createTestApp migrations path must end with backend/migrations, got ${dir}`)
+  }
+}
 
 export type TestUser = {
   id: string
@@ -91,6 +97,7 @@ function memoryR2() {
 }
 
 async function applyMigrations(client: Client): Promise<void> {
+  assertMigrationsDir(migrationsDir)
   let names: string[]
   try {
     names = (await readdir(migrationsDir)).filter((name) => name.endsWith('.sql')).sort()
