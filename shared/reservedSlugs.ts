@@ -6,6 +6,9 @@ export const RESERVED_SLUGS = [
   'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
   // Defensive / legacy
   'home', 'api', 'dp', 'event', 'events',
+  // Planned suite routes and static prefixes
+  'admin', 'account', 'assets', 'auth', 'logout', 'signup', 'help', 'about',
+  'qr', 'static', 'invites', 'report', 'unlock', 'expired', 'media', 'p',
 ] as const
 
 export const RESERVED_SLUG_SET = new Set(RESERVED_SLUGS.map((s) => s.toLowerCase()))
