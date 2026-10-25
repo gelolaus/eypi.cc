@@ -62,4 +62,6 @@ app.route('/api/orgs', orgsRoutes)
 app.route('/', formsRoutes)
 app.route('/', statsRoutes)
 
+app.all('*', (c) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404))
+
 export default app
