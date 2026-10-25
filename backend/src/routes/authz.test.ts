@@ -99,7 +99,7 @@ describe('route authz', () => {
     it('returns 401 for an anonymous request', async () => {
       const { request } = await sessionRequest(null)
 
-      const res = await request('/api/links', json('POST', { original_url: 'https://example.com' }))
+      const res = await request('/api/links', json('POST', { url: 'https://example.com' }))
 
       expect(res.status).toBe(401)
     })
@@ -107,12 +107,14 @@ describe('route authz', () => {
     it('creates a link for a signed-in user', async () => {
       const { request } = await sessionRequest(member)
 
-      const res = await request('/api/links', json('POST', { original_url: 'https://example.com' }))
+      const res = await request('/api/links', json('POST', { url: 'https://example.com' }))
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(201)
       expect(await res.json()).toMatchObject({
-        status: 'success',
-        link: { original_url: 'https://example.com' },
+        url: 'https://example.com',
+        clicks: 0,
+        protected: false,
+        hasLogo: false,
       })
     })
 
@@ -129,7 +131,7 @@ describe('route authz', () => {
         LEGACY_BEARER_SECRET,
       )
 
-      const res = await request('/api/links', json('POST', { original_url: 'https://example.com' }, {
+      const res = await request('/api/links', json('POST', { url: 'https://example.com' }, {
         Authorization: `Bearer ${token}`,
       }))
 

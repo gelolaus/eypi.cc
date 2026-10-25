@@ -41,13 +41,13 @@ app.post('/api/reports', async (c) => {
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const secret = c.env.IP_HASH_SECRET?.trim()
   const reporterIpHash = secret ? await hmacIp(secret, ip) : null
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    `rl:report:${reporterIpHash ?? ip}`,
-    5,
-    3600,
-  )
-  if (!allowed) {
+  const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'report',
+    subject: reporterIpHash ?? ip,
+    limit: 5,
+    windowSec: 3600,
+  })
+  if (!allowed.ok) {
     return c.json({ error: { code: 'too_many', message: 'Too many requests. Try again later.' } }, 429)
   }
 

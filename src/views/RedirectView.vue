@@ -11,7 +11,7 @@ import type AppTransition from '@/components/AppTransition.vue'
 const route = useRoute()
 const router = useRouter()
 const currentSlug = ref((route.params.slug as string) ?? '')
-const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
+const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null> | null>('appTransition', null)
 
 function isSafeRedirect(url: string): boolean {
   try {
@@ -23,25 +23,33 @@ function isSafeRedirect(url: string): boolean {
 }
 
 onMounted(async () => {
-  const clientReferrer = document.referrer
-
+  const slug = currentSlug.value
   const animationPromise = appTransition?.value?.trigger() ?? Promise.resolve()
-
-  const fetchPromise = api.raw(`/api/links/${currentSlug.value}`, {
-    headers: clientReferrer ? { 'X-Client-Referrer': clientReferrer } : {},
-  })
-    .then((r) => r.json() as Promise<{ original_url?: string }>)
+  const referrer = encodeURIComponent(document.referrer || '')
+  const fetchPromise = api.raw(`/api/links/resolve/${encodeURIComponent(slug)}?r=${referrer}`)
+    .then(async (res) => {
+      const data = await res.json().catch(() => null) as { url?: string; protected?: boolean } | null
+      return { status: res.status, data }
+    })
     .catch(() => null)
 
-  const [, data] = await Promise.all([animationPromise, fetchPromise])
+  const [, result] = await Promise.all([animationPromise, fetchPromise])
 
-  if (data?.original_url && isSafeRedirect(data.original_url)) {
-    window.location.replace(data.original_url)
-  } else {
-    router.replace({
-      name: 'not-found',
-      params: { pathMatch: [currentSlug.value] },
-    })
+  if (result?.status === 410) {
+    await router.replace('/expired')
+    return
   }
+  if (result?.data?.protected) {
+    await router.replace(`/unlock/${slug}`)
+    return
+  }
+  if (result?.data?.url && isSafeRedirect(result.data.url)) {
+    window.location.replace(result.data.url)
+    return
+  }
+  await router.replace({
+    name: 'not-found',
+    params: { pathMatch: [slug] },
+  })
 })
 </script>

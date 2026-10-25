@@ -1,25 +1,42 @@
+export type RateLimitInput = {
+  bucket: string
+  subject: string
+  limit: number
+  windowSec: number
+}
+
+export type RateLimitDecision =
+  | { ok: true; retryAfter: 0 }
+  | { ok: false; retryAfter: number }
+
 export async function checkRateLimit(
   kv: KVNamespace,
-  key: string,
-  limit: number,
-  windowSeconds: number,
-): Promise<boolean> {
-  const raw = await kv.get(key)
+  opts: RateLimitInput,
+): Promise<RateLimitDecision> {
+  const key = `rl:${opts.bucket}:${opts.subject}`
   const now = Math.floor(Date.now() / 1000)
+  const raw = await kv.get(key)
   let count = 0
-  let windowExpiry = now + windowSeconds
+  let windowExpiry = now + opts.windowSec
 
-  if (raw !== null) {
-    const parts = raw.split(':')
-    count = parseInt(parts[0], 10)
-    if (parts[1]) windowExpiry = parseInt(parts[1], 10)
+  if (raw) {
+    const [countPart, expiryPart] = raw.split(':')
+    const parsedCount = Number.parseInt(countPart ?? '', 10)
+    const parsedExpiry = Number.parseInt(expiryPart ?? '', 10)
+    if (Number.isFinite(parsedCount)) count = parsedCount
+    if (Number.isFinite(parsedExpiry)) windowExpiry = parsedExpiry
   }
 
-  if (count >= limit) return false
+  if (windowExpiry <= now) {
+    count = 0
+    windowExpiry = now + opts.windowSec
+  }
 
-  // Preserve the original window expiry so the TTL doesn't slide forward on
-  // each request — without this, any attempt resets the 15-minute clock.
+  if (count >= opts.limit) {
+    return { ok: false, retryAfter: Math.max(windowExpiry - now, 1) }
+  }
+
   const ttl = Math.max(windowExpiry - now, 60)
   await kv.put(key, `${count + 1}:${windowExpiry}`, { expirationTtl: ttl })
-  return true
+  return { ok: true, retryAfter: 0 }
 }

@@ -44,7 +44,6 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
 const LOOKUP_LIMIT_MSG = 'Too many attempts. Wait a few minutes and try again.'
-const LOOKUP_RL_KEY = (ip: string) => `rl:tix-lookup:${ip}`
 const LOOKUP_RL_LIMIT = 10
 const LOOKUP_RL_WINDOW = 900
 const LOOKUP_EMAIL_LIMIT = 10
@@ -53,18 +52,6 @@ const LOOKUP_IP_LIMIT = 60
 const LOOKUP_IP_WINDOW = 900
 const PASS_LIMIT = 20
 const PASS_WINDOW = 3600
-
-function lookupEmailKey(eventId: string, emailHash: string): string {
-  return `lookup:${eventId}:${emailHash}`
-}
-
-function lookupIpKey(eventId: string, ip: string): string {
-  return `lookup:${eventId}:ip:${ip}`
-}
-
-function passRateKey(attendeeId: string): string {
-  return `pass:${attendeeId}`
-}
 
 async function sha256Hex(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
@@ -250,13 +237,13 @@ app.get('/api/events/:slug', async (c) => {
 
   if (!user) {
     const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-    const allowed = await checkRateLimit(
-      c.env.RATE_LIMIT_KV,
-      LOOKUP_RL_KEY(ip),
-      LOOKUP_RL_LIMIT,
-      LOOKUP_RL_WINDOW,
-    )
-    if (!allowed) {
+    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+      bucket: 'tix-lookup',
+      subject: ip,
+      limit: LOOKUP_RL_LIMIT,
+      windowSec: LOOKUP_RL_WINDOW,
+    })
+    if (!allowed.ok) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
     }
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
@@ -1041,23 +1028,23 @@ app.post('/api/events/:slug/lookup', async (c) => {
   const eventId = event.id as string
   const email = body.email.trim().toLowerCase()
 
-  const ipAllowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    lookupIpKey(eventId, ip),
-    LOOKUP_IP_LIMIT,
-    LOOKUP_IP_WINDOW,
-  )
-  if (!ipAllowed) {
+  const ipAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'lookup',
+    subject: `${eventId}:ip:${ip}`,
+    limit: LOOKUP_IP_LIMIT,
+    windowSec: LOOKUP_IP_WINDOW,
+  })
+  if (!ipAllowed.ok) {
     return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
   }
 
-  const emailAllowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    lookupEmailKey(eventId, await sha256Hex(email)),
-    LOOKUP_EMAIL_LIMIT,
-    LOOKUP_EMAIL_WINDOW,
-  )
-  if (!emailAllowed) {
+  const emailAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'lookup',
+    subject: `${eventId}:${await sha256Hex(email)}`,
+    limit: LOOKUP_EMAIL_LIMIT,
+    windowSec: LOOKUP_EMAIL_WINDOW,
+  })
+  if (!emailAllowed.ok) {
     return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
   }
 
@@ -1119,13 +1106,13 @@ app.get('/api/events/:slug/passes/apple', async (c) => {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
     }
 
-    const allowed = await checkRateLimit(
-      c.env.RATE_LIMIT_KV,
-      passRateKey(claims.sub),
-      PASS_LIMIT,
-      PASS_WINDOW,
-    )
-    if (!allowed) {
+    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+      bucket: 'pass',
+      subject: claims.sub,
+      limit: PASS_LIMIT,
+      windowSec: PASS_WINDOW,
+    })
+    if (!allowed.ok) {
       return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
     }
 
@@ -1165,13 +1152,13 @@ app.get('/api/events/:slug/passes/google', async (c) => {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
     }
 
-    const allowed = await checkRateLimit(
-      c.env.RATE_LIMIT_KV,
-      passRateKey(claims.sub),
-      PASS_LIMIT,
-      PASS_WINDOW,
-    )
-    if (!allowed) {
+    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+      bucket: 'pass',
+      subject: claims.sub,
+      limit: PASS_LIMIT,
+      windowSec: PASS_WINDOW,
+    })
+    if (!allowed.ok) {
       return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
     }
 

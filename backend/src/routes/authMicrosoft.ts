@@ -68,7 +68,13 @@ function readRequestCookie(header: string | undefined, name: string): string | n
 
 async function underLimit(env: OAuthEnv, bucket: 'start' | 'callback', ip: string): Promise<boolean> {
   try {
-    return await checkRateLimit(env.RATE_LIMIT_KV, `rl:ms-${bucket}:${ip}`, LIMIT, WINDOW_SEC)
+    const decision = await checkRateLimit(env.RATE_LIMIT_KV, {
+      bucket: `ms-${bucket}`,
+      subject: ip,
+      limit: LIMIT,
+      windowSec: WINDOW_SEC,
+    })
+    return decision.ok
   } catch {
     return false
   }
