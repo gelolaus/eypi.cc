@@ -571,11 +571,6 @@ async function fetchLinks() {
         'Content-Type': 'application/json',
       },
     })
-    if (response.status === 401) {
-      localStorage.removeItem('eypi_token')
-      router.push('/login')
-      return
-    }
     const data = await response.json() as { links?: Link[] }
     links.value = (data.links || []).map((link) => ({
       ...link,
@@ -675,10 +670,7 @@ async function handleShorten() {
     })
     const data = await res.json() as { status?: string; error?: string; link?: Link }
 
-    if (res.status === 401) {
-      toast.error('Session expired. Please log in again.')
-      return
-    }
+    if (res.status === 401) return
 
     if (!res.ok) {
       toast.error(data.error || 'Failed to create link')
