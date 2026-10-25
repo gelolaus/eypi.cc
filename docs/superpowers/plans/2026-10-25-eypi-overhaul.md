@@ -386,10 +386,10 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `wrangler.jsonc` (`assets.run_worker_first: true`), `worker/index.ts` (serve assets via `env.ASSETS.fetch` for everything the worker doesn't redirect; 302 + `Cache-Control: private, max-age=0`; HEAD → 302 without logging). Test: `worker/index.test.ts` (new; add `worker/**/*.test.ts` to vitest include).
 
-- [ ] **Step 1: Failing tests:** a navigation request (`Sec-Fetch-Mode: navigate`) for a KV slug → 302 with the cache header; HEAD → 302 and `logLinkClick` not called; reserved slug → `ASSETS.fetch`; `/assets/x.js` → `ASSETS.fetch`.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 1: Failing tests:** a navigation request (`Sec-Fetch-Mode: navigate`) for a KV slug → 302 with the cache header; HEAD → 302 and `logLinkClick` not called; reserved slug → `ASSETS.fetch`; `/assets/x.js` → `ASSETS.fetch`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
 - [ ] **Step 5: Verify after deploy:** `curl -sI -H "Sec-Fetch-Mode: navigate" https://eypi.cc/<real-slug>` shows `302` and `cache-control: private, max-age=0`.
-- [ ] **Step 6: Commit** `fix(links): serve short-link redirects at the edge with 302`.
+- [x] **Step 6: Commit** `fix(links): serve short-link redirects at the edge with 302`.
 
 ### Task 4.2: Links schema, KV v2 codec, and click logging (F-LINK-7, F-LINK-8)
 
@@ -487,15 +487,15 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `backend/scripts/backfill-links-kv.mjs` (`--reconcile` deletes KV keys whose slug isn't an enabled, non-expired link; `--dry-run` default).
 
-- [ ] Test the pure diff function `diffKv(dbLinks, kvKeys) → { put, delete }`. Commit `feat(links): add a KV reconcile mode to the backfill script`.
+- [x] Test the pure diff function `diffKv(dbLinks, kvKeys) → { put, delete }`. Commit `feat(links): add a KV reconcile mode to the backfill script`.
 
 ### Task 4.9: Reserved slug parity (F-LINK-16, §6.6)
 
 **Files:** Modify `shared/reservedSlugs.ts`, `shared/reservedSlugs.test.ts`.
 
 - [ ] **Step 1:** Read-only production check before adding: `SELECT slug FROM links WHERE slug IN ('admin','account','api','assets','auth','logout','signup','help','about','qr','static','invites','report','unlock','expired','media','p')`. If any rows, stop and tell the owner.
-- [ ] **Step 2: Failing test** `every top-level route in src/router/index.ts is reserved` (parse `path: '/<seg>'` literals) plus the new entries.
-- [ ] **Step 3–4:** add entries → PASS. **Commit** `fix(links): reserve suite routes and enforce route parity in tests`.
+- [x] **Step 2: Failing test** `every top-level route in src/router/index.ts is reserved` (parse `path: '/<seg>'` literals) plus the new entries.
+- [x] **Step 3–4:** add entries → PASS. **Commit** `fix(links): reserve suite routes and enforce route parity in tests`.
 
 ---
 
