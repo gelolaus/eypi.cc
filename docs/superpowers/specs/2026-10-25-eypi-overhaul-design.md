@@ -180,7 +180,7 @@ Library choice: `jose` (Workers-compatible) for JWKS and claims. Hand-written fe
 ### 4.2 Backend platform
 
 - `app.onError`: log one JSON line through `lib/reportError.ts` (`{ level, route, code, message, requestId }`, no PII or secrets) and return `{ error: { code, message } }` with the right status. `app.notFound` → 404 JSON.
-- `lib/http.ts`: `badRequest`, `forbidden`, `conflict`, … helpers so route handlers stop hand-rolling shapes.
+- `lib/errors.ts`: `ApiError` plus `badRequest`, `forbidden`, `conflict`, … helpers so route handlers stop hand-rolling shapes.
 - `GET /api/health`: env presence plus `SELECT 1`.
 - `wrangler.jsonc` (both workers): enable `observability: { enabled: true }`; add a cron trigger for retention jobs (§9.4).
 - One `db(c)` per request (F-DB-7).
@@ -258,7 +258,7 @@ QR logos move out of `qr_config` to R2 (`qr-logos/{linkId}-{sha8}.png`); `qr_con
   5. `pw` → 302 `/unlock/:slug`.
   6. Otherwise log (skip bot user agents; `source='qr'` when `?src=qr`, which is stripped before redirecting) and **302** with `Cache-Control: private, max-age=0`.
 - `logLinkClick` inserts analytics and increments `links.clicks WHERE id=?` in one batch (F-LINK-7).
-- SPA fallback `GET /api/links/:slug` follows the same rules, is rate-limited (60/min/IP), and takes the referrer in the query (`?r=`), not a custom header (F-PERF-6).
+- SPA fallback `GET /api/links/resolve/:slug` (renamed so it cannot collide with `GET /api/links/:id`) follows the same rules, is rate-limited (60/min/IP), and takes the referrer in the query (`?r=`), not a custom header (F-PERF-6).
 
 ### 6.3 Password-protected links
 
