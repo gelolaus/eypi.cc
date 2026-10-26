@@ -693,25 +693,9 @@ Duration: `1.1s` with `cubic-bezier(0.16, 1, 0.3, 1)` fill-forwards.
 Auto-dismisses after `1400ms`.
 Exit: `opacity: 0` over `0.25s ease` (Vue Transition `leave-active`).
 
-### 7.5 Custom cursor (AppCursor)
+### 7.5 Pointer feedback
 
-The native OS pointer is hidden on desktop (`html.has-custom-cursor`). A custom circle follows the mouse at all times via `requestAnimationFrame`.
-
-**Default state**: 24×24px white circle with `mix-blend-mode: difference`.
-
-**Hover states** morph when over interactive elements (explicit `data-cursor` or auto-detected `a`, `button`, inputs, etc.):
-
-| State | Size | Color | Trigger |
-|---|---|---|---|
-| `default` | 24×24px | `#ffffff` (difference blend) | Non-interactive areas |
-| `nav` | 34×34px | `#DEAC4B` | Links, buttons, toggles |
-| `cta` | 48×48px | `#DEAC4B` | Submit buttons, primary CTAs |
-| `card` | 80×80px | `#34418F` | Card links |
-| `text` | 2×22px | `#DEAC4B` | Text inputs, textareas |
-
-**Spring physics**: `SPRING = 0.38` for follow rate.
-
-**Touch devices**: Not rendered when `pointer: coarse`; native pointer used.
+There is no custom cursor; the native pointer is always used. Fine-pointer devices get a subtle link hover (`opacity: 0.88`) and button transitions. Touch devices get `.tap-scale` press feedback only. Do not add `data-cursor` attributes.
 
 ### 7.6 Slide panel transitions
 

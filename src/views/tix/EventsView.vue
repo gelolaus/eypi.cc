@@ -17,7 +17,7 @@
         <router-link
           to="/manage/tix/new"
           class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:opacity-90"
-          data-cursor="cta"
+         
         >
           New Event
         </router-link>
@@ -69,7 +69,7 @@
             <router-link
               :to="`/manage/tix/${event.slug}`"
               class="btn-secondary flex-1 md:flex-none"
-              data-cursor="nav"
+             
             >
               Manage
             </router-link>

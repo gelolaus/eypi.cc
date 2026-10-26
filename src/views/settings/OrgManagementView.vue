@@ -5,7 +5,7 @@
       <router-link
         to="/admin/orgs/new"
         class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90"
-        data-cursor="cta"
+       
       >
         New org
       </router-link>
@@ -40,7 +40,7 @@
           <router-link
             :to="{ name: 'admin-orgs-edit', params: { orgId: item.org_id } }"
             class="btn-secondary w-full text-sm md:inline-flex md:w-auto"
-            data-cursor="nav"
+           
           >
             Edit
           </router-link>

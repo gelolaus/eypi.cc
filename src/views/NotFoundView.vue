@@ -4,7 +4,7 @@
   >
     <!-- Error Hardware Card -->
     <div
-      class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-8 text-center shadow-xl sm:p-12"
+      class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-6 text-center shadow-xl sm:p-12"
     >
       <PageShell />
 

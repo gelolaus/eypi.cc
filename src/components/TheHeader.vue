@@ -6,7 +6,7 @@
     <router-link
       :to="isAuthenticated ? '/dashboard' : '/'"
       class="flex min-h-11 shrink-0 items-center text-[0.9375rem] font-bold tracking-tight text-g-primary dark:text-g-text"
-      data-cursor="nav"
+     
     >
       eypi.cc
     </router-link>
@@ -23,7 +23,7 @@
           :to="item.to"
           class="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium"
           :class="item.cta ? 'btn-gold ml-1 font-semibold' : 'text-g-muted hover:text-g-text'"
-          :data-cursor="item.cta ? 'cta' : 'nav'"
+         
         >
           {{ item.label }}
         </router-link>
@@ -39,7 +39,7 @@
         aria-controls="site-nav-sidebar"
         aria-haspopup="dialog"
         :aria-label="menuLabel"
-        data-cursor="nav"
+       
         @click="toggle"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">

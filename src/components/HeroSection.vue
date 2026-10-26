@@ -16,14 +16,14 @@
         <router-link
           to="/login"
           class="btn-gold tap-scale inline-flex h-12 w-full items-center justify-center rounded-full px-8 text-base font-bold uppercase tracking-wide shadow-md transition-all hover:opacity-90 sm:h-14 sm:w-auto"
-          data-cursor="cta"
+         
         >
           Get started
         </router-link>
         <a
           href="#features"
           class="inline-flex min-h-11 items-center justify-center px-4 text-base font-semibold text-[#34418F] underline-offset-4 hover:underline dark:text-g-text"
-          data-cursor="nav"
+         
           @click.prevent="scrollToFeatures"
         >
           See what's inside

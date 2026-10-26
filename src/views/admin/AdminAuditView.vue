@@ -83,7 +83,7 @@
         type="button"
         class="btn-secondary"
         :disabled="loadingMore"
-        data-cursor="nav"
+       
         @click="load(false)"
       >
         {{ loadingMore ? 'Loading...' : 'Load more' }}

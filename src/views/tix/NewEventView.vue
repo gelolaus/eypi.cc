@@ -16,7 +16,7 @@
         <router-link
           :to="`/manage/tix/${form.slug}`"
  class="btn-gold inline-flex min-h-11 items-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
-          data-cursor="cta"
+         
         >
           Go to Event →
         </router-link>
@@ -135,7 +135,7 @@
                 : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
               :aria-invalid="Boolean(csvError)"
               :aria-describedby="csvError ? 'csv-error' : undefined"
-              data-cursor="card"
+             
               @dragover.prevent
               @drop.prevent="onDrop"
             >
@@ -183,7 +183,7 @@
               'btn-gold mt-2 min-h-11 w-full rounded-xl px-4 text-base font-semibold transition-all duration-200',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
-            data-cursor="cta"
+           
           >
             {{ loadingLabel }}
           </button>

@@ -30,7 +30,7 @@
             type="button"
             class="features-carousel__nav tap-scale"
             aria-label="Previous feature"
-            data-cursor="nav"
+           
             @click="goPrev"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -41,7 +41,7 @@
             type="button"
             class="features-carousel__nav tap-scale"
             aria-label="Next feature"
-            data-cursor="nav"
+           
             @click="goNext"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -69,7 +69,7 @@
             :class="{ 'features-carousel__card--active': activeIndex === slide.realIndex }"
             :aria-hidden="activeIndex !== slide.realIndex || slide.isClone"
             :inert="activeIndex !== slide.realIndex || slide.isClone"
-            data-cursor="card"
+           
             @click="onCardClick(displayIndex, $event)"
           >
             <div
@@ -96,7 +96,7 @@
             <router-link
               :to="slide.feature.ctaTo"
               class="features-carousel__cta tap-scale"
-              data-cursor="nav"
+             
               @click.stop
             >
               {{ slide.feature.ctaLabel }}
@@ -131,7 +131,7 @@
               }"
               :aria-selected="activeIndex === index"
               :aria-label="`Go to ${feature.name}`"
-              data-cursor="nav"
+             
               @click="scrollToRealIndex(index)"
             >
               <span class="features-carousel__segment-fill" />

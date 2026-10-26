@@ -3,7 +3,7 @@
     <router-link
       to="/admin/orgs"
       class="mb-6 inline-flex min-h-11 items-center text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
-      data-cursor="nav"
+     
     >
       ← Back to org management
     </router-link>
@@ -52,7 +52,7 @@
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row">
-          <button type="submit" :disabled="saving" class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" data-cursor="cta">
+          <button type="submit" :disabled="saving" class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
           </button>
           <button

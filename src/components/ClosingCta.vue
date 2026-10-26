@@ -10,7 +10,7 @@
       <router-link
         to="/login"
  class="btn-gold tap-scale inline-flex items-center rounded-full px-10 py-4 text-base font-bold uppercase tracking-wide shadow-md transition-all hover:-translate-y-0.5 hover:opacity-90"
-        data-cursor="cta"
+       
       >
         Create an account
       </router-link>

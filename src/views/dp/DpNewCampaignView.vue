@@ -23,7 +23,7 @@
           <router-link
             :to="`/frames/${createdSlug}`"
  class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110"
-            data-cursor="cta"
+           
           >Open Public Page →</router-link>
           <router-link
             to="/manage/frames"

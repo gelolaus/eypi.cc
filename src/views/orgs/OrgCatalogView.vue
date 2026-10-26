@@ -4,7 +4,7 @@
       <router-link
         :to="`/orgs/modify/${activeOrg.org_id}`"
         class="btn-gold tap-scale inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-semibold shadow-md transition-all sm:w-auto"
-        data-cursor="cta"
+       
       >
         Modify {{ activeOrg.org_name }}
       </router-link>
@@ -30,7 +30,7 @@
               ? 'btn-gold border-g-accent'
               : 'border-g-border bg-g-surface text-g-muted hover:border-g-accent/40 hover:text-g-text'
           "
-          data-cursor="nav"
+         
           @click="selectedOrgType = option.value"
         >
           {{ option.label }}
@@ -77,7 +77,7 @@
         :key="org.slug"
         :to="`/orgs/${org.slug}`"
         :class="['reveal mica-card group flex h-full flex-col rounded-3xl border border-g-border p-6 transition-all hover:-translate-y-0.5 hover:border-g-accent/40', `delay-${Math.min(index + 1, 4)}`]"
-        data-cursor="card"
+       
       >
         <div class="mb-4 flex flex-col items-start gap-4">
           <div

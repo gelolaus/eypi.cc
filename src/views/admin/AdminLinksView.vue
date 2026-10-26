@@ -11,7 +11,7 @@
           placeholder="Search by slug, destination, or owner"
           autocomplete="off"
         />
-        <button type="submit" class="btn-gold inline-flex min-h-11 shrink-0 items-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90" data-cursor="cta">
+        <button type="submit" class="btn-gold inline-flex min-h-11 shrink-0 items-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90">
           Search
         </button>
       </form>
@@ -97,7 +97,7 @@
         type="button"
         class="btn-secondary"
         :disabled="loadingMore"
-        data-cursor="nav"
+       
         @click="load(false)"
       >
         {{ loadingMore ? 'Loading...' : 'Load more' }}

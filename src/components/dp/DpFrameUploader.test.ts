@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import DpFrameUploader from './DpFrameUploader.vue'
 
 const frames = [
@@ -49,11 +49,12 @@ describe('DpFrameUploader', () => {
     ]
     Object.defineProperty(input.element, 'files', { configurable: true, value: files })
     await input.trigger('change')
+    await vi.waitFor(() => expect(started).toHaveLength(1))
     await new Promise((resolve) => setTimeout(resolve, 30))
 
     expect(started).toHaveLength(1)
     releaseFirst()
-    await new Promise((resolve) => setTimeout(resolve, 30))
+    await vi.waitFor(() => expect(started).toHaveLength(2))
     expect(started).toHaveLength(2)
   })
 })

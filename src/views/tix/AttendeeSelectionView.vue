@@ -107,7 +107,8 @@
       @finalize="finalize"
     />
 
-  </section>
+    </AppPage>
+  </div>
 </template>
 
 <script setup lang="ts">

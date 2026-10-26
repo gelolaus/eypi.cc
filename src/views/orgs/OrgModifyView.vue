@@ -44,7 +44,7 @@
           <button
             type="button"
             class="btn-secondary shrink-0 gap-1 text-sm text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
-            data-cursor="nav"
+           
             @click="openPreview"
           >
             Preview ↗
@@ -180,7 +180,7 @@
             </div>
           </div>
 
-          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-gold inline-flex min-h-11 w-full items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto" data-cursor="cta">
+          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-gold inline-flex min-h-11 w-full items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
             {{ savingProfile ? 'Saving...' : 'Save profile' }}
           </button>
         </form>

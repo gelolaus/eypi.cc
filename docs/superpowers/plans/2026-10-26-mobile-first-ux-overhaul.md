@@ -116,6 +116,6 @@
 
 **Files:** all `src/**`, `main.css`, `DESIGN_SYSTEM.md`.
 
-- [ ] Remove leftover `data-cursor` attributes, dead pill-nav CSS, and bare `100vh`/`min-h-screen` uses; add a regression test grepping `src` for `min-w-\[\d{3}px\]` table wrappers, `100vh`, and sub-44px `h-6 w-6`/`h-9 w-9` on buttons.
-- [ ] `npm run typecheck`, `npm test`, `npm run build` all green; start `npm run dev:local` and capture 360x800 and 1280x800 screenshots of home, login, dashboard, links, tix for the final review (no production writes).
-- [ ] Commit `chore(ui): remove dead cursor attributes and guard mobile regressions`.
+- [x] Remove leftover `data-cursor` attributes, dead pill-nav CSS, and bare `100vh`/`min-h-screen` uses; add a regression test grepping `src` for `min-w-\[\d{3}px\]` table wrappers, `100vh`, and sub-44px `h-6 w-6`/`h-9 w-9` on buttons.
+- [x] `npm run typecheck`, `npm test`, `npm run build` all green; start `npm run dev:local` and capture 360x800 and 1280x800 screenshots of home, login, dashboard, links, tix for the final review (no production writes).  (screenshots skipped: dev:local needs production Turso credentials; see task-9-report.md)
+- [x] Commit `chore(ui): remove dead cursor attributes and guard mobile regressions`.

@@ -259,7 +259,6 @@
     a:not(.skip-link),
     button:not(:disabled),
     [role="button"]:not([aria-disabled="true"]),
-    [data-cursor],
     input[type="submit"]:not(:disabled),
     input[type="button"]:not(:disabled),
     select,
@@ -274,33 +273,8 @@
         scale 0.15s ease-out;
     }
 
-    [data-cursor="nav"]:hover,
     a:not(.skip-link):not(.footer-link-row):not(.nav-sidebar-link):hover {
       opacity: 0.88;
-    }
-
-    [data-cursor="cta"]:hover,
-    button[data-cursor="cta"]:hover,
-    a[data-cursor="cta"]:hover {
-      transform: translateY(-2px) scale(1.02);
-      opacity: 0.92;
-    }
-
-    [data-cursor="card"]:hover,
-    a[data-cursor="card"]:hover,
-    .mica-card[data-cursor="card"]:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 14px 40px rgba(31, 38, 135, 0.12);
-    }
-
-    html.dark [data-cursor="card"]:hover,
-    html.dark a[data-cursor="card"]:hover,
-    html.dark .mica-card[data-cursor="card"]:hover {
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-    }
-
-    [data-cursor="text"]:hover {
-      opacity: 0.9;
     }
 
     .footer-link-row:hover {

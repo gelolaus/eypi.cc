@@ -16,12 +16,12 @@
               : 'bg-transparent text-gray-500 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
           ]"
           :aria-current="isActive(tab) ? 'page' : undefined"
-          data-cursor="nav"
+         
         >
           {{ tab.label }}
         </router-link>
       </nav>
-      <router-link to="/dashboard" class="btn-secondary shrink-0" data-cursor="nav">
+      <router-link to="/dashboard" class="btn-secondary shrink-0">
         Dashboard
       </router-link>
     </div>

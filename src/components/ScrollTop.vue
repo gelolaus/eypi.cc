@@ -6,7 +6,7 @@
       class="scroll-top-btn"
       :class="withTabBar ? 'scroll-top-btn--tabbar' : ''"
       aria-label="Back to top"
-      data-cursor="nav"
+     
       @click="toTop"
     >
       ↑

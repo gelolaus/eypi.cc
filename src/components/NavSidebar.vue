@@ -25,7 +25,7 @@
           type="button"
           class="tap-scale absolute right-3 top-3 flex size-11 items-center justify-center rounded-xl font-mono text-2xl text-g-muted transition-colors hover:text-g-text sm:right-5"
           aria-label="Close navigation"
-          data-cursor="nav"
+         
           @click="$emit('close')"
         >
           &times;
@@ -48,7 +48,7 @@
               :key="link.to"
               :to="link.to"
               class="nav-sidebar-link tap-scale group"
-              data-cursor="nav"
+             
               @click="$emit('close')"
             >
               <span class="flex items-center gap-3">
@@ -80,7 +80,7 @@
                     ? 'border-[#DEAC4B]/50 bg-[#DEAC4B]/10 text-[#DEAC4B]'
                     : 'border-g-border text-g-text hover:border-g-primary/30 hover:bg-g-bg dark:hover:bg-slate-950/60'
                 "
-                data-cursor="nav"
+               
                 @click="$emit('selectOrg', org)"
               >
                 <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
@@ -93,7 +93,7 @@
             <button
               type="button"
               class="nav-sidebar-link nav-sidebar-link--danger tap-scale w-full"
-              data-cursor="nav"
+             
               @click="$emit('logout')"
             >
               <span>Logout</span>
@@ -111,7 +111,7 @@
               :to="link.to"
               class="nav-sidebar-link tap-scale group"
               :class="link.cta ? 'nav-sidebar-link--cta' : ''"
-              :data-cursor="link.cta ? 'cta' : 'nav'"
+             
               @click="$emit('close')"
             >
               <span>{{ link.label }}</span>

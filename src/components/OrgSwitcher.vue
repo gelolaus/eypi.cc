@@ -10,7 +10,7 @@
       aria-haspopup="dialog"
       :aria-controls="isOpen ? menuId : undefined"
       :aria-expanded="isOpen ? 'true' : 'false'"
-      data-cursor="nav"
+     
       @click="isOpen = !isOpen"
     >
       <OrgLogo
@@ -68,7 +68,7 @@
             type="button"
             class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-g-bg sm:rounded-none"
             :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
-            data-cursor="nav"
+           
             @click="handleSelect(org)"
           >
             <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />

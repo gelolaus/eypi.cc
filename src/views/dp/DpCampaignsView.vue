@@ -17,7 +17,7 @@
         <router-link
           to="/manage/frames/new"
           class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:opacity-90"
-          data-cursor="cta"
+         
         >New Campaign</router-link>
       </div>
 
@@ -65,7 +65,7 @@
             <router-link
               :to="`/manage/frames/${c.slug}/edit`"
               class="btn-secondary"
-              data-cursor="nav"
+             
             >Edit</router-link>
             <button
               type="button"

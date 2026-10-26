@@ -31,7 +31,7 @@
       </button>
       <h2
         id="link-editor-title"
-        class="text-section-title mb-8 pr-12 text-g-primary dark:text-slate-200"
+        class="text-section-title mb-8 pr-14 text-g-primary dark:text-slate-200"
       >
         {{ linkId ? 'Edit link' : 'New link' }}
       </h2>
