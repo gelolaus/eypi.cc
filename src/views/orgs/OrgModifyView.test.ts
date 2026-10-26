@@ -329,3 +329,22 @@ describe('OrgModifyView images', () => {
     },
   )
 })
+
+describe('OrgModifyView mobile layout', () => {
+  it('uses AppPage, no nested main, no in-page OrgSwitcher, no min-width table wrapper, 44px toggle', async () => {
+    installFetch({
+      asOwner: true,
+      members: [{ email: 'bea@student.apc.edu.ph', user_id: 'u1', name: 'Bea', activated_at: '2026-01-01T00:00:00.000Z', declined_at: null }],
+    })
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    expect(wrapper.find('[data-app-page]').exists()).toBe(true)
+    expect(wrapper.find('main').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'OrgSwitcher' }).exists()).toBe(false)
+    expect(wrapper.html()).not.toMatch(/min-w-\[\d+px\]/)
+    expect(wrapper.get('[role="switch"]').classes()).toContain('h-11')
+    expect(wrapper.get('table').classes()).toContain('block')
+    wrapper.unmount()
+  })
+})

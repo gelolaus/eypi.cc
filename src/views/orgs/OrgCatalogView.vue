@@ -1,24 +1,14 @@
 <template>
-  <section class="relative mx-auto flex flex-1 w-full max-w-5xl flex-col px-4 py-8 sm:px-6 md:py-16 lg:px-8">
-    <header class="reveal mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 class="text-page-title">
-          Orgs
-        </h1>
-        <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
-          APC student organizations
-        </p>
-      </div>
-      <div v-if="isAuthenticated && activeOrg" class="flex flex-wrap items-center gap-3">
-        <router-link
-          :to="`/orgs/modify/${activeOrg.org_id}`"
- class="btn-gold tap-scale inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-md transition-all hover:scale-105"
-          data-cursor="cta"
-        >
-          Modify {{ activeOrg.org_name }}
-        </router-link>
-      </div>
-    </header>
+  <AppPage title="Orgs" description="APC student organizations">
+    <div v-if="isAuthenticated && activeOrg" class="mb-6">
+      <router-link
+        :to="`/orgs/modify/${activeOrg.org_id}`"
+        class="btn-gold tap-scale inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 text-base font-semibold shadow-md transition-all sm:w-auto"
+        data-cursor="cta"
+      >
+        Modify {{ activeOrg.org_name }}
+      </router-link>
+    </div>
 
     <template v-if="!loading && orgs.length > 0">
       <input
@@ -26,15 +16,15 @@
         type="search"
         placeholder="Search organizations..."
         aria-label="Search organizations"
-        class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+        class="control mb-4 w-full"
       />
 
-      <div class="reveal delay-1 mb-6 flex flex-wrap gap-2">
+      <div class="mb-6 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
         <button
           v-for="option in typeFilterOptions"
           :key="option.value ?? 'all'"
           type="button"
-          class="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+          class="min-h-11 shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           :class="
             selectedOrgType === option.value
               ? 'btn-gold border-g-accent'
@@ -48,8 +38,9 @@
       </div>
     </template>
 
-    <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="i in 6" :key="i" class="h-48 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+    <div v-if="loading" role="status" aria-busy="true" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <span class="sr-only">Loading</span>
+      <div v-for="i in 6" :key="i" class="h-48 rounded-3xl bg-g-border motion-safe:animate-pulse" aria-hidden="true" />
     </div>
 
     <div
@@ -123,10 +114,11 @@
         </div>
       </router-link>
     </div>
-  </section>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
+import AppPage from '@/components/AppPage.vue'
 import PageShell from '@/components/PageShell.vue'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'

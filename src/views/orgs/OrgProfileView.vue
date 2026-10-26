@@ -1,9 +1,10 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
-    <div v-if="loading" class="space-y-6">
-      <div class="h-48 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60 md:h-56" />
-      <div class="h-8 w-2/3 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
-      <div class="h-40 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+    <div v-if="loading" role="status" aria-busy="true" class="space-y-6">
+      <span class="sr-only">Loading</span>
+      <div class="h-48 rounded-3xl bg-g-border motion-safe:animate-pulse md:h-56" aria-hidden="true" />
+      <div class="h-8 w-2/3 rounded-lg bg-g-border motion-safe:animate-pulse" aria-hidden="true" />
+      <div class="h-40 rounded-3xl bg-g-border motion-safe:animate-pulse" aria-hidden="true" />
     </div>
 
     <div
@@ -13,7 +14,7 @@
       <p class="text-sm text-red-500">{{ error }}</p>
       <router-link
         to="/orgs"
-        class="mt-6 inline-block text-sm font-medium text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
+        class="mt-6 inline-flex min-h-11 items-center text-sm font-medium text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
         data-cursor="nav"
       >
         ← Back to directory
@@ -85,13 +86,13 @@
       </header>
 
       <!-- Tabs -->
-      <div class="reveal delay-1 mb-6 flex flex-wrap gap-2">
+      <div class="mb-6 flex gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
         <button
           v-for="(tab, i) in TABS"
           :key="tab"
           type="button"
           :class="[
-            'min-h-[44px] rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            'min-h-11 shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             activeTab === i
               ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
               : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',

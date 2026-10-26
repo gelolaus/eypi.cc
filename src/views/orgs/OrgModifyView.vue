@@ -1,23 +1,13 @@
 <template>
-  <section class="relative mx-auto flex flex-1 w-full max-w-5xl flex-col px-6 py-16">
-    <div class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 class="text-page-title">
-          Org settings
-        </h1>
-      </div>
-      <div v-if="!isLocked" class="flex flex-wrap items-center gap-3">
-        <OrgSwitcher />
-      </div>
-    </div>
-
+  <AppPage title="Org settings">
     <div v-if="isLocked">
       <OrgLockout />
     </div>
 
-    <div v-else-if="loading" class="space-y-4">
-      <div class="h-10 w-1/2 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
-      <div class="h-64 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+    <div v-else-if="loading" role="status" aria-busy="true" class="space-y-4">
+      <span class="sr-only">Loading</span>
+      <div class="h-10 w-1/2 rounded-lg bg-g-border motion-safe:animate-pulse" />
+      <div class="h-64 rounded-3xl bg-g-border motion-safe:animate-pulse" />
     </div>
 
     <div v-else-if="error" class="mica-card rounded-3xl p-8 text-center text-sm text-red-500">
@@ -45,7 +35,7 @@
       </header>
 
       <!-- Public directory profile -->
-      <section class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
+      <AppSection class="mb-6">
         <div class="mb-6 flex flex-col gap-3 border-b border-g-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h3 class="text-section-title">Public profile</h3>
@@ -53,7 +43,7 @@
           </div>
           <button
             type="button"
-            class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
+            class="btn-secondary shrink-0 gap-1 text-sm text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
             data-cursor="nav"
             @click="openPreview"
           >
@@ -71,14 +61,18 @@
             :aria-checked="profileForm.isPublicCatalog"
             :aria-label="profileForm.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
             :disabled="togglingCatalog"
-            class="relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50"
-            :class="profileForm.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+            class="group relative flex h-11 w-14 shrink-0 items-center justify-center disabled:opacity-50"
             @click="togglePublicCatalog"
           >
             <span
-              class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
-              :class="profileForm.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
-            />
+              class="relative block h-7 w-12 rounded-full transition-colors"
+              :class="profileForm.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+            >
+              <span
+                class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
+                :class="profileForm.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
+              />
+            </span>
           </button>
         </div>
 
@@ -112,14 +106,14 @@
               >
                 <img v-if="profileForm.bannerUrl" :src="profileForm.bannerUrl" alt="Banner preview" class="h-full w-full object-cover" />
               </div>
-              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
                 {{ uploadingBanner ? 'Uploading...' : 'Upload banner' }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingBanner" @change="onBannerPicked" />
               </label>
               <button
                 v-if="profileForm.bannerUrl"
                 type="button"
-                class="text-left text-sm font-medium text-red-500"
+                class="min-h-11 text-left text-sm font-medium text-red-500"
                 :disabled="uploadingBanner"
                 @click="clearOrgImage('bannerUrl')"
               >
@@ -143,14 +137,14 @@
                   {{ orgInitials(org.org_name) }}
                 </div>
               </div>
-              <label class="cursor-pointer rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
                 {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
                 <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingLogo" @change="onLogoPicked" />
               </label>
               <button
                 v-if="profileForm.logoUrl"
                 type="button"
-                class="text-left text-sm font-medium text-red-500"
+                class="min-h-11 text-left text-sm font-medium text-red-500"
                 :disabled="uploadingLogo"
                 @click="clearOrgImage('logoUrl')"
               >
@@ -186,14 +180,14 @@
             </div>
           </div>
 
-          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-primary btn-gold" data-cursor="cta">
+          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-gold inline-flex min-h-11 w-full items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto" data-cursor="cta">
             {{ savingProfile ? 'Saving...' : 'Save profile' }}
           </button>
         </form>
-      </section>
+      </AppSection>
 
       <!-- Owner: members -->
-      <section v-if="isOwner" class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
+      <AppSection v-if="isOwner" class="mb-6">
         <h3 class="text-section-title mb-6 border-b border-g-border pb-4">Members</h3>
 
         <div v-if="loadingMembers" class="mb-6 h-20 animate-pulse rounded-xl bg-white/50 dark:bg-slate-800/40" />
@@ -203,9 +197,9 @@
         <p v-else-if="members.length === 0" class="mb-6 text-sm text-g-muted">
           No members yet.
         </p>
-        <div v-else class="mb-6 overflow-x-auto rounded-2xl border border-g-border">
-          <table class="text-data w-full min-w-[480px] border-collapse text-left text-xs">
-            <thead>
+        <div v-else class="mb-6 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+          <table class="text-data block w-full border-collapse text-left text-sm md:table md:text-xs">
+            <thead class="hidden md:table-header-group">
               <tr class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
                 <th class="px-4 py-3">Name</th>
                 <th class="px-4 py-3">Email</th>
@@ -213,16 +207,20 @@
                 <th class="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="member in members" :key="member.email" class="border-b border-g-border/70 last:border-0">
-                <td class="px-4 py-3">{{ member.name?.trim() || 'No account yet' }}</td>
-                <td class="px-4 py-3">{{ member.email }}</td>
-                <td class="px-4 py-3 text-center">{{ memberStatus(member) }}</td>
-                <td class="px-4 py-3 text-right">
-                  <div v-if="isPendingMember(member)" class="flex justify-end gap-3">
+            <tbody class="block space-y-3 md:table-row-group md:space-y-0">
+              <tr
+                v-for="member in members"
+                :key="member.email"
+                class="block rounded-2xl border border-g-border bg-g-surface p-4 md:table-row md:rounded-none md:border-0 md:border-b md:border-g-border/70 md:bg-transparent md:p-0 md:last:border-0"
+              >
+                <td class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal">{{ member.name?.trim() || 'No account yet' }}</td>
+                <td class="block break-all text-g-muted md:table-cell md:px-4 md:py-3 md:text-inherit">{{ member.email }}</td>
+                <td class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center">{{ memberStatus(member) }}</td>
+                <td class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right">
+                  <div v-if="isPendingMember(member)" class="flex flex-wrap gap-2 md:justify-end">
                     <button
                       type="button"
-                      class="font-semibold text-g-text disabled:opacity-50"
+                      class="btn-secondary min-h-11 px-4 text-sm disabled:opacity-50"
                       :disabled="resendingEmail === member.email"
                       @click="resendInvite(member.email)"
                     >
@@ -230,7 +228,7 @@
                     </button>
                     <button
                       type="button"
-                      class="font-semibold text-red-500"
+                      class="btn-secondary min-h-11 px-4 text-sm text-red-500"
                       @click="cancelInvite(member.email)"
                     >
                       Cancel invite
@@ -239,7 +237,7 @@
                   <button
                     v-else-if="member.activated_at && !isOwnerMember(member)"
                     type="button"
-                    class="font-semibold text-red-500"
+                    class="btn-secondary min-h-11 px-4 text-sm text-red-500"
                     @click="removeMember(member.email)"
                   >
                     Remove
@@ -257,7 +255,7 @@
         <div class="mb-6">
           <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
             <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
-            <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-[#34418F] px-4 py-3 text-sm font-semibold text-white">
+            <button type="submit" :disabled="sendingInvite" class="btn-primary shrink-0">
               {{ sendingInvite ? 'Inviting...' : 'Invite' }}
             </button>
           </form>
@@ -290,29 +288,28 @@
           <button
             type="submit"
             :disabled="transferring || activeMembers.length === 0"
-            class="w-fit rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            class="btn-danger w-full sm:w-fit"
           >
             {{ transferring ? 'Transferring...' : 'Transfer ownership' }}
           </button>
         </form>
-      </section>
+      </AppSection>
 
       <!-- Member: leave -->
-      <section v-else class="mica-card rounded-3xl p-6 sm:p-8">
+      <AppSection v-else>
         <h3 class="text-card-title mb-2">Leave org</h3>
         <p class="mb-4 text-sm text-g-muted">You will lose access to org-scoped tools until re-invited.</p>
         <button
           type="button"
           :disabled="leaving"
-          class="rounded-lg border border-red-500 px-4 py-3 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+          class="btn-danger w-full sm:w-fit"
           @click="leaveOrg"
         >
           {{ leaving ? 'Leaving...' : 'Leave org' }}
         </button>
-      </section>
+      </AppSection>
     </template>
-
-  </section>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
@@ -326,7 +323,8 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
-import OrgSwitcher from '@/components/OrgSwitcher.vue'
+import AppPage from '@/components/AppPage.vue'
+import AppSection from '@/components/AppSection.vue'
 import OrgLockout from '@/components/OrgLockout.vue'
 import {
   EMPTY_SOCIAL_LINKS,
@@ -780,9 +778,6 @@ watch(slug, loadOrgContext)
 
 <style scoped>
 .field-input {
-  @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-.btn-primary {
- @apply rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply min-h-11 rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 sm:text-sm dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 </style>

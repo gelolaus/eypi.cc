@@ -87,9 +87,9 @@
 
 **Files:** `src/views/EventsView.vue`, `EventDetailView`, `NewEventView`, `TicketLookupView`, `src/components/tix/*` (`AttendeeTable`, `ConfirmStep`, `ScannerPanel`, `AddGuestPanel`), `src/components/dp/*`, `DpPublicView`, `Dp*View`, `Forms*`/`LetterOfIntentView`/`VisitorsPassView`, `Org*View`, `src/components/orgs/*`, `OrgSwitcher.vue`.
 
-- [ ] Tests first for the shared pieces (`DpPublicView.test.ts`, `DpFrameUploader.test.ts`, `OrgModifyView.test.ts`, `VisitorsPassView.test.ts`, `useQrScanner.test.ts` stay green): attendee/event/org tables become card lists below `md`; remove `min-w-[520px|640px|480px]` wrappers; steppers/remove buttons/toggles >= 44px; `text-[0.6rem]` controls removed; scanner is full-bleed with a bottom action bar; org dropdown becomes a sheet on mobile (no left clipping).
-- [ ] Adopt `AppPage`/`AppSection`/skeletons across these views.
-- [ ] Commit per module if large (`feat(tix)`, `feat(dp)`, `feat(forms)`, `feat(orgs)`).
+- [x] Tests first for the shared pieces (`DpPublicView.test.ts`, `DpFrameUploader.test.ts`, `OrgModifyView.test.ts`, `VisitorsPassView.test.ts`, `useQrScanner.test.ts` stay green): attendee/event/org tables become card lists below `md`; remove `min-w-[520px|640px|480px]` wrappers; steppers/remove buttons/toggles >= 44px; `text-[0.6rem]` controls removed; scanner is full-bleed with a bottom action bar; org dropdown becomes a sheet on mobile (no left clipping).
+- [x] Adopt `AppPage`/`AppSection`/skeletons across these views.
+- [x] Commit per module if large (`feat(tix)`, `feat(dp)`, `feat(forms)`, `feat(orgs)`).
 
 ### Task 6: Admin
 

@@ -2,7 +2,7 @@
   <div>
     <router-link
       to="/admin/orgs"
-      class="mb-6 inline-flex text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
+      class="mb-6 inline-flex min-h-11 items-center text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
       data-cursor="nav"
     >
       ← Back to org management
@@ -36,26 +36,30 @@
             role="switch"
             :aria-checked="form.isPublicCatalog"
             :aria-label="form.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
-            class="relative h-7 w-12 rounded-full transition-colors"
-            :class="form.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+            class="flex h-11 w-14 shrink-0 items-center justify-center"
             @click="form.isPublicCatalog = !form.isPublicCatalog"
           >
             <span
-              class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
-              :class="form.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
-            />
+              class="relative block h-7 w-12 rounded-full transition-colors"
+              :class="form.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+            >
+              <span
+                class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
+                :class="form.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
+              />
+            </span>
           </button>
         </div>
 
-        <div class="flex flex-wrap gap-3">
-          <button type="submit" :disabled="saving" class="btn-primary btn-gold" data-cursor="cta">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <button type="submit" :disabled="saving" class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" data-cursor="cta">
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
           </button>
           <button
             v-if="!isCreate"
             type="button"
             :disabled="deleting"
-            class="rounded-xl border border-red-500 px-5 py-3 text-sm font-semibold text-red-500 hover:bg-red-500 hover:text-white disabled:opacity-50"
+            class="btn-danger"
             @click="deleteOrg"
           >
             {{ deleting ? 'Deleting...' : 'Delete org' }}
@@ -195,9 +199,6 @@ onMounted(loadOrg)
 
 <style scoped>
 .field-input {
-  @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-.btn-primary {
- @apply rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply min-h-11 rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 sm:text-sm dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 </style>

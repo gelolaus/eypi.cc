@@ -20,10 +20,10 @@
         {{ error }}
       </p>
     </div>
-    <div class="flex shrink-0 gap-2">
+    <div class="flex shrink-0 gap-2 max-sm:[&>button]:flex-1">
       <button
         type="button"
-        class="rounded-xl border border-g-border px-4 py-2.5 text-sm font-semibold text-g-text transition-colors hover:border-g-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+        class="btn-secondary text-sm"
         :disabled="busy"
         @click="decline"
       >
@@ -31,7 +31,7 @@
       </button>
       <button
         type="button"
-        class="btn-gold rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+        class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="busy"
         @click="accept"
       >
