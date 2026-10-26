@@ -74,12 +74,37 @@ describe('useSession', () => {
       name: 'Ada',
       role: 'admin',
     })
+    expect(session.pendingInviteCount.value).toBe(0)
     expect(session.status.value).toBe('ready')
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(`${API_BASE_URL}/api/me`)
     expect(init.method ?? 'GET').toBe('GET')
     expect(init.credentials).toBe('include')
     expect(new Headers(init.headers).get('Authorization')).toBeNull()
+  })
+
+  it('keeps a pending invite count from GET /api/me and clears it on logout', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {
+      user: {
+        id: 'user-1',
+        email: 'ada@apc.edu.ph',
+        name: 'Ada',
+        role: 'user',
+      },
+      pendingInviteCount: 2,
+      needsConsent: [],
+      orgs: [],
+    }))
+
+    const session = useSession()
+    await session.load()
+    expect(session.pendingInviteCount.value).toBe(2)
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    await session.logout()
+
+    expect(session.user.value).toBeNull()
+    expect(session.pendingInviteCount.value).toBe(0)
   })
 
   it('treats a 401 from /api/me as signed out', async () => {

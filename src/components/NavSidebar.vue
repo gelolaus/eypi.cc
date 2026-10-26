@@ -53,7 +53,16 @@
               data-cursor="nav"
               @click="$emit('close')"
             >
-              <span>{{ link.label }}</span>
+              <span class="flex items-center gap-3">
+                <span>{{ link.label }}</span>
+                <span
+                  v-if="link.to === '/invites' && pendingInviteCount > 0"
+                  class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#DEAC4B] px-1.5 text-xs font-semibold leading-none text-[#1a1a2e]"
+                  :aria-label="pendingInviteLabel"
+                >
+                  {{ pendingInviteCount }}
+                </span>
+              </span>
               <span class="nav-sidebar-link__arrow" aria-hidden="true">↗</span>
             </router-link>
           </nav>
@@ -119,9 +128,10 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import OrgLogo from '@/components/OrgLogo.vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useSession } from '@/stores/session'
 import type { OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
@@ -146,8 +156,16 @@ const appLinks = [
   { to: '/manage/tix', label: 'Tix' },
   { to: '/manage/frames', label: 'Frames' },
   { to: '/orgs', label: 'Orgs' },
+  { to: '/invites', label: 'Invites' },
   { to: '/settings', label: 'Settings' },
 ]
+
+const pendingInviteCount = computed(() => useSession().pendingInviteCount.value)
+const pendingInviteLabel = computed(() => {
+  const count = pendingInviteCount.value
+  const noun = count === 1 ? 'invite' : 'invites'
+  return `${count} pending ${noun}`
+})
 
 const publicLinks = [
   { to: '/orgs', label: 'Orgs' },

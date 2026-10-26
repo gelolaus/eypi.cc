@@ -17,6 +17,7 @@ const pages: Record<string, string> = {
   home: 'Home',
   login: 'Sign in',
   dashboard: 'Dashboard',
+  invites: 'Invites',
   links: 'Links',
   forms: 'Forms',
   'forms-concessionaire': 'Concessionaire form',

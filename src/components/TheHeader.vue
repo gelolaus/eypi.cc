@@ -18,11 +18,11 @@
       <div class="pill-nav__controls">
         <button
           type="button"
-          class="pill-nav__menu-btn tap-scale"
+          class="pill-nav__menu-btn tap-scale relative"
           :class="isSidebarOpen ? 'pill-nav__menu-btn--open' : ''"
           :aria-expanded="isSidebarOpen"
           aria-controls="site-nav-sidebar"
-          :aria-label="isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'"
+          :aria-label="menuLabel"
           data-cursor="nav"
           @click="toggleSidebar"
         >
@@ -30,6 +30,12 @@
             <span />
             <span />
             <span />
+          </span>
+          <span
+            v-if="pendingInviteCount > 0"
+            class="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#DEAC4B] px-1 text-[10px] font-semibold leading-none text-[#1a1a2e]"
+          >
+            {{ pendingInviteCount }}
           </span>
         </button>
 
@@ -108,6 +114,14 @@ function onScroll() {
 }
 
 const isAuthPage = isAuthenticated
+const pendingInviteCount = computed(() => session.pendingInviteCount.value)
+const menuLabel = computed(() => {
+  const action = isSidebarOpen.value ? 'Close navigation menu' : 'Open navigation menu'
+  const count = pendingInviteCount.value
+  if (count < 1) return action
+  const noun = count === 1 ? 'invite' : 'invites'
+  return `${action}, ${count} pending ${noun}`
+})
 
 function formatDisplayName(payload: { name?: string | null; email?: string }): string {
   const emailPrefix = payload.email ? payload.email.split('@')[0] : ''

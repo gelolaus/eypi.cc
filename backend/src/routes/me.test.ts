@@ -46,6 +46,14 @@ async function seedSession(opts: { disabled?: boolean; expiresAt?: string } = {}
         args: ['org-beta', 'ada@apc.edu.ph'],
       })
       await db.execute({
+        sql: 'INSERT INTO organizations (id, name, owner_id) VALUES (?, ?, ?)',
+        args: ['org-gamma', 'Gamma', 'owner-id'],
+      })
+      await db.execute({
+        sql: 'INSERT INTO org_members (org_id, email, activated_at, declined_at) VALUES (?, ?, NULL, ?)',
+        args: ['org-gamma', 'ada@apc.edu.ph', '2026-10-01T00:00:00.000Z'],
+      })
+      await db.execute({
         sql: `INSERT INTO sessions (id, user_id, expires_at, last_seen_at) VALUES (?, ?, ?, ?)`,
         args: [await sha256Hex(token), 'ada-id', expiresAt, new Date().toISOString()],
       })
@@ -67,7 +75,7 @@ describe('GET /api/me', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns the user, pending invites, empty needsConsent, and orgs', async () => {
+  it('returns the user, pending invites, empty needsConsent, and orgs, ignoring a declined row', async () => {
     const { request, token } = await seedSession()
 
     const res = await request('/api/me', {

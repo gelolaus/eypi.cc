@@ -31,7 +31,7 @@ app.get('/api/me', requireAuth, async (c) => {
     client.execute({
       sql: `SELECT COUNT(*) AS n
             FROM org_members
-            WHERE lower(email) = lower(?) AND activated_at IS NULL`,
+            WHERE lower(email) = lower(?) AND activated_at IS NULL AND declined_at IS NULL`,
       args: [email],
     }),
     client.execute({

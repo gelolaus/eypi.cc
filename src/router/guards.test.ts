@@ -35,6 +35,13 @@ beforeEach(() => {
 })
 
 describe('route guards', () => {
+  it('registers /invites as an authenticated route', () => {
+    const match = router.resolve('/invites')
+
+    expect(match.name).toBe('invites')
+    expect(match.meta.requiresAuth).toBe(true)
+  })
+
   it('sends anonymous users to /login?returnTo=/links', async () => {
     await router.push('/links')
 

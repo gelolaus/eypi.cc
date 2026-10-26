@@ -6,6 +6,22 @@
       </h1>
     </header>
 
+    <div
+      v-if="pendingInviteCount > 0"
+      class="mb-8 rounded-2xl border border-[#DEAC4B]/50 bg-[#DEAC4B]/10 px-5 py-4 text-sm text-g-text"
+      role="status"
+    >
+      <p>
+        {{ inviteBanner }}
+        <router-link
+          to="/invites"
+          class="font-semibold text-g-primary underline decoration-[#DEAC4B] underline-offset-4 dark:text-[#8FA0E8]"
+        >
+          Review invites
+        </router-link>
+      </p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <button
         v-for="mod in modules"
@@ -45,6 +61,12 @@ function paintCardBorder(event: Event, color: string) {
 }
 
 const userName = computed(() => session.user.value?.name ?? '')
+const pendingInviteCount = computed(() => session.pendingInviteCount.value)
+const inviteBanner = computed(() => {
+  const count = pendingInviteCount.value
+  const noun = count === 1 ? 'invite' : 'invites'
+  return `You have ${count} pending org ${noun}.`
+})
 
 const modules = [
   {

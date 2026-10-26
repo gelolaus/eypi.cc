@@ -26,6 +26,12 @@ const router = createRouter({
       component: () => import('@/views/DashboardView.vue'),
       meta: { requiresAuth: true, title: 'Dashboard' },
     },
+    {
+      path: '/invites',
+      name: 'invites',
+      component: () => import('@/views/InvitesView.vue'),
+      meta: { requiresAuth: true, title: 'Invites' },
+    },
 
     // ── Links module ─────────────────────────────────────────────────────────
     {
