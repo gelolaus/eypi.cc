@@ -537,7 +537,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Delete `backend/src/lib/passes/applePass.ts`, the Apple route, `backend/assets/wallet/*` used only by Apple, `backend/scripts/generate-wallet-assets.mjs` if Apple-only; remove `node-forge`, Apple env keys (env.ts, doctor, example, README). Modify `googleWallet.ts` (class upsert via PATCH-or-insert; `validTimeInterval` with `+08:00` start and a 6-hour default end), delete dead `events.ts:56-62` and the post-finalize CSV append, and the hardcoded `isApcAttendee`.
 
-- [ ] Failing tests: the class payload is upserted on name change; the interval has an offset and an end. Implement → PASS. Commit `refactor(tix): remove Apple Wallet and keep Google Wallet passes current`.
+- [x] Failing tests: the class payload is upserted on name change; the interval has an offset and an end. Implement → PASS. Commit `refactor(tix): remove Apple Wallet and keep Google Wallet passes current`.
 
 ---
 
@@ -609,7 +609,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `router/index.ts` (`scrollBehavior` returns `savedPosition`), `src/composables/useDarkMode.ts` (singleton; default `prefers-color-scheme`; apply the class before mount), `index.html` (`<meta name="color-scheme" content="light dark">`, `theme-color`), toast/scroll-top offset. Create `src/components/PageShell.vue`, `src/components/LegalLayout.vue`; replace the duplicated corner-screw markup.
 
-- [ ] Failing tests: `useDarkMode()` returns the same ref across calls; with no saved choice it follows `matchMedia('(prefers-color-scheme: dark)')`. Commit `fix(ui): follow system dark mode and restore scroll on back`.
+- [x] Failing tests: `useDarkMode()` returns the same ref across calls; with no saved choice it follows `matchMedia('(prefers-color-scheme: dark)')`. Commit `fix(ui): follow system dark mode and restore scroll on back`.
 
 ### Task 7.5: SEO surface (F-SEO-1..3)
 
