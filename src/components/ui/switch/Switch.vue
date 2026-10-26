@@ -27,7 +27,15 @@ const thumb = "pointer-events-none block rounded-full bg-background ring-0 trans
 </script>
 
 <template>
-  <RSwitchRoot data-slot="switch" :data-size="props.size" v-bind="forwarded" :class="cn(base, props.class)">
-    <RSwitchThumb data-slot="switch-thumb" :class="thumb" />
+  <RSwitchRoot
+    data-slot="switch"
+    :data-size="props.size"
+    v-bind="forwarded"
+    :class="cn(base, props.class)"
+  >
+    <RSwitchThumb
+      data-slot="switch-thumb"
+      :class="thumb"
+    />
   </RSwitchRoot>
 </template>

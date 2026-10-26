@@ -82,7 +82,7 @@ describe('auth and status page structure', () => {
 
   it('no legacy classes or hard-coded hex remain', () => {
     for (const src of [loginSource, consentSource, unlockSource, expiredSource, notFoundSource, lockoutSource]) {
-      expect(src).not.toMatch(/g-(text|muted|border|accent|primary)|mica|gold|tap-scale|apc-|btn-primary|btn-lg|control|dark:|(?<!fill=")#[0-9a-fA-F]{3,8}/)
+      expect(src).not.toMatch(/\bg-(text|muted|border|accent|primary)|mica|gold|tap-scale|\bapc-|btn-primary|btn-lg|\bcontrol\b|dark:|(?<!fill=")#[0-9a-fA-F]{3,8}\b/)
     }
   })
 })

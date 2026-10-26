@@ -6,7 +6,10 @@
       title="Tix"
       description="Manage tickets & check-in"
     >
-      <div v-if="!isLocked" class="mb-6 flex flex-col gap-3 sm:flex-row">
+      <div
+        v-if="!isLocked"
+        class="mb-6 flex flex-col gap-3 sm:flex-row"
+      >
         <Input
           v-model="searchQuery"
           type="search"
@@ -14,7 +17,10 @@
           aria-label="Search events"
           class="min-w-0 flex-1"
         />
-        <Button as-child size="lg">
+        <Button
+          as-child
+          size="lg"
+        >
           <router-link to="/manage/tix/new">
             New Event
           </router-link>
@@ -25,7 +31,11 @@
         <OrgLockout />
       </div>
 
-      <div v-else-if="error" role="alert" class="rounded-2xl border border-destructive/30 bg-destructive/10 p-6 text-center text-sm text-destructive">
+      <div
+        v-else-if="error"
+        role="alert"
+        class="rounded-2xl border border-destructive/30 bg-destructive/10 p-6 text-center text-sm text-destructive"
+      >
         {{ error }}
       </div>
 
@@ -33,17 +43,28 @@
         v-else-if="!filteredEvents.length"
         class="gap-0 rounded-3xl p-12 text-center"
       >
-        <p class="text-sm font-medium text-foreground">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
+        <p class="text-sm font-medium text-foreground">
+          {{ events.length ? 'No matching events' : 'No events yet' }}
+        </p>
         <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
           {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
         </p>
       </Card>
 
-      <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border">
+      <div
+        v-else
+        class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border"
+      >
         <div class="hidden grid-cols-12 border-b border-border bg-card px-4 py-3 font-mono text-xs font-semibold text-muted-foreground md:grid">
-          <div class="col-span-5">Event</div>
-          <div class="col-span-4">Date &amp; Time</div>
-          <div class="col-span-3 text-right">Actions</div>
+          <div class="col-span-5">
+            Event
+          </div>
+          <div class="col-span-4">
+            Date &amp; Time
+          </div>
+          <div class="col-span-3 text-right">
+            Actions
+          </div>
         </div>
 
         <Card
@@ -53,17 +74,27 @@
           class="gap-3 rounded-2xl p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-b md:border-border md:bg-transparent md:py-4 md:ring-0 md:last:border-b-0"
         >
           <div class="min-w-0 md:col-span-5">
-            <p class="break-words text-base font-semibold text-foreground">{{ event.name }}</p>
+            <p class="break-words text-base font-semibold text-foreground">
+              {{ event.name }}
+            </p>
             <p class="mt-1 font-mono text-sm text-muted-foreground md:hidden">
               {{ formatDate(event.event_date as string) }}<span v-if="event.event_time"> · {{ event.event_time }}</span>
             </p>
           </div>
           <div class="hidden md:col-span-4 md:block">
-            <p class="font-mono text-sm text-foreground">{{ formatDate(event.event_date as string) }}</p>
-            <p class="font-mono text-xs text-muted-foreground">{{ event.event_time }}</p>
+            <p class="font-mono text-sm text-foreground">
+              {{ formatDate(event.event_date as string) }}
+            </p>
+            <p class="font-mono text-xs text-muted-foreground">
+              {{ event.event_time }}
+            </p>
           </div>
           <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
-            <Button as-child variant="outline" class="flex-1 md:flex-none">
+            <Button
+              as-child
+              variant="outline"
+              class="flex-1 md:flex-none"
+            >
               <router-link :to="`/manage/tix/${event.slug}`">
                 Manage
               </router-link>

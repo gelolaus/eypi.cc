@@ -2,13 +2,28 @@
   <header
     class="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/90 px-4 backdrop-blur-md sm:px-6"
   >
-    <BrandLogo :to="isAuthenticated ? '/dashboard' : '/'" class="min-h-11" />
+    <BrandLogo
+      :to="isAuthenticated ? '/dashboard' : '/'"
+      class="min-h-11"
+    />
 
     <div class="flex min-w-0 items-center gap-1">
-      <nav class="hidden items-center gap-1 sm:flex" aria-label="Main navigation">
-        <template v-for="item in inlineItems" :key="item.to">
-          <Button v-if="item.cta" as-child class="ml-1 h-11 px-4 font-semibold">
-            <router-link :to="item.to">{{ item.label }}</router-link>
+      <nav
+        class="hidden items-center gap-1 sm:flex"
+        aria-label="Main navigation"
+      >
+        <template
+          v-for="item in inlineItems"
+          :key="item.to"
+        >
+          <Button
+            v-if="item.cta"
+            as-child
+            class="ml-1 h-11 px-4 font-semibold"
+          >
+            <router-link :to="item.to">
+              {{ item.label }}
+            </router-link>
           </Button>
           <router-link
             v-else
@@ -29,7 +44,10 @@
         :aria-label="menuLabel"
         @click="toggle"
       >
-        <Menu class="size-5" aria-hidden="true" />
+        <Menu
+          class="size-5"
+          aria-hidden="true"
+        />
         <Badge
           v-if="pendingInviteCount > 0"
           class="pointer-events-none absolute right-0 top-0 h-4 min-w-4 px-1 text-[10px]"

@@ -1,5 +1,8 @@
 <template>
-  <Toaster rich-colors position="top-center" />
+  <Toaster
+    rich-colors
+    position="top-center"
+  />
 </template>
 
 <script setup lang="ts">

@@ -1,12 +1,16 @@
 <template>
-  <div v-if="orgs.length > 0" class="relative" :class="block ? 'block w-full' : 'inline-block'">
+  <div
+    v-if="orgs.length > 0"
+    class="relative"
+    :class="block ? 'block w-full' : 'inline-block'"
+  >
     <button
+      ref="triggerRef"
       type="button"
       class="flex min-h-11 items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       :class="block ? 'w-full' : 'max-w-[min(100%,14rem)]'"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
       :aria-label="compact ? `Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}` : undefined"
-      ref="triggerRef"
       aria-haspopup="dialog"
       :aria-controls="isOpen ? menuId : undefined"
       :aria-expanded="isOpen ? 'true' : 'false'"
@@ -34,12 +38,19 @@
         stroke-width="2.5"
         aria-hidden="true"
       >
-        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M19 9l-7 7-7-7"
+        />
       </svg>
     </button>
 
     <!-- Below sm the menu is a bottom sheet teleported to body; from sm it is an anchored dropdown. -->
-    <Teleport to="body" :disabled="!isMobile">
+    <Teleport
+      to="body"
+      :disabled="!isMobile"
+    >
       <button
         v-if="isOpen"
         type="button"
@@ -60,8 +71,13 @@
         class="fixed inset-x-0 bottom-0 z-[10001] max-h-[80dvh] overflow-y-auto rounded-t-3xl bg-popover text-popover-foreground ring-1 ring-foreground/10 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-left shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:z-50 sm:max-h-none sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:overflow-visible sm:rounded-lg sm:p-0 sm:py-1.5 sm:shadow-md"
         :class="placement === 'up' ? 'sm:bottom-full sm:left-0 sm:mb-1.5' : 'sm:right-0 sm:mt-1.5'"
       >
-        <div class="mx-auto mb-2 h-1.5 w-10 rounded-full bg-border sm:hidden" aria-hidden="true" />
-        <p class="px-3 pb-2 text-sm font-semibold text-muted-foreground sm:hidden">Switch organization</p>
+        <div
+          class="mx-auto mb-2 h-1.5 w-10 rounded-full bg-border sm:hidden"
+          aria-hidden="true"
+        />
+        <p class="px-3 pb-2 text-sm font-semibold text-muted-foreground sm:hidden">
+          Switch organization
+        </p>
         <div class="sm:max-h-56 sm:overflow-y-auto sm:py-1">
           <button
             v-for="org in orgs"
@@ -72,14 +88,22 @@
             :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
             @click="handleSelect(org)"
           >
-            <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
+            <OrgLogo
+              :logo-url="org.logo_url"
+              :name="org.org_name"
+              size="sm"
+            />
             <span
               class="min-w-0 flex-1 truncate text-base leading-snug sm:text-sm"
               :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
             >
               {{ org.org_name }}
             </span>
-            <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-primary" aria-hidden="true">●</span>
+            <span
+              v-if="activeOrg?.org_id === org.org_id"
+              class="text-xs font-bold text-primary"
+              aria-hidden="true"
+            >●</span>
           </button>
         </div>
       </div>

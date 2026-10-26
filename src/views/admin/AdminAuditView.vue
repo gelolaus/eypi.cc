@@ -2,7 +2,10 @@
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div class="w-full max-w-xs">
-        <Label for="admin-audit-action" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <Label
+          for="admin-audit-action"
+          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        >
           Action
         </Label>
         <select
@@ -14,7 +17,11 @@
           <option value="">
             All actions
           </option>
-          <option v-for="option in actions" :key="option" :value="option">
+          <option
+            v-for="option in actions"
+            :key="option"
+            :value="option"
+          >
             {{ actionLabel(option) }}
           </option>
         </select>
@@ -24,63 +31,103 @@
       </p>
     </div>
 
-    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
+    <div
+      v-if="loading"
+      class="h-40 animate-pulse rounded-2xl bg-muted"
+      aria-hidden="true"
+    />
 
-    <p v-else-if="events.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+    <p
+      v-else-if="events.length === 0"
+      class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground"
+    >
       No audit events yet.
     </p>
 
-    <div v-else class="md:overflow-hidden md:rounded-2xl md:border md:border-border">
+    <div
+      v-else
+      class="md:overflow-hidden md:rounded-2xl md:border md:border-border"
+    >
       <div class="overflow-x-auto">
         <div class="space-y-3 md:min-w-3xl md:space-y-0">
-        <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
-          <div class="col-span-3">Action</div>
-          <div class="col-span-3">Actor</div>
-          <div class="col-span-3">Target</div>
-          <div class="col-span-2">When</div>
-          <div class="col-span-1 text-right">Meta</div>
-        </div>
-        <div
-          v-for="event in events"
-          :key="event.id"
-          data-admin-row
-          class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-start md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
-        >
-          <div class="min-w-0 md:col-span-3">
-            <p class="text-sm font-semibold text-foreground">{{ actionLabel(event.action) }}</p>
-            <p class="font-mono text-xs text-muted-foreground">{{ event.action }}</p>
+          <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
+            <div class="col-span-3">
+              Action
+            </div>
+            <div class="col-span-3">
+              Actor
+            </div>
+            <div class="col-span-3">
+              Target
+            </div>
+            <div class="col-span-2">
+              When
+            </div>
+            <div class="col-span-1 text-right">
+              Meta
+            </div>
           </div>
-          <div class="font-mono min-w-0 truncate text-xs text-muted-foreground md:col-span-3" :title="event.actorEmail ?? event.actorUserId">
-            {{ event.actorEmail ?? event.actorUserId ?? 'Unknown' }}
-          </div>
-          <div class="min-w-0 md:col-span-3">
-            <p class="text-xs font-semibold text-muted-foreground">{{ event.targetType ?? 'None' }}</p>
-            <p class="font-mono truncate text-xs text-muted-foreground" :title="event.targetId ?? ''">
-              {{ event.targetId ?? '' }}
-            </p>
-          </div>
-          <div class="font-mono text-xs text-muted-foreground md:col-span-2">{{ formatDate(event.createdAt) }}</div>
-          <div class="flex md:col-span-1 md:justify-end">
-            <Button
-              v-if="event.meta !== null"
-              type="button"
-              variant="ghost"
-              :aria-label="`Show details for ${actionLabel(event.action)}`"
-              :aria-expanded="expanded === event.id"
-              @click="toggle(event.id)"
+          <div
+            v-for="event in events"
+            :key="event.id"
+            data-admin-row
+            class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-start md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
+          >
+            <div class="min-w-0 md:col-span-3">
+              <p class="text-sm font-semibold text-foreground">
+                {{ actionLabel(event.action) }}
+              </p>
+              <p class="font-mono text-xs text-muted-foreground">
+                {{ event.action }}
+              </p>
+            </div>
+            <div
+              class="font-mono min-w-0 truncate text-xs text-muted-foreground md:col-span-3"
+              :title="event.actorEmail ?? event.actorUserId"
             >
-              {{ expanded === event.id ? 'Hide' : 'Show' }}
-            </Button>
-          </div>
-          <div v-if="expanded === event.id && event.meta !== null" class="md:col-span-12 md:mt-3">
-            <pre class="font-mono overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">{{ formatMeta(event.meta) }}</pre>
+              {{ event.actorEmail ?? event.actorUserId ?? 'Unknown' }}
+            </div>
+            <div class="min-w-0 md:col-span-3">
+              <p class="text-xs font-semibold text-muted-foreground">
+                {{ event.targetType ?? 'None' }}
+              </p>
+              <p
+                class="font-mono truncate text-xs text-muted-foreground"
+                :title="event.targetId ?? ''"
+              >
+                {{ event.targetId ?? '' }}
+              </p>
+            </div>
+            <div class="font-mono text-xs text-muted-foreground md:col-span-2">
+              {{ formatDate(event.createdAt) }}
+            </div>
+            <div class="flex md:col-span-1 md:justify-end">
+              <Button
+                v-if="event.meta !== null"
+                type="button"
+                variant="ghost"
+                :aria-label="`Show details for ${actionLabel(event.action)}`"
+                :aria-expanded="expanded === event.id"
+                @click="toggle(event.id)"
+              >
+                {{ expanded === event.id ? 'Hide' : 'Show' }}
+              </Button>
+            </div>
+            <div
+              v-if="expanded === event.id && event.meta !== null"
+              class="md:col-span-12 md:mt-3"
+            >
+              <pre class="font-mono overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">{{ formatMeta(event.meta) }}</pre>
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </div>
 
-    <div v-if="nextCursor" class="mt-6 flex justify-center">
+    <div
+      v-if="nextCursor"
+      class="mt-6 flex justify-center"
+    >
       <Button
         type="button"
         variant="outline"

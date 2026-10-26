@@ -32,7 +32,9 @@
             size="md"
           />
           <div class="min-w-0">
-            <h2 class="break-words font-heading text-xl font-semibold tracking-tight">{{ org.org_name }}</h2>
+            <h2 class="break-words font-heading text-xl font-semibold tracking-tight">
+              {{ org.org_name }}
+            </h2>
           </div>
         </div>
         <Badge
@@ -47,8 +49,12 @@
       <AppSection>
         <div class="mb-6 flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 class="font-heading text-xl font-semibold tracking-tight">Public profile</h3>
-            <p class="mt-1 text-sm text-muted-foreground">Shown on /orgs when listed in the directory.</p>
+            <h3 class="font-heading text-xl font-semibold tracking-tight">
+              Public profile
+            </h3>
+            <p class="mt-1 text-sm text-muted-foreground">
+              Shown on /orgs when listed in the directory.
+            </p>
           </div>
           <Button
             type="button"
@@ -62,7 +68,9 @@
 
         <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/40 p-4">
           <div>
-            <p class="text-sm font-medium">List in /orgs directory</p>
+            <p class="text-sm font-medium">
+              List in /orgs directory
+            </p>
           </div>
           <button
             type="button"
@@ -106,7 +114,9 @@
               v-model="profileForm.orgType"
               :class="selectClass"
             >
-              <option value="">Not set</option>
+              <option value="">
+                Not set
+              </option>
               <option
                 v-for="option in ORG_TYPE_OPTIONS"
                 :key="option.value"
@@ -140,7 +150,7 @@
                   :src="profileForm.bannerUrl"
                   alt="Banner preview"
                   class="h-full w-full object-cover"
-                />
+                >
               </div>
               <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border px-4 py-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                 {{ uploadingBanner ? 'Uploading...' : 'Upload banner' }}
@@ -150,7 +160,7 @@
                   class="sr-only"
                   :disabled="uploadingBanner"
                   @change="onBannerPicked"
-                />
+                >
               </label>
               <Button
                 v-if="profileForm.bannerUrl"
@@ -175,7 +185,7 @@
                     :src="profileForm.logoUrl"
                     alt="Logo preview"
                     class="h-full w-full object-cover"
-                  />
+                  >
                 </div>
                 <div
                   v-else
@@ -192,7 +202,7 @@
                   class="sr-only"
                   :disabled="uploadingLogo"
                   @change="onLogoPicked"
-                />
+                >
               </label>
               <Button
                 v-if="profileForm.logoUrl"
@@ -208,7 +218,9 @@
           </div>
 
           <div>
-            <p class="mb-3 text-base font-medium">Social links</p>
+            <p class="mb-3 text-base font-medium">
+              Social links
+            </p>
             <div class="grid gap-4 sm:grid-cols-2">
               <div
                 v-for="field in SOCIAL_FIELD_META"
@@ -227,7 +239,7 @@
                     type="text"
                     :placeholder="field.placeholder"
                     class="min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground"
-                  />
+                  >
                 </div>
                 <Input
                   v-else
@@ -252,7 +264,9 @@
 
       <!-- Owner: members -->
       <AppSection v-if="isOwner">
-        <h3 class="mb-6 border-b border-border pb-4 font-heading text-xl font-semibold tracking-tight">Members</h3>
+        <h3 class="mb-6 border-b border-border pb-4 font-heading text-xl font-semibold tracking-tight">
+          Members
+        </h3>
 
         <div
           v-if="loadingMembers"
@@ -275,6 +289,8 @@
           v-else
           class="mb-6 overflow-x-auto md:rounded-2xl md:border md:border-border"
         >
+          <!-- Explicit table roles are kept on purpose: Safari drops table semantics once display is overridden by utilities. -->
+          <!-- eslint-disable vuejs-accessibility/no-redundant-roles -->
           <table
             role="table"
             aria-label="Members"
@@ -291,19 +307,27 @@
                 <th
                   role="columnheader"
                   class="px-4 py-3"
-                >Name</th>
+                >
+                  Name
+                </th>
                 <th
                   role="columnheader"
                   class="px-4 py-3"
-                >Email</th>
+                >
+                  Email
+                </th>
                 <th
                   role="columnheader"
                   class="px-4 py-3 text-center"
-                >Status</th>
+                >
+                  Status
+                </th>
                 <th
                   role="columnheader"
                   class="px-4 py-3 text-right"
-                >Actions</th>
+                >
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody
@@ -319,15 +343,21 @@
                 <td
                   role="cell"
                   class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal"
-                >{{ member.name?.trim() || 'No account yet' }}</td>
+                >
+                  {{ member.name?.trim() || 'No account yet' }}
+                </td>
                 <td
                   role="cell"
                   class="block break-all text-muted-foreground md:table-cell md:px-4 md:py-3 md:text-inherit"
-                >{{ member.email }}</td>
+                >
+                  {{ member.email }}
+                </td>
                 <td
                   role="cell"
                   class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center"
-                >{{ memberStatus(member) }}</td>
+                >
+                  {{ memberStatus(member) }}
+                </td>
                 <td
                   role="cell"
                   class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right"
@@ -371,6 +401,7 @@
               </tr>
             </tbody>
           </table>
+          <!-- eslint-enable vuejs-accessibility/no-redundant-roles -->
         </div>
         <p
           v-if="membersActionError"
@@ -463,8 +494,12 @@
 
       <!-- Member: leave -->
       <AppSection v-else>
-        <h3 class="mb-2 font-heading text-lg font-semibold">Leave org</h3>
-        <p class="mb-4 text-sm text-muted-foreground">You will lose access to org-scoped tools until re-invited.</p>
+        <h3 class="mb-2 font-heading text-lg font-semibold">
+          Leave org
+        </h3>
+        <p class="mb-4 text-sm text-muted-foreground">
+          You will lose access to org-scoped tools until re-invited.
+        </p>
         <Button
           type="button"
           variant="destructive"

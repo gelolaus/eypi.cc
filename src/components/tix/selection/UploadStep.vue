@@ -1,7 +1,11 @@
 <template>
   <Card class="gap-0 rounded-3xl p-5 sm:p-8">
-    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">Upload Spreadsheet</h2>
-    <p class="mb-6 font-mono text-xs text-muted-foreground">Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.</p>
+    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">
+      Upload Spreadsheet
+    </h2>
+    <p class="mb-6 font-mono text-xs text-muted-foreground">
+      Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.
+    </p>
 
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
     <div
@@ -12,18 +16,41 @@
       @dragover.prevent
       @drop.prevent="onDrop"
     >
-      <p v-if="fileName" class="text-sm font-medium text-primary">
+      <p
+        v-if="fileName"
+        class="text-sm font-medium text-primary"
+      >
         {{ fileName }} — {{ rowCount }} rows, {{ columnCount }} columns
       </p>
       <template v-else>
-        <p class="text-sm text-muted-foreground">Drop .xlsx or click to upload</p>
+        <p class="text-sm text-muted-foreground">
+          Drop .xlsx or click to upload
+        </p>
       </template>
-      <input ref="fileInput" type="file" accept=".xlsx,.XLSX" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange">
-      <Button type="button" variant="outline" class="mt-3" @click="fileInput?.click()">
+      <input
+        ref="fileInput"
+        type="file"
+        accept=".xlsx,.XLSX"
+        class="hidden"
+        aria-hidden="true"
+        tabindex="-1"
+        @change="onFileChange"
+      >
+      <Button
+        type="button"
+        variant="outline"
+        class="mt-3"
+        @click="fileInput?.click()"
+      >
         {{ fileName ? 'Change file' : 'Browse' }}
       </Button>
     </div>
-    <p v-if="error" class="mt-2 text-xs font-medium text-destructive">{{ error }}</p>
+    <p
+      v-if="error"
+      class="mt-2 text-xs font-medium text-destructive"
+    >
+      {{ error }}
+    </p>
 
     <Button
       type="button"

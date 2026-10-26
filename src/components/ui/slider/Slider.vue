@@ -39,10 +39,26 @@ const thumb = "relative block size-3 shrink-0 rounded-full border border-ring bg
 </script>
 
 <template>
-  <RSliderRoot data-slot="slider" v-bind="forwarded" :class="cn(base, props.class)">
-    <RSliderTrack data-slot="slider-track" :class="track">
-      <RSliderRange data-slot="slider-range" :class="range" />
+  <RSliderRoot
+    data-slot="slider"
+    v-bind="forwarded"
+    :class="cn(base, props.class)"
+  >
+    <RSliderTrack
+      data-slot="slider-track"
+      :class="track"
+    >
+      <RSliderRange
+        data-slot="slider-range"
+        :class="range"
+      />
     </RSliderTrack>
-    <RSliderThumb v-for="(_, index) in values" :key="index" data-slot="slider-thumb" :aria-label="props.thumbLabel" :class="thumb" />
+    <RSliderThumb
+      v-for="(_, index) in values"
+      :key="index"
+      data-slot="slider-thumb"
+      :aria-label="props.thumbLabel"
+      :class="thumb"
+    />
   </RSliderRoot>
 </template>

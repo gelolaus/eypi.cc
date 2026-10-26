@@ -31,37 +31,76 @@
     </div>
 
     <div class="mb-3 md:hidden">
-      <Label for="attendee-sort" class="sr-only">Sort attendees</Label>
+      <Label
+        for="attendee-sort"
+        class="sr-only"
+      >Sort attendees</Label>
       <select
         id="attendee-sort"
         v-model="sortField"
         class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
         @change="currentPage = 1"
       >
-        <option value="name">Sort by name</option>
-        <option value="email">Sort by email</option>
-        <option value="status">Sort by status</option>
+        <option value="name">
+          Sort by name
+        </option>
+        <option value="email">
+          Sort by email
+        </option>
+        <option value="status">
+          Sort by status
+        </option>
       </select>
     </div>
 
-    <div v-if="loading" class="space-y-2">
-      <div v-for="i in 5" :key="i" class="h-14 animate-pulse rounded-xl bg-muted" />
+    <div
+      v-if="loading"
+      class="space-y-2"
+    >
+      <div
+        v-for="i in 5"
+        :key="i"
+        class="h-14 animate-pulse rounded-xl bg-muted"
+      />
     </div>
 
     <div v-else>
-      <div data-attendee-scroll class="overflow-x-auto">
-        <div data-attendee-list class="space-y-3 md:min-w-176 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border">
+      <div
+        data-attendee-scroll
+        class="overflow-x-auto"
+      >
+        <div
+          data-attendee-list
+          class="space-y-3 md:min-w-176 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border"
+        >
           <div class="hidden grid-cols-12 border-b border-border bg-card text-sm font-semibold text-foreground md:grid">
-            <Button type="button" variant="ghost" class="col-span-4 h-11 justify-start gap-1 rounded-none px-4" @click="toggleSort('name')">
+            <Button
+              type="button"
+              variant="ghost"
+              class="col-span-4 h-11 justify-start gap-1 rounded-none px-4"
+              @click="toggleSort('name')"
+            >
               Attendee <span class="opacity-40">{{ sortMark('name') }}</span>
             </Button>
-            <Button type="button" variant="ghost" class="col-span-3 h-11 justify-start gap-1 rounded-none px-4" @click="toggleSort('email')">
+            <Button
+              type="button"
+              variant="ghost"
+              class="col-span-3 h-11 justify-start gap-1 rounded-none px-4"
+              @click="toggleSort('email')"
+            >
               Email <span class="opacity-40">{{ sortMark('email') }}</span>
             </Button>
-            <Button type="button" variant="ghost" class="col-span-2 h-11 justify-start gap-1 rounded-none px-4" @click="toggleSort('status')">
+            <Button
+              type="button"
+              variant="ghost"
+              class="col-span-2 h-11 justify-start gap-1 rounded-none px-4"
+              @click="toggleSort('status')"
+            >
               Status <span class="opacity-40">{{ sortMark('status') }}</span>
             </Button>
-            <div class="col-span-3 flex min-h-11 items-center justify-end px-4">Actions</div>
+            <div class="col-span-3 flex min-h-11 items-center justify-end px-4">
+              Actions
+            </div>
           </div>
 
           <div
@@ -78,8 +117,12 @@
             class="gap-3 rounded-2xl p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-b md:border-border md:bg-transparent md:px-0 md:py-3 md:ring-0 md:last:border-0"
           >
             <div class="min-w-0 md:col-span-4 md:px-4">
-              <p class="break-words font-mono text-sm font-bold text-foreground">{{ attendee.first_name }} {{ attendee.last_name }}</p>
-              <p class="truncate font-mono text-xs text-muted-foreground md:hidden">{{ attendee.email }}</p>
+              <p class="break-words font-mono text-sm font-bold text-foreground">
+                {{ attendee.first_name }} {{ attendee.last_name }}
+              </p>
+              <p class="truncate font-mono text-xs text-muted-foreground md:hidden">
+                {{ attendee.email }}
+              </p>
               <template v-if="editingClusterAttendee === attendee.id">
                 <Input
                   v-model="attendeeClusterEditValue"
@@ -106,13 +149,18 @@
               </Button>
             </div>
             <div class="hidden min-w-0 md:col-span-3 md:block md:px-4">
-              <p class="truncate font-mono text-xs text-muted-foreground">{{ attendee.email }}</p>
+              <p class="truncate font-mono text-xs text-muted-foreground">
+                {{ attendee.email }}
+              </p>
             </div>
             <div class="md:col-span-2 md:px-4">
               <Badge :variant="statusVariant(attendee.status)">
                 {{ statusLabel(attendee.status) }}
               </Badge>
-              <p v-if="attendee.actioned_at" class="mt-1 font-mono text-xs text-muted-foreground">
+              <p
+                v-if="attendee.actioned_at"
+                class="mt-1 font-mono text-xs text-muted-foreground"
+              >
                 {{ formatStoredDateTime(attendee.actioned_at) }}
               </p>
             </div>
@@ -167,7 +215,11 @@
       </div>
 
       <datalist id="attendee-cluster-suggestions">
-        <option v-for="cluster in clusters" :key="cluster.value" :value="cluster.value" />
+        <option
+          v-for="cluster in clusters"
+          :key="cluster.value"
+          :value="cluster.value"
+        />
       </datalist>
 
       <div

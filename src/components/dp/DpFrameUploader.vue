@@ -1,8 +1,16 @@
 <template>
   <div>
     <!-- Thumbnail strip -->
-    <p v-if="frames.length > 1" class="mb-2 text-sm font-medium text-muted-foreground">Drag to reorder or use the arrows</p>
-    <div v-if="frames.length" class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+    <p
+      v-if="frames.length > 1"
+      class="mb-2 text-sm font-medium text-muted-foreground"
+    >
+      Drag to reorder or use the arrows
+    </p>
+    <div
+      v-if="frames.length"
+      class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
+    >
       <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- pointer drag reorder; remove stays a button -->
       <div
         v-for="(frame, i) in frames"
@@ -20,11 +28,47 @@
         @dragend="onDragEnd"
       >
         <div class="overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
-          <img :src="frame.src" alt="" draggable="false" class="block aspect-square w-full object-contain" />
+          <img
+            :src="frame.src"
+            alt=""
+            draggable="false"
+            class="block aspect-square w-full object-contain"
+          >
         </div>
         <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">{{ i + 1 }}</span>
-        <span class="pointer-events-none absolute left-1.5 top-9 hidden items-center rounded-md bg-background/70 px-1 py-1 text-foreground sm:flex" aria-hidden="true">
-          <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" /></svg>
+        <span
+          class="pointer-events-none absolute left-1.5 top-9 hidden items-center rounded-md bg-background/70 px-1 py-1 text-foreground sm:flex"
+          aria-hidden="true"
+        >
+          <svg
+            class="h-3 w-3"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          ><circle
+            cx="9"
+            cy="6"
+            r="1.5"
+          /><circle
+            cx="15"
+            cy="6"
+            r="1.5"
+          /><circle
+            cx="9"
+            cy="12"
+            r="1.5"
+          /><circle
+            cx="15"
+            cy="12"
+            r="1.5"
+          /><circle
+            cx="9"
+            cy="18"
+            r="1.5"
+          /><circle
+            cx="15"
+            cy="18"
+            r="1.5"
+          /></svg>
         </span>
         <div class="mt-1 flex items-center justify-between gap-1">
           <Button
@@ -34,7 +78,9 @@
             :disabled="i === 0"
             aria-label="Move up"
             @click.stop="$emit('reorder', i, i - 1)"
-          >Up</Button>
+          >
+            Up
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -42,7 +88,9 @@
             :disabled="i === frames.length - 1"
             aria-label="Move down"
             @click.stop="$emit('reorder', i, i + 1)"
-          >Down</Button>
+          >
+            Down
+          </Button>
           <Button
             type="button"
             variant="destructive"
@@ -50,7 +98,9 @@
             :disabled="busyIndex === i"
             aria-label="Remove frame"
             @click="$emit('remove', i)"
-          >{{ busyIndex === i ? '…' : '×' }}</Button>
+          >
+            {{ busyIndex === i ? '…' : '×' }}
+          </Button>
         </div>
       </div>
     </div>
@@ -73,16 +123,48 @@
       @dragleave.prevent="dragging = false"
       @drop.prevent="onDrop"
     >
-      <input ref="fileInput" type="file" accept="image/png, image/x-png, .png" multiple class="hidden" aria-hidden="true" tabindex="-1" @change="onPicked" />
+      <input
+        ref="fileInput"
+        type="file"
+        accept="image/png, image/x-png, .png"
+        multiple
+        class="hidden"
+        aria-hidden="true"
+        tabindex="-1"
+        @change="onPicked"
+      >
       <div class="mb-2 flex size-10 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+        <svg
+          class="h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        ><path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 4v16m8-8H4"
+        /></svg>
       </div>
-      <p class="text-sm font-medium text-foreground">{{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}</p>
-      <p class="mt-1 text-xs text-muted-foreground">transparent PNG, up to 3 MB</p>
+      <p class="text-sm font-medium text-foreground">
+        {{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}
+      </p>
+      <p class="mt-1 text-xs text-muted-foreground">
+        transparent PNG, up to 3 MB
+      </p>
     </div>
 
-    <p v-if="uploadError" id="frame-upload-error" role="alert" class="mt-2 text-sm text-destructive">{{ uploadError }}</p>
-    <p class="mt-2 text-right font-mono text-xs text-muted-foreground">{{ frames.length }} / {{ max }} frames</p>
+    <p
+      v-if="uploadError"
+      id="frame-upload-error"
+      role="alert"
+      class="mt-2 text-sm text-destructive"
+    >
+      {{ uploadError }}
+    </p>
+    <p class="mt-2 text-right font-mono text-xs text-muted-foreground">
+      {{ frames.length }} / {{ max }} frames
+    </p>
   </div>
 </template>
 

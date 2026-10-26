@@ -62,7 +62,7 @@
               :src="profile.bannerUrl"
               :alt="`${profile.name} banner`"
               class="h-full w-full object-cover"
-            />
+            >
           </div>
 
           <!-- Logo sits on the banner, overlapping into the content area -->
@@ -75,7 +75,7 @@
                 :src="profile.logoUrl"
                 :alt="`${profile.name} logo`"
                 class="h-full w-full object-cover"
-              />
+              >
             </div>
             <div
               v-else
@@ -205,7 +205,9 @@
                 <p class="mt-1 font-mono text-xs text-muted-foreground">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
-                <p class="mt-0.5 text-sm text-muted-foreground">{{ event.location }}</p>
+                <p class="mt-0.5 text-sm text-muted-foreground">
+                  {{ event.location }}
+                </p>
               </router-link>
             </li>
           </ul>

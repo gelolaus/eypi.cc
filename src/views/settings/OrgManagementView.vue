@@ -25,10 +25,18 @@
       class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border"
     >
       <div class="hidden grid-cols-12 border-b border-border bg-card px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
-        <div class="col-span-4">Org</div>
-        <div class="col-span-3">Owner</div>
-        <div class="col-span-2">Directory</div>
-        <div class="col-span-3 text-right">Actions</div>
+        <div class="col-span-4">
+          Org
+        </div>
+        <div class="col-span-3">
+          Owner
+        </div>
+        <div class="col-span-2">
+          Directory
+        </div>
+        <div class="col-span-3 text-right">
+          Actions
+        </div>
       </div>
       <div
         v-for="item in orgs"
@@ -37,10 +45,16 @@
         class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:py-4 md:last:border-0 md:hover:bg-muted/40"
       >
         <div class="min-w-0 md:col-span-4">
-          <p class="break-words text-base font-semibold leading-snug md:text-sm">{{ item.org_name }}</p>
-          <p class="mt-1 truncate font-mono text-xs text-muted-foreground md:hidden">{{ item.owner_email }}</p>
+          <p class="break-words text-base font-semibold leading-snug md:text-sm">
+            {{ item.org_name }}
+          </p>
+          <p class="mt-1 truncate font-mono text-xs text-muted-foreground md:hidden">
+            {{ item.owner_email }}
+          </p>
         </div>
-        <div class="hidden min-w-0 truncate font-mono text-xs text-muted-foreground md:col-span-3 md:block">{{ item.owner_email }}</div>
+        <div class="hidden min-w-0 truncate font-mono text-xs text-muted-foreground md:col-span-3 md:block">
+          {{ item.owner_email }}
+        </div>
         <div class="text-sm md:col-span-2">
           <span class="text-muted-foreground md:hidden">Directory: </span>{{ item.is_public_catalog ? 'Public' : 'Hidden' }}
         </div>

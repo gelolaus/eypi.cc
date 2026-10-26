@@ -9,7 +9,7 @@
       :src="logoUrl"
       :alt="name ? `${name} logo` : 'Organization logo'"
       class="h-full w-full object-cover"
-    />
+    >
     <div
       v-else
       class="flex h-full w-full items-center justify-center bg-primary/10 font-mono font-bold text-primary"

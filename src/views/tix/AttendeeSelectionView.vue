@@ -2,113 +2,124 @@
   <div class="relative w-full">
     <AppPage title="Attendee Selection">
       <template #description>
-        <Button as-child variant="link" class="-ml-2 h-11 px-2 text-sm text-muted-foreground">
-          <router-link to="/manage/tix">← My events</router-link>
+        <Button
+          as-child
+          variant="link"
+          class="-ml-2 h-11 px-2 text-sm text-muted-foreground"
+        >
+          <router-link to="/manage/tix">
+            ← My events
+          </router-link>
         </Button>
-        <span v-if="eventName" class="block text-sm text-muted-foreground">{{ eventName }}</span>
+        <span
+          v-if="eventName"
+          class="block text-sm text-muted-foreground"
+        >{{ eventName }}</span>
       </template>
 
-    <!-- Step progress bar -->
-    <div class="mb-8 flex items-center gap-1">
-      <template v-for="(_step, i) in visibleSteps" :key="i">
-        <div
-          :class="[
-            'h-1.5 flex-1 rounded-full transition-all duration-300',
-            stepIndex >= i ? 'bg-primary' : 'bg-muted',
-          ]"
-        />
-      </template>
-    </div>
-    <p class="mb-6 text-sm font-medium text-muted-foreground">
-      Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
-    </p>
+      <!-- Step progress bar -->
+      <div class="mb-8 flex items-center gap-1">
+        <template
+          v-for="(_step, i) in visibleSteps"
+          :key="i"
+        >
+          <div
+            :class="[
+              'h-1.5 flex-1 rounded-full transition-all duration-300',
+              stepIndex >= i ? 'bg-primary' : 'bg-muted',
+            ]"
+          />
+        </template>
+      </div>
+      <p class="mb-6 text-sm font-medium text-muted-foreground">
+        Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
+      </p>
 
-    <UploadStep
-      v-if="currentStep === 'upload'"
-      :file-name="csvFile?.name ?? ''"
-      :row-count="allRows.length"
-      :column-count="columnHeaders.length"
-      :error="csvError"
-      :uploading="uploading"
-      @file="loadFile"
-      @upload="uploadCsv"
-    />
+      <UploadStep
+        v-if="currentStep === 'upload'"
+        :file-name="csvFile?.name ?? ''"
+        :row-count="allRows.length"
+        :column-count="columnHeaders.length"
+        :error="csvError"
+        :uploading="uploading"
+        @file="loadFile"
+        @upload="uploadCsv"
+      />
 
-    <MapColumnsStep
-      v-else-if="currentStep === 'map-columns'"
-      :column-headers="columnHeaders"
-      :map-error="mapError"
-      :get-col-role="getColRole"
-      :set-col-role="setColRole"
-      @back="currentStep = 'upload'"
-      @continue="confirmMapping"
-    />
+      <MapColumnsStep
+        v-else-if="currentStep === 'map-columns'"
+        :column-headers="columnHeaders"
+        :map-error="mapError"
+        :get-col-role="getColRole"
+        :set-col-role="setColRole"
+        @back="currentStep = 'upload'"
+        @continue="confirmMapping"
+      />
 
-    <ClustersStep
-      v-else-if="currentStep === 'clusters'"
-      :column-mapping="columnMapping"
-      :clusters="clusters"
-      :cluster-raw-count="clusterRawCount"
-      :total-cluster-max="totalClusterMax"
-      :cluster-error="clusterError"
-      :saving-clusters="savingClusters"
-      :set-cluster-max="setClusterMax"
-      @back="currentStep = 'map-columns'"
-      @continue="saveClusters"
-    />
+      <ClustersStep
+        v-else-if="currentStep === 'clusters'"
+        :column-mapping="columnMapping"
+        :clusters="clusters"
+        :cluster-raw-count="clusterRawCount"
+        :total-cluster-max="totalClusterMax"
+        :cluster-error="clusterError"
+        :saving-clusters="savingClusters"
+        :set-cluster-max="setClusterMax"
+        @back="currentStep = 'map-columns'"
+        @continue="saveClusters"
+      />
 
-    <CriteriaStep
-      v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'"
-      :clusters="clusters"
-      :criteria-columns="criteriaColumns"
-      :open-clusters="openClusters"
-      :total-eligible="totalEligible"
-      :saving-criteria="savingCriteria"
-      :cluster-raw-count="clusterRawCount"
-      :cluster-eligible-count="clusterEligibleCount"
-      :unique-values-for-cluster="uniqueValuesForCluster"
-      :unique-values="uniqueValues"
-      :is-checked="isChecked"
-      :count-in-cluster="countInCluster"
-      :count-in-all="countInAll"
-      :toggle-cluster-open="toggleClusterOpen"
-      :toggle-filter="toggleFilter"
-      @leave="leaveCriteria"
-    />
+      <CriteriaStep
+        v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'"
+        :clusters="clusters"
+        :criteria-columns="criteriaColumns"
+        :open-clusters="openClusters"
+        :total-eligible="totalEligible"
+        :saving-criteria="savingCriteria"
+        :cluster-raw-count="clusterRawCount"
+        :cluster-eligible-count="clusterEligibleCount"
+        :unique-values-for-cluster="uniqueValuesForCluster"
+        :unique-values="uniqueValues"
+        :is-checked="isChecked"
+        :count-in-cluster="countInCluster"
+        :count-in-all="countInAll"
+        :toggle-cluster-open="toggleClusterOpen"
+        :toggle-filter="toggleFilter"
+        @leave="leaveCriteria"
+      />
 
-    <GuaranteeStep
-      v-else-if="currentStep === 'guarantee'"
-      v-model="guaranteeSearch"
-      :guarantee-search-results="guaranteeSearchResults"
-      :guaranteed-row-ids="guaranteedRowIds"
-      :column-mapping="columnMapping"
-      :get-display-name="getDisplayName"
-      :get-email="getEmail"
-      :row-by-id="rowById"
-      :add-guarantee="addGuarantee"
-      :remove-guarantee="removeGuarantee"
-      @back="backFromGuarantee"
-      @continue="currentStep = 'confirm'"
-    />
+      <GuaranteeStep
+        v-else-if="currentStep === 'guarantee'"
+        v-model="guaranteeSearch"
+        :guarantee-search-results="guaranteeSearchResults"
+        :guaranteed-row-ids="guaranteedRowIds"
+        :column-mapping="columnMapping"
+        :get-display-name="getDisplayName"
+        :get-email="getEmail"
+        :row-by-id="rowById"
+        :add-guarantee="addGuarantee"
+        :remove-guarantee="removeGuarantee"
+        @back="backFromGuarantee"
+        @continue="currentStep = 'confirm'"
+      />
 
-    <ConfirmStep
-      v-else-if="currentStep === 'confirm'"
-      v-model="maxAttendeesEdit"
-      :clusters="clusters"
-      :total-cluster-max="totalClusterMax"
-      :guaranteed-row-ids="guaranteedRowIds"
-      :global-eligible-rows="globalEligibleRows"
-      :has-unfilled-clusters="hasUnfilledClusters"
-      :finalizing="finalizing"
-      :finalizing-label="finalizingLabel"
-      :guaranteed-count-for-cluster="guaranteedCountForCluster"
-      :raffle-pool-for-cluster="rafflePoolForCluster"
-      :needs-raffle-for-cluster="needsRaffleForCluster"
-      :unfilled-slots-for-cluster="unfilledSlotsForCluster"
-      @back="currentStep = 'guarantee'"
-      @finalize="finalize"
-    />
-
+      <ConfirmStep
+        v-else-if="currentStep === 'confirm'"
+        v-model="maxAttendeesEdit"
+        :clusters="clusters"
+        :total-cluster-max="totalClusterMax"
+        :guaranteed-row-ids="guaranteedRowIds"
+        :global-eligible-rows="globalEligibleRows"
+        :has-unfilled-clusters="hasUnfilledClusters"
+        :finalizing="finalizing"
+        :finalizing-label="finalizingLabel"
+        :guaranteed-count-for-cluster="guaranteedCountForCluster"
+        :raffle-pool-for-cluster="rafflePoolForCluster"
+        :needs-raffle-for-cluster="needsRaffleForCluster"
+        :unfilled-slots-for-cluster="unfilledSlotsForCluster"
+        @back="currentStep = 'guarantee'"
+        @finalize="finalize"
+      />
     </AppPage>
   </div>
 </template>

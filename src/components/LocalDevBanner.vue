@@ -6,9 +6,15 @@
     aria-live="polite"
   >
     <span>Local dev</span>
-    <span class="mx-2 opacity-50" aria-hidden="true">·</span>
+    <span
+      class="mx-2 opacity-50"
+      aria-hidden="true"
+    >·</span>
     <span class="normal-case tracking-normal">{{ API_BASE_URL }}</span>
-    <span class="mx-2 opacity-50" aria-hidden="true">·</span>
+    <span
+      class="mx-2 opacity-50"
+      aria-hidden="true"
+    >·</span>
     <span :class="statusClass">{{ statusLabel }}</span>
   </div>
 </template>

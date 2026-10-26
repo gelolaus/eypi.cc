@@ -12,7 +12,7 @@
           :key="n"
           aria-hidden="true"
           class="h-28 rounded-xl bg-muted motion-safe:animate-pulse"
-        ></div>
+        />
       </div>
       <template v-else-if="items.length > 0">
         <LinkRow

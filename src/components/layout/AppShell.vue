@@ -1,14 +1,24 @@
 <template>
   <!-- Signed-in app: fixed-height shell; only the content pane scrolls. -->
-  <div v-if="appShell" data-app-shell class="flex h-dvh flex-col bg-background">
+  <div
+    v-if="appShell"
+    data-app-shell
+    class="flex h-dvh flex-col bg-background"
+  >
     <LocalDevBanner />
-    <div data-shell-body class="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div
+      data-shell-body
+      class="flex min-h-0 flex-1 flex-col lg:flex-row"
+    >
       <aside class="sticky top-0 hidden h-full w-56 shrink-0 flex-col border-r border-border bg-background/95 lg:flex">
         <div class="flex h-16 shrink-0 items-center border-b border-border px-4">
           <BrandLogo to="/dashboard" />
         </div>
 
-        <nav class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2" aria-label="App modules">
+        <nav
+          class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
+          aria-label="App modules"
+        >
           <router-link
             v-for="entry in entries"
             :key="entry.to"
@@ -19,7 +29,12 @@
               : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
             :aria-current="isActive(entry) ? 'page' : undefined"
           >
-            <component :is="entry.icon" class="size-5 shrink-0" :class="isActive(entry) ? 'text-primary' : ''" aria-hidden="true" />
+            <component
+              :is="entry.icon"
+              class="size-5 shrink-0"
+              :class="isActive(entry) ? 'text-primary' : ''"
+              aria-hidden="true"
+            />
             <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
             <Badge
               v-if="entry.to === '/invites' && inviteCount > 0"
@@ -31,7 +46,11 @@
         </nav>
 
         <div class="flex shrink-0 flex-col gap-2 border-t border-border p-3">
-          <OrgSwitcher block placement="up" :auto-fetch="false" />
+          <OrgSwitcher
+            block
+            placement="up"
+            :auto-fetch="false"
+          />
           <AccountMenu variant="sidebar" />
         </div>
       </aside>
@@ -40,12 +59,24 @@
         <header
           class="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/90 px-4 backdrop-blur-md lg:hidden"
         >
-          <BrandLogo to="/dashboard" class="min-w-0" />
+          <BrandLogo
+            to="/dashboard"
+            class="min-w-0"
+          />
           <div class="flex min-w-0 items-center gap-2">
-            <div data-header-orgs class="min-w-0">
-              <OrgSwitcher compact :auto-fetch="false" />
+            <div
+              data-header-orgs
+              class="min-w-0"
+            >
+              <OrgSwitcher
+                compact
+                :auto-fetch="false"
+              />
             </div>
-            <AccountMenu variant="header" :overflow="overflow" />
+            <AccountMenu
+              variant="header"
+              :overflow="overflow"
+            />
           </div>
         </header>
 
@@ -63,7 +94,10 @@
           class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
           aria-label="Primary"
         >
-          <div data-tab-grid class="grid h-[4.5rem] grid-cols-4">
+          <div
+            data-tab-grid
+            class="grid h-[4.5rem] grid-cols-4"
+          >
             <router-link
               v-for="entry in tabs"
               :key="entry.to"
@@ -72,7 +106,11 @@
               :class="isActive(entry) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'"
               :aria-current="isActive(entry) ? 'page' : undefined"
             >
-              <component :is="entry.icon" class="size-5" aria-hidden="true" />
+              <component
+                :is="entry.icon"
+                class="size-5"
+                aria-hidden="true"
+              />
               <span class="max-w-full truncate">{{ entry.label }}</span>
             </router-link>
           </div>
@@ -82,10 +120,16 @@
   </div>
 
   <!-- Public pages: top bar only, normal document scroll. -->
-  <div v-else class="flex min-h-dvh flex-col">
+  <div
+    v-else
+    class="flex min-h-dvh flex-col"
+  >
     <LocalDevBanner />
     <MarketingHeader />
-    <main id="app-content" class="relative z-10 flex min-h-0 flex-1 flex-col">
+    <main
+      id="app-content"
+      class="relative z-10 flex min-h-0 flex-1 flex-col"
+    >
       <slot />
     </main>
     <MarketingFooter />

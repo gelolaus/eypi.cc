@@ -10,8 +10,17 @@
     >
       {{ scannerError }}
     </div>
-    <div data-scanner-viewport class="relative w-full bg-black" style="aspect-ratio: 3/4; max-height: 70dvh;">
-      <video ref="videoRef" class="h-full w-full object-cover" muted playsinline />
+    <div
+      data-scanner-viewport
+      class="relative w-full bg-black"
+      style="aspect-ratio: 3/4; max-height: 70dvh;"
+    >
+      <video
+        ref="videoRef"
+        class="h-full w-full object-cover"
+        muted
+        playsinline
+      />
 
       <div
         v-if="needsCameraPrompt"
@@ -44,7 +53,10 @@
         {{ scanMessage }}
       </div>
     </div>
-    <div data-scanner-actions class="sticky bottom-0 z-10 flex items-center justify-center gap-3 bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div
+      data-scanner-actions
+      class="sticky bottom-0 z-10 flex items-center justify-center gap-3 bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+    >
       <Button
         v-if="needsCameraPrompt"
         type="button"
@@ -54,7 +66,12 @@
       >
         {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry camera' : 'Enable camera' }}
       </Button>
-      <p v-else class="flex min-h-11 items-center text-sm text-muted-foreground">Scanning for QR codes</p>
+      <p
+        v-else
+        class="flex min-h-11 items-center text-sm text-muted-foreground"
+      >
+        Scanning for QR codes
+      </p>
     </div>
   </Card>
 </template>

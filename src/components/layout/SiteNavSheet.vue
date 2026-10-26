@@ -1,14 +1,24 @@
 <template>
-  <Dialog :open="drawer.isOpen.value" @update:open="onOpenChange">
+  <Dialog
+    :open="drawer.isOpen.value"
+    @update:open="onOpenChange"
+  >
     <DialogContent
       id="site-nav-sidebar"
       class="top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-y-auto overscroll-contain rounded-none p-6 pt-16 sm:max-w-md"
     >
-      <DialogTitle class="sr-only">Site navigation</DialogTitle>
-      <DialogDescription class="sr-only">Pages and account actions</DialogDescription>
+      <DialogTitle class="sr-only">
+        Site navigation
+      </DialogTitle>
+      <DialogDescription class="sr-only">
+        Pages and account actions
+      </DialogDescription>
 
       <template v-if="isAuthenticated">
-        <nav class="flex flex-col gap-1" aria-label="App modules">
+        <nav
+          class="flex flex-col gap-1"
+          aria-label="App modules"
+        >
           <router-link
             v-for="entry in entries"
             :key="entry.to"
@@ -16,7 +26,11 @@
             class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
             @click="drawer.close"
           >
-            <component :is="entry.icon" class="size-5 shrink-0" aria-hidden="true" />
+            <component
+              :is="entry.icon"
+              class="size-5 shrink-0"
+              aria-hidden="true"
+            />
             <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
             <Badge
               v-if="entry.to === '/invites' && inviteCount > 0"
@@ -26,13 +40,36 @@
             </Badge>
           </router-link>
         </nav>
-        <Button variant="outline" class="mt-6 h-11 w-full" @click="signOut">Sign out</Button>
+        <Button
+          variant="outline"
+          class="mt-6 h-11 w-full"
+          @click="signOut"
+        >
+          Sign out
+        </Button>
       </template>
 
-      <nav v-else class="flex flex-col gap-1" aria-label="Public navigation">
-        <template v-for="link in publicLinks" :key="link.to">
-          <Button v-if="link.cta" as-child size="lg" class="mt-3 h-12 w-full">
-            <router-link :to="link.to" @click="drawer.close">{{ link.label }}</router-link>
+      <nav
+        v-else
+        class="flex flex-col gap-1"
+        aria-label="Public navigation"
+      >
+        <template
+          v-for="link in publicLinks"
+          :key="link.to"
+        >
+          <Button
+            v-if="link.cta"
+            as-child
+            size="lg"
+            class="mt-3 h-12 w-full"
+          >
+            <router-link
+              :to="link.to"
+              @click="drawer.close"
+            >
+              {{ link.label }}
+            </router-link>
           </Button>
           <router-link
             v-else

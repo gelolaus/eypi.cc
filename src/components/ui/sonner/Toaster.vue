@@ -16,10 +16,20 @@ import 'vue-sonner/style.css'
     }"
     :toast-options="{ classes: { toast: 'cn-toast' } }"
   >
-    <template #success-icon><CircleCheck class="size-4" /></template>
-    <template #info-icon><Info class="size-4" /></template>
-    <template #warning-icon><TriangleAlert class="size-4" /></template>
-    <template #error-icon><OctagonX class="size-4" /></template>
-    <template #loading-icon><Loader2 class="size-4 animate-spin" /></template>
+    <template #success-icon>
+      <CircleCheck class="size-4" />
+    </template>
+    <template #info-icon>
+      <Info class="size-4" />
+    </template>
+    <template #warning-icon>
+      <TriangleAlert class="size-4" />
+    </template>
+    <template #error-icon>
+      <OctagonX class="size-4" />
+    </template>
+    <template #loading-icon>
+      <Loader2 class="size-4 animate-spin" />
+    </template>
   </Sonner>
 </template>

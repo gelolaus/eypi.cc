@@ -21,6 +21,18 @@ export default tseslint.config(
     },
   },
   {
+    // Vendored shadcn-style primitives (src/components/ui). Their single-word names, pass-through
+    // props and empty prop interfaces mirror upstream, and form primitives cannot know their label:
+    // the consuming view supplies it, and that view is linted.
+    files: ['src/components/ui/**/*.{ts,vue}'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+      'vue/require-default-prop': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
+      'vuejs-accessibility/form-control-has-label': 'off',
+    },
+  },
+  {
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: globals.node,

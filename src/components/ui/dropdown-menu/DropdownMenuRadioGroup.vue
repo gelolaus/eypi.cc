@@ -18,7 +18,6 @@ const forwarded = useForwardPropsEmits(delegated, emits)
     data-slot="dropdown-menu-radio-group"
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RDropdownMenuRadioGroup>

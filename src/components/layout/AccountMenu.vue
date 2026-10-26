@@ -11,12 +11,21 @@
       )"
     >
       <Avatar :class="header ? 'size-8' : 'size-11'">
-        <AvatarFallback class="text-sm font-medium">{{ initials }}</AvatarFallback>
+        <AvatarFallback class="text-sm font-medium">
+          {{ initials }}
+        </AvatarFallback>
       </Avatar>
-      <span v-if="!header" class="min-w-0 flex-1">
+      <span
+        v-if="!header"
+        class="min-w-0 flex-1"
+      >
         <span class="line-clamp-2 text-base font-semibold leading-snug tracking-tight">{{ displayName }}</span>
       </span>
-      <ChevronDown v-else aria-hidden="true" class="size-4 shrink-0 text-muted-foreground" />
+      <ChevronDown
+        v-else
+        aria-hidden="true"
+        class="size-4 shrink-0 text-muted-foreground"
+      />
       <span
         v-if="header && inviteCount > 0"
         class="pointer-events-none absolute -right-1 -top-1 size-3 rounded-full border-2 border-background bg-primary"
@@ -31,19 +40,36 @@
     >
       <div class="flex items-center gap-3 px-2 py-3">
         <Avatar class="size-12 shrink-0">
-          <AvatarFallback class="text-base font-medium">{{ initials }}</AvatarFallback>
+          <AvatarFallback class="text-base font-medium">
+            {{ initials }}
+          </AvatarFallback>
         </Avatar>
         <div class="min-w-0">
-          <p class="truncate text-base font-semibold tracking-tight">{{ displayName }}</p>
-          <p v-if="email" class="truncate text-sm text-muted-foreground">{{ email }}</p>
+          <p class="truncate text-base font-semibold tracking-tight">
+            {{ displayName }}
+          </p>
+          <p
+            v-if="email"
+            class="truncate text-sm text-muted-foreground"
+          >
+            {{ email }}
+          </p>
         </div>
       </div>
       <DropdownMenuSeparator />
 
       <template v-if="header && overflow.length > 0">
-        <DropdownMenuItem v-for="entry in overflow" :key="entry.to" as-child class="rounded-xl px-3 py-3 text-base">
+        <DropdownMenuItem
+          v-for="entry in overflow"
+          :key="entry.to"
+          as-child
+          class="rounded-xl px-3 py-3 text-base"
+        >
           <router-link :to="entry.to">
-            <component :is="entry.icon" aria-hidden="true" />
+            <component
+              :is="entry.icon"
+              aria-hidden="true"
+            />
             <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
             <Badge
               v-if="entry.to === '/invites' && inviteCount > 0"
@@ -56,11 +82,22 @@
         <DropdownMenuSeparator />
       </template>
 
-      <DropdownMenuItem v-for="link in legalLinks" :key="link.to" as-child class="rounded-xl px-3 py-3 text-base">
-        <router-link :to="link.to">{{ link.label }}</router-link>
+      <DropdownMenuItem
+        v-for="link in legalLinks"
+        :key="link.to"
+        as-child
+        class="rounded-xl px-3 py-3 text-base"
+      >
+        <router-link :to="link.to">
+          {{ link.label }}
+        </router-link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem variant="destructive" class="rounded-xl px-3 py-3 text-base" @select="signOut">
+      <DropdownMenuItem
+        variant="destructive"
+        class="rounded-xl px-3 py-3 text-base"
+        @select="signOut"
+      >
         <LogOut aria-hidden="true" />
         Sign out
       </DropdownMenuItem>

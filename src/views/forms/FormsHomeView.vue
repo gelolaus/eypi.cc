@@ -1,6 +1,10 @@
 <template>
   <PageSkeleton v-if="loading" />
-  <AppPage v-else title="Forms" description="Generate organization documents.">
+  <AppPage
+    v-else
+    title="Forms"
+    description="Generate organization documents."
+  >
     <Input
       v-model="searchQuery"
       type="search"

@@ -29,7 +29,11 @@ const base = "z-50 inline-flex w-fit max-w-xs origin-(--reka-tooltip-content-tra
 
 <template>
   <RTooltipPortal>
-    <RTooltipContent data-slot="tooltip-content" v-bind="{ ...forwarded, ...$attrs }" :class="cn(base, props.class)">
+    <RTooltipContent
+      data-slot="tooltip-content"
+      v-bind="{ ...forwarded, ...$attrs }"
+      :class="cn(base, props.class)"
+    >
       <slot />
       <RTooltipArrow
         class="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground"

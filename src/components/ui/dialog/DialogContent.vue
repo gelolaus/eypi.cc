@@ -34,10 +34,22 @@ const base = "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -t
 <template>
   <RDialogPortal>
     <DialogOverlay />
-    <RDialogContent data-slot="dialog-content" v-bind="{ ...forwarded, ...$attrs }" :class="cn(base, props.class)">
+    <RDialogContent
+      data-slot="dialog-content"
+      v-bind="{ ...forwarded, ...$attrs }"
+      :class="cn(base, props.class)"
+    >
       <slot />
-      <RDialogClose v-if="props.showCloseButton" data-slot="dialog-close" as-child>
-        <Button variant="ghost" class="absolute top-2 right-2" size="icon-sm">
+      <RDialogClose
+        v-if="props.showCloseButton"
+        data-slot="dialog-close"
+        as-child
+      >
+        <Button
+          variant="ghost"
+          class="absolute top-2 right-2"
+          size="icon-sm"
+        >
           <X />
           <span class="sr-only">Close</span>
         </Button>

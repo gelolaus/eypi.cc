@@ -17,7 +17,6 @@ const forwarded = useForwardProps(delegated)
     data-slot="dialog-trigger"
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RDialogTrigger>

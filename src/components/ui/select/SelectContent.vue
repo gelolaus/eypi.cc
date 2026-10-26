@@ -40,7 +40,10 @@ const viewport = "data-[position=popper]:h-(--reka-select-trigger-height) data-[
       :class="cn(base, props.position === 'popper' && popper, props.class)"
     >
       <SelectScrollUpButton />
-      <RSelectViewport :data-position="props.position" :class="viewport">
+      <RSelectViewport
+        :data-position="props.position"
+        :class="viewport"
+      >
         <slot />
       </RSelectViewport>
       <SelectScrollDownButton />

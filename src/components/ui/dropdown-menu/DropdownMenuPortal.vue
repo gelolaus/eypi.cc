@@ -17,7 +17,6 @@ const forwarded = useForwardProps(delegated)
     
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RDropdownMenuPortal>

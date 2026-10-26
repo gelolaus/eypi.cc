@@ -17,7 +17,6 @@ const forwarded = useForwardProps(delegated)
     data-slot="tooltip-trigger"
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RTooltipTrigger>

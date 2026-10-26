@@ -1,116 +1,141 @@
 <template>
   <div class="relative w-full">
     <AppPage title="New DP Blast">
-    <div class="mx-auto w-full max-w-xl">
-      <!-- Success state -->
-      <Card
-        v-if="created"
-        class="relative gap-0 rounded-3xl p-5 text-center sm:p-8"
-      >
-        <p class="mb-2 text-sm font-medium text-primary">Campaign Created</p>
-        <h2 class="mb-6 font-mono text-xl font-bold text-foreground">{{ form.title }}</h2>
-
-        <div class="mb-6 flex items-center gap-2 rounded-xl border border-input bg-muted px-4 py-3">
-          <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-foreground">{{ shareDisplay }}</span>
-          <Button
-            type="button"
-            class="min-w-11 shrink-0"
-            @click="copyShare"
-          >Copy</Button>
-        </div>
-
-        <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button as-child>
-            <router-link :to="`/frames/${createdSlug}`">Open Public Page →</router-link>
-          </Button>
-          <Button as-child variant="outline">
-            <router-link to="/manage/frames">All Campaigns</router-link>
-          </Button>
-        </div>
-      </Card>
-
-      <!-- Form -->
-      <Card v-else class="relative gap-0 rounded-3xl p-5 sm:p-8">
-        <form
-          class="flex flex-col gap-5"
-          @submit.prevent="submit"
+      <div class="mx-auto w-full max-w-xl">
+        <!-- Success state -->
+        <Card
+          v-if="created"
+          class="relative gap-0 rounded-3xl p-5 text-center sm:p-8"
         >
-          <!-- Title -->
-          <div class="space-y-1.5">
-            <Label for="new-campaign-title">Title</Label>
-            <Input
-              id="new-campaign-title"
-              v-model="form.title"
-              type="text"
-              maxlength="200"
-              placeholder="e.g. I'm attending CompSci Week 2026"
-              required
-              class="font-mono"
-            />
+          <p class="mb-2 text-sm font-medium text-primary">
+            Campaign Created
+          </p>
+          <h2 class="mb-6 font-mono text-xl font-bold text-foreground">
+            {{ form.title }}
+          </h2>
+
+          <div class="mb-6 flex items-center gap-2 rounded-xl border border-input bg-muted px-4 py-3">
+            <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-foreground">{{ shareDisplay }}</span>
+            <Button
+              type="button"
+              class="min-w-11 shrink-0"
+              @click="copyShare"
+            >
+              Copy
+            </Button>
           </div>
 
-          <!-- Slug -->
-          <div class="space-y-1.5">
-            <Label for="new-campaign-slug">Link <span class="text-muted-foreground">(optional, auto from title)</span></Label>
-            <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
-              <input
-                id="new-campaign-slug"
-                v-model="form.slug"
+          <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button as-child>
+              <router-link :to="`/frames/${createdSlug}`">
+                Open Public Page →
+              </router-link>
+            </Button>
+            <Button
+              as-child
+              variant="outline"
+            >
+              <router-link to="/manage/frames">
+                All Campaigns
+              </router-link>
+            </Button>
+          </div>
+        </Card>
+
+        <!-- Form -->
+        <Card
+          v-else
+          class="relative gap-0 rounded-3xl p-5 sm:p-8"
+        >
+          <form
+            class="flex flex-col gap-5"
+            @submit.prevent="submit"
+          >
+            <!-- Title -->
+            <div class="space-y-1.5">
+              <Label for="new-campaign-title">Title</Label>
+              <Input
+                id="new-campaign-title"
+                v-model="form.title"
                 type="text"
-                maxlength="60"
-                placeholder="compsci-week"
-                class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
-                @input="sanitizeSlug"
+                maxlength="200"
+                placeholder="e.g. I'm attending CompSci Week 2026"
+                required
+                class="font-mono"
               />
             </div>
-            <p class="text-xs font-medium text-muted-foreground">Lowercase letters, numbers, and hyphens.</p>
-          </div>
 
-          <!-- Description -->
-          <div class="space-y-1.5">
-            <Label for="new-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
-            <Input
-              id="new-campaign-description"
-              v-model="form.description"
-              type="text"
-              maxlength="1000"
-              placeholder="A short line shown on the public page"
-              class="font-mono"
-            />
-          </div>
+            <!-- Slug -->
+            <div class="space-y-1.5">
+              <Label for="new-campaign-slug">Link <span class="text-muted-foreground">(optional, auto from title)</span></Label>
+              <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+                <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
+                <input
+                  id="new-campaign-slug"
+                  v-model="form.slug"
+                  type="text"
+                  maxlength="60"
+                  placeholder="compsci-week"
+                  class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
+                  @input="sanitizeSlug"
+                >
+              </div>
+              <p class="text-xs font-medium text-muted-foreground">
+                Lowercase letters, numbers, and hyphens.
+              </p>
+            </div>
 
-          <!-- Caption template -->
-          <div class="space-y-1.5">
-            <Label for="new-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
-            <Textarea
-              id="new-campaign-caption"
-              v-model="form.captionTemplate"
-              rows="3"
-              maxlength="2000"
-              placeholder="The suggested caption people copy when they share…"
-              class="resize-y font-mono"
-            />
-          </div>
+            <!-- Description -->
+            <div class="space-y-1.5">
+              <Label for="new-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
+              <Input
+                id="new-campaign-description"
+                v-model="form.description"
+                type="text"
+                maxlength="1000"
+                placeholder="A short line shown on the public page"
+                class="font-mono"
+              />
+            </div>
 
-          <!-- Frames -->
-          <div class="space-y-1.5">
-            <p class="text-base font-medium">Frames <span class="text-muted-foreground">(at least one)</span></p>
-            <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
-          </div>
+            <!-- Caption template -->
+            <div class="space-y-1.5">
+              <Label for="new-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
+              <Textarea
+                id="new-campaign-caption"
+                v-model="form.captionTemplate"
+                rows="3"
+                maxlength="2000"
+                placeholder="The suggested caption people copy when they share…"
+                class="resize-y font-mono"
+              />
+            </div>
 
-          <!-- Submit -->
-          <Button
-            type="submit"
-            size="lg"
-            :disabled="!canSubmit || submitting"
-            class="mt-2 w-full font-semibold"
-          >
-            {{ submitting ? 'Creating…' : 'Create Campaign' }}
-          </Button>
-        </form>
-      </Card>
-    </div>
+            <!-- Frames -->
+            <div class="space-y-1.5">
+              <p class="text-base font-medium">
+                Frames <span class="text-muted-foreground">(at least one)</span>
+              </p>
+              <DpFrameUploader
+                :frames="frames"
+                @add="onAddFrame"
+                @remove="onRemoveFrame"
+                @reorder="onReorderFrame"
+              />
+            </div>
+
+            <!-- Submit -->
+            <Button
+              type="submit"
+              size="lg"
+              :disabled="!canSubmit || submitting"
+              class="mt-2 w-full font-semibold"
+            >
+              {{ submitting ? 'Creating…' : 'Create Campaign' }}
+            </Button>
+          </form>
+        </Card>
+      </div>
     </AppPage>
   </div>
 </template>

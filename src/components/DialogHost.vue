@@ -1,5 +1,8 @@
 <template>
-  <Dialog :open="current !== null" @update:open="onOpenChange">
+  <Dialog
+    :open="current !== null"
+    @update:open="onOpenChange"
+  >
     <DialogContent
       v-if="current"
       :show-close-button="false"
@@ -12,8 +15,14 @@
         </DialogDescription>
       </DialogHeader>
 
-      <div v-if="current.requireText" class="grid gap-1.5">
-        <label :for="inputId" class="text-sm font-medium text-muted-foreground">
+      <div
+        v-if="current.requireText"
+        class="grid gap-1.5"
+      >
+        <label
+          :for="inputId"
+          class="text-sm font-medium text-muted-foreground"
+        >
           Type <span class="font-mono text-foreground">{{ current.requireText }}</span> to confirm
         </label>
         <Input
@@ -28,12 +37,20 @@
 
       <DialogFooter data-dialog-footer>
         <template v-if="current.kind === 'info'">
-          <Button id="eypi-dialog-primary" class="w-full" @click="confirmAction">
+          <Button
+            id="eypi-dialog-primary"
+            class="w-full"
+            @click="confirmAction"
+          >
             {{ current.confirmLabel }}
           </Button>
         </template>
         <template v-else>
-          <Button variant="outline" class="flex-1" @click="abort">
+          <Button
+            variant="outline"
+            class="flex-1"
+            @click="abort"
+          >
             {{ current.abortLabel }}
           </Button>
           <Button

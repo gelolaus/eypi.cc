@@ -17,7 +17,6 @@ const forwarded = useForwardProps(delegated)
     data-slot="select-value"
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RSelectValue>

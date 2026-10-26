@@ -1,5 +1,8 @@
 <template>
-  <AppPage title="Orgs" description="APC student organizations">
+  <AppPage
+    title="Orgs"
+    description="APC student organizations"
+  >
     <div v-if="isAuthenticated && activeOrg">
       <Button
         as-child
@@ -105,7 +108,7 @@
                 :src="org.logoUrl"
                 :alt="`${org.name} logo`"
                 class="h-full w-full object-cover"
-              />
+              >
             </div>
             <div
               v-else

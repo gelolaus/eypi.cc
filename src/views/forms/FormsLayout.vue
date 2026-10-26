@@ -1,7 +1,10 @@
 <template>
   <PageSkeleton v-if="loading" />
 
-  <div v-else-if="isLocked" class="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
+  <div
+    v-else-if="isLocked"
+    class="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6"
+  >
     <OrgLockout />
   </div>
 

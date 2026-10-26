@@ -2,20 +2,35 @@
   <div class="relative w-full">
     <PageSkeleton v-if="loadingEvent" />
 
-    <AppPage v-else-if="!event" title="Event not found" description="This event does not exist or you do not have access to it.">
-      <Button as-child variant="outline">
-        <router-link to="/manage/tix">← My events</router-link>
+    <AppPage
+      v-else-if="!event"
+      title="Event not found"
+      description="This event does not exist or you do not have access to it."
+    >
+      <Button
+        as-child
+        variant="outline"
+      >
+        <router-link to="/manage/tix">
+          ← My events
+        </router-link>
       </Button>
     </AppPage>
 
-    <AppPage v-else :title="event.name">
+    <AppPage
+      v-else
+      :title="event.name"
+    >
       <template #description>
         {{ formatCalendarDate(event.eventDate) }} · {{ formatEventTime(event.eventTime) }} · {{ event.location }}
       </template>
 
       <div class="space-y-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <div v-if="event.isLead" class="flex flex-wrap items-center gap-2">
+          <div
+            v-if="event.isLead"
+            class="flex flex-wrap items-center gap-2"
+          >
             <span
               class="font-mono text-sm font-bold"
               :class="isAtCapacity ? 'text-destructive' : 'text-muted-foreground'"
@@ -45,8 +60,22 @@
                 @keydown.enter="saveMax"
                 @keydown.escape="editingMax = false"
               />
-              <Button type="button" variant="ghost" class="min-w-11 font-mono text-sm text-primary" @click="saveMax">Save</Button>
-              <Button type="button" variant="ghost" class="min-w-11 font-mono text-sm text-muted-foreground" @click="editingMax = false">Cancel</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                class="min-w-11 font-mono text-sm text-primary"
+                @click="saveMax"
+              >
+                Save
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                class="min-w-11 font-mono text-sm text-muted-foreground"
+                @click="editingMax = false"
+              >
+                Cancel
+              </Button>
             </template>
           </div>
 
@@ -59,7 +88,10 @@
             >
               Add guest
             </Button>
-            <Button as-child variant="outline">
+            <Button
+              as-child
+              variant="outline"
+            >
               <a
                 :href="`/tix/${slug}`"
                 target="_blank"
@@ -71,10 +103,17 @@
           </div>
         </div>
 
-        <AppSection v-if="event.isLead && passColumns.length" title="Pass fields">
+        <AppSection
+          v-if="event.isLead && passColumns.length"
+          title="Pass fields"
+        >
           <fieldset>
-            <legend class="sr-only">Pass fields</legend>
-            <p class="mb-3 text-sm text-muted-foreground">Checked columns are printed on the wallet pass.</p>
+            <legend class="sr-only">
+              Pass fields
+            </legend>
+            <p class="mb-3 text-sm text-muted-foreground">
+              Checked columns are printed on the wallet pass.
+            </p>
             <div class="flex flex-wrap gap-2">
               <label
                 v-for="column in passColumns"
@@ -112,7 +151,11 @@
         />
 
         <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div class="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="tablist" aria-label="Attendee views">
+          <div
+            class="flex w-max gap-2 sm:w-auto sm:flex-wrap"
+            role="tablist"
+            aria-label="Attendee views"
+          >
             <Button
               v-for="(tab, index) in TABS"
               :key="tab.label"
@@ -124,12 +167,19 @@
               @click="activeTab = index"
             >
               {{ tab.label }}
-              <span v-if="tab.filter !== null && attendees.length" class="ml-1 opacity-70">({{ countForTab(tab.filter) }})</span>
+              <span
+                v-if="tab.filter !== null && attendees.length"
+                class="ml-1 opacity-70"
+              >({{ countForTab(tab.filter) }})</span>
             </Button>
           </div>
         </div>
 
-        <ScannerPanel v-if="activeTab === 5" :slug="slug" @checked-in="fetchAttendees" />
+        <ScannerPanel
+          v-if="activeTab === 5"
+          :slug="slug"
+          @checked-in="fetchAttendees"
+        />
         <AttendeeTable
           v-else
           :attendees="attendees"
@@ -150,8 +200,13 @@
           @save-cluster="onSaveCluster"
         />
 
-        <div v-if="event.isLead" class="mt-12 border-t border-dashed border-destructive/30 pt-8">
-          <p class="mb-1 font-heading text-lg font-semibold text-destructive">Danger zone</p>
+        <div
+          v-if="event.isLead"
+          class="mt-12 border-t border-dashed border-destructive/30 pt-8"
+        >
+          <p class="mb-1 font-heading text-lg font-semibold text-destructive">
+            Danger zone
+          </p>
           <p class="mb-4 text-sm text-muted-foreground">
             Permanently deletes this event and all attendee data. This cannot be undone.
           </p>

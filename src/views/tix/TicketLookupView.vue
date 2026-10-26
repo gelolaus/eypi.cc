@@ -2,7 +2,10 @@
   <section class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-20">
     <div class="w-full max-w-md">
       <!-- Event header (after successful lookup) -->
-      <div v-if="ticket?.event" class="mb-6 text-center">
+      <div
+        v-if="ticket?.event"
+        class="mb-6 text-center"
+      >
         <h1
           class="mb-2 font-display font-black tracking-tight text-foreground"
           style="font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -0.03em;"
@@ -19,8 +22,9 @@
         v-if="ticket"
         class="w-full gap-0 rounded-3xl p-5 text-center sm:p-8"
       >
-
-        <p class="mb-4 font-mono text-lg font-bold text-foreground">{{ ticket.firstName }} {{ ticket.lastName }}</p>
+        <p class="mb-4 font-mono text-lg font-bold text-foreground">
+          {{ ticket.firstName }} {{ ticket.lastName }}
+        </p>
 
         <!-- QR canvas container: white so the code scans on the dark UI -->
         <div
@@ -33,7 +37,10 @@
           Screenshot this QR — it is not saved on your device.
         </p>
 
-        <div v-if="passToken" class="mt-6 flex flex-col gap-3">
+        <div
+          v-if="passToken"
+          class="mt-6 flex flex-col gap-3"
+        >
           <Button
             type="button"
             size="lg"
@@ -68,12 +75,14 @@
         v-else
         class="w-full gap-0 rounded-3xl p-5 sm:p-8"
       >
-
         <h2 class="mb-6 text-center font-display text-xl font-bold uppercase tracking-widest text-foreground">
           View Your Ticket
         </h2>
 
-        <form class="flex flex-col" @submit.prevent="lookup">
+        <form
+          class="flex flex-col"
+          @submit.prevent="lookup"
+        >
           <Input
             v-model="form.firstName"
             type="text"

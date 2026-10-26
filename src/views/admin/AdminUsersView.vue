@@ -1,8 +1,15 @@
 <template>
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <form class="flex w-full max-w-md gap-2" role="search" @submit.prevent="search">
-        <label for="admin-user-search" class="sr-only">Search users</label>
+      <form
+        class="flex w-full max-w-md gap-2"
+        role="search"
+        @submit.prevent="search"
+      >
+        <label
+          for="admin-user-search"
+          class="sr-only"
+        >Search users</label>
         <Input
           id="admin-user-search"
           v-model="query"
@@ -10,7 +17,10 @@
           placeholder="Search by email or name"
           autocomplete="off"
         />
-        <Button type="submit" class="shrink-0">
+        <Button
+          type="submit"
+          class="shrink-0"
+        >
           Search
         </Button>
       </form>
@@ -19,99 +29,129 @@
       </p>
     </div>
 
-    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
+    <div
+      v-if="loading"
+      class="h-40 animate-pulse rounded-2xl bg-muted"
+      aria-hidden="true"
+    />
 
-    <p v-else-if="users.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+    <p
+      v-else-if="users.length === 0"
+      class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground"
+    >
       No users match that search.
     </p>
 
-    <div v-else class="md:overflow-hidden md:rounded-2xl md:border md:border-border">
+    <div
+      v-else
+      class="md:overflow-hidden md:rounded-2xl md:border md:border-border"
+    >
       <div class="overflow-x-auto">
         <div class="space-y-3 md:min-w-4xl md:space-y-0">
-        <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
-          <div class="col-span-4">User</div>
-          <div class="col-span-2">Role</div>
-          <div class="col-span-2">Status</div>
-          <div class="col-span-2">Joined</div>
-          <div class="col-span-2 text-right">Actions</div>
+          <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
+            <div class="col-span-4">
+              User
+            </div>
+            <div class="col-span-2">
+              Role
+            </div>
+            <div class="col-span-2">
+              Status
+            </div>
+            <div class="col-span-2">
+              Joined
+            </div>
+            <div class="col-span-2 text-right">
+              Actions
+            </div>
+          </div>
+          <div
+            v-for="user in users"
+            :key="user.id"
+            data-admin-row
+            class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
+          >
+            <div class="min-w-0 md:col-span-4">
+              <p class="truncate text-sm font-semibold text-foreground">
+                {{ user.name || '(no name)' }}
+                <span
+                  v-if="isSelf(user)"
+                  class="text-xs font-normal text-muted-foreground"
+                >(you)</span>
+              </p>
+              <p class="font-mono truncate text-xs text-muted-foreground">
+                {{ user.email }}
+              </p>
+            </div>
+            <div class="text-sm md:col-span-2">
+              <span class="text-muted-foreground md:hidden">Role: </span>{{ user.role === 'admin' ? 'Admin' : 'User' }}
+            </div>
+            <div class="text-sm md:col-span-2">
+              <span class="text-muted-foreground md:hidden">Status: </span><span :class="user.disabled ? 'text-destructive' : 'text-muted-foreground'">
+                {{ user.disabled ? 'Disabled' : 'Active' }}
+              </span>
+            </div>
+            <div class="font-mono text-xs text-muted-foreground md:col-span-2">
+              <span class="md:hidden">Joined </span>{{ formatDate(user.createdAt) }}
+            </div>
+            <div class="flex flex-wrap gap-2 md:col-span-2 md:justify-end">
+              <Button
+                v-if="user.role === 'user'"
+                type="button"
+                variant="outline"
+                :disabled="busyId === user.id"
+                :aria-label="`Make ${user.email} an admin`"
+                @click="setRole(user, 'admin')"
+              >
+                Make admin
+              </Button>
+              <Button
+                v-else-if="!isSelf(user)"
+                type="button"
+                variant="outline"
+                :disabled="busyId === user.id"
+                :aria-label="`Make ${user.email} a regular user`"
+                @click="setRole(user, 'user')"
+              >
+                Make user
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                :disabled="busyId === user.id"
+                :aria-label="user.disabled ? `Enable ${user.email}` : `Disable ${user.email}`"
+                @click="toggleDisabled(user)"
+              >
+                {{ user.disabled ? 'Enable' : 'Disable' }}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                :disabled="busyId === user.id"
+                :aria-label="`Force logout for ${user.email}`"
+                @click="forceLogout(user)"
+              >
+                Log out
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                :disabled="busyId === user.id"
+                :aria-label="`Delete ${user.email}`"
+                @click="remove(user)"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
-        <div
-          v-for="user in users"
-          :key="user.id"
-          data-admin-row
-          class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
-        >
-          <div class="min-w-0 md:col-span-4">
-            <p class="truncate text-sm font-semibold text-foreground">
-              {{ user.name || '(no name)' }}
-              <span v-if="isSelf(user)" class="text-xs font-normal text-muted-foreground">(you)</span>
-            </p>
-            <p class="font-mono truncate text-xs text-muted-foreground">{{ user.email }}</p>
-          </div>
-          <div class="text-sm md:col-span-2">
-            <span class="text-muted-foreground md:hidden">Role: </span>{{ user.role === 'admin' ? 'Admin' : 'User' }}
-          </div>
-          <div class="text-sm md:col-span-2">
-            <span class="text-muted-foreground md:hidden">Status: </span><span :class="user.disabled ? 'text-destructive' : 'text-muted-foreground'">
-              {{ user.disabled ? 'Disabled' : 'Active' }}
-            </span>
-          </div>
-          <div class="font-mono text-xs text-muted-foreground md:col-span-2"><span class="md:hidden">Joined </span>{{ formatDate(user.createdAt) }}</div>
-          <div class="flex flex-wrap gap-2 md:col-span-2 md:justify-end">
-            <Button
-              v-if="user.role === 'user'"
-              type="button"
-              variant="outline"
-              :disabled="busyId === user.id"
-              :aria-label="`Make ${user.email} an admin`"
-              @click="setRole(user, 'admin')"
-            >
-              Make admin
-            </Button>
-            <Button
-              v-else-if="!isSelf(user)"
-              type="button"
-              variant="outline"
-              :disabled="busyId === user.id"
-              :aria-label="`Make ${user.email} a regular user`"
-              @click="setRole(user, 'user')"
-            >
-              Make user
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              :disabled="busyId === user.id"
-              :aria-label="user.disabled ? `Enable ${user.email}` : `Disable ${user.email}`"
-              @click="toggleDisabled(user)"
-            >
-              {{ user.disabled ? 'Enable' : 'Disable' }}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              :disabled="busyId === user.id"
-              :aria-label="`Force logout for ${user.email}`"
-              @click="forceLogout(user)"
-            >
-              Log out
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              :disabled="busyId === user.id"
-              :aria-label="`Delete ${user.email}`"
-              @click="remove(user)"
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </div>
       </div>
     </div>
 
-    <div v-if="nextCursor" class="mt-6 flex justify-center">
+    <div
+      v-if="nextCursor"
+      class="mt-6 flex justify-center"
+    >
       <Button
         type="button"
         variant="outline"

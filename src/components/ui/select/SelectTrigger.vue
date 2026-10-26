@@ -25,7 +25,12 @@ const base = "flex w-fit items-center justify-between gap-1.5 rounded-xl border 
 </script>
 
 <template>
-  <RSelectTrigger data-slot="select-trigger" :data-size="props.size" v-bind="forwarded" :class="cn(base, props.class)">
+  <RSelectTrigger
+    data-slot="select-trigger"
+    :data-size="props.size"
+    v-bind="forwarded"
+    :class="cn(base, props.class)"
+  >
     <slot />
     <RSelectIcon as-child>
       <ChevronDown class="pointer-events-none size-4 text-muted-foreground" />

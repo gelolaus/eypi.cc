@@ -20,8 +20,13 @@ const props = withDefaults(defineProps<{ class?: HTMLAttributes['class']; showCl
     "
   >
     <slot />
-    <RDialogClose v-if="props.showCloseButton" as-child>
-      <Button variant="outline">Close</Button>
+    <RDialogClose
+      v-if="props.showCloseButton"
+      as-child
+    >
+      <Button variant="outline">
+        Close
+      </Button>
     </RDialogClose>
   </div>
 </template>

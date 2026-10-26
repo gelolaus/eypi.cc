@@ -16,5 +16,5 @@ const modelValue = defineModel<string | number | null>()
         props.class,
       )
     "
-  />
+  >
 </template>

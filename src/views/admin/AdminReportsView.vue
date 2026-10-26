@@ -1,7 +1,10 @@
 <template>
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <nav class="flex min-w-0 gap-2 overflow-x-auto" aria-label="Report status">
+      <nav
+        class="flex min-w-0 gap-2 overflow-x-auto"
+        aria-label="Report status"
+      >
         <Button
           v-for="option in statuses"
           :key="option.value"
@@ -19,13 +22,23 @@
       </p>
     </div>
 
-    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
+    <div
+      v-if="loading"
+      class="h-40 animate-pulse rounded-2xl bg-muted"
+      aria-hidden="true"
+    />
 
-    <p v-else-if="reports.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
+    <p
+      v-else-if="reports.length === 0"
+      class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground"
+    >
       {{ status === 'open' ? 'No open reports. Nice.' : 'No resolved reports yet.' }}
     </p>
 
-    <ul v-else class="space-y-4">
+    <ul
+      v-else
+      class="space-y-4"
+    >
       <li
         v-for="report in reports"
         :key="report.id"
@@ -53,7 +66,10 @@
                 Link disabled
               </Badge>
             </div>
-            <p v-if="report.details" class="mt-3 whitespace-pre-line text-sm text-foreground">
+            <p
+              v-if="report.details"
+              class="mt-3 whitespace-pre-line text-sm text-foreground"
+            >
               {{ report.details }}
             </p>
             <p class="mt-3 text-xs text-muted-foreground">
@@ -62,13 +78,19 @@
                 · owner {{ report.ownerEmail }}
               </template>
             </p>
-            <p v-if="report.status === 'resolved'" class="mt-1 text-xs text-muted-foreground">
+            <p
+              v-if="report.status === 'resolved'"
+              class="mt-1 text-xs text-muted-foreground"
+            >
               {{ report.resolution === 'disable_link' ? 'Link disabled' : 'Dismissed' }}
               {{ report.resolvedAt ? `on ${formatDate(report.resolvedAt)}` : '' }}
             </p>
           </div>
 
-          <div v-if="report.status === 'open'" class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <div
+            v-if="report.status === 'open'"
+            class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"
+          >
             <Button
               type="button"
               variant="destructive"

@@ -22,12 +22,29 @@ const rowClass = computed(() => cn('inline-flex items-center', s.value.row))
 </script>
 
 <template>
-  <router-link v-if="to" :to="to" :class="rowClass" aria-label="eypi.cc">
-    <img :src="markSrc" alt="" :class="cn('shrink-0 rounded-md object-cover', s.mark)" />
+  <router-link
+    v-if="to"
+    :to="to"
+    :class="rowClass"
+    aria-label="eypi.cc"
+  >
+    <img
+      :src="markSrc"
+      alt=""
+      :class="cn('shrink-0 rounded-md object-cover', s.mark)"
+    >
     <span v-if="!markOnly">eypi.cc</span>
   </router-link>
-  <span v-else :class="rowClass" :aria-label="markOnly ? 'eypi.cc' : undefined">
-    <img :src="markSrc" alt="" :class="cn('shrink-0 rounded-md object-cover', s.mark)" />
+  <span
+    v-else
+    :class="rowClass"
+    :aria-label="markOnly ? 'eypi.cc' : undefined"
+  >
+    <img
+      :src="markSrc"
+      alt=""
+      :class="cn('shrink-0 rounded-md object-cover', s.mark)"
+    >
     <span v-if="!markOnly">eypi.cc</span>
   </span>
 </template>

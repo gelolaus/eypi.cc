@@ -1,86 +1,150 @@
 <template>
   <div class="relative w-full">
     <AppPage title="Edit Campaign">
-    <div class="mx-auto w-full max-w-xl">
-      <!-- Loading -->
-      <div v-if="loading" role="status" aria-busy="true" class="space-y-4"><span class="sr-only">Loading</span>
-        <div class="mx-auto h-8 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
-        <div class="h-72 rounded-3xl bg-muted motion-safe:animate-pulse" />
-      </div>
-
-      <!-- Not found / error -->
-      <Card
-        v-else-if="error"
-        class="gap-0 rounded-3xl p-8 text-center sm:p-12"
-      >
-        <p role="alert" class="font-mono text-sm text-destructive">{{ error }}</p>
-        <Button as-child variant="outline" class="mx-auto mt-6">
-          <router-link to="/manage/frames">← All campaigns</router-link>
-        </Button>
-      </Card>
-
-      <template v-else>
-        <div class="mb-6 flex items-center justify-between gap-3">
-          <p class="min-w-0 break-all font-mono text-sm text-muted-foreground">eypi.cc/frames/{{ form.slug }}</p>
-          <Button as-child variant="outline" class="shrink-0">
-            <router-link :to="`/frames/${form.slug}`">View →</router-link>
-          </Button>
+      <div class="mx-auto w-full max-w-xl">
+        <!-- Loading -->
+        <div
+          v-if="loading"
+          role="status"
+          aria-busy="true"
+          class="space-y-4"
+        >
+          <span class="sr-only">Loading</span>
+          <div class="mx-auto h-8 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
+          <div class="h-72 rounded-3xl bg-muted motion-safe:animate-pulse" />
         </div>
 
-        <Card class="relative gap-5 rounded-3xl p-5 sm:p-8">
-          <!-- Title -->
-          <div class="space-y-1.5">
-            <Label for="edit-campaign-title">Title</Label>
-            <Input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="font-mono" />
-          </div>
-
-          <!-- Slug -->
-          <div class="space-y-1.5">
-            <Label for="edit-campaign-slug">Link</Label>
-            <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
-              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground" @input="sanitizeSlug" />
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div class="space-y-1.5">
-            <Label for="edit-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
-            <Input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="font-mono" />
-          </div>
-
-          <!-- Caption -->
-          <div class="space-y-1.5">
-            <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
-            <Textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="resize-y font-mono" />
-          </div>
-
-          <!-- Save metadata -->
+        <!-- Not found / error -->
+        <Card
+          v-else-if="error"
+          class="gap-0 rounded-3xl p-8 text-center sm:p-12"
+        >
+          <p
+            role="alert"
+            class="font-mono text-sm text-destructive"
+          >
+            {{ error }}
+          </p>
           <Button
-            type="button"
-            size="lg"
-            :disabled="saving || !form.title.trim()"
-            class="w-full font-semibold"
-            @click="saveDetails"
-          >{{ saving ? 'Saving…' : 'Save Details' }}</Button>
-
-          <!-- Frames (persisted immediately) -->
-          <div class="border-t border-border pt-5">
-            <p class="mb-1 text-base font-medium">Frames</p>
-            <p class="mb-3 text-xs text-muted-foreground">Changes here save instantly.</p>
-            <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
-          </div>
+            as-child
+            variant="outline"
+            class="mx-auto mt-6"
+          >
+            <router-link to="/manage/frames">
+              ← All campaigns
+            </router-link>
+          </Button>
         </Card>
 
-        <div class="mt-6 text-center">
-          <Button
-            type="button"
-            variant="destructive"
-            @click="removeCampaign"
-          >Delete this campaign</Button>
-        </div>
-      </template>
-    </div>
+        <template v-else>
+          <div class="mb-6 flex items-center justify-between gap-3">
+            <p class="min-w-0 break-all font-mono text-sm text-muted-foreground">
+              eypi.cc/frames/{{ form.slug }}
+            </p>
+            <Button
+              as-child
+              variant="outline"
+              class="shrink-0"
+            >
+              <router-link :to="`/frames/${form.slug}`">
+                View →
+              </router-link>
+            </Button>
+          </div>
+
+          <Card class="relative gap-5 rounded-3xl p-5 sm:p-8">
+            <!-- Title -->
+            <div class="space-y-1.5">
+              <Label for="edit-campaign-title">Title</Label>
+              <Input
+                id="edit-campaign-title"
+                v-model="form.title"
+                type="text"
+                maxlength="200"
+                class="font-mono"
+              />
+            </div>
+
+            <!-- Slug -->
+            <div class="space-y-1.5">
+              <Label for="edit-campaign-slug">Link</Label>
+              <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+                <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
+                <input
+                  id="edit-campaign-slug"
+                  v-model="form.slug"
+                  type="text"
+                  maxlength="60"
+                  class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
+                  @input="sanitizeSlug"
+                >
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-1.5">
+              <Label for="edit-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
+              <Input
+                id="edit-campaign-description"
+                v-model="form.description"
+                type="text"
+                maxlength="1000"
+                class="font-mono"
+              />
+            </div>
+
+            <!-- Caption -->
+            <div class="space-y-1.5">
+              <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
+              <Textarea
+                id="edit-campaign-caption"
+                v-model="form.captionTemplate"
+                rows="3"
+                maxlength="2000"
+                class="resize-y font-mono"
+              />
+            </div>
+
+            <!-- Save metadata -->
+            <Button
+              type="button"
+              size="lg"
+              :disabled="saving || !form.title.trim()"
+              class="w-full font-semibold"
+              @click="saveDetails"
+            >
+              {{ saving ? 'Saving…' : 'Save Details' }}
+            </Button>
+
+            <!-- Frames (persisted immediately) -->
+            <div class="border-t border-border pt-5">
+              <p class="mb-1 text-base font-medium">
+                Frames
+              </p>
+              <p class="mb-3 text-xs text-muted-foreground">
+                Changes here save instantly.
+              </p>
+              <DpFrameUploader
+                :frames="frames"
+                :busy-index="frameBusyIndex"
+                @add="onAddFrame"
+                @remove="onRemoveFrame"
+                @reorder="onReorderFrame"
+              />
+            </div>
+          </Card>
+
+          <div class="mt-6 text-center">
+            <Button
+              type="button"
+              variant="destructive"
+              @click="removeCampaign"
+            >
+              Delete this campaign
+            </Button>
+          </div>
+        </template>
+      </div>
     </AppPage>
   </div>
 </template>

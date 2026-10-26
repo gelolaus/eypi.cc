@@ -1,19 +1,27 @@
 <template>
   <Card class="gap-0 rounded-3xl p-5 sm:p-8">
-    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">Selection Criteria</h2>
+    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">
+      Selection Criteria
+    </h2>
     <p class="mb-6 font-mono text-xs text-muted-foreground">
       Check the answer values you want to <span class="font-bold">include</span> in the raffle. Unchecked = excluded. Empty column = no filter applied.
     </p>
 
     <template v-if="clusters.length">
-      <div v-for="cl in clusters" :key="cl.value" class="mb-4 overflow-hidden rounded-xl border border-border">
+      <div
+        v-for="cl in clusters"
+        :key="cl.value"
+        class="mb-4 overflow-hidden rounded-xl border border-border"
+      >
         <button
           type="button"
           class="flex min-h-11 w-full items-center justify-between px-4 py-3 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
           @click="toggleClusterOpen(cl.value)"
         >
           <div>
-            <p class="font-mono text-sm font-bold text-foreground">{{ cl.value }}</p>
+            <p class="font-mono text-sm font-bold text-foreground">
+              {{ cl.value }}
+            </p>
             <p class="text-xs font-medium text-muted-foreground">
               max {{ cl.maxCount }} · {{ clusterEligibleCount(cl.value) }} eligible of {{ clusterRawCount(cl.value) }} total
             </p>
@@ -21,10 +29,24 @@
           <span class="font-mono text-xs text-muted-foreground">{{ openClusters.has(cl.value) ? '▲' : '▼' }}</span>
         </button>
 
-        <div v-if="openClusters.has(cl.value)" class="border-t border-border px-4 py-4">
-          <div v-if="!criteriaColumns.length" class="font-mono text-xs text-muted-foreground">No criteria columns configured.</div>
-          <div v-for="col in criteriaColumns" :key="col" class="mb-4 last:mb-0">
-            <p class="mb-2 text-sm font-semibold text-muted-foreground">{{ col }}</p>
+        <div
+          v-if="openClusters.has(cl.value)"
+          class="border-t border-border px-4 py-4"
+        >
+          <div
+            v-if="!criteriaColumns.length"
+            class="font-mono text-xs text-muted-foreground"
+          >
+            No criteria columns configured.
+          </div>
+          <div
+            v-for="col in criteriaColumns"
+            :key="col"
+            class="mb-4 last:mb-0"
+          >
+            <p class="mb-2 text-sm font-semibold text-muted-foreground">
+              {{ col }}
+            </p>
             <div class="flex flex-wrap gap-2">
               <label
                 v-for="val in uniqueValuesForCluster(col, cl.value)"
@@ -50,8 +72,14 @@
     </template>
 
     <template v-else>
-      <div v-for="col in criteriaColumns" :key="col" class="mb-6 last:mb-0">
-        <p class="mb-2 text-sm font-semibold text-muted-foreground">{{ col }}</p>
+      <div
+        v-for="col in criteriaColumns"
+        :key="col"
+        class="mb-6 last:mb-0"
+      >
+        <p class="mb-2 text-sm font-semibold text-muted-foreground">
+          {{ col }}
+        </p>
         <div class="flex flex-wrap gap-2">
           <label
             v-for="val in uniqueValues(col)"
@@ -72,7 +100,12 @@
           </label>
         </div>
       </div>
-      <div v-if="!criteriaColumns.length" class="font-mono text-xs text-muted-foreground">No criteria columns configured.</div>
+      <div
+        v-if="!criteriaColumns.length"
+        class="font-mono text-xs text-muted-foreground"
+      >
+        No criteria columns configured.
+      </div>
     </template>
 
     <div class="mt-6 rounded-xl bg-muted px-4 py-3">
@@ -82,8 +115,20 @@
     </div>
 
     <div class="mt-6 flex gap-3">
-      <Button type="button" variant="outline" :disabled="savingCriteria" @click="emit('leave', 'back')">← Back</Button>
-      <Button type="button" class="flex-1" :disabled="savingCriteria" @click="emit('leave', 'forward')">
+      <Button
+        type="button"
+        variant="outline"
+        :disabled="savingCriteria"
+        @click="emit('leave', 'back')"
+      >
+        ← Back
+      </Button>
+      <Button
+        type="button"
+        class="flex-1"
+        :disabled="savingCriteria"
+        @click="emit('leave', 'forward')"
+      >
         {{ savingCriteria ? 'Saving…' : 'Continue →' }}
       </Button>
     </div>

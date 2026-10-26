@@ -1,144 +1,203 @@
 <template>
   <div class="relative w-full">
-    <PageSkeleton v-if="loading" :rows="2" />
+    <PageSkeleton
+      v-if="loading"
+      :rows="2"
+    />
 
     <!-- Not found -->
-    <AppPage v-else-if="error" title="Frame not found">
+    <AppPage
+      v-else-if="error"
+      title="Frame not found"
+    >
       <Card class="gap-0 rounded-3xl p-8 text-center sm:p-12">
-        <p role="alert" class="font-mono text-sm text-destructive">{{ error }}</p>
-        <Button as-child variant="outline" class="mx-auto mt-6">
-          <router-link to="/">← Back to eypi.cc</router-link>
+        <p
+          role="alert"
+          class="font-mono text-sm text-destructive"
+        >
+          {{ error }}
+        </p>
+        <Button
+          as-child
+          variant="outline"
+          class="mx-auto mt-6"
+        >
+          <router-link to="/">
+            ← Back to eypi.cc
+          </router-link>
         </Button>
       </Card>
     </AppPage>
 
     <!-- Editor -->
-    <AppPage v-else :title="campaign.title" :description="campaign.description ?? undefined">
-    <div class="mx-auto w-full max-w-3xl">
-      <!-- Canvas card -->
-      <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
-        <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
-        <div
-          class="relative w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300"
-          :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
-          :style="{ aspectRatio: frameAspect }"
+    <AppPage
+      v-else
+      :title="campaign.title"
+      :description="campaign.description ?? undefined"
+    >
+      <div class="mx-auto w-full max-w-3xl">
+        <!-- Canvas card -->
+        <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
+          <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
+          <div
+            class="relative w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300"
+            :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
+            :style="{ aspectRatio: frameAspect }"
+          >
+            <canvas
+              ref="canvasRef"
+              class="absolute inset-0 h-full w-full select-none"
+              style="touch-action: none;"
+              @pointerdown="onPointerDown"
+              @pointermove="onPointerMove"
+              @pointerup="onPointerUp"
+              @pointercancel="onPointerUp"
+              @pointerleave="onPointerUp"
+              @wheel.prevent="onWheel"
+            />
+          </div>
+
+          <!-- Frame switcher -->
+          <div
+            v-if="frameImgs.length > 1"
+            class="mt-4 flex items-center justify-center gap-3"
+          >
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="rounded-full font-mono text-lg leading-none"
+              aria-label="Previous frame"
+              @click="prevFrame"
+            >
+              ‹
+            </Button>
+            <div class="flex items-center gap-1.5">
+              <button
+                v-for="(_, i) in frameImgs"
+                :key="i"
+                type="button"
+                class="relative size-3 rounded-full transition-colors outline-none before:absolute before:-inset-4 before:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
+                :class="i === selectedIndex ? 'bg-primary' : 'bg-muted-foreground/40'"
+                :aria-label="`Frame ${i + 1}`"
+                :aria-current="i === selectedIndex ? 'true' : undefined"
+                @click="selectedIndex = i"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              class="rounded-full font-mono text-lg leading-none"
+              aria-label="Next frame"
+              @click="nextFrame"
+            >
+              ›
+            </Button>
+          </div>
+
+          <p class="mt-3 text-center font-mono text-xs text-muted-foreground">
+            {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
+          </p>
+
+          <!-- Controls -->
+          <div class="mt-6 flex flex-col gap-4">
+            <Button
+              as-child
+              variant="outline"
+              class="w-full cursor-pointer font-semibold focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
+            >
+              <label>
+                {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
+                <input
+                  ref="photoInput"
+                  type="file"
+                  accept="image/*"
+                  class="sr-only"
+                  @change="onHeadshotPicked"
+                >
+              </label>
+            </Button>
+
+            <div
+              v-if="headshot"
+              class="flex items-center gap-4"
+            >
+              <span class="font-mono text-xs text-muted-foreground">Zoom</span>
+              <Slider
+                class="h-11 flex-1"
+                thumb-label="Zoom"
+                :model-value="[zoomPercent]"
+                :min="20"
+                :max="800"
+                :step="1"
+                @update:model-value="onZoom"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                @click="reset"
+              >
+                Reset
+              </Button>
+            </div>
+
+            <!-- Preview shape toggler -->
+            <div class="grid grid-cols-2 gap-3">
+              <Button
+                type="button"
+                :variant="previewShape === 'square' ? 'default' : 'outline'"
+                :aria-pressed="previewShape === 'square'"
+                class="min-h-11 text-sm font-semibold"
+                @click="previewShape = 'square'"
+              >
+                Square Preview
+              </Button>
+              <Button
+                type="button"
+                :variant="previewShape === 'circle' ? 'default' : 'outline'"
+                :aria-pressed="previewShape === 'circle'"
+                class="min-h-11 text-sm font-semibold"
+                @click="previewShape = 'circle'"
+              >
+                Circle Preview
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              size="lg"
+              :disabled="!headshot || exporting"
+              class="w-full font-semibold"
+              @click="download"
+            >
+              {{ exporting ? 'Rendering…' : 'Download' }}
+            </Button>
+          </div>
+        </Card>
+
+        <!-- Caption -->
+        <Card
+          v-if="campaign.captionTemplate"
+          class="relative mt-6 gap-0 rounded-3xl p-6"
         >
-          <canvas
-            ref="canvasRef"
-            class="absolute inset-0 h-full w-full select-none"
-            style="touch-action: none;"
-            @pointerdown="onPointerDown"
-            @pointermove="onPointerMove"
-            @pointerup="onPointerUp"
-            @pointercancel="onPointerUp"
-            @pointerleave="onPointerUp"
-            @wheel.prevent="onWheel"
-          />
-        </div>
-
-        <!-- Frame switcher -->
-        <div v-if="frameImgs.length > 1" class="mt-4 flex items-center justify-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            class="rounded-full font-mono text-lg leading-none"
-            aria-label="Previous frame"
-            @click="prevFrame"
-          >‹</Button>
-          <div class="flex items-center gap-1.5">
-            <button
-              v-for="(_, i) in frameImgs"
-              :key="i"
-              type="button"
-              class="relative size-3 rounded-full transition-colors outline-none before:absolute before:-inset-4 before:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
-              :class="i === selectedIndex ? 'bg-primary' : 'bg-muted-foreground/40'"
-              :aria-label="`Frame ${i + 1}`"
-              :aria-current="i === selectedIndex ? 'true' : undefined"
-              @click="selectedIndex = i"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            class="rounded-full font-mono text-lg leading-none"
-            aria-label="Next frame"
-            @click="nextFrame"
-          >›</Button>
-        </div>
-
-        <p class="mt-3 text-center font-mono text-xs text-muted-foreground">
-          {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
-        </p>
-
-        <!-- Controls -->
-        <div class="mt-6 flex flex-col gap-4">
-          <Button as-child variant="outline" class="w-full cursor-pointer font-semibold focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-            <label>
-              {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
-              <input ref="photoInput" type="file" accept="image/*" class="sr-only" @change="onHeadshotPicked" />
-            </label>
-          </Button>
-
-          <div v-if="headshot" class="flex items-center gap-4">
-            <Label class="w-auto font-mono text-xs text-muted-foreground">Zoom</Label>
-            <Slider
-              class="h-11 flex-1"
-              thumb-label="Zoom"
-              :model-value="[zoomPercent]"
-              :min="20"
-              :max="800"
-              :step="1"
-              @update:model-value="onZoom"
-            />
-            <Button type="button" variant="outline" @click="reset">Reset</Button>
-          </div>
-
-          <!-- Preview shape toggler -->
-          <div class="grid grid-cols-2 gap-3">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-sm font-semibold text-foreground">
+              Caption
+            </p>
             <Button
               type="button"
-              :variant="previewShape === 'square' ? 'default' : 'outline'"
-              :aria-pressed="previewShape === 'square'"
-              class="min-h-11 text-sm font-semibold"
-              @click="previewShape = 'square'"
+              variant="outline"
+              @click="copyCaption"
             >
-              Square Preview
-            </Button>
-            <Button
-              type="button"
-              :variant="previewShape === 'circle' ? 'default' : 'outline'"
-              :aria-pressed="previewShape === 'circle'"
-              class="min-h-11 text-sm font-semibold"
-              @click="previewShape = 'circle'"
-            >
-              Circle Preview
+              Copy to clipboard
             </Button>
           </div>
-
-          <Button
-            type="button"
-            size="lg"
-            :disabled="!headshot || exporting"
-            class="w-full font-semibold"
-            @click="download"
-          >{{ exporting ? 'Rendering…' : 'Download' }}</Button>
-        </div>
-      </Card>
-
-      <!-- Caption -->
-      <Card
-        v-if="campaign.captionTemplate"
-        class="relative mt-6 gap-0 rounded-3xl p-6"
-      >
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p class="text-sm font-semibold text-foreground">Caption</p>
-          <Button type="button" variant="outline" @click="copyCaption">Copy to clipboard</Button>
-        </div>
-        <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground">{{ campaign.captionTemplate }}</p>
-      </Card>
-    </div>
+          <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground">
+            {{ campaign.captionTemplate }}
+          </p>
+        </Card>
+      </div>
     </AppPage>
   </div>
 </template>
@@ -149,7 +208,6 @@ import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'

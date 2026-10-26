@@ -17,7 +17,6 @@ const forwarded = useForwardProps(delegated)
     data-slot="dropdown-menu-group"
     
     v-bind="forwarded"
-    
   >
     <slot />
   </RDropdownMenuGroup>
