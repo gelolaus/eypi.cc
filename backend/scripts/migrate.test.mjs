@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { env as processEnv } from 'node:process'
 import { describe, expect, it } from 'vitest'
 import { isDestructive, planMigrations, preflightProblems, splitStatements } from './migrate.mjs'
 
@@ -159,4 +160,27 @@ describe('preflight for 0007 attendee email index', () => {
     await addAttendee(client, 'a3', 'event-2', 'ADA@student.apc.edu.ph')
     expect(await preflightProblems(client, [{ version: '0008', name: '0008_admin_legal.sql' }])).toEqual([])
   })
+})
+
+describe('migrate CLI paths', () => {
+  it('finds the real migrations folder when run as a script', async () => {
+    const { spawnSync } = await import('node:child_process')
+    const { mkdtempSync, rmSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const here = dirname(fileURLToPath(import.meta.url))
+    const tmp = mkdtempSync(join(tmpdir(), 'migrate-cli-'))
+    try {
+      const url = pathToFileURL(join(tmp, 'test.db')).href
+      const result = spawnSync(process.execPath, [join(here, 'migrate.mjs'), '--status'], {
+        encoding: 'utf8',
+        env: { ...processEnv, TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: 'dummy' },
+      })
+      expect(result.status, result.stderr).toBe(0)
+      const expected = readdirSync(join(here, '..', 'migrations')).filter((name) => name.endsWith('.sql'))
+      expect(expected).toContain('0001_baseline.sql')
+      for (const name of expected) expect(result.stdout).toContain(name)
+    } finally {
+      rmSync(tmp, { recursive: true, force: true })
+    }
+  }, 30000)
 })

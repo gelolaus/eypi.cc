@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const backendDir = dirname(fileURLToPath(new URL('..', import.meta.url)))
+const backendDir = fileURLToPath(new URL('..', import.meta.url))
 const migrationsDir = join(backendDir, 'migrations')
 
 const LEDGER_DDL = `CREATE TABLE IF NOT EXISTS schema_migrations (
