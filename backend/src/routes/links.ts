@@ -6,7 +6,9 @@ import { requireAuth } from '../middleware/requireAuth'
 import { checkRateLimit } from '../lib/rateLimit'
 import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
+import { toCsv } from '../lib/links/csv'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
+import { manilaDaySpan, manilaSql, manilaTimestamp, manilaWindow } from '../lib/manilaTime'
 import { getOS, logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
 import { generateSlug, normalizeSlugInput, validateSlug } from '../../../shared/slugRules'
@@ -103,6 +105,28 @@ function epochSeconds(value: string | null): number | undefined {
 function isExpired(value: string | null, now = Date.now()): boolean {
   const seconds = epochSeconds(value)
   return seconds !== undefined && seconds * 1000 <= now
+}
+
+function linkStatus(row: Pick<LinkRow, 'disabled_at' | 'expires_at' | 'password_hash'>, now = Date.now()): string {
+  if (row.disabled_at) return 'disabled'
+  if (isExpired(row.expires_at, now)) return 'expired'
+  if (row.password_hash) return 'protected'
+  return 'active'
+}
+
+function analyticsRange(value: string | undefined): 7 | 30 | 90 {
+  if (value === '7' || value === '30' || value === '90') return Number(value) as 7 | 30 | 90
+  return 30
+}
+
+function csvResponse(body: string, filename: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
+  })
 }
 
 function sqlNow(now = new Date()): string {
@@ -389,58 +413,143 @@ app.get('/api/links/resolve/:slug', async (c) => {
   return c.json({ url: target.url })
 })
 
-app.get('/api/links/:id/analytics', requireAuth, async (c) => {
-  const id = c.req.param('id')
-  const client = db(c)
-  const ownership = await client.execute({
-    sql: 'SELECT id FROM links WHERE id = ? AND user_id = ?',
-    args: [id, c.var.userId],
+app.get('/api/links/export.csv', requireAuth, async (c) => {
+  const result = await db(c).execute({
+    sql: `SELECT ${LINK_COLUMNS} FROM links WHERE user_id = ? ORDER BY created_at DESC, id DESC`,
+    args: [c.var.userId],
   })
-  if (ownership.rows.length === 0) {
-    return fail(c, 404, 'not_found', 'Not found')
+  const rows: string[][] = [[
+    'slug',
+    'short_url',
+    'destination',
+    'clicks',
+    'created_at',
+    'expires_at',
+    'status',
+  ]]
+  for (const item of result.rows) {
+    const row = mapRow(item as unknown as Record<string, unknown>)
+    rows.push([
+      row.slug,
+      `https://eypi.cc/${row.slug}`,
+      row.original_url,
+      String(row.clicks),
+      iso(row.created_at) ?? '',
+      iso(row.expires_at) ?? '',
+      linkStatus(row),
+    ])
   }
-  const [osResult, countryResult, referrerResult, timelineResult, peakResult] = await Promise.all([
+  return csvResponse(toCsv(rows), 'links.csv')
+})
+
+app.get('/api/links/:id/analytics', requireAuth, async (c) => {
+  const row = await loadOwned(c, c.req.param('id'))
+  if (!row) return fail(c, 404, 'not_found', 'Not found')
+
+  const range = analyticsRange(c.req.query('range'))
+  const now = new Date()
+  const bounds = manilaWindow(range, now)
+  const where = `link_id = ? AND datetime(created_at) >= datetime(?) AND datetime(created_at) < datetime(?)`
+  const args: InValue[] = [row.id, bounds.start, bounds.end]
+  const dayExpr = `date(${manilaSql('created_at')})`
+  const hourExpr = `strftime('%H', ${manilaSql('created_at')})`
+  const client = db(c)
+  const [summaryResult, referrerResult, countryResult, osResult, timelineResult, peakResult] = await Promise.all([
     client.execute({
-      sql: 'SELECT os, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY os',
-      args: [id],
+      sql: `SELECT COUNT(*) AS total,
+          COUNT(DISTINCT visitor_hash) AS unique_visitors,
+          COALESCE(SUM(CASE WHEN source = 'qr' THEN 1 ELSE 0 END), 0) AS qr,
+          COALESCE(SUM(CASE WHEN source = 'qr' THEN 0 ELSE 1 END), 0) AS direct
+        FROM analytics WHERE ${where}`,
+      args,
     }),
     client.execute({
-      sql: 'SELECT country, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY country',
-      args: [id],
+      sql: `SELECT referrer, COUNT(*) AS n FROM analytics
+        WHERE ${where} AND referrer IS NOT NULL AND referrer != ''
+        GROUP BY referrer ORDER BY n DESC LIMIT 5`,
+      args,
     }),
     client.execute({
-      sql: 'SELECT referrer, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY referrer',
-      args: [id],
+      sql: `SELECT country, COUNT(*) AS n FROM analytics
+        WHERE ${where} AND country IS NOT NULL AND country != ''
+        GROUP BY country ORDER BY n DESC LIMIT 5`,
+      args,
     }),
     client.execute({
-      sql: "SELECT DATE(created_at) as date, COUNT(*) as count FROM analytics WHERE link_id = ? AND created_at >= date('now', '-30 days') GROUP BY DATE(created_at) ORDER BY date ASC",
-      args: [id],
+      sql: `SELECT os, COUNT(*) AS n FROM analytics
+        WHERE ${where} AND os IS NOT NULL AND os != ''
+        GROUP BY os ORDER BY n DESC LIMIT 5`,
+      args,
     }),
     client.execute({
-      sql: "SELECT strftime('%w', datetime(created_at, '+8 hours')) as peakDay, strftime('%H', datetime(created_at, '+8 hours')) as peakHour, COUNT(*) as count FROM analytics WHERE link_id = ? GROUP BY strftime('%w', datetime(created_at, '+8 hours')), strftime('%H', datetime(created_at, '+8 hours')) ORDER BY count DESC LIMIT 1",
-      args: [id],
+      sql: `SELECT ${dayExpr} AS day, COUNT(*) AS n FROM analytics
+        WHERE ${where} GROUP BY ${dayExpr} ORDER BY day ASC`,
+      args,
+    }),
+    client.execute({
+      sql: `SELECT ${hourExpr} AS peak_hour FROM analytics
+        WHERE ${where} GROUP BY ${hourExpr} ORDER BY COUNT(*) DESC LIMIT 1`,
+      args,
     }),
   ])
-  const os = osResult.rows.map((row) => {
-    const item = row as unknown as { os: string; count: number }
-    return { os: item.os, count: item.count }
+
+  const summary = summaryResult.rows[0] as unknown as {
+    total: number
+    unique_visitors: number
+    qr: number
+    direct: number
+  } | undefined
+  const clicksByDay = new Map(timelineResult.rows.map((item) => {
+    const point = item as unknown as { day: string; n: number }
+    return [String(point.day), Number(point.n)] as const
+  }))
+  const peak = peakResult.rows[0] as unknown as { peak_hour: string | number } | undefined
+
+  return c.json({
+    total: Number(summary?.total ?? 0),
+    unique: Number(summary?.unique_visitors ?? 0),
+    qr: Number(summary?.qr ?? 0),
+    direct: Number(summary?.direct ?? 0),
+    timeline: manilaDaySpan(range, now).map((day) => ({
+      day,
+      clicks: clicksByDay.get(day) ?? 0,
+    })),
+    topReferrers: referrerResult.rows.map((item) => {
+      const ranked = item as unknown as { referrer: string; n: number }
+      return { referrer: String(ranked.referrer), count: Number(ranked.n) }
+    }),
+    topCountries: countryResult.rows.map((item) => {
+      const ranked = item as unknown as { country: string; n: number }
+      return { country: String(ranked.country), count: Number(ranked.n) }
+    }),
+    topOs: osResult.rows.map((item) => {
+      const ranked = item as unknown as { os: string; n: number }
+      return { os: String(ranked.os), count: Number(ranked.n) }
+    }),
+    peakHour: peak ? Number(peak.peak_hour) : null,
   })
-  const country = countryResult.rows.map((row) => {
-    const item = row as unknown as { country: string; count: number }
-    return { country: item.country, count: item.count }
+})
+
+app.get('/api/links/:id/analytics.csv', requireAuth, async (c) => {
+  const row = await loadOwned(c, c.req.param('id'))
+  if (!row) return fail(c, 404, 'not_found', 'Not found')
+  const result = await db(c).execute({
+    sql: `SELECT created_at, country, os, referrer, source
+      FROM analytics WHERE link_id = ? ORDER BY created_at ASC, id ASC`,
+    args: [row.id],
   })
-  const referrer = referrerResult.rows.map((row) => {
-    const item = row as unknown as { referrer: string; count: number }
-    return { referrer: item.referrer, count: item.count }
-  })
-  const timeline = timelineResult.rows.map((row) => {
-    const item = row as unknown as { date: string; count: number }
-    return { date: item.date, count: item.count }
-  })
-  const peakEngagement = peakResult.rows.length > 0
-    ? peakResult.rows[0] as unknown as { peakDay: string; peakHour: string; count: number }
-    : null
-  return c.json({ os, country, referrer, timeline, peakEngagement })
+  const rows: string[][] = [['timestamp', 'country', 'os', 'referrer', 'source']]
+  for (const item of result.rows) {
+    const click = item as unknown as Record<string, unknown>
+    rows.push([
+      click.created_at ? manilaTimestamp(String(click.created_at)) : '',
+      text(click.country) ?? '',
+      text(click.os) ?? '',
+      text(click.referrer) ?? '',
+      text(click.source) ?? '',
+    ])
+  }
+  return csvResponse(toCsv(rows), 'analytics.csv')
 })
 
 app.get('/api/links/:id', requireAuth, async (c) => {
