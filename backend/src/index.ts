@@ -1,5 +1,7 @@
+import { createClient } from '@libsql/client/web'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { runRetention } from './jobs/retention'
 import { db, type Bindings } from './lib/db'
 import { onError } from './lib/errors'
 import { missingRequiredEnv, requiredEnvError } from './lib/env'
@@ -84,4 +86,21 @@ app.all('*', (c) => c.json({ error: { code: 'not_found', message: 'Not found' } 
 
 app.onError(onError)
 
-export default app
+async function scheduled(_controller: ScheduledController, env: Bindings): Promise<void> {
+  try {
+    const client = createClient({
+      url: env.TURSO_DATABASE_URL,
+      authToken: env.TURSO_AUTH_TOKEN,
+    })
+    await runRetention(client, new Date())
+  } catch (err) {
+    reportError(
+      { req: { path: '/scheduled/retention', header: () => undefined } },
+      err,
+      { code: 'retention_failed', message: 'Retention cleanup failed.' },
+    )
+  }
+}
+
+export { app }
+export default { fetch: app.fetch, scheduled }

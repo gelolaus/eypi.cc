@@ -27,7 +27,7 @@ export async function handleUserOnboarding(
     }
     
     // 2. Atomic Batch Update: Map the user ID to the pre-provisioned org memberships, but keep them pending (activated_at IS NULL).
-    const result = await database.execute({
+    await database.execute({
       sql: `
         UPDATE org_members 
         SET user_id = ? 
@@ -35,11 +35,7 @@ export async function handleUserOnboarding(
       `,
       args: [user.id, normalizedEmail]
     })
-    
-    console.log(`[Auto-Claim] Successfully mapped ${result.rowsAffected} pre-provisioned org memberships for user ${user.id}`)
-    
-  } catch (error) {
-    // We catch and log to prevent throwing errors into the critical authentication path
-    console.error(`[Auto-Claim] Critical failure during auto-claim hook for user ${user.id}:`, error)
+  } catch {
+    // A failed claim must not throw into Microsoft sign-in.
   }
 }

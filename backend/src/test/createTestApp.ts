@@ -6,7 +6,7 @@ import { createClient, type Client } from '@libsql/client/node'
 import { createSession, sessionCookieName } from '../lib/auth/session'
 import type { Client as RequestClient } from '@libsql/client/web'
 import { LEGAL_VERSIONS } from '../../../shared/legalVersions'
-import api from '../index'
+import { app as api } from '../index'
 import type { Bindings } from '../lib/db'
 import { CONSENT_DOCUMENTS } from '../middleware/requireConsent'
 

@@ -8,7 +8,7 @@ vi.mock('../middleware/orgGuard', () => ({
   },
 }))
 
-import app from '../index'
+import { app } from '../index'
 
 const NOT_FOUND = { error: { code: 'not_found', message: 'Not found' } }
 
