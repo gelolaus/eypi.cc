@@ -169,9 +169,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 - `Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent, CardFooter` with `size?: 'default' | 'sm'` on `Card`.
 - Consumed by every later task.
 
-- [ ] **Step 1:** Write tests (Vue Test Utils): Button default renders `h-11 rounded-xl bg-primary` and `data-slot="button"`; `size="lg"` renders `h-12`; `variant="outline"` renders `border-border`; `asChild` renders the child element (an `<a>`) with button classes; disabled has `disabled:opacity-50` and the `disabled` attribute; Input emits `update:modelValue` and renders `h-11 rounded-xl border-input`; `aria-invalid="true"` Input keeps the attribute; Card renders `ring-1 ring-foreground/10 rounded-xl` and `size="sm"` sets `data-size="sm"`; Badge variants render. Run; expect FAIL.
-- [ ] **Step 2:** Implement the components by translating the React class strings character for character; replace `React.ComponentProps` with Vue props/attrs, `Slot` with reka-ui `Primitive`.
-- [ ] **Step 3:** Run tests and typecheck; PASS. Commit `feat(ui): port the wantap button, input, card and badge primitives`.
+- [x] **Step 1:** Write tests (Vue Test Utils): Button default renders `h-11 rounded-xl bg-primary` and `data-slot="button"`; `size="lg"` renders `h-12`; `variant="outline"` renders `border-border`; `asChild` renders the child element (an `<a>`) with button classes; disabled has `disabled:opacity-50` and the `disabled` attribute; Input emits `update:modelValue` and renders `h-11 rounded-xl border-input`; `aria-invalid="true"` Input keeps the attribute; Card renders `ring-1 ring-foreground/10 rounded-xl` and `size="sm"` sets `data-size="sm"`; Badge variants render. Run; expect FAIL.
+- [x] **Step 2:** Implement the components by translating the React class strings character for character; replace `React.ComponentProps` with Vue props/attrs, `Slot` with reka-ui `Primitive`.
+- [x] **Step 3:** Run tests and typecheck; PASS. Commit `feat(ui): port the wantap button, input, card and badge primitives`.
 
 ### Task 4: Primitives B (Dialog, DropdownMenu, Select, Tabs, Switch, Tooltip, Slider)
 
