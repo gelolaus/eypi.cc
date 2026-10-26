@@ -1009,53 +1009,51 @@ app.patch('/api/links/:id', requireAuth, requireConsent, async (c) => {
     qrConfig = logoWrite.qrConfig
   }
 
-  let disabledAt = current.disabled_at
-  let disabledReason = current.disabled_reason
-  if (body.disabled === true) {
-    disabledAt = current.disabled_at ?? sqlNow()
-    if (disabledReason !== 'admin' && disabledReason !== 'abuse') disabledReason = 'owner'
-  } else if (body.disabled === false) {
-    disabledAt = null
-    disabledReason = null
-  }
-
-  const next: LinkRow = {
-    ...current,
-    original_url: url,
-    slug,
-    expires_at: expiresAt,
-    password_hash: passwordHash,
-    qr_config: qrConfig,
-    disabled_at: disabledAt,
-    disabled_reason: disabledReason,
-  }
+  // The loaded disabled_* values may be stale by the time we write. The UPDATE
+  // never writes them from memory: an owner disable only fills an empty state,
+  // and an owner enable only clears a disable the owner made.
   const now = sqlNow()
-  if (!disabledAt) await c.env.LINKS_KV.put(slug, kvValue(next))
+  let disabledSql = ''
+  const disabledArgs: string[] = []
+  if (body.disabled === true) {
+    disabledSql = `, disabled_at = COALESCE(disabled_at, ?), disabled_reason = COALESCE(disabled_reason, 'owner')`
+    disabledArgs.push(now)
+  } else if (body.disabled === false) {
+    const ownerOnly = `COALESCE(disabled_reason, '') NOT IN ('admin', 'abuse')`
+    disabledSql = `, disabled_at = CASE WHEN ${ownerOnly} THEN NULL ELSE disabled_at END,
+            disabled_reason = CASE WHEN ${ownerOnly} THEN NULL ELSE disabled_reason END`
+  }
   try {
     const updated = await db(c).execute({
       sql: `UPDATE links
         SET original_url = ?, slug = ?, expires_at = ?, password_hash = ?, qr_config = ?,
-            disabled_at = ?, disabled_reason = ?, updated_at = ?
+            updated_at = ?${disabledSql}
         WHERE id = ? AND user_id = ?`,
-      args: [url, slug, expiresAt, passwordHash, qrConfig, disabledAt, disabledReason, now, current.id, c.var.userId],
+      args: [url, slug, expiresAt, passwordHash, qrConfig, now, ...disabledArgs, current.id, c.var.userId],
     })
     if (updated.rowsAffected === 0) {
-      if (!disabledAt) await restoreEdge(c, slug)
       await discardLogo(c, logoWrite?.uploadedKey ?? null)
       return fail(c, 404, 'not_found', 'Not found')
     }
   } catch (err) {
-    if (!disabledAt) await restoreEdge(c, slug)
     await discardLogo(c, logoWrite?.uploadedKey ?? null)
     if (isSlugConflict(err)) return fail(c, 409, 'slug_taken', 'That slug is taken.')
     throw err
   }
   await discardLogo(c, logoWrite?.deleteKey ?? null)
 
-  if (disabledAt) await deleteKvKey(c.env.LINKS_KV, slug)
+  // Decide the edge key from the row as written, then re-check once so a
+  // disable that lands between the read and the put never leaves a live key.
+  let saved = await loadOwned(c, current.id)
   if (slug !== current.slug) await deleteKvKey(c.env.LINKS_KV, current.slug)
-  const saved = await loadOwned(c, current.id)
-  return c.json(toDetail(saved ?? next))
+  if (saved && !saved.disabled_at) {
+    await c.env.LINKS_KV.put(slug, kvValue(saved))
+    saved = await loadOwned(c, current.id)
+    if (!saved || saved.disabled_at) await deleteKvKey(c.env.LINKS_KV, slug)
+  } else {
+    await deleteKvKey(c.env.LINKS_KV, slug)
+  }
+  return c.json(toDetail(saved ?? current))
 })
 
 app.delete('/api/links/:id', requireAuth, requireConsent, async (c) => {
