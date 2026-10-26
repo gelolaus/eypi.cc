@@ -642,7 +642,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 
 **Files:** Create `src/legal/{types,privacy,terms,acceptable-use}.ts`, `src/views/LegalView.vue`, `src/views/ConsentView.vue` (+ tests). Delete `src/views/PrivacyView.vue`, `src/views/TermsView.vue`. Modify the router (`/privacy`, `/terms`, `/acceptable-use` → `LegalView`; a guard redirects to `/consent` when `needsConsent` is non-empty) and `TheFooter.vue`.
 
-- [ ] Draft privacy content covering every bullet in §9.3. Mark the top of each file `// OWNER REVIEW REQUIRED before publish`. Tests: the consent screen needs both checkboxes before "Continue" enables; LegalView shows version and effective date. Commit `feat(legal): publish versioned privacy, terms, and acceptable use pages`.
+- [x] Draft privacy content covering every bullet in §9.3. Mark the top of each file `// OWNER REVIEW REQUIRED before publish`. Tests: the consent screen needs both checkboxes before "Continue" enables; LegalView shows version and effective date. Commit `feat(legal): publish versioned privacy, terms, and acceptable use pages`.
 
 ### Task 8.3: Account page (D8, F-LEGAL-2)
 
