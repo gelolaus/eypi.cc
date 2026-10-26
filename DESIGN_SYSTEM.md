@@ -14,6 +14,7 @@
 7. [Motion and interaction](#7-motion-and-interaction)
 8. [Accessibility (a11y)](#8-accessibility-a11y)
 9. [Z-index architecture](#9-z-index-architecture)
+10. [Mobile-first layout](#10-mobile-first-layout)
 
 ---
 
@@ -262,13 +263,13 @@ No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` r
 
 ### Breakpoints
 
-Tailwind default breakpoints; no custom additions:
+Tailwind default breakpoints; no custom additions. Styles are mobile-first: base targets a 360px phone and breakpoints only add (see §10).
 
 | Name | Min-width | Notes |
 |---|---|---|
-| `sm` | `640px` | 404 page card padding increase |
+| `sm` | `640px` | 404 page card padding increase; page and section padding step up; dialogs stop being bottom sheets |
 | `md` | `768px` | Form layout switches col→row; dashboard padding, analytics panel max-width |
-| `lg` | `1024px` | Hero monitor height increase |
+| `lg` | `1024px` | App shell split: bottom tab bar below, side rail from here up; hero monitor height increase |
 | `xl` | `1280px` | Not explicitly used |
 | `2xl` | `1536px` | Not explicitly used |
 
@@ -279,14 +280,16 @@ Tailwind default breakpoints; no custom additions:
   background-color: var(--color-bg);
   background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
   background-size: 120px 120px;
-  background-attachment: fixed;  /* fixed attachment; grid does not scroll with content */
+}
+
+@media (hover: hover) {
+  .bg-dot-grid { background-attachment: fixed; }  /* pointer devices only; iOS Safari janks on fixed attachment */
 }
 
 .bg-dot-grid-dark {  /* Footer: always dark regardless of theme */
   background-color: #040d1f;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
   background-size: 120px 120px;
-  background-attachment: fixed;
 }
 ```
 
@@ -966,3 +969,20 @@ background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.
 background-size: 120px 120px;
 background-attachment: fixed;
 ```
+
+---
+
+## 10. Mobile-first layout
+
+wantap.cc (`C:UsersgeloDocumentsGitHubwantap.cc`) is the UX reference for layout, control sizing, and overlays. The brand (APC Blue and Gold, Geist) and the copy rules in §2 stay eypi's own.
+
+- **Shell**: `h-dvh flex-col lg:flex-row`; the content pane scrolls (`min-h-0 flex-1 overflow-y-auto`). Below `lg` there is a sticky top bar (`h-14`, never hides on scroll) and a fixed bottom tab bar; at `lg` and up a sticky side rail (`w-56`) replaces the tab bar.
+- **Tab bar**: `aria-label="Primary"`, four tabs, icon over an 11px label, active tab marked with `aria-current="page"`. Content gets bottom padding equal to the bar height plus the safe-area inset below `lg`.
+- **Control sizes**: default 44px (`.control`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`); `.btn-lg` 48px; `.btn-sm` 36px for dense secondary actions only. Icon-only buttons have a 44px hit area and an `sr-only` label. Inputs, selects, and textareas use 16px text so iOS does not zoom. Invalid fields set `aria-invalid="true"`. Primary buttons are APC Blue with white text (light) or `#8FA0E8` with `#0A0A0A` text (dark); gold controls keep `#1a1a2e` text via `.btn-gold`.
+- **Section cards**: `rounded-3xl border p-6 sm:p-7` (`.section-card` or `AppSection`). Pages use `AppPage`: `px-4 sm:px-6 py-6 sm:py-8 max-w-6xl`, an `h1` title and one short description line.
+- **Bottom sheets**: dialogs and slide panels dock to the bottom edge below `sm` and become centered dialogs or side panels from `sm`. Footers stack with `flex-col-reverse` so the primary action sits at the bottom.
+- **Skeletons**: loading states use `PageSkeleton` or blocks shaped like the final layout, not spinners. Pulse is `motion-safe:animate-pulse`, and the reduced-motion block in `main.css` also disables `.animate-pulse`.
+- **Safe areas**: fixed bottom elements add `.safe-bottom` or `pb-[env(safe-area-inset-bottom)]`.
+- **dvh**: full-height surfaces use `.h-screen-dvh` or `h-dvh`, never bare `100vh`.
+- **Hover**: no action is hover-only; hover styles live behind `(hover: hover) and (pointer: fine)`.
+- **Lists**: card list on mobile, table from `md` up. No horizontal page scroll at 360px.

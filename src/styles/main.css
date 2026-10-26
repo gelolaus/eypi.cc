@@ -85,7 +85,13 @@
     background-color: var(--color-bg);
     background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
     background-size: 120px 120px;
-    background-attachment: fixed;
+  }
+
+  /* Fixed attachment janks iOS Safari, so only pointer-hover devices get it. */
+  @media (hover: hover) {
+    .bg-dot-grid {
+      background-attachment: fixed;
+    }
   }
 
   /* Always-dark dot grid (footer only) */
@@ -93,7 +99,12 @@
     background-color: #040d1f;
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
     background-size: 120px 120px;
-    background-attachment: fixed;
+  }
+
+  @media (hover: hover) {
+    .bg-dot-grid-dark {
+      background-attachment: fixed;
+    }
   }
 
   /* Glassmorphism card — preserved for dashboard/settings/auth views */
@@ -775,6 +786,149 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 }
 
 /* ============================================================
+   MOBILE-FIRST CONTROLS AND SURFACES
+   Base targets a 360px phone: 44px hit areas, 16px text (no iOS zoom).
+   ============================================================ */
+@layer components {
+  .control {
+    min-height: 2.75rem;
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    padding: 0.5rem 0.875rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .control::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .control:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  .control[aria-invalid='true'] {
+    border-color: #dc2626;
+  }
+
+  .control[aria-invalid='true']:focus-visible {
+    outline-color: #dc2626;
+  }
+
+  .control:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .btn-primary:active,
+  .btn-secondary:active,
+  .btn-ghost:active,
+  .btn-danger:active {
+    transform: translateY(1px);
+  }
+
+  .btn-primary:disabled,
+  .btn-secondary:disabled,
+  .btn-ghost:disabled,
+  .btn-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background-color: #34418F;
+    color: #ffffff;
+  }
+
+  html.dark .btn-primary {
+    background-color: #8FA0E8;
+    color: #0A0A0A;
+  }
+
+  .btn-secondary {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-text);
+  }
+
+  .btn-danger {
+    background-color: #b91c1c;
+    color: #ffffff;
+  }
+
+  .btn-lg {
+    min-height: 3rem;
+    padding-inline: 1.5rem;
+  }
+
+  .btn-sm {
+    min-height: 2.25rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .section-card {
+    border-radius: 1.5rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .section-card {
+      padding: 1.75rem;
+    }
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .h-screen-dvh {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================================
    REDUCED MOTION
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -793,6 +947,19 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   .reveal {
     opacity: 1;
     transform: none;
+    transition: none;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger,
+  .control {
+    transition: none;
   }
 
   .pill-nav-wrapper {

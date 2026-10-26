@@ -51,11 +51,11 @@
 
 **Files:** `src/styles/main.css`, `tailwind.config.js`, new `src/components/AppPage.vue`, `src/components/AppSection.vue`, `src/components/PageSkeleton.vue` (+ tests), `DESIGN_SYSTEM.md`.
 
-- [ ] Write tests for `AppPage` (renders `h1` title, optional one-line description slot/prop, `px-4 sm:px-6 py-6 sm:py-8 max-w-6xl` container), `AppSection` (`rounded-3xl border p-6 sm:p-7`, optional heading level), `PageSkeleton` (aria-busy, layout-shaped blocks, `animate-pulse` gated for reduced motion).
-- [ ] Add to `main.css` (outside the contrast-pinned blocks): shared control classes `.control` (min-h 44px, `rounded-xl`, 16px text, focus ring, `[aria-invalid=true]` state), `.btn-primary/.btn-secondary/.btn-ghost/.btn-danger` sizes (default 44px, `.btn-lg` 48px, `.btn-sm` 36px), `.section-card`, `.safe-bottom` (`padding-bottom: env(safe-area-inset-bottom)`), `.h-screen-dvh`, `.scrollbar-none`, and a `@media (prefers-reduced-motion: reduce)` block disabling `.reveal`, transitions and pulse. Replace `background-attachment: fixed` on `.bg-dot-grid` with a `position: fixed` pseudo layer or `@media (hover: hover)` gating so iOS Safari does not jank. Keep `.btn-gold` and token blocks byte-compatible with `contrast.test.ts`.
-- [ ] Create the three primitives.
-- [ ] Amend `DESIGN_SYSTEM.md`: add a "Mobile-first layout" section (shell, tab bar, control sizes, section cards, bottom sheets, skeletons, safe areas, dvh), update §5 breakpoints (`lg` shell split), and note wantap.cc as the UX reference. Re-run `contrast.test.ts` (it reads the doc).
-- [ ] `npm run typecheck && npm test`; commit `feat(design-system): add mobile-first tokens and page primitives`.
+- [x] Write tests for `AppPage` (renders `h1` title, optional one-line description slot/prop, `px-4 sm:px-6 py-6 sm:py-8 max-w-6xl` container), `AppSection` (`rounded-3xl border p-6 sm:p-7`, optional heading level), `PageSkeleton` (aria-busy, layout-shaped blocks, `animate-pulse` gated for reduced motion).
+- [x] Add to `main.css` (outside the contrast-pinned blocks): shared control classes `.control` (min-h 44px, `rounded-xl`, 16px text, focus ring, `[aria-invalid=true]` state), `.btn-primary/.btn-secondary/.btn-ghost/.btn-danger` sizes (default 44px, `.btn-lg` 48px, `.btn-sm` 36px), `.section-card`, `.safe-bottom` (`padding-bottom: env(safe-area-inset-bottom)`), `.h-screen-dvh`, `.scrollbar-none`, and a `@media (prefers-reduced-motion: reduce)` block disabling `.reveal`, transitions and pulse. Replace `background-attachment: fixed` on `.bg-dot-grid` with a `position: fixed` pseudo layer or `@media (hover: hover)` gating so iOS Safari does not jank. Keep `.btn-gold` and token blocks byte-compatible with `contrast.test.ts`.
+- [x] Create the three primitives.
+- [x] Amend `DESIGN_SYSTEM.md`: add a "Mobile-first layout" section (shell, tab bar, control sizes, section cards, bottom sheets, skeletons, safe areas, dvh), update §5 breakpoints (`lg` shell split), and note wantap.cc as the UX reference. Re-run `contrast.test.ts` (it reads the doc).
+- [x] `npm run typecheck && npm test`; commit `feat(design-system): add mobile-first tokens and page primitives`.
 
 ### Task 2: App shell and navigation
 
