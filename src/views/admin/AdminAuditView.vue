@@ -8,7 +8,7 @@
         <select
           id="admin-audit-action"
           v-model="action"
-          class="w-full rounded-lg border border-g-border bg-transparent px-3 py-2.5 text-sm text-g-text"
+          class="control"
           @change="load(true)"
         >
           <option value="">
@@ -30,9 +30,9 @@
       No audit events yet.
     </p>
 
-    <div v-else class="overflow-x-auto rounded-2xl border border-g-border">
-      <div class="min-w-[820px]">
-        <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
+    <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+      <div>
+        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-xs font-semibold text-g-muted md:grid">
           <div class="col-span-3">Action</div>
           <div class="col-span-3">Actor</div>
           <div class="col-span-3">Target</div>
@@ -42,27 +42,28 @@
         <div
           v-for="event in events"
           :key="event.id"
-          class="grid grid-cols-12 items-start border-b border-g-border px-4 py-4 last:border-0 hover:bg-white/30 dark:hover:bg-mica-navy-row-hover"
+          data-admin-row
+          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-start md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-white/30 dark:md:hover:bg-mica-navy-row-hover"
         >
-          <div class="col-span-3 min-w-0">
+          <div class="min-w-0 md:col-span-3">
             <p class="text-sm font-semibold text-g-text">{{ actionLabel(event.action) }}</p>
             <p class="text-data text-xs text-g-muted">{{ event.action }}</p>
           </div>
-          <div class="text-data col-span-3 min-w-0 truncate text-xs text-g-muted" :title="event.actorEmail ?? event.actorUserId">
+          <div class="text-data min-w-0 truncate text-xs text-g-muted md:col-span-3" :title="event.actorEmail ?? event.actorUserId">
             {{ event.actorEmail ?? event.actorUserId ?? 'Unknown' }}
           </div>
-          <div class="col-span-3 min-w-0">
+          <div class="min-w-0 md:col-span-3">
             <p class="text-xs font-semibold text-g-muted">{{ event.targetType ?? '—' }}</p>
             <p class="text-data truncate text-xs text-g-muted" :title="event.targetId ?? ''">
               {{ event.targetId ?? '' }}
             </p>
           </div>
-          <div class="text-data col-span-2 text-xs text-g-muted">{{ formatDate(event.createdAt) }}</div>
-          <div class="col-span-1 flex justify-end">
+          <div class="text-data text-xs text-g-muted md:col-span-2">{{ formatDate(event.createdAt) }}</div>
+          <div class="flex md:col-span-1 md:justify-end">
             <button
               v-if="event.meta !== null"
               type="button"
-              class="text-xs font-semibold text-g-primary hover:text-g-accent"
+              class="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-g-primary hover:text-g-accent md:text-xs"
               :aria-label="`Show details for ${actionLabel(event.action)}`"
               :aria-expanded="expanded === event.id"
               @click="toggle(event.id)"
@@ -70,7 +71,7 @@
               {{ expanded === event.id ? 'Hide' : 'Show' }}
             </button>
           </div>
-          <div v-if="expanded === event.id && event.meta !== null" class="col-span-12 mt-3">
+          <div v-if="expanded === event.id && event.meta !== null" class="md:col-span-12 md:mt-3">
             <pre class="text-data overflow-x-auto rounded-lg border border-g-border bg-white/40 p-3 text-xs text-g-muted dark:bg-mica-navy-header">{{ formatMeta(event.meta) }}</pre>
           </div>
         </div>
@@ -80,7 +81,7 @@
     <div v-if="nextCursor" class="mt-6 flex justify-center">
       <button
         type="button"
-        class="rounded-full border border-g-border px-5 py-2.5 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-text disabled:opacity-50"
+        class="btn-secondary"
         :disabled="loadingMore"
         data-cursor="nav"
         @click="load(false)"

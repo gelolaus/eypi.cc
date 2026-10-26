@@ -7,11 +7,11 @@
           id="admin-user-search"
           v-model="query"
           type="search"
-          class="field-input w-full"
+          class="control"
           placeholder="Search by email or name"
           autocomplete="off"
         />
-        <button type="submit" class="btn-gold inline-flex shrink-0 items-center rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90" data-cursor="cta">
+        <button type="submit" class="btn-gold inline-flex min-h-11 shrink-0 items-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90" data-cursor="cta">
           Search
         </button>
       </form>
@@ -26,9 +26,9 @@
       No users match that search.
     </p>
 
-    <div v-else class="overflow-x-auto rounded-2xl border border-g-border">
-      <div class="min-w-[820px]">
-        <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
+    <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+      <div>
+        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-xs font-semibold text-g-muted md:grid">
           <div class="col-span-4">User</div>
           <div class="col-span-2">Role</div>
           <div class="col-span-2">Status</div>
@@ -38,29 +38,30 @@
         <div
           v-for="user in users"
           :key="user.id"
-          class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 last:border-0 hover:bg-white/30 dark:hover:bg-mica-navy-row-hover"
+          data-admin-row
+          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-white/30 dark:md:hover:bg-mica-navy-row-hover"
         >
-          <div class="col-span-4 min-w-0">
+          <div class="min-w-0 md:col-span-4">
             <p class="truncate text-sm font-semibold text-g-text">
               {{ user.name || '(no name)' }}
               <span v-if="isSelf(user)" class="text-xs font-normal text-g-muted">(you)</span>
             </p>
             <p class="text-data truncate text-xs text-g-muted">{{ user.email }}</p>
           </div>
-          <div class="col-span-2 text-sm">
-            {{ user.role === 'admin' ? 'Admin' : 'User' }}
+          <div class="text-sm md:col-span-2">
+            <span class="text-g-muted md:hidden">Role: </span>{{ user.role === 'admin' ? 'Admin' : 'User' }}
           </div>
-          <div class="col-span-2 text-sm">
-            <span :class="user.disabled ? 'text-red-500' : 'text-g-muted'">
+          <div class="text-sm md:col-span-2">
+            <span class="text-g-muted md:hidden">Status: </span><span :class="user.disabled ? 'text-red-500' : 'text-g-muted'">
               {{ user.disabled ? 'Disabled' : 'Active' }}
             </span>
           </div>
-          <div class="text-data col-span-2 text-xs text-g-muted">{{ formatDate(user.createdAt) }}</div>
-          <div class="col-span-2 flex flex-wrap justify-end gap-2">
+          <div class="text-data text-xs text-g-muted md:col-span-2"><span class="md:hidden">Joined </span>{{ formatDate(user.createdAt) }}</div>
+          <div class="flex flex-wrap gap-2 md:col-span-2 md:justify-end">
             <button
               v-if="user.role === 'user'"
               type="button"
-              class="rounded-lg border border-g-border px-3 py-1.5 text-xs font-semibold text-g-primary transition-colors hover:border-g-accent hover:text-g-accent disabled:opacity-50"
+              class="btn-secondary"
               :disabled="busyId === user.id"
               :aria-label="`Make ${user.email} an admin`"
               @click="setRole(user, 'admin')"
@@ -70,7 +71,7 @@
             <button
               v-else-if="!isSelf(user)"
               type="button"
-              class="rounded-lg border border-g-border px-3 py-1.5 text-xs font-semibold text-g-muted transition-colors hover:border-g-primary hover:text-g-primary disabled:opacity-50"
+              class="btn-secondary"
               :disabled="busyId === user.id"
               :aria-label="`Make ${user.email} a regular user`"
               @click="setRole(user, 'user')"
@@ -79,7 +80,7 @@
             </button>
             <button
               type="button"
-              class="rounded-lg border border-g-border px-3 py-1.5 text-xs font-semibold text-g-muted transition-colors hover:border-g-primary hover:text-g-primary disabled:opacity-50"
+              class="btn-secondary"
               :disabled="busyId === user.id"
               :aria-label="user.disabled ? `Enable ${user.email}` : `Disable ${user.email}`"
               @click="toggleDisabled(user)"
@@ -88,7 +89,7 @@
             </button>
             <button
               type="button"
-              class="rounded-lg border border-g-border px-3 py-1.5 text-xs font-semibold text-g-muted transition-colors hover:border-g-primary hover:text-g-primary disabled:opacity-50"
+              class="btn-secondary"
               :disabled="busyId === user.id"
               :aria-label="`Force logout for ${user.email}`"
               @click="forceLogout(user)"
@@ -97,7 +98,7 @@
             </button>
             <button
               type="button"
-              class="rounded-lg border border-red-500/60 px-3 py-1.5 text-xs font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+              class="btn-danger"
               :disabled="busyId === user.id"
               :aria-label="`Delete ${user.email}`"
               @click="remove(user)"
@@ -112,7 +113,7 @@
     <div v-if="nextCursor" class="mt-6 flex justify-center">
       <button
         type="button"
-        class="rounded-full border border-g-border px-5 py-2.5 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-text disabled:opacity-50"
+        class="btn-secondary"
         :disabled="loadingMore"
         data-cursor="nav"
         @click="load(false)"
@@ -282,9 +283,3 @@ async function remove(user: AdminUser) {
   }
 }
 </script>
-
-<style scoped>
-.field-input {
-  @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-</style>

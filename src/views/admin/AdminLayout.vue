@@ -1,44 +1,38 @@
 <template>
-  <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-24 pt-8 sm:px-6 md:pt-16 md:pb-32 lg:px-8">
-    <header class="reveal mb-8 flex flex-col gap-5 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <h1 class="text-page-title">
-        Admin
-      </h1>
-
-      <router-link
-        to="/dashboard"
-        class="inline-flex items-center justify-center rounded-full border border-g-border px-4 py-2 text-sm font-semibold text-g-muted transition-all hover:-translate-y-0.5 hover:border-g-accent hover:text-g-text"
-        data-cursor="nav"
+  <AppPage title="Admin">
+    <div class="-mt-2 mb-6 flex items-center gap-2">
+      <nav
+        class="flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto"
+        aria-label="Admin sections"
       >
+        <router-link
+          v-for="tab in tabs"
+          :key="tab.name"
+          :to="{ name: tab.name }"
+          :class="[
+            'inline-flex min-h-11 shrink-0 snap-start items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            isActive(tab)
+              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
+              : 'bg-transparent text-gray-500 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
+          ]"
+          :aria-current="isActive(tab) ? 'page' : undefined"
+          data-cursor="nav"
+        >
+          {{ tab.label }}
+        </router-link>
+      </nav>
+      <router-link to="/dashboard" class="btn-secondary shrink-0" data-cursor="nav">
         Dashboard
       </router-link>
-    </header>
-
-    <nav class="reveal delay-1 mb-8 flex flex-wrap gap-2" aria-label="Admin sections">
-      <router-link
-        v-for="tab in tabs"
-        :key="tab.name"
-        :to="{ name: tab.name }"
-        :class="[
-          'inline-flex min-h-[44px] items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-          isActive(tab)
-            ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-            : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-        ]"
-        :aria-current="isActive(tab) ? 'page' : undefined"
-        data-cursor="nav"
-      >
-        {{ tab.label }}
-      </router-link>
-    </nav>
+    </div>
 
     <router-view />
-  </main>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { useReveal } from '@/composables/useReveal'
+import AppPage from '@/components/AppPage.vue'
 
 interface AdminTab {
   name: string
@@ -55,7 +49,6 @@ const tabs: AdminTab[] = [
 ]
 
 const route = useRoute()
-useReveal()
 
 function isActive(tab: AdminTab): boolean {
   if (tab.prefix) return route.path.startsWith(tab.prefix)

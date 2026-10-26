@@ -95,8 +95,8 @@
 
 **Files:** `src/views/Admin*View.vue`, `AdminLayout`.
 
-- [ ] Tests first (`adminViews.test.ts` stays green): users/links/audit/reports render as cards below `md` (remove `min-w-[820px|860px]`); admin tab nav scrolls horizontally with snap, tabs `min-h-11`; row actions >= 44px.
-- [ ] Commit `feat(admin): show admin tables as cards on mobile`.
+- [x] Tests first (`adminViews.test.ts` stays green): users/links/audit/reports render as cards below `md` (remove `min-w-[820px|860px]`); admin tab nav scrolls horizontally with snap, tabs `min-h-11`; row actions >= 44px.
+- [x] Commit `feat(admin): show admin tables as cards on mobile`.
 
 ### Task 7: Landing and footer
 

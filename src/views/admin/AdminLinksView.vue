@@ -7,11 +7,11 @@
           id="admin-link-search"
           v-model="query"
           type="search"
-          class="field-input w-full"
+          class="control"
           placeholder="Search by slug, destination, or owner"
           autocomplete="off"
         />
-        <button type="submit" class="btn-gold inline-flex shrink-0 items-center rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90" data-cursor="cta">
+        <button type="submit" class="btn-gold inline-flex min-h-11 shrink-0 items-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90" data-cursor="cta">
           Search
         </button>
       </form>
@@ -26,9 +26,9 @@
       No links match that search.
     </p>
 
-    <div v-else class="overflow-x-auto rounded-2xl border border-g-border">
-      <div class="min-w-[860px]">
-        <div class="grid grid-cols-12 border-b border-g-border bg-white/40 px-4 py-3 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
+    <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+      <div>
+        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-xs font-semibold text-g-muted md:grid">
           <div class="col-span-3">Slug</div>
           <div class="col-span-4">Destination</div>
           <div class="col-span-2">Owner</div>
@@ -37,9 +37,10 @@
         <div
           v-for="link in links"
           :key="link.id"
-          class="grid grid-cols-12 items-center border-b border-g-border px-4 py-4 last:border-0 hover:bg-white/30 dark:hover:bg-mica-navy-row-hover"
+          data-admin-row
+          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-white/30 dark:md:hover:bg-mica-navy-row-hover"
         >
-          <div class="col-span-3 min-w-0">
+          <div class="min-w-0 md:col-span-3">
             <a
               :href="`/${link.slug}`"
               target="_blank"
@@ -52,21 +53,21 @@
               {{ link.disabledReason === 'abuse' ? 'Disabled for abuse' : 'Disabled by admin' }}
             </p>
           </div>
-          <div class="text-data col-span-4 min-w-0 text-xs text-g-muted">
+          <div class="text-data min-w-0 text-xs text-g-muted md:col-span-4">
             <span class="block truncate" :title="link.originalUrl">{{ link.originalUrl }}</span>
           </div>
-          <div class="col-span-2 min-w-0">
+          <div class="min-w-0 md:col-span-2">
             <span class="text-data block truncate text-xs text-g-muted" :title="link.ownerEmail ?? ''">
               {{ link.ownerEmail ?? 'Deleted user' }}
             </span>
           </div>
-          <div class="col-span-3 flex flex-wrap items-center justify-end gap-2">
+          <div class="flex flex-wrap items-center gap-2 md:col-span-3 md:justify-end">
             <template v-if="!link.disabled">
               <label :for="`reason-${link.id}`" class="sr-only">Disable reason for {{ link.slug }}</label>
               <select
                 :id="`reason-${link.id}`"
                 v-model="reasons[link.id]"
-                class="rounded-lg border border-g-border bg-transparent px-2 py-1.5 text-xs text-g-text"
+                class="control !w-auto"
               >
                 <option value="abuse">
                   Abuse
@@ -77,7 +78,7 @@
               </select>
               <button
                 type="button"
-                class="min-h-[36px] rounded-lg border border-red-500/60 px-3 py-1.5 text-xs font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+                class="btn-danger"
                 :disabled="busyId === link.id"
                 :aria-label="`Disable /${link.slug}`"
                 @click="disable(link)"
@@ -94,7 +95,7 @@
     <div v-if="nextCursor" class="mt-6 flex justify-center">
       <button
         type="button"
-        class="rounded-full border border-g-border px-5 py-2.5 text-sm font-semibold text-g-muted transition-colors hover:border-g-accent hover:text-g-text disabled:opacity-50"
+        class="btn-secondary"
         :disabled="loadingMore"
         data-cursor="nav"
         @click="load(false)"
@@ -201,8 +202,3 @@ async function disable(link: AdminLink) {
 }
 </script>
 
-<style scoped>
-.field-input {
-  @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-</style>

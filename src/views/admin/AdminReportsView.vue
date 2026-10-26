@@ -1,14 +1,14 @@
 <template>
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <nav class="flex gap-2" aria-label="Report status">
+      <nav class="flex gap-2 overflow-x-auto" aria-label="Report status">
         <button
           v-for="option in statuses"
           :key="option.value"
           type="button"
           :aria-pressed="status === option.value"
           :class="[
-            'inline-flex min-h-[44px] items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+            'inline-flex min-h-11 shrink-0 items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
             status === option.value
               ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
               : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -34,7 +34,8 @@
       <li
         v-for="report in reports"
         :key="report.id"
-        class="rounded-2xl border border-g-border px-5 py-5"
+        data-admin-row
+        class="rounded-2xl border border-g-border bg-g-surface p-4 sm:px-5 sm:py-5"
       >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0">
@@ -43,7 +44,7 @@
                 :href="`/${report.slug}`"
                 target="_blank"
                 rel="noopener"
-                class="text-data text-sm font-semibold text-g-primary hover:text-g-accent"
+                class="text-data inline-flex min-h-11 items-center text-sm font-semibold text-g-primary hover:text-g-accent"
               >
                 /{{ report.slug }}
               </a>
@@ -72,10 +73,10 @@
             </p>
           </div>
 
-          <div v-if="report.status === 'open'" class="flex shrink-0 flex-wrap gap-2">
+          <div v-if="report.status === 'open'" class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               type="button"
-              class="min-h-[44px] rounded-lg border border-red-500/60 px-4 py-2 text-xs font-semibold text-red-500 transition-colors hover:bg-red-500 hover:text-white disabled:opacity-50"
+              class="btn-danger"
               :disabled="busyId === report.id"
               :aria-label="`Disable /${report.slug} and resolve this report`"
               @click="resolve(report, 'disable_link')"
@@ -84,7 +85,7 @@
             </button>
             <button
               type="button"
-              class="min-h-[44px] rounded-lg border border-g-border px-4 py-2 text-xs font-semibold text-g-muted transition-colors hover:border-g-primary hover:text-g-primary disabled:opacity-50"
+              class="btn-secondary"
               :disabled="busyId === report.id"
               :aria-label="`Dismiss report for /${report.slug}`"
               @click="resolve(report, 'dismiss')"
