@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { db, type Bindings } from '../lib/db'
 import { noOrgBody, orgContext } from '../middleware/orgContext'
+import { enforceConsent } from '../middleware/requireConsent'
 import { attachSession } from '../middleware/requireAuth'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
@@ -176,6 +177,10 @@ app.use('/api/events/*', async (c, next) => {
   if (!eventRouteUsesOrg(c.req.path)) {
     await next()
     return
+  }
+  if (c.var.userId) {
+    const denied = await enforceConsent(c)
+    if (denied) return denied
   }
   return orgContext(c, next)
 })
