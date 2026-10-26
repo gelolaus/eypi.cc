@@ -79,9 +79,9 @@
 
 **Files:** `src/views/Links*View.vue`, `src/components/links/*` (`LinkList`, `LinkRow`, `LinkFilters`, editor form fields), `useLinks` unchanged.
 
-- [ ] Tests first (`LinksView.test.ts`, `useLinks.test.ts` stay green): at mobile, each link renders as a card (slug in Geist Mono, destination truncated, status badges, 44px action buttons, 44px selection checkbox hit area); table layout only from `md+` with no `min-w-[640px]`.
-- [ ] Filters collapse into a sheet or wrapped chips; search input `h-11`; bulk-action bar sticks above the tab bar.
-- [ ] Use `AppPage`/`AppSection`/`PageSkeleton`; commit `feat(links): show links as mobile cards with 44px actions`.
+- [x] Tests first (`LinksView.test.ts`, `useLinks.test.ts` stay green): at mobile, each link renders as a card (slug in Geist Mono, destination truncated, status badges, 44px action buttons, 44px selection checkbox hit area); table layout only from `md+` with no `min-w-[640px]`.
+- [x] Filters collapse into a sheet or wrapped chips; search input `h-11`; bulk-action bar sticks above the tab bar.
+- [x] Use `AppPage`/`AppSection`/`PageSkeleton`; commit `feat(links): show links as mobile cards with 44px actions`.
 
 ### Task 5: Tix, Forms, Frames, Orgs modules
 

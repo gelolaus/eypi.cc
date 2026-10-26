@@ -187,3 +187,22 @@ describe('LinksView create and analytics', () => {
     wrapper.unmount()
   })
 })
+
+describe('LinksView mobile layout', () => {
+  it('uses AppPage without a nested main and a sticky bulk bar above the tab bar', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(200, { items: [sampleLink], nextCursor: null })))
+    const wrapper = mount(LinksView)
+    await flushPromises()
+
+    expect(wrapper.find('main').exists()).toBe(false)
+    expect(wrapper.find('[data-app-page]').exists()).toBe(true)
+    expect(wrapper.get('input#link-search').classes()).toContain('h-11')
+
+    await wrapper.get('[aria-label="Select alpha"]').setValue(true)
+    const bar = wrapper.get('[data-bulk-bar]')
+    expect(bar.classes()).toContain('sticky')
+    expect(bar.classes()).toContain('bottom-[calc(4.5rem+env(safe-area-inset-bottom))]')
+    expect(bar.classes()).toContain('lg:bottom-0')
+    wrapper.unmount()
+  })
+})

@@ -1,6 +1,6 @@
 <template>
-  <div class="mb-6 flex w-full flex-col gap-3 md:flex-row">
-    <div class="flex-1">
+  <div class="mb-6 grid w-full grid-cols-2 gap-3 md:flex md:flex-row">
+    <div class="col-span-2 md:flex-1">
       <label
         class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
         for="link-search"
@@ -10,7 +10,7 @@
       <input
         id="link-search"
         aria-label="Search links"
-        class="w-full rounded-2xl border-2 border-g-border bg-g-surface px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
+        class="control h-11"
         placeholder="Search slug or destination"
         type="search"
         :value="query"
@@ -26,7 +26,7 @@
       </label>
       <select
         id="link-sort"
-        class="w-full rounded-xl border-2 border-g-border bg-g-surface px-4 py-3 text-sm text-g-text outline-none focus:border-g-accent md:min-w-40"
+        class="control h-11 md:min-w-40"
         :value="sort"
         @change="onSort"
       >
@@ -50,7 +50,7 @@
       </label>
       <select
         id="link-status"
-        class="w-full rounded-xl border-2 border-g-border bg-g-surface px-4 py-3 text-sm text-g-text outline-none focus:border-g-accent md:min-w-40"
+        class="control h-11 md:min-w-40"
         :value="status"
         @change="onStatus"
       >

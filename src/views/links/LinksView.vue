@@ -1,27 +1,27 @@
 <template>
   <div class="relative w-full">
-    <div class="mx-auto flex w-full max-w-5xl flex-col px-4 pb-24 pt-8 md:pb-32 md:pt-16">
-      <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-        <h1 class="text-page-title">
-          Links
-        </h1>
-        <div class="flex flex-wrap gap-3">
-          <button
-            class="rounded-xl border-2 border-g-border px-5 py-3 text-sm font-semibold text-g-text"
-            type="button"
-            @click="exportCsv"
-          >
-            Export CSV
-          </button>
-          <button
-            class="btn-gold rounded-xl px-5 py-3 text-sm font-semibold"
-            type="button"
-            @click="openCreate"
-          >
-            New link
-          </button>
-        </div>
-      </header>
+    <PageSkeleton v-if="initialLoading" />
+    <AppPage
+      v-else
+      title="Links"
+      description="Create, search, and manage your short links."
+    >
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row">
+        <button
+          class="btn-gold min-h-11 rounded-xl px-5 text-base font-semibold sm:order-2"
+          type="button"
+          @click="openCreate"
+        >
+          New link
+        </button>
+        <button
+          class="btn-secondary sm:order-1"
+          type="button"
+          @click="exportCsv"
+        >
+          Export CSV
+        </button>
+      </div>
       <p
         v-if="quotaMessage"
         class="mb-4 text-sm text-red-500"
@@ -46,14 +46,15 @@
       />
       <div
         v-if="selectedIds.length"
-        class="mb-4 flex flex-wrap items-center gap-3"
+        data-bulk-bar
+        class="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-g-border bg-g-surface p-3 shadow-lg lg:bottom-0"
       >
         <p class="text-sm text-g-muted">
           {{ selectedIds.length }} selected
         </p>
         <button
           aria-label="Disable selected"
-          class="rounded-xl border-2 border-g-border px-4 py-2 text-sm font-semibold"
+          class="btn-secondary"
           type="button"
           @click="confirmBulkDisable"
         >
@@ -61,7 +62,7 @@
         </button>
         <button
           aria-label="Delete selected"
-          class="rounded-xl border-2 border-red-500 px-4 py-2 text-sm font-semibold text-red-500"
+          class="btn-secondary border-red-500 text-red-500"
           type="button"
           @click="confirmBulkDelete"
         >
@@ -83,7 +84,7 @@
         @load-more="loadMore"
         @toggle="toggleSelected"
       />
-    </div>
+    </AppPage>
     <Teleport to="body">
       <LinkEditorPanel
         :destination="draftDestination"
@@ -115,6 +116,8 @@ import {
   type LinkSort,
   type LinkStatusFilter,
 } from '@/composables/useLinks'
+import AppPage from '@/components/AppPage.vue'
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import LinkFilters from '@/components/links/LinkFilters.vue'
 import LinkList from '@/components/links/LinkList.vue'
 import LinkEditorPanel from '@/components/links/LinkEditorPanel.vue'
@@ -154,6 +157,7 @@ const analyticsOpen = ref(false)
 const analyticsId = ref<string | null>(null)
 const analyticsShort = ref('')
 const pageError = ref('')
+const initialLoading = ref(true)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const filtered = computed(() => query.value.trim().length > 0 || status.value !== 'all')
@@ -314,7 +318,7 @@ watch(error, (value) => { pageError.value = value })
 
 onMounted(() => {
   prefillFromRoute()
-  void load()
+  void load().finally(() => { initialLoading.value = false })
 })
 
 onScopeDispose(() => {

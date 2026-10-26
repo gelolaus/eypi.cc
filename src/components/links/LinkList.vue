@@ -1,11 +1,18 @@
 <template>
-  <div class="w-full overflow-x-auto">
-    <div class="mica-card w-full min-w-[640px] overflow-hidden rounded-2xl border border-g-border">
+  <div class="w-full">
+    <div class="space-y-3 md:mica-card md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
       <div
         v-if="loading && items.length === 0"
-        class="px-6 py-16 text-center text-sm text-g-muted"
+        class="space-y-3"
+        role="status"
       >
-        Loading links…
+        <span class="sr-only">Loading links</span>
+        <div
+          v-for="n in 3"
+          :key="n"
+          aria-hidden="true"
+          class="h-28 rounded-3xl bg-g-border motion-safe:animate-pulse"
+        ></div>
       </div>
       <template v-else-if="items.length > 0">
         <LinkRow
@@ -24,7 +31,7 @@
       </template>
       <div
         v-else
-        class="px-6 py-16 text-center"
+        class="rounded-2xl border border-g-border px-6 py-16 text-center md:border-0"
       >
         <h2 class="text-sm font-semibold text-gray-500 dark:text-slate-400">
           {{ filtered ? 'No matching links' : 'No links yet' }}
@@ -39,7 +46,7 @@
     </div>
     <button
       v-if="hasMore"
-      class="mt-4 rounded-xl border-2 border-g-border px-4 py-2 text-sm font-semibold text-g-text"
+      class="btn-secondary mt-4 w-full sm:w-auto"
       type="button"
       :disabled="loading"
       @click="emit('load-more')"
