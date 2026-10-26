@@ -2,8 +2,10 @@
   <div class="relative w-full">
     <AppPage title="Attendee Selection">
       <template #description>
-        <router-link to="/manage/tix" class="-ml-1 inline-flex min-h-11 items-center px-1 text-sm font-medium text-g-muted hover:text-g-accent">← My events</router-link>
-        <span v-if="eventName" class="block text-sm text-g-muted">{{ eventName }}</span>
+        <Button as-child variant="link" class="-ml-2 h-11 px-2 text-sm text-muted-foreground">
+          <router-link to="/manage/tix">← My events</router-link>
+        </Button>
+        <span v-if="eventName" class="block text-sm text-muted-foreground">{{ eventName }}</span>
       </template>
 
     <!-- Step progress bar -->
@@ -12,12 +14,12 @@
         <div
           :class="[
             'h-1.5 flex-1 rounded-full transition-all duration-300',
-            stepIndex >= i ? 'bg-[#34418F] dark:bg-slate-400' : 'bg-gray-200 dark:bg-slate-700',
+            stepIndex >= i ? 'bg-primary' : 'bg-muted',
           ]"
         />
       </template>
     </div>
-    <p class="mb-6 text-sm font-medium text-g-muted">
+    <p class="mb-6 text-sm font-medium text-muted-foreground">
       Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
     </p>
 
@@ -114,6 +116,7 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import AppPage from '@/components/layout/AppPage.vue'
+import { Button } from '@/components/ui/button'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'

@@ -2,7 +2,7 @@
   <Teleport to="body">
   <Transition name="panel">
     <div v-if="open" class="fixed inset-0 flex items-end justify-center sm:items-stretch sm:justify-end" style="z-index: 99990">
-      <button type="button" class="absolute inset-0 cursor-default border-0 bg-black/30 p-0 backdrop-blur-sm" aria-label="Close add guest" @click="emit('close')" />
+      <button type="button" class="absolute inset-0 cursor-default border-0 bg-black/60 p-0 outline-none backdrop-blur-sm focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50" aria-label="Close add guest" @click="emit('close')" />
       <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
       <div
         ref="panel"
@@ -10,112 +10,110 @@
         aria-modal="true"
         aria-labelledby="add-guest-title"
         tabindex="-1"
-        class="relative z-10 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none dark:bg-slate-900"
+        class="relative z-10 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-border bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-2xl outline-none sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none sm:border-l sm:border-t-0"
         @keydown.esc.stop="emit('close')"
       >
-        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-2 sm:px-8 dark:border-slate-700">
-          <h2 id="add-guest-title" class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add guest</h2>
-          <button type="button" class="flex size-11 items-center justify-center font-mono text-lg text-gray-400 transition-colors hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="Close" @click="emit('close')">×</button>
+        <div class="flex items-center justify-between border-b border-border px-5 py-2 sm:px-8">
+          <h2 id="add-guest-title" class="text-sm font-semibold text-foreground">Add guest</h2>
+          <Button type="button" variant="ghost" size="icon" class="font-mono text-lg" aria-label="Close" @click="emit('close')">×</Button>
         </div>
 
-        <div class="flex border-b border-gray-100 dark:border-slate-700">
-          <button
+        <div class="flex border-b border-border">
+          <Button
             v-if="hasCsvRows"
             type="button"
+            variant="ghost"
             :class="[
-              'min-h-11 flex-1 text-sm font-semibold transition-colors',
-              guestMode === 'search' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
+              'h-11 flex-1 rounded-none border-b-2 text-sm font-semibold',
+              guestMode === 'search' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground',
             ]"
             @click="guestMode = 'search'"
           >
             From CSV
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
             :class="[
-              'min-h-11 flex-1 text-sm font-semibold transition-colors',
-              guestMode === 'freeform' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
+              'h-11 flex-1 rounded-none border-b-2 text-sm font-semibold',
+              guestMode === 'freeform' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground',
             ]"
             @click="guestMode = 'freeform'"
           >
             Free-form
-          </button>
+          </Button>
         </div>
 
         <div class="flex-1 p-5 sm:p-8">
           <div v-if="guestMode === 'search' && hasCsvRows">
-            <input
+            <Input
               v-model="guestSearch"
               type="text"
               placeholder="Search by name or email…"
               aria-label="Search CSV rows"
-              class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-400"
+              class="mb-4"
             />
             <div v-if="guestSearchResults.length" class="space-y-1">
               <div
                 v-for="row in guestSearchResults"
                 :key="row.id"
-                class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-slate-600"
+                class="flex items-center justify-between gap-3 rounded-xl border border-border px-4 py-3"
               >
                 <div>
-                  <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ guestRowName(row) }}</p>
-                  <p class="font-mono text-xs text-gray-400 dark:text-slate-500">
+                  <p class="font-mono text-sm font-bold text-foreground">{{ guestRowName(row) }}</p>
+                  <p class="font-mono text-xs text-muted-foreground">
                     {{ guestRowEmail(row) }}
-                    <span v-if="row.isSelected" class="ml-2 text-emerald-500">Already added</span>
+                    <span v-if="row.isSelected" class="ml-2 text-primary">Already added</span>
                   </p>
                 </div>
-                <button
+                <Button
                   v-if="!row.isSelected"
                   type="button"
                   :disabled="addingGuest"
-                  class="btn-primary"
                   @click="addGuestFromCsv(row.id)"
                 >
                   Add
-                </button>
+                </Button>
               </div>
             </div>
-            <p v-else-if="guestSearch.trim()" class="font-mono text-xs text-gray-400 dark:text-slate-500">No matches found.</p>
+            <p v-else-if="guestSearch.trim()" class="font-mono text-xs text-muted-foreground">No matches found.</p>
           </div>
 
           <div v-if="guestMode === 'freeform'" class="flex flex-col gap-4">
-            <div>
-              <label for="guest-first-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First name *</label>
-              <input id="guest-first-name" v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+            <div class="space-y-1.5">
+              <Label for="guest-first-name">First name *</Label>
+              <Input id="guest-first-name" v-model="guestForm.firstName" type="text" />
             </div>
-            <div>
-              <label for="guest-last-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last name</label>
-              <input id="guest-last-name" v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+            <div class="space-y-1.5">
+              <Label for="guest-last-name">Last name</Label>
+              <Input id="guest-last-name" v-model="guestForm.lastName" type="text" />
             </div>
-            <div>
-              <label for="guest-email" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
-              <input id="guest-email" v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+            <div class="space-y-1.5">
+              <Label for="guest-email">Email *</Label>
+              <Input id="guest-email" v-model="guestForm.email" type="email" />
             </div>
-            <div>
-              <label for="guest-cluster" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
-              <input
+            <div class="space-y-1.5">
+              <Label for="guest-cluster">Cluster <span class="font-normal text-muted-foreground">(optional)</span></Label>
+              <Input
                 id="guest-cluster"
                 v-model="guestForm.clusterValue"
                 type="text"
                 list="guest-cluster-suggestions"
                 placeholder="Type or pick a cluster…"
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
               />
               <datalist id="guest-cluster-suggestions">
                 <option v-for="cluster in clusters" :key="cluster.value" :value="cluster.value" />
               </datalist>
             </div>
-            <button
+            <Button
               type="button"
+              size="lg"
+              class="w-full"
               :disabled="addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()"
-              :class="[
-                'btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
-                (addingGuest || !guestForm.firstName.trim() || !guestForm.email.trim()) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110',
-              ]"
               @click="addGuestFreeform"
             >
               {{ addingGuest ? 'Adding…' : 'Add guest' }}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -125,6 +123,9 @@
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 import { api } from '@/lib/api'

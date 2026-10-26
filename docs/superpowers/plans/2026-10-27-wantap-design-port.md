@@ -243,9 +243,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `views/tix/*`, `components/tix/*` (including `selection/`).
 
-- [ ] **Step 1:** Update or add tests: attendee tables scroll inside `overflow-x-auto` wrappers at 375px; the scanner panel keeps the camera view (video stays unstyled by the theme) and its start/stop `Button`s; `ClusterBars` use `--chart-*` tokens.
-- [ ] **Step 2:** Restyle onto primitives; do not touch spreadsheet export logic or generated file styles (**Review Focus 4**).
-- [ ] **Step 3:** Run tests. Commit `feat(tix): restyle events, attendees and the scanner`.
+- [x] **Step 1:** Update or add tests: attendee tables scroll inside `overflow-x-auto` wrappers at 375px; the scanner panel keeps the camera view (video stays unstyled by the theme) and its start/stop `Button`s; `ClusterBars` use `--chart-*` tokens.
+- [x] **Step 2:** Restyle onto primitives; do not touch spreadsheet export logic or generated file styles (**Review Focus 4**).
+- [x] **Step 3:** Run tests. Commit `feat(tix): restyle events, attendees and the scanner`.
 
 ### Task 12: Orgs, settings, account, invites
 

@@ -1,62 +1,57 @@
 <template>
-  <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
-
-    <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
-    <p class="mb-1 font-mono text-xs text-gray-500 dark:text-slate-400">
-      Column: <span class="font-bold text-[#34418F] dark:text-slate-300">{{ columnMapping?.clusterCol }}</span>
+  <Card class="gap-0 rounded-3xl p-5 sm:p-8">
+    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">Configure Clusters</h2>
+    <p class="mb-1 font-mono text-xs text-muted-foreground">
+      Column: <span class="font-bold text-foreground">{{ columnMapping?.clusterCol }}</span>
     </p>
-    <p class="mb-6 font-mono text-xs text-gray-400 dark:text-slate-500">Set how many attendees each group can have. Total capacity is the sum of all quotas.</p>
+    <p class="mb-6 font-mono text-xs text-muted-foreground">Set how many attendees each group can have. Total capacity is the sum of all quotas.</p>
 
     <div class="space-y-3">
       <div
         v-for="cl in clusters"
         :key="cl.value"
-        class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input"
+        class="flex items-center gap-3 rounded-xl border border-border px-4 py-3"
       >
-        <div class="flex-1">
-          <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
-          <p class="font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ clusterRawCount(cl.value) }} respondents</p>
+        <div class="min-w-0 flex-1">
+          <p class="break-words font-mono text-sm font-bold text-foreground">{{ cl.value }}</p>
+          <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">{{ clusterRawCount(cl.value) }} respondents</p>
         </div>
         <div class="flex items-center gap-2">
-          <label :for="`cluster-max-${cl.value}`" class="font-mono text-xs text-gray-500 dark:text-slate-400">Max:</label>
-          <input
+          <Label :for="`cluster-max-${cl.value}`" class="font-mono text-xs text-muted-foreground">Max:</Label>
+          <Input
             :id="`cluster-max-${cl.value}`"
-            :value="cl.maxCount"
+            :model-value="cl.maxCount"
             type="number"
             min="0"
-            class="control w-24 text-center font-mono font-bold"
+            class="w-24 text-center font-mono font-bold"
             @input="setClusterMax(cl.value, Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0))"
           />
         </div>
       </div>
     </div>
 
-    <div class="mt-4 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-800/50">
-      <p class="font-mono text-xs text-gray-600 dark:text-slate-400">
-        Total capacity: <span class="font-bold text-[#34418F] dark:text-slate-200">{{ totalClusterMax }}</span> attendees
+    <div class="mt-4 rounded-xl bg-muted px-4 py-3">
+      <p class="font-mono text-xs text-muted-foreground">
+        Total capacity: <span class="font-bold text-foreground">{{ totalClusterMax }}</span> attendees
       </p>
     </div>
 
-    <p v-if="clusterError" class="mt-3 text-xs font-medium text-red-500">{{ clusterError }}</p>
+    <p v-if="clusterError" class="mt-3 text-xs font-medium text-destructive">{{ clusterError }}</p>
 
     <div class="mt-6 flex gap-3">
-      <button type="button" class="btn-secondary" @click="emit('back')">← Back</button>
-      <button
-        type="button"
-        :disabled="savingClusters"
-        :class="[
-          'min-h-11 flex-1 rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 dark:bg-slate-700',
-          savingClusters ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5 hover:brightness-110',
-        ]"
-        @click="emit('continue')"
-      >
+      <Button type="button" variant="outline" @click="emit('back')">← Back</Button>
+      <Button type="button" class="flex-1" :disabled="savingClusters" @click="emit('continue')">
         {{ savingClusters ? 'Saving…' : 'Continue →' }}
-      </button>
+      </Button>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { ClusterConfig, ColumnMapping } from '@/types/selection'
 
 defineProps<{

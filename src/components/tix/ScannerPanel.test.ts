@@ -28,7 +28,7 @@ describe('ScannerPanel', () => {
     expect(wrapper.find('[data-scanner-actions]').exists()).toBe(true)
     const button = wrapper.find('[data-scanner-actions] button')
     expect(button.text()).toContain('Enable camera')
-    expect(button.classes().join(' ')).toMatch(/min-h-11|btn-/)
+    expect(button.attributes('data-slot')).toBe('button')
     expect(wrapper.html()).not.toContain('max-w-sm')
   })
 })

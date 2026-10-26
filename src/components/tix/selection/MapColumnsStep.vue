@@ -1,23 +1,22 @@
 <template>
-  <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
+  <Card class="gap-0 rounded-3xl p-5 sm:p-8">
+    <h2 class="mb-1 font-heading text-xl font-semibold tracking-tight text-foreground">Map Columns</h2>
+    <p class="mb-6 font-mono text-xs text-muted-foreground">One column must be the attendee's email.</p>
 
-    <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
-    <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
-
-    <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-      <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+    <div class="overflow-hidden rounded-xl border border-border">
+      <div class="grid grid-cols-2 border-b border-border bg-muted px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-foreground">
         <span>Column</span><span>Role</span>
       </div>
       <div
         v-for="col in columnHeaders"
         :key="col"
-        class="grid grid-cols-2 items-center gap-2 border-b border-gray-100 px-4 py-2 last:border-0 dark:border-slate-700/60"
+        class="grid grid-cols-2 items-center gap-2 border-b border-border px-4 py-2 last:border-0"
       >
-        <span class="truncate pr-2 font-mono text-sm text-gray-700 dark:text-slate-300">{{ col }}</span>
+        <span class="truncate pr-2 font-mono text-sm text-foreground">{{ col }}</span>
         <select
           :value="getColRole(col)"
           :aria-label="`Role for ${col}`"
-          class="control font-mono"
+          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 font-mono text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
           @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
         >
           <option value="criteria">Criteria</option>
@@ -31,22 +30,18 @@
       </div>
     </div>
 
-    <p v-if="mapError" class="mt-3 text-xs font-medium text-red-500">{{ mapError }}</p>
+    <p v-if="mapError" class="mt-3 text-xs font-medium text-destructive">{{ mapError }}</p>
 
     <div class="mt-6 flex gap-3">
-      <button type="button" class="btn-secondary" @click="emit('back')">← Back</button>
-      <button
-        type="button"
-        class="min-h-11 flex-1 rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 dark:bg-slate-700"
-        @click="emit('continue')"
-      >
-        Continue →
-      </button>
+      <Button type="button" variant="outline" @click="emit('back')">← Back</Button>
+      <Button type="button" class="flex-1" @click="emit('continue')">Continue →</Button>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 defineProps<{
   columnHeaders: string[]

@@ -3,206 +3,191 @@
     <AppPage title="New Event" description="Details & attendee CSV">
     <div class="mx-auto w-full max-w-xl">
       <!-- Success state -->
-      <div
+      <Card
         v-if="done"
-        class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-5 text-center sm:p-8"
+        class="gap-0 rounded-3xl p-5 text-center sm:p-8"
       >
-        <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
-        <h2 class="mb-4 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.name }}</h2>
-        <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
+        <p class="mb-2 text-sm font-medium text-primary">Event Created</p>
+        <h2 class="mb-4 font-mono text-xl font-bold text-foreground">{{ form.name }}</h2>
+        <p class="mb-6 font-mono text-xs text-muted-foreground">
           QR ZIP downloaded. Share tickets manually with your attendees.
         </p>
-        <router-link
-          :to="`/manage/tix/${form.slug}`"
- class="btn-gold inline-flex min-h-11 items-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
-         
-        >
-          Go to Event →
-        </router-link>
-      </div>
+        <Button as-child size="lg" class="mx-auto">
+          <router-link :to="`/manage/tix/${form.slug}`">
+            Go to Event →
+          </router-link>
+        </Button>
+      </Card>
 
       <!-- Form -->
-      <div
+      <Card
         v-else
-        class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-5 sm:p-8"
+        class="gap-0 rounded-3xl p-5 sm:p-8"
       >
 
         <!-- Mode toggle -->
-        <div class="mb-6 flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-          <button
+        <div class="mb-6 flex gap-1 rounded-xl border border-border bg-muted p-1">
+          <Button
             type="button"
-            :class="[
-              'min-h-11 flex-1 px-4 text-sm font-semibold transition-colors',
-              !useSelectionMode
-                ? 'bg-[#34418F] text-white dark:bg-slate-700'
-                : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-            ]"
+            :variant="!useSelectionMode ? 'default' : 'ghost'"
+            class="flex-1 text-sm font-semibold"
             @click="useSelectionMode = false"
-          >Simple CSV Upload</button>
-          <button
+          >Simple CSV Upload</Button>
+          <Button
             type="button"
-            :class="[
-              'min-h-11 flex-1 px-4 text-sm font-semibold transition-colors',
-              useSelectionMode
-                ? 'bg-[#34418F] text-white dark:bg-slate-700'
-                : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-            ]"
+            :variant="useSelectionMode ? 'default' : 'ghost'"
+            class="flex-1 text-sm font-semibold"
             @click="useSelectionMode = true"
-          >Attendee Selection</button>
+          >Attendee Selection</Button>
         </div>
 
         <form class="flex flex-col gap-4" @submit.prevent="submit">
           <!-- Event Name -->
-          <div>
-            <label for="event-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="event-name">Event Name</Label>
+            <Input
               id="event-name"
               v-model="form.name"
               type="text"
               placeholder="e.g. JPCS General Assembly"
               required
-              class="control font-mono"
+              class="font-mono"
             />
           </div>
 
           <!-- Slug -->
-          <div>
-            <label for="event-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
-            <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
+          <div class="space-y-1.5">
+            <Label for="event-slug">Link Slug</Label>
+            <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/tix/</span>
               <input
                 id="event-slug"
                 v-model="form.slug"
                 type="text"
                 placeholder="bwai2026"
                 required
-                class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted"
+                class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
                 @input="sanitizeSlug"
-              />
+              >
             </div>
-            <p class="mt-1 text-xs font-medium text-gray-400 dark:text-slate-500">
+            <p class="text-xs font-medium text-muted-foreground">
               Lowercase letters and numbers only — no spaces, hyphens, or special characters.
             </p>
           </div>
 
           <!-- Date + Time -->
           <div class="flex flex-col gap-4 md:flex-row">
-            <div class="flex-1">
-              <label for="event-date" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
-              <input
+            <div class="flex-1 space-y-1.5">
+              <Label for="event-date">Date</Label>
+              <Input
                 id="event-date"
                 v-model="form.date"
                 type="date"
                 required
-                class="control font-mono"
+                class="font-mono"
               />
             </div>
-            <div class="flex-1">
-              <label for="event-time" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
-              <input
+            <div class="flex-1 space-y-1.5">
+              <Label for="event-time">Time</Label>
+              <Input
                 id="event-time"
                 v-model="form.time"
                 type="time"
                 required
-                class="control font-mono"
+                class="font-mono"
               />
             </div>
           </div>
 
           <!-- Location -->
-          <div>
-            <label for="event-location" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="event-location">Location</Label>
+            <Input
               id="event-location"
               v-model="form.location"
               type="text"
               placeholder="e.g. APC Auditorium"
               required
-              class="control font-mono"
+              class="font-mono"
             />
           </div>
 
           <!-- CSV Upload (simple mode only) -->
           <div v-if="!useSelectionMode">
-            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</p>
+            <p class="mb-1.5 block text-sm font-semibold text-foreground">Attendee CSV</p>
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
             <div
-              class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
+              class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors"
               :class="csvFile
-                ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-900/10'
-                : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-ring'"
               :aria-invalid="Boolean(csvError)"
               :aria-describedby="csvError ? 'csv-error' : undefined"
-             
               @dragover.prevent
               @drop.prevent="onDrop"
             >
-              <p v-if="csvFile" class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+              <p v-if="csvFile" class="text-sm font-medium text-primary">
                 {{ csvFile.name }} — {{ parsedAttendees.length }} attendees
               </p>
               <template v-else>
-                <p class="text-sm text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
-                <p class="mt-2 font-mono text-xs text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
+                <p class="text-sm text-muted-foreground">Drop CSV or click to upload</p>
+                <p class="mt-2 font-mono text-xs text-muted-foreground">Headers: first_name, last_name, email</p>
               </template>
-              <input ref="fileInput" type="file" accept=".csv" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
-              <button
-                type="button"
-                class="btn-secondary mt-3"
-                @click="fileInput?.click()"
-              >
+              <input ref="fileInput" type="file" accept=".csv" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange">
+              <Button type="button" variant="outline" class="mt-3" @click="fileInput?.click()">
                 {{ csvFile ? 'Change file' : 'Browse' }}
-              </button>
+              </Button>
             </div>
-            <p v-if="csvError" id="csv-error" class="mt-1 font-mono text-xs text-red-500 uppercase tracking-wide">{{ csvError }}</p>
+            <p v-if="csvError" id="csv-error" class="mt-1 font-mono text-xs uppercase tracking-wide text-destructive">{{ csvError }}</p>
           </div>
 
           <!-- Selection mode info + max attendees -->
-          <div v-else class="rounded-xl border border-[#34418F]/20 bg-[#34418F]/5 px-4 py-4 dark:border-slate-600 dark:bg-slate-800/40">
-            <p class="mb-3 font-mono text-xs text-[#34418F] dark:text-slate-300">
+          <div v-else class="space-y-1.5 rounded-xl border border-border bg-muted px-4 py-4">
+            <p class="mb-3 font-mono text-xs text-muted-foreground">
               You'll upload the CSV and configure clusters &amp; criteria on the next page.
             </p>
-            <label for="event-max-attendees" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
-            <input
+            <Label for="event-max-attendees">Max Attendees <span class="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input
               id="event-max-attendees"
               v-model.number="maxAttendeesValue"
               type="number"
               min="1"
               placeholder="Leave blank for no limit"
-              class="control font-mono"
+              class="font-mono"
             />
-            <p class="mt-1 font-mono text-xs text-gray-400 dark:text-slate-500 uppercase tracking-wide">This can be overridden when you configure clusters.</p>
+            <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">This can be overridden when you configure clusters.</p>
           </div>
 
           <!-- Submit -->
-          <button
+          <Button
             type="submit"
+            size="lg"
+            class="mt-2 w-full"
+            :class="loading ? 'animate-pulse' : ''"
             :disabled="loading"
-            :class="[
-              'btn-gold mt-2 min-h-11 w-full rounded-xl px-4 text-base font-semibold transition-all duration-200',
-              loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
-            ]"
-           
           >
             {{ loadingLabel }}
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
     </AppPage>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import AppPage from '@/components/layout/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
-import { useReveal } from '@/composables/useReveal'
 import { useToast } from '@/composables/useToast'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import { parseAttendeeCsv } from '@/lib/tix/spreadsheet'
 import { useRouter } from 'vue-router'
 
-useReveal()
 const toast = useToast()
 const router = useRouter()
 

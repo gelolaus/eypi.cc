@@ -7,87 +7,87 @@
       description="Manage tickets & check-in"
     >
       <div v-if="!isLocked" class="mb-6 flex flex-col gap-3 sm:flex-row">
-        <input
+        <Input
           v-model="searchQuery"
           type="search"
           placeholder="Search events..."
           aria-label="Search events"
-          class="control min-w-0 flex-1"
+          class="min-w-0 flex-1"
         />
-        <router-link
-          to="/manage/tix/new"
-          class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:opacity-90"
-         
-        >
-          New Event
-        </router-link>
+        <Button as-child size="lg">
+          <router-link to="/manage/tix/new">
+            New Event
+          </router-link>
+        </Button>
       </div>
 
       <div v-if="isLocked">
         <OrgLockout />
       </div>
 
-      <div v-else-if="error" role="alert" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400">
+      <div v-else-if="error" role="alert" class="rounded-2xl border border-destructive/30 bg-destructive/10 p-6 text-center text-sm text-destructive">
         {{ error }}
       </div>
 
-      <div
+      <Card
         v-else-if="!filteredEvents.length"
-        class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
+        class="gap-0 rounded-3xl p-12 text-center"
       >
-        <p class="text-sm font-medium text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
-        <p class="mt-3 text-sm leading-relaxed text-g-muted">
+        <p class="text-sm font-medium text-foreground">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
+        <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
           {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
         </p>
-      </div>
+      </Card>
 
-      <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
-        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-data text-xs font-semibold text-g-muted md:grid">
+      <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border">
+        <div class="hidden grid-cols-12 border-b border-border bg-card px-4 py-3 font-mono text-xs font-semibold text-muted-foreground md:grid">
           <div class="col-span-5">Event</div>
           <div class="col-span-4">Date &amp; Time</div>
           <div class="col-span-3 text-right">Actions</div>
         </div>
 
-        <div
+        <Card
           v-for="event in filteredEvents"
           :key="event.id as string"
           data-event-row
-          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:py-4 md:last:border-b-0"
+          class="gap-3 rounded-2xl p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-b md:border-border md:bg-transparent md:py-4 md:ring-0 md:last:border-b-0"
         >
           <div class="min-w-0 md:col-span-5">
-            <p class="break-words text-base font-semibold text-g-text">{{ event.name }}</p>
-            <p class="text-data mt-1 text-sm text-g-muted md:hidden">
+            <p class="break-words text-base font-semibold text-foreground">{{ event.name }}</p>
+            <p class="mt-1 font-mono text-sm text-muted-foreground md:hidden">
               {{ formatDate(event.event_date as string) }}<span v-if="event.event_time"> · {{ event.event_time }}</span>
             </p>
           </div>
           <div class="hidden md:col-span-4 md:block">
-            <p class="text-data text-sm text-g-text">{{ formatDate(event.event_date as string) }}</p>
-            <p class="text-data text-xs text-g-muted">{{ event.event_time }}</p>
+            <p class="font-mono text-sm text-foreground">{{ formatDate(event.event_date as string) }}</p>
+            <p class="font-mono text-xs text-muted-foreground">{{ event.event_time }}</p>
           </div>
           <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
-            <router-link
-              :to="`/manage/tix/${event.slug}`"
-              class="btn-secondary flex-1 md:flex-none"
-             
-            >
-              Manage
-            </router-link>
-            <button
+            <Button as-child variant="outline" class="flex-1 md:flex-none">
+              <router-link :to="`/manage/tix/${event.slug}`">
+                Manage
+              </router-link>
+            </Button>
+            <Button
               type="button"
+              variant="destructive"
               :disabled="deletingSlug === (event.slug as string)"
-              class="btn-secondary flex-1 border-red-300 text-red-600 md:flex-none dark:border-red-900/60 dark:text-red-400"
+              class="flex-1 md:flex-none"
               @click="deleteEvent(event.slug as string, event.name as string)"
             >
               {{ deletingSlug === (event.slug as string) ? '...' : 'Delete' }}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       </div>
     </AppPage>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'

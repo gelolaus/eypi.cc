@@ -38,10 +38,10 @@ describe('AttendeeTable mobile layout', () => {
     expect(rows[0].classes()).toContain('md:grid')
   })
 
-  it('has no horizontal-scroll wrapper and no tiny text controls', () => {
-    const html = mountTable().html()
-    expect(html).not.toMatch(/min-w-\[\d+px\]/)
-    expect(html).not.toContain('overflow-x-auto')
+  it('scrolls the list inside an overflow-x-auto wrapper and has no tiny text controls', () => {
+    const wrapper = mountTable()
+    const html = wrapper.html()
+    expect(wrapper.get('.overflow-x-auto').find('[data-attendee-list]').exists()).toBe(true)
     expect(html).not.toContain('text-[0.6rem]')
     expect(html).not.toContain('text-[0.65rem]')
   })
@@ -51,7 +51,8 @@ describe('AttendeeTable mobile layout', () => {
     for (const row of wrapper.findAll('[data-attendee-row]')) {
       for (const button of row.findAll('button')) {
         const cls = button.classes().join(' ')
-        expect(cls, button.text()).toMatch(/min-h-11|btn-(primary|secondary|danger)/)
+        expect(cls, button.text()).toMatch(/h-11|min-h-11/)
+        expect(button.attributes('data-slot')).toBe('button')
       }
     }
   })

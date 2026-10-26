@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/cn'
 
 const props = defineProps<{ class?: HTMLAttributes['class'] }>()
-const modelValue = defineModel<string | number>()
+const modelValue = defineModel<string | number | null>()
 </script>
 
 <template>

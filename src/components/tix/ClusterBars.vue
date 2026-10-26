@@ -1,32 +1,34 @@
 <template>
   <div class="mb-6">
-    <button
+    <Button
       type="button"
-      class="mb-2 flex min-h-11 items-center gap-1 text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
+      variant="ghost"
+      class="mb-2 -ml-2 gap-1 px-2 text-muted-foreground"
       @click="showClusters = !showClusters"
     >
       <span>{{ showClusters ? '▼' : '▶' }}</span> Clusters
-    </button>
+    </Button>
     <div v-if="showClusters" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div
+      <Card
         v-for="cluster in clusters"
         :key="cluster.value"
-        class="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-slate-600 dark:bg-slate-800/60"
+        data-cluster-bar
+        class="gap-0 py-0"
       >
         <div class="flex flex-1 items-start justify-between gap-3 px-4 py-2.5">
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold leading-tight text-gray-800 dark:text-slate-200">{{ cluster.value }}</p>
-            <p class="flex items-center gap-1 font-mono text-xs text-gray-500 dark:text-slate-400">
+            <p class="text-sm font-semibold leading-tight text-foreground">{{ cluster.value }}</p>
+            <p class="flex flex-wrap items-center gap-1 font-mono text-xs text-muted-foreground">
               <span>{{ cluster.currentCount }}</span>
               <span>/</span>
               <template v-if="editingMaxCluster === cluster.value">
-                <input
+                <Input
                   v-model.number="clusterMaxEditValue"
                   type="number"
                   :aria-label="`Max for ${cluster.value}`"
                   min="1"
                   placeholder="∞"
-                  class="control w-20"
+                  class="w-20"
                   @keydown.enter="saveClusterMax(cluster.value)"
                   @keydown.escape="editingMaxCluster = ''"
                   @blur="saveClusterMax(cluster.value)"
@@ -34,43 +36,47 @@
               </template>
               <template v-else>
                 <span>{{ cluster.maxCount ?? '∞' }}</span>
-                <button
+                <Button
                   type="button"
-                  class="flex min-h-11 min-w-11 items-center justify-center font-mono text-xs text-g-muted transition-colors hover:text-g-accent"
+                  variant="ghost"
+                  size="sm"
+                  class="h-11 min-w-11 font-mono text-xs text-muted-foreground"
                   title="Edit max"
                   @click="startEditClusterMax(cluster.value, cluster.maxCount)"
                 >
                   Edit
-                </button>
+                </Button>
               </template>
-              <span v-if="(cluster.remainingSlots ?? 0) > 0" class="text-amber-500">({{ cluster.remainingSlots }} open)</span>
+              <span v-if="(cluster.remainingSlots ?? 0) > 0" class="text-primary">({{ cluster.remainingSlots }} open)</span>
             </p>
           </div>
-          <button
+          <Button
             v-if="cluster.id && (cluster.remainingSlots ?? 0) > 0"
             type="button"
+            variant="secondary"
             :disabled="rafflingCluster === cluster.value"
-            class="min-h-11 min-w-11 flex-shrink-0 rounded-xl px-3 font-mono text-xs font-bold uppercase tracking-wide transition-colors"
-            :class="rafflingCluster === cluster.value
-              ? 'cursor-not-allowed bg-gray-100 text-gray-400 opacity-50 dark:bg-slate-700 dark:text-slate-500'
-              : 'bg-[#34418F]/10 text-[#34418F] hover:bg-[#34418F] hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"
+            class="min-w-11 shrink-0 font-mono text-xs font-bold uppercase tracking-wide"
             @click="reRaffle(cluster.value)"
           >
             {{ rafflingCluster === cluster.value ? '…' : 'Re-raffle' }}
-          </button>
+          </Button>
         </div>
-        <div v-if="cluster.maxCount" class="h-1 w-full bg-gray-100 dark:bg-slate-700">
+        <div v-if="cluster.maxCount" class="h-1 w-full bg-muted">
           <div
-            class="h-1 rounded-full bg-[#34418F] transition-all duration-500 dark:bg-slate-400"
-            :style="`width: ${Math.min(100, ((cluster.currentCount ?? 0) / cluster.maxCount) * 100)}%`"
+            data-cluster-fill
+            class="h-1 rounded-full transition-all duration-500"
+            :style="`background-color: var(--chart-1); width: ${Math.min(100, ((cluster.currentCount ?? 0) / cluster.maxCount) * 100)}%`"
           />
         </div>
-      </div>
+      </Card>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { ref } from 'vue'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'

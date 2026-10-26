@@ -10,7 +10,7 @@ describe('MapColumnsStep', () => {
     })
     const selects = wrapper.findAll('select')
     expect(selects).toHaveLength(2)
-    for (const s of selects) expect(s.classes()).toContain('control')
+    for (const s of selects) expect(s.classes().join(' ')).toContain('h-11')
     expect(wrapper.html()).not.toContain('py-1.5 font-mono text-xs')
   })
 })

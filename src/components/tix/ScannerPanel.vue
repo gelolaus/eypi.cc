@@ -1,12 +1,12 @@
 <template>
-  <div class="-mx-4 overflow-hidden bg-black sm:mx-0 sm:rounded-2xl">
-    <p class="bg-g-surface px-4 py-3 text-center text-sm font-medium text-g-muted">
+  <Card class="-mx-4 gap-0 overflow-hidden rounded-none p-0 sm:mx-0 sm:rounded-2xl">
+    <p class="bg-card px-4 py-3 text-center text-sm font-medium text-muted-foreground">
       Point the camera at an attendee's QR code to check them in.
     </p>
     <div
       v-if="scannerError"
       role="alert"
-      class="border-y border-red-200 bg-red-50 px-4 py-3 font-mono text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-400"
+      class="border-y border-destructive/30 bg-destructive/10 px-4 py-3 font-mono text-sm text-destructive"
     >
       {{ scannerError }}
     </div>
@@ -31,7 +31,7 @@
 
       <div
         :class="hudClass"
-        class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 text-data text-xs font-semibold text-white"
+        class="pointer-events-none absolute inset-x-3 top-3 rounded-lg px-3 py-2 font-mono text-xs font-semibold text-white"
       >
         {{ hudLabel }}
       </div>
@@ -44,21 +44,24 @@
         {{ scanMessage }}
       </div>
     </div>
-    <div data-scanner-actions class="sticky bottom-0 z-10 flex items-center justify-center gap-3 bg-g-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-      <button
+    <div data-scanner-actions class="sticky bottom-0 z-10 flex items-center justify-center gap-3 bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <Button
         v-if="needsCameraPrompt"
         type="button"
-        class="btn-gold min-h-11 w-full rounded-xl px-6 text-base font-semibold transition-all hover:brightness-110"
+        size="lg"
+        class="w-full"
         @click="onEnableCameraClick"
       >
         {{ cameraStarting ? 'Starting…' : scanStatus === 'error' ? 'Retry camera' : 'Enable camera' }}
-      </button>
-      <p v-else class="min-h-11 flex items-center text-sm text-g-muted">Scanning for QR codes</p>
+      </Button>
+      <p v-else class="flex min-h-11 items-center text-sm text-muted-foreground">Scanning for QR codes</p>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { onUnmounted } from 'vue'
 import { useQrScanner } from '@/composables/useQrScanner'
 

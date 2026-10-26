@@ -33,6 +33,6 @@ describe('EventsView', () => {
     expect(row.classes()).toContain('rounded-2xl')
     expect(wrapper.html()).not.toMatch(/min-w-\[\d+px\]/)
     expect(wrapper.html()).toContain('Launch')
-    for (const b of row.findAll('button')) expect(b.classes().join(' ')).toMatch(/min-h-11|btn-/)
+    for (const b of row.findAll('button')) expect(b.attributes('data-slot')).toBe('button')
   })
 })

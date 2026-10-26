@@ -4,126 +4,133 @@
       <!-- Event header (after successful lookup) -->
       <div v-if="ticket?.event" class="mb-6 text-center">
         <h1
-          class="mb-2 font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
+          class="mb-2 font-display font-black tracking-tight text-foreground"
           style="font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -0.03em;"
         >
           {{ ticket.event.name }}
         </h1>
-        <p class="text-sm text-gray-500 dark:text-slate-400">
+        <p class="text-sm text-muted-foreground">
           {{ formatDate(ticket.event.eventDate) }} · {{ formatTime(ticket.event.eventTime) }} · {{ ticket.event.location }}
         </p>
       </div>
 
       <!-- QR ticket (after successful lookup) -->
-      <div
+      <Card
         v-if="ticket"
-        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 text-center sm:p-8"
+        class="w-full gap-0 rounded-3xl p-5 text-center sm:p-8"
       >
 
-        <p class="mb-4 font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">{{ ticket.firstName }} {{ ticket.lastName }}</p>
+        <p class="mb-4 font-mono text-lg font-bold text-foreground">{{ ticket.firstName }} {{ ticket.lastName }}</p>
 
-        <!-- QR canvas container -->
-        <div class="mx-auto mb-4 flex items-center justify-center" ref="qrContainer" />
+        <!-- QR canvas container: white so the code scans on the dark UI -->
+        <div
+          ref="qrContainer"
+          data-ticket-qr
+          class="mx-auto mb-4 flex w-fit max-w-full items-center justify-center rounded-xl bg-white p-3"
+        />
 
-        <p class="text-xs font-medium text-gray-400 dark:text-slate-500">
+        <p class="text-xs font-medium text-muted-foreground">
           Screenshot this QR — it is not saved on your device.
         </p>
 
         <div v-if="passToken" class="mt-6 flex flex-col gap-3">
-          <button
+          <Button
             type="button"
+            size="lg"
+            class="w-full"
+            :class="savingGoogleWallet ? 'animate-pulse' : ''"
             :disabled="savingGoogleWallet"
-            :class="[
-              'min-h-11 w-full rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 dark:bg-slate-600',
-              savingGoogleWallet ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
-            ]"
             @click="saveToGoogleWallet"
           >
             {{ savingGoogleWallet ? 'Opening...' : 'Save to Google Wallet' }}
-          </button>
+          </Button>
           <p
             v-if="walletError"
-            class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center font-mono text-xs font-bold text-red-600 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
+            role="alert"
+            class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-center font-mono text-xs font-bold text-destructive"
           >
             {{ walletError }}
           </p>
         </div>
 
-        <button
+        <Button
           type="button"
-          class="mt-4 min-h-11 px-3 text-sm font-medium text-g-muted underline hover:text-g-accent"
+          variant="link"
+          class="mt-4 text-muted-foreground underline"
           @click="reset"
         >
           Look up a different ticket
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       <!-- Lookup form -->
-      <div
+      <Card
         v-else
-        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 sm:p-8"
+        class="w-full gap-0 rounded-3xl p-5 sm:p-8"
       >
 
-        <h2 class="mb-6 text-center font-mono text-xl font-bold uppercase tracking-widest text-[#34418F] dark:text-slate-200">
+        <h2 class="mb-6 text-center font-display text-xl font-bold uppercase tracking-widest text-foreground">
           View Your Ticket
         </h2>
 
         <form class="flex flex-col" @submit.prevent="lookup">
-          <input
+          <Input
             v-model="form.firstName"
             type="text"
             placeholder="First Name"
             aria-label="First Name"
             required
-            class="control mb-4"
+            class="mb-4"
           />
-          <input
+          <Input
             v-model="form.lastName"
             type="text"
             placeholder="Last Name"
             aria-label="Last Name"
             required
-            class="control mb-4"
+            class="mb-4"
           />
-          <input
+          <Input
             v-model="form.email"
             type="email"
             placeholder="Email"
             aria-label="Email"
             required
-            class="control mb-6 font-mono"
+            class="mb-6 font-mono"
           />
 
           <!-- Lookup error -->
           <div
             v-if="lookupError"
-            class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center font-mono text-sm font-bold text-red-600 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-400"
+            role="alert"
+            class="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-center font-mono text-sm font-bold text-destructive"
           >
             {{ lookupError }}
           </div>
 
-          <button
+          <Button
             type="submit"
+            size="lg"
+            class="w-full"
+            :class="lookingUp ? 'animate-pulse' : ''"
             :disabled="lookingUp"
-            :class="[
-              'btn-gold min-h-11 w-full rounded-xl px-4 text-base font-semibold transition-all duration-200',
-              lookingUp ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
-            ]"
-           
           >
             {{ lookingUp ? 'Searching...' : 'Show Ticket' }}
-          </button>
+          </Button>
         </form>
 
-        <p class="mt-4 text-center font-mono text-xs leading-relaxed text-gray-500 dark:text-slate-400">
+        <p class="mt-4 text-center font-mono text-xs leading-relaxed text-muted-foreground">
           Enter your details exactly as registered.
         </p>
-      </div>
+      </Card>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'

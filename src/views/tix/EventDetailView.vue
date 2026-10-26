@@ -3,7 +3,9 @@
     <PageSkeleton v-if="loadingEvent" />
 
     <AppPage v-else-if="!event" title="Event not found" description="This event does not exist or you do not have access to it.">
-      <router-link to="/manage/tix" class="btn-secondary">← My events</router-link>
+      <Button as-child variant="outline">
+        <router-link to="/manage/tix">← My events</router-link>
+      </Button>
     </AppPage>
 
     <AppPage v-else :title="event.name">
@@ -16,88 +18,89 @@
           <div v-if="event.isLead" class="flex flex-wrap items-center gap-2">
             <span
               class="font-mono text-sm font-bold"
-              :class="isAtCapacity ? 'text-red-600 dark:text-red-400' : 'text-g-muted'"
+              :class="isAtCapacity ? 'text-destructive' : 'text-muted-foreground'"
             >
               {{ activeAttendeeCount }}{{ event.maxAttendees ? ` / ${event.maxAttendees}` : '' }} guests
             </span>
             <template v-if="!editingMax">
-              <button
+              <Button
                 type="button"
-                class="min-h-11 min-w-11 rounded-lg px-3 font-mono text-sm text-g-muted transition-colors hover:text-g-accent"
+                variant="ghost"
+                class="min-w-11 font-mono text-sm text-muted-foreground"
                 title="Edit max attendees"
                 @click="startEditMax"
               >
                 Edit
-              </button>
+              </Button>
             </template>
             <template v-else>
-              <input
+              <Input
                 ref="maxEditInput"
                 v-model.number="maxEditValue"
                 type="number"
                 aria-label="Max attendees"
                 min="1"
                 placeholder="∞"
-                class="control w-24 font-mono"
+                class="w-24 font-mono"
                 @keydown.enter="saveMax"
                 @keydown.escape="editingMax = false"
               />
-              <button type="button" class="min-h-11 min-w-11 rounded-lg px-3 font-mono text-sm text-emerald-700 transition-colors hover:text-emerald-800 dark:text-emerald-400" @click="saveMax">Save</button>
-              <button type="button" class="min-h-11 min-w-11 rounded-lg px-3 font-mono text-sm text-g-muted transition-colors hover:text-g-text" @click="editingMax = false">Cancel</button>
+              <Button type="button" variant="ghost" class="min-w-11 font-mono text-sm text-primary" @click="saveMax">Save</Button>
+              <Button type="button" variant="ghost" class="min-w-11 font-mono text-sm text-muted-foreground" @click="editingMax = false">Cancel</Button>
             </template>
           </div>
 
           <div class="flex flex-wrap gap-2 sm:ml-auto">
-            <button
+            <Button
               v-if="event.isLead && event.selectionLocked"
               type="button"
               :disabled="isAtCapacity"
-              class="btn-primary"
               @click="showAddGuest = true"
             >
               Add guest
-            </button>
-            <a
-              :href="`/tix/${slug}`"
-              target="_blank"
-              rel="noopener"
-              class="btn-secondary"
-            >
-              Attendee view
-            </a>
+            </Button>
+            <Button as-child variant="outline">
+              <a
+                :href="`/tix/${slug}`"
+                target="_blank"
+                rel="noopener"
+              >
+                Attendee view
+              </a>
+            </Button>
           </div>
         </div>
 
         <AppSection v-if="event.isLead && passColumns.length" title="Pass fields">
           <fieldset>
             <legend class="sr-only">Pass fields</legend>
-            <p class="mb-3 text-sm text-g-muted">Checked columns are printed on the wallet pass.</p>
+            <p class="mb-3 text-sm text-muted-foreground">Checked columns are printed on the wallet pass.</p>
             <div class="flex flex-wrap gap-2">
               <label
                 v-for="column in passColumns"
                 :key="column"
                 class="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 transition-colors"
                 :class="passFieldSelection.includes(column)
-                  ? 'border-g-primary bg-g-surface ring-1 ring-g-primary'
-                  : 'border-g-border bg-g-surface'"
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:bg-muted'"
               >
                 <input
                   type="checkbox"
                   :checked="passFieldSelection.includes(column)"
-                  class="size-5 accent-g-accent"
+                  class="size-5 accent-primary"
                   @change="togglePassField(column)"
-                />
-                <span class="font-mono text-sm text-g-text">{{ column }}</span>
+                >
+                <span class="font-mono text-sm text-foreground">{{ column }}</span>
               </label>
             </div>
-            <button
+            <Button
               type="button"
-              class="btn-primary mt-4"
+              class="mt-4"
               :disabled="savingPassFields"
               @click="savePassFields"
             >
               {{ savingPassFields ? 'Saving…' : 'Save pass fields' }}
-            </button>
+            </Button>
           </fieldset>
         </AppSection>
 
@@ -110,23 +113,19 @@
 
         <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <div class="flex w-max gap-2 sm:w-auto sm:flex-wrap" role="tablist" aria-label="Attendee views">
-            <button
+            <Button
               v-for="(tab, index) in TABS"
               :key="tab.label"
               type="button"
               role="tab"
+              :variant="activeTab === index ? 'default' : 'ghost'"
               :aria-selected="activeTab === index"
-              :class="[
-                'min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition-colors',
-                activeTab === index
-                  ? 'bg-g-primary text-white dark:text-black'
-                  : 'bg-transparent text-g-muted hover:text-g-text',
-              ]"
+              class="shrink-0 text-sm font-semibold"
               @click="activeTab = index"
             >
               {{ tab.label }}
               <span v-if="tab.filter !== null && attendees.length" class="ml-1 opacity-70">({{ countForTab(tab.filter) }})</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -151,19 +150,19 @@
           @save-cluster="onSaveCluster"
         />
 
-        <div v-if="event.isLead" class="mt-12 border-t border-dashed border-red-200 pt-8 dark:border-red-900/30">
-          <p class="text-card-title mb-1 text-red-600 dark:text-red-400">Danger zone</p>
-          <p class="mb-4 text-sm text-g-muted">
+        <div v-if="event.isLead" class="mt-12 border-t border-dashed border-destructive/30 pt-8">
+          <p class="mb-1 font-heading text-lg font-semibold text-destructive">Danger zone</p>
+          <p class="mb-4 text-sm text-muted-foreground">
             Permanently deletes this event and all attendee data. This cannot be undone.
           </p>
-          <button
+          <Button
             type="button"
+            variant="destructive"
             :disabled="deletingEvent"
-            class="btn-danger"
             @click="confirmDeleteEvent"
           >
             {{ deletingEvent ? 'Deleting…' : 'Delete event' }}
-          </button>
+          </Button>
         </div>
       </div>
     </AppPage>
@@ -181,6 +180,8 @@
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/lib/api'
@@ -236,7 +237,7 @@ const passFieldSelection = ref<string[]>([])
 const savingPassFields = ref(false)
 const editingMax = ref(false)
 const maxEditValue = ref<number | null>(null)
-const maxEditInput = ref<HTMLInputElement | null>(null)
+const maxEditInput = ref<InstanceType<typeof Input> | null>(null)
 
 const {
   attendees,
@@ -299,7 +300,7 @@ async function savePassFields() {
 function startEditMax() {
   maxEditValue.value = event.value?.maxAttendees ?? null
   editingMax.value = true
-  nextTick(() => maxEditInput.value?.focus())
+  nextTick(() => (maxEditInput.value?.$el as HTMLInputElement | undefined)?.focus())
 }
 
 async function saveMax() {
