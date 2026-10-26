@@ -168,7 +168,7 @@ box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.20)
 
 ### Dark mode mechanism
 
-Dark mode is the class `dark` on `<html>`. A saved choice in `localStorage` under `eypi_dark_mode` (`true` or `false`) wins. With no saved choice, the page follows `matchMedia('(prefers-color-scheme: dark)')`. `public/theme-init.js` adds the class before CSS paints, and `initDarkMode()` applies it again before mount. `index.html` sets `<meta name="color-scheme" content="light dark">`.
+Dark mode is the class `dark` on `<html>`. A saved choice in `localStorage` under `eypi_dark_mode` (`true` or `false`) wins. With no saved choice, the page follows `matchMedia('(prefers-color-scheme: dark)')`. `html` sets `color-scheme: light` and `html.dark` sets `color-scheme: dark`, so scrollbars and native controls follow the class rather than the operating system. `public/theme-init.js` and `applyColorScheme()` set that class, `documentElement.style.colorScheme`, and one `theme-color` meta (`#F5F5F5` light, `#000000` dark) with no media query. `index.html` also sets `<meta name="color-scheme" content="light dark">`.
 
 `body` transitions `background-color` and `color` over `0.3s ease` on mode change:
 ```css

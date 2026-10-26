@@ -25,6 +25,8 @@ describe('useDarkMode', () => {
     vi.resetModules()
     localStorage.clear()
     document.documentElement.classList.remove('dark')
+    document.documentElement.style.colorScheme = ''
+    document.querySelectorAll('meta[name="theme-color"]').forEach((node) => node.remove())
   })
 
   it('returns the same ref across calls', async () => {
@@ -60,6 +62,24 @@ describe('useDarkMode', () => {
     const { useDarkMode } = await loadDarkMode()
     expect(useDarkMode().isDark.value).toBe(false)
     expect(document.documentElement.classList.contains('dark')).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('sets color-scheme and theme-color from a saved choice that disagrees with the system', async () => {
+    document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="#F5F5F5">')
+    localStorage.setItem('eypi_dark_mode', 'true')
+    vi.stubGlobal('matchMedia', () => media(false))
+    const { useDarkMode } = await loadDarkMode()
+    const mode = useDarkMode()
+    const theme = () => document.querySelector('meta[name="theme-color"]')?.getAttribute('content')
+
+    expect(mode.isDark.value).toBe(true)
+    expect(document.documentElement.style.colorScheme).toBe('dark')
+    expect(theme()).toBe('#000000')
+
+    mode.toggle()
+    expect(document.documentElement.style.colorScheme).toBe('light')
+    expect(theme()).toBe('#F5F5F5')
     vi.unstubAllGlobals()
   })
 })

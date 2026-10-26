@@ -35,6 +35,7 @@
   }
 
   html.dark {
+    color-scheme: dark;
     --color-bg:         #000000;
     --color-surface:    #161616;
     --color-border:     #262626;
@@ -49,6 +50,7 @@
   html {
     @apply antialiased;
     scroll-behavior: smooth;
+    color-scheme: light;
   }
 
   body {
