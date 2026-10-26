@@ -1,7 +1,7 @@
 <template>
   <div>
     <router-link
-      to="/settings/org-management"
+      to="/admin/orgs"
       class="mb-6 inline-flex text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
       data-cursor="nav"
     >
@@ -90,7 +90,7 @@ const router = useRouter()
 const toast = useToast()
 const dialog = useDialog()
 
-const isCreate = computed(() => route.name === 'settings-org-management-new')
+const isCreate = computed(() => route.name === 'admin-orgs-new')
 
 const form = ref({
   id: '',
@@ -117,7 +117,7 @@ async function loadOrg() {
     }
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Failed to load org.')
-    router.push('/settings/org-management')
+    router.push('/admin/orgs')
   }
 }
 
@@ -137,7 +137,7 @@ async function save() {
       const data = await res.json() as AdminOrgResponse
       if (!res.ok) throw new Error(data.error || 'Create failed.')
       toast.success('Org created.')
-      router.push({ name: 'settings-org-management-edit', params: { orgId: form.value.id.toLowerCase().trim() } })
+      router.push({ name: 'admin-orgs-edit', params: { orgId: form.value.id.toLowerCase().trim() } })
     } else {
       const orgId = route.params.orgId as string
       const payload: Record<string, unknown> = {
@@ -157,7 +157,7 @@ async function save() {
       if (!res.ok) throw new Error(data.error || 'Save failed.')
       toast.success('Org updated.')
       if (data.org?.org_id && data.org.org_id !== orgId) {
-        router.replace({ name: 'settings-org-management-edit', params: { orgId: data.org.org_id } })
+        router.replace({ name: 'admin-orgs-edit', params: { orgId: data.org.org_id } })
       }
     }
   } catch (err) {
@@ -182,7 +182,7 @@ async function deleteOrg() {
     const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Delete failed.')
     toast.success('Org deleted.')
-    router.push('/settings/org-management')
+    router.push('/admin/orgs')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
   } finally {

@@ -188,6 +188,13 @@ const SPA_EXACT_PATHS = new Set([
   '/settings/orgs',
   '/settings/org-management',
   '/settings/org-management/new',
+  '/admin',
+  '/admin/users',
+  '/admin/links',
+  '/admin/reports',
+  '/admin/audit',
+  '/admin/orgs',
+  '/admin/orgs/new',
 ])
 
 type SqlClient = ReturnType<typeof createClient>
@@ -221,6 +228,7 @@ function isSpaRoute(pathname: string): boolean {
     || /^\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/org-management\/[^/]+$/.test(path)
+    || /^\/admin\/orgs\/[^/]+$/.test(path)
     || /^\/forms\/(?:concessionaire|visitors-pass|letter-of-intent)$/.test(path)
     || /^\/unlock\/[^/]+$/.test(path)
 }

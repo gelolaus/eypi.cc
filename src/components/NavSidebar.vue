@@ -149,16 +149,22 @@ defineEmits<{
   logout: []
 }>()
 
-const appLinks = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/links', label: 'Links' },
-  { to: '/forms', label: 'Forms' },
-  { to: '/manage/tix', label: 'Tix' },
-  { to: '/manage/frames', label: 'Frames' },
-  { to: '/orgs', label: 'Orgs' },
-  { to: '/invites', label: 'Invites' },
-  { to: '/account', label: 'Account' },
-]
+const appLinks = computed(() => {
+  const links = [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/links', label: 'Links' },
+    { to: '/forms', label: 'Forms' },
+    { to: '/manage/tix', label: 'Tix' },
+    { to: '/manage/frames', label: 'Frames' },
+    { to: '/orgs', label: 'Orgs' },
+    { to: '/invites', label: 'Invites' },
+    { to: '/account', label: 'Account' },
+  ]
+  if (useSession().user.value?.role === 'admin') {
+    links.push({ to: '/admin/users', label: 'Admin' })
+  }
+  return links
+})
 
 const pendingInviteCount = computed(() => useSession().pendingInviteCount.value)
 const pendingInviteLabel = computed(() => {

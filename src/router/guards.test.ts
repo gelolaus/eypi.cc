@@ -52,7 +52,7 @@ describe('route guards', () => {
   it('sends a signed-in user away from an admin route', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => me('user')))
 
-    await router.push('/settings/org-management')
+    await router.push('/admin/users')
 
     expect(router.currentRoute.value.name).toBe('account')
   })
@@ -67,17 +67,32 @@ describe('route guards', () => {
     await router.push('/settings/security')
     expect(router.currentRoute.value.name).toBe('account')
 
-    expect(router.resolve('/settings/org-management').name).toBe('settings-org-management')
-    expect(router.resolve('/settings/org-management/new').name).toBe('settings-org-management-new')
-    expect(router.resolve('/settings/org-management/org-1').name).toBe('settings-org-management-edit')
+    expect(router.resolve('/admin/orgs').name).toBe('admin-orgs')
+    expect(router.resolve('/admin/orgs/new').name).toBe('admin-orgs-new')
+    expect(router.resolve('/admin/orgs/org-1').name).toBe('admin-orgs-edit')
+  })
+
+  it('redirects the old org-management URLs into the admin panel', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => me('admin')))
+
+    await router.push('/settings/org-management')
+    expect(router.currentRoute.value.name).toBe('admin-orgs')
+    expect(router.currentRoute.value.fullPath).toBe('/admin/orgs')
+
+    await router.push('/settings/org-management/new')
+    expect(router.currentRoute.value.name).toBe('admin-orgs-new')
+
+    await router.push('/settings/org-management/org-1')
+    expect(router.currentRoute.value.name).toBe('admin-orgs-edit')
+    expect(router.currentRoute.value.params.orgId).toBe('org-1')
   })
 
   it('lets an admin open org management', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => me('admin')))
 
-    await router.push('/settings/org-management')
+    await router.push('/admin/orgs')
 
-    expect(router.currentRoute.value.name).toBe('settings-org-management')
+    expect(router.currentRoute.value.name).toBe('admin-orgs')
   })
 
   it('registers /consent as an authenticated route and /acceptable-use before the slug route', () => {

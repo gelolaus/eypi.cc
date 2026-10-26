@@ -203,49 +203,89 @@ const router = createRouter({
     },
     {
       path: '/settings',
-      component: () => import('@/views/settings/SettingsLayout.vue'),
-      meta: { requiresAuth: true },
+      redirect: { name: 'account' },
+    },
+    {
+      path: '/settings/security',
+      redirect: { name: 'account' },
+    },
+    // Old admin org-management URLs keep working; the pages now live in /admin.
+    {
+      path: '/settings/organizations',
+      redirect: { name: 'orgs-modify-index' },
+    },
+    {
+      path: '/settings/orgs',
+      redirect: { name: 'orgs-modify-index' },
+    },
+    {
+      path: '/settings/orgs/:orgId',
+      redirect: (to) => ({ name: 'orgs-modify', params: { slug: to.params.orgId as string } }),
+    },
+    {
+      path: '/settings/org-management',
+      redirect: { name: 'admin-orgs' },
+    },
+    {
+      path: '/settings/org-management/new',
+      redirect: { name: 'admin-orgs-new' },
+    },
+    {
+      path: '/settings/org-management/:orgId',
+      redirect: (to) => ({ name: 'admin-orgs-edit', params: { orgId: to.params.orgId as string } }),
+    },
+
+    // ── Admin panel ──────────────────────────────────────────────────────────
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
       children: [
         {
           path: '',
-          redirect: { name: 'account' },
+          redirect: { name: 'admin-users' },
         },
         {
-          path: 'security',
-          redirect: { name: 'account' },
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('@/views/admin/AdminUsersView.vue'),
+          meta: { title: 'Users' },
         },
         {
-          path: 'organizations',
-          redirect: () => ({ name: 'orgs-modify-index' }),
+          path: 'links',
+          name: 'admin-links',
+          component: () => import('@/views/admin/AdminLinksView.vue'),
+          meta: { title: 'Links' },
+        },
+        {
+          path: 'reports',
+          name: 'admin-reports',
+          component: () => import('@/views/admin/AdminReportsView.vue'),
+          meta: { title: 'Reports' },
+        },
+        {
+          path: 'audit',
+          name: 'admin-audit',
+          component: () => import('@/views/admin/AdminAuditView.vue'),
+          meta: { title: 'Audit log' },
         },
         {
           path: 'orgs',
-          redirect: () => ({ name: 'orgs-modify-index' }),
+          name: 'admin-orgs',
+          component: () => import('@/views/settings/OrgManagementView.vue'),
+          meta: { title: 'Org management' },
+        },
+        {
+          path: 'orgs/new',
+          name: 'admin-orgs-new',
+          component: () => import('@/views/settings/OrgManagementEditView.vue'),
+          meta: { title: 'New organization' },
         },
         {
           path: 'orgs/:orgId',
-          redirect: (to) => ({
-            name: 'orgs-modify',
-            params: { slug: to.params.orgId as string },
-          }),
-        },
-        {
-          path: 'org-management',
-          name: 'settings-org-management',
-          component: () => import('@/views/settings/OrgManagementView.vue'),
-          meta: { requiresAdmin: true, title: 'Org management' },
-        },
-        {
-          path: 'org-management/new',
-          name: 'settings-org-management-new',
+          name: 'admin-orgs-edit',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresAdmin: true, title: 'New organization' },
-        },
-        {
-          path: 'org-management/:orgId',
-          name: 'settings-org-management-edit',
-          component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresAdmin: true, title: 'Edit organization' },
+          meta: { title: 'Edit organization' },
         },
       ],
     },

@@ -8,6 +8,7 @@ import { missingRequiredEnv, requiredEnvError } from './lib/env'
 import { reportError } from './lib/reportError'
 import { allowedOrigins, csrf } from './middleware/csrf'
 import adminMigrationRoutes from './routes/adminMigrations'
+import adminRoutes from './routes/admin'
 import authMicrosoft from './routes/authMicrosoft'
 import legalRoutes from './routes/legal'
 import linkRoutes from './routes/links'
@@ -81,6 +82,7 @@ app.route('/api/orgs', orgsRoutes)
 app.route('/', formsRoutes)
 app.route('/', statsRoutes)
 app.route('/', adminMigrationRoutes)
+app.route('/', adminRoutes)
 
 app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Not found' } }, 404))
 

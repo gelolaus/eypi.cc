@@ -3,7 +3,7 @@
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <p class="text-sm text-g-muted">Create and manage every org on eypi.cc.</p>
       <router-link
-        to="/settings/org-management/new"
+        to="/admin/orgs/new"
  class="btn-gold inline-flex rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90"
         data-cursor="cta"
       >
@@ -35,7 +35,7 @@
           </div>
           <div class="col-span-8 text-right sm:col-span-3">
             <router-link
-              :to="{ name: 'settings-org-management-edit', params: { orgId: item.org_id } }"
+              :to="{ name: 'admin-orgs-edit', params: { orgId: item.org_id } }"
               class="text-sm font-semibold text-g-primary hover:text-g-accent"
               data-cursor="nav"
             >
