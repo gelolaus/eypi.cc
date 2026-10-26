@@ -181,9 +181,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Interfaces:** shadcn-style exports (`Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose`; `DropdownMenu*`; `Select, SelectTrigger, SelectValue, SelectContent, SelectItem`; `Tabs, TabsList, TabsTrigger, TabsContent`; `Switch`; `Tooltip, TooltipTrigger, TooltipContent, TooltipProvider`; `Slider`), all with `v-model` where the Radix original is controlled.
 
-- [ ] **Step 1:** Tests: Dialog opens, traps focus, closes on Esc and on overlay click, returns focus to the trigger (use `attachTo: document.body`); Select trigger is `h-11` and selecting an item updates the model; Tabs trigger is `h-11` and arrow keys move the selection; Switch toggles with Space; Tooltip content appears on focus; DropdownMenu opens on click and closes on Esc; Slider emits on arrow keys. Run; FAIL.
-- [ ] **Step 2:** Implement with wantap's overlay/content class strings (popover surface `bg-popover text-popover-foreground ring-1 ring-foreground/10 rounded-xl`, overlay as in wantap `dialog.tsx`).
-- [ ] **Step 3:** Run; PASS. Commit `feat(ui): port the wantap dialog, menu, select, tabs, switch, tooltip and slider`.
+- [x] **Step 1:** Tests: Dialog opens, traps focus, closes on Esc and on overlay click, returns focus to the trigger (use `attachTo: document.body`); Select trigger is `h-11` and selecting an item updates the model; Tabs trigger is `h-11` and arrow keys move the selection; Switch toggles with Space; Tooltip content appears on focus; DropdownMenu opens on click and closes on Esc; Slider emits on arrow keys. Run; FAIL.
+- [x] **Step 2:** Implement with wantap's overlay/content class strings (popover surface `bg-popover text-popover-foreground ring-1 ring-foreground/10 rounded-xl`, overlay as in wantap `dialog.tsx`).
+- [x] **Step 3:** Run; PASS. Commit `feat(ui): port the wantap dialog, menu, select, tabs, switch, tooltip and slider`.
 
 ### Task 5: Toasts and DialogHost
 
