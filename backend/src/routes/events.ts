@@ -24,7 +24,8 @@ function inChunks<T>(items: readonly T[], size = SQL_IN_CHUNK): T[][] {
   return chunks
 }
 
-// Latest check-in wins. A removed attendee does not occupy a cluster slot.
+// Latest check-in wins, including ties at the same second (higher rowid).
+// A removed attendee does not occupy a cluster slot.
 const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
     FROM attendees a
     WHERE a.event_id = ? AND a.cluster_value = ?
@@ -32,8 +33,11 @@ const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
         SELECT 1 FROM check_ins ci
         WHERE ci.attendee_id = a.id
           AND ci.action = 'removed'
-          AND ci.actioned_at = (
-            SELECT MAX(actioned_at) FROM check_ins WHERE attendee_id = a.id
+          AND ci.rowid = (
+            SELECT c2.rowid FROM check_ins c2
+            WHERE c2.attendee_id = a.id
+            ORDER BY c2.actioned_at DESC, c2.rowid DESC
+            LIMIT 1
           )
       )`
 
@@ -80,6 +84,78 @@ async function latestCheckInAction(client: Client, attendeeId: string): Promise<
   })
   const action = res.rows[0]?.action
   return typeof action === 'string' ? action : null
+}
+
+const LATEST_ACTION_IS = `(
+            SELECT action FROM check_ins
+            WHERE attendee_id = ?
+            ORDER BY actioned_at DESC, rowid DESC
+            LIMIT 1
+          )`
+
+function actionError(code: string, message: string) {
+  return { status: 'error' as const, message, error: { code, message } }
+}
+
+function attendeeLabel(first: unknown, last: unknown): string {
+  return `${String(first ?? '')} ${String(last ?? '')}`.replace(/\s+/g, ' ').trim()
+}
+
+async function writeCheckInAction(
+  client: Client,
+  attendeeId: string,
+  eventId: string,
+  action: 'checked_in' | 'checked_out' | 'removed' | 'not_checked_in',
+  whenSql: string,
+  whenArgs: string[] = [],
+): Promise<boolean> {
+  const result = await client.execute({
+    sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
+          SELECT ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%f', 'now')
+          WHERE ${whenSql}`,
+    args: [crypto.randomUUID(), attendeeId, eventId, action, ...whenArgs],
+  })
+  return Number(result.rowsAffected) === 1
+}
+
+type CheckInResult =
+  | { ok: true; message: string; attendee: { id: string; firstName: string; lastName: string } }
+  | { ok: false; status: 403 | 409; body: ReturnType<typeof actionError> }
+
+async function performCheckIn(
+  client: Client,
+  eventId: string,
+  attendee: { id: unknown; first_name: unknown; last_name: unknown },
+): Promise<CheckInResult> {
+  const attendeeId = String(attendee.id)
+  const name = attendeeLabel(attendee.first_name, attendee.last_name)
+  const latest = await latestCheckInAction(client, attendeeId)
+  if (latest === 'checked_in') {
+    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  }
+  if (latest === 'removed') {
+    return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    attendeeId,
+    eventId,
+    'checked_in',
+    `COALESCE(${LATEST_ACTION_IS}, 'not_checked_in') NOT IN ('checked_in', 'removed')`,
+    [attendeeId],
+  )
+  if (!wrote) {
+    const again = await latestCheckInAction(client, attendeeId)
+    if (again === 'removed') {
+      return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
+    }
+    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  }
+  return {
+    ok: true,
+    message: `${name} checked in.`,
+    attendee: { id: attendeeId, firstName: String(attendee.first_name ?? ''), lastName: String(attendee.last_name ?? '') },
+  }
 }
 function eventRouteUsesOrg(path: string): boolean {
   if (path === '/api/events') return true
@@ -297,12 +373,12 @@ app.get('/api/events/:slug/attendees', async (c) => {
 
   const result = await client.execute({
     sql: `
-      SELECT a.id, a.first_name, a.last_name, a.email, a.cluster_value,
+      SELECT a.id, a.first_name, a.last_name, a.email, a.qr_token, a.cluster_value,
              ci.action AS status, ci.actioned_at
       FROM attendees a
       LEFT JOIN (
         SELECT attendee_id, action, actioned_at,
-               ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC) AS rn
+               ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
         FROM check_ins
       ) ci ON ci.attendee_id = a.id AND ci.rn = 1
       WHERE a.event_id = ?
@@ -908,14 +984,10 @@ app.post('/api/events/:slug/add-guest', async (c) => {
   const slug = c.req.param('slug')
   const client = db(c)
 
-  const evRes = await client.execute({
-    sql: 'SELECT id, lead_user_id, selection_locked, max_attendees FROM events WHERE slug = ?',
-    args: [slug],
-  })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.id) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
-  if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
+  if (Number(event.selection_locked) !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
 
   // Capacity check (exclude removed attendees)
   if (event.max_attendees !== null) {
@@ -924,7 +996,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
             FROM attendees a
             LEFT JOIN (
               SELECT attendee_id, action,
-                     ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC) AS rn
+                     ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
               FROM check_ins
             ) ci ON ci.attendee_id = a.id AND ci.rn = 1
             WHERE a.event_id = ? AND (ci.action IS NULL OR ci.action != 'removed')`,
@@ -1193,27 +1265,16 @@ app.post('/api/events/:slug/checkin', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Invalid QR code for this event.' }, 404)
   const a = aRes.rows[0]
-
-  const latest = await client.execute({
-    sql: 'SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC LIMIT 1',
-    args: [a.id],
+  const result = await performCheckIn(client, String(event.id), {
+    id: a.id,
+    first_name: a.first_name,
+    last_name: a.last_name,
   })
-  if (latest.rows[0]?.action === 'checked_in') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} is already checked in.` }, 409)
-  }
-  if (latest.rows[0]?.action === 'removed') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} has been removed from this event.` }, 403)
-  }
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_in'],
-  })
-
+  if (!result.ok) return c.json(result.body, result.status)
   return c.json({
     status: 'ok',
-    message: `${a.first_name} ${a.last_name} checked in.`,
-    attendee: { id: a.id, firstName: a.first_name, lastName: a.last_name },
+    message: result.message,
+    attendee: result.attendee,
   })
 })
 
@@ -1237,23 +1298,13 @@ app.post('/api/events/:slug/checkin-manual', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
-
-  const latest = await client.execute({
-    sql: 'SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC LIMIT 1',
-    args: [a.id],
+  const result = await performCheckIn(client, String(event.id), {
+    id: a.id,
+    first_name: a.first_name,
+    last_name: a.last_name,
   })
-  if (latest.rows[0]?.action === 'checked_in') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} is already checked in.` }, 409)
-  }
-  if (latest.rows[0]?.action === 'removed') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} has been removed.` }, 403)
-  }
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_in'],
-  })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} checked in.` })
+  if (!result.ok) return c.json(result.body, result.status)
+  return c.json({ status: 'ok', message: result.message })
 })
 
 // ── POST /api/events/:slug/checkout ───────────────────────────────────────────
@@ -1276,12 +1327,21 @@ app.post('/api/events/:slug/checkout', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_out'],
-  })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} checked out.` })
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const latest = await latestCheckInAction(client, attendeeId)
+  if (latest !== 'checked_in') {
+    return c.json(actionError('not_checked_in', `${name} is not checked in.`), 409)
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    attendeeId,
+    String(event.id),
+    'checked_out',
+    `${LATEST_ACTION_IS} = 'checked_in'`,
+    [attendeeId],
+  )
+  if (!wrote) return c.json(actionError('not_checked_in', `${name} is not checked in.`), 409)
+  return c.json({ status: 'ok', message: `${name} checked out.` })
 })
 
 // ── POST /api/events/:slug/remove ─────────────────────────────────────────────
@@ -1304,12 +1364,51 @@ app.post('/api/events/:slug/remove', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const wrote = await writeCheckInAction(client, attendeeId, String(event.id), 'removed', '1 = 1')
+  if (!wrote) return c.json(actionError('not_removed', `${name} could not be removed.`), 409)
+  return c.json({ status: 'ok', message: `${name} removed.` })
+})
 
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'removed'],
+// ── POST /api/events/:slug/restore ────────────────────────────────────────────
+app.post('/api/events/:slug/restore', async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const slug = c.req.param('slug')
+  const { attendeeId } = await c.req.json() as { attendeeId: string }
+  if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
+
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
+
+  const aRes = await client.execute({
+    sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
+    args: [attendeeId, event.id],
   })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} removed.` })
+  if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
+  const a = aRes.rows[0]
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const latest = await latestCheckInAction(client, String(a.id))
+  if (latest !== 'removed') {
+    return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    String(a.id),
+    String(event.id),
+    'not_checked_in',
+    `${LATEST_ACTION_IS} = 'removed'`,
+    [String(a.id)],
+  )
+  if (!wrote) return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  return c.json({
+    status: 'ok',
+    message: `${name} restored.`,
+    attendee: { id: String(a.id), status: 'not_checked_in' },
+  })
 })
 
 // ── PATCH /api/events/:slug/attendees/:id ─────────────────────────────────────

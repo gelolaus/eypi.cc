@@ -45,7 +45,21 @@ beforeEach(() => {
         },
       })
     }
-    if (url.pathname === '/api/events/launch/attendees') return json({ status: 'ok', attendees: [] })
+    if (url.pathname === '/api/events/launch/attendees') {
+      return json({
+        status: 'ok',
+        attendees: [{
+          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          first_name: 'Ana',
+          last_name: 'Santos',
+          email: 'ana@x.com',
+          status: null,
+          actioned_at: '2026-10-31 20:00:00',
+          cluster_value: null,
+          qr_token: 'qr-ana',
+        }],
+      })
+    }
     if (url.pathname === '/api/events/launch/clusters') return json({ clusters: [] })
     if (url.pathname === '/api/events/launch/csv-data') {
       return json({
@@ -92,6 +106,19 @@ describe('EventDetailView pass field picker', () => {
     expect(JSON.parse(String((patch![1] as RequestInit).body))).toEqual({
       passFields: ['section', 'phone'],
     })
+
+    wrapper.unmount()
+  })
+
+  it('offers per-attendee QR download and a ZIP download any time', async () => {
+    const wrapper = mount(EventDetailView, {
+      global: { stubs: { RouterLink: true } },
+    })
+    await flushPromises()
+
+    const labels = wrapper.findAll('button').map((button) => button.text())
+    expect(labels.some((label) => label.includes('Download QR'))).toBe(true)
+    expect(labels.some((label) => label.includes('Download all (ZIP)'))).toBe(true)
 
     wrapper.unmount()
   })
