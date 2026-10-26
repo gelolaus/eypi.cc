@@ -1,27 +1,27 @@
 <template>
   <section class="relative flex min-h-dvh w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:py-24">
-    <div class="mica-card w-full max-w-md rounded-3xl border border-g-border p-6 sm:p-8">
-      <h1 class="text-section-title text-g-text">
+    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+      <h1 class="font-display text-3xl font-semibold tracking-tight">
         Accept the privacy policy and terms
       </h1>
       <form
-        class="mt-6 flex flex-col gap-4"
+        class="flex flex-col gap-4"
         @submit.prevent="onContinue"
       >
         <div class="flex min-h-11 items-start gap-3">
           <input
             id="consent-privacy"
             v-model="acceptPrivacy"
-            class="mt-0.5 size-6 shrink-0 accent-g-accent focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            class="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             type="checkbox"
           >
           <label
-            class="text-base leading-relaxed text-g-text"
+            class="text-base leading-relaxed text-foreground"
             for="consent-privacy"
           >
             I agree to the
             <router-link
-              class="underline underline-offset-4"
+              class="text-primary underline underline-offset-4"
               to="/privacy"
               @click.stop
             >
@@ -33,16 +33,16 @@
           <input
             id="consent-terms"
             v-model="acceptTerms"
-            class="mt-0.5 size-6 shrink-0 accent-g-accent focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            class="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             type="checkbox"
           >
           <label
-            class="text-base leading-relaxed text-g-text"
+            class="text-base leading-relaxed text-foreground"
             for="consent-terms"
           >
             I agree to the
             <router-link
-              class="underline underline-offset-4"
+              class="text-primary underline underline-offset-4"
               to="/terms"
               @click.stop
             >
@@ -52,26 +52,29 @@
         </div>
         <p
           v-if="errorMessage"
-          class="text-sm text-red-600 dark:text-red-400"
+          class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base text-destructive"
           role="alert"
         >
           {{ errorMessage }}
         </p>
-        <button
-          class="btn-primary btn-lg w-full"
+        <Button
+          class="w-full"
+          size="lg"
           type="submit"
           :disabled="!canContinue"
         >
           Continue
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { ApiError, api } from '@/lib/api'
 import { useSession } from '@/stores/session'
 

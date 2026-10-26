@@ -227,9 +227,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `LoginView.vue`, `ConsentView.vue`, `UnlockView.vue`, `ExpiredView.vue`, `NotFoundView.vue`, `RedirectView.vue`, `components/OrgLockout.vue`, and their existing tests (assertions on copy and behaviour stay; class assertions are updated).
 
-- [ ] **Step 1:** Update tests first to assert the new structure: a single `Card`, the Microsoft sign-in control is a `Button size="lg"` full width with its accessible name unchanged, error states (`?error=server|state|tenant|domain|disabled|cancelled`) render in a destructive-styled inline message with the same copy, Unlock input is an `Input` with a visible `Label`. Run; FAIL.
-- [ ] **Step 2:** Restyle per the auth and empty-state rows of the layout table.
-- [ ] **Step 3:** Run tests. Commit `feat(auth): restyle sign-in and status pages with the wantap primitives`.
+- [x] **Step 1:** Update tests first to assert the new structure: a single `Card`, the Microsoft sign-in control is a `Button size="lg"` full width with its accessible name unchanged, error states (`?error=server|state|tenant|domain|disabled|cancelled`) render in a destructive-styled inline message with the same copy, Unlock input is an `Input` with a visible `Label`. Run; FAIL.
+- [x] **Step 2:** Restyle per the auth and empty-state rows of the layout table.
+- [x] **Step 3:** Run tests. Commit `feat(auth): restyle sign-in and status pages with the wantap primitives`.
 
 ### Task 10: Links module
 

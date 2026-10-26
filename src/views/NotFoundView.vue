@@ -1,43 +1,40 @@
 <template>
-  <section
-    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-20"
-  >
-    <!-- Error Hardware Card -->
+  <section class="relative isolate flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:px-6 sm:py-20">
     <div
-      class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-6 text-center shadow-xl sm:p-12"
-    >
-
-      <!-- Error Code -->
-      <h1
-        class="text-data mb-2 text-7xl font-black leading-none text-g-primary sm:text-8xl md:text-9xl"
+      aria-hidden="true"
+      class="bg-dot-grid pointer-events-none absolute inset-0 -z-10 opacity-35"
+    />
+    <div class="flex max-w-md flex-col items-center gap-6 text-center">
+      <div class="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Unlink
+          class="size-7"
+          aria-hidden="true"
+        />
+      </div>
+      <div class="space-y-3">
+        <p class="font-display text-base font-semibold text-primary">
+          404
+        </p>
+        <h1 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          Page not found
+        </h1>
+        <p class="text-base leading-relaxed text-muted-foreground">
+          This link doesn't exist. It may have expired, been deleted, or been mistyped.
+        </p>
+      </div>
+      <Button
+        as-child
+        size="lg"
       >
-        404
-      </h1>
-
-      <!-- Subtitle -->
-      <h2
-        class="mb-4 text-lg font-semibold text-[#DEAC4B] sm:mb-6 sm:text-lg md:text-xl"
-      >
-        Page not found
-      </h2>
-
-      <!-- Body -->
-      <p
-        class="mb-8 text-sm leading-relaxed text-gray-500 sm:mb-10 md:text-base"
-      >
-        This link doesn't exist. It may have expired, been deleted, or been mistyped.
-      </p>
-
-      <!-- CTA -->
-      <router-link
-        to="/"
-        class="btn-primary btn-lg w-full sm:w-auto"
-      >
-        Back to home
-      </router-link>
+        <router-link to="/">
+          Back to home
+        </router-link>
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Unlink } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 </script>

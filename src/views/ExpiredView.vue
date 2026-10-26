@@ -1,26 +1,37 @@
 <template>
-  <section
-    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24"
-  >
+  <section class="relative isolate flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:py-24">
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 text-center sm:p-8 dark:border-slate-600"
-    >
-
-      <h1 class="text-section-title text-[#34418F] dark:text-slate-200">
-        This link has expired
-      </h1>
-      <p class="mt-4 text-sm leading-relaxed text-gray-500 dark:text-slate-400">
-        Ask the person who shared it for a new link.
-      </p>
-      <router-link
-        to="/"
-        class="btn-primary btn-lg mt-8 w-full sm:w-auto"
+      aria-hidden="true"
+      class="bg-dot-grid pointer-events-none absolute inset-0 -z-10 opacity-35"
+    />
+    <div class="flex max-w-md flex-col items-center gap-6 text-center">
+      <div class="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Clock
+          class="size-7"
+          aria-hidden="true"
+        />
+      </div>
+      <div class="space-y-3">
+        <h1 class="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+          This link has expired
+        </h1>
+        <p class="text-base leading-relaxed text-muted-foreground">
+          Ask the person who shared it for a new link.
+        </p>
+      </div>
+      <Button
+        as-child
+        size="lg"
       >
-        Back to home
-      </router-link>
+        <router-link to="/">
+          Back to home
+        </router-link>
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Clock } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 </script>

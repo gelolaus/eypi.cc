@@ -1,71 +1,81 @@
 <template>
-  <section
-    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24"
-  >
-    <div class="mica-card w-full max-w-md rounded-3xl border border-g-border p-6 sm:p-8">
-      <h1 class="text-section-title text-g-text">
-        Sign in to eypi.cc
-      </h1>
-      <p class="mt-3 text-sm leading-relaxed text-g-muted">
-        Use your APC Microsoft 365 account (@apc.edu.ph or @student.apc.edu.ph).
-      </p>
+  <section class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24">
+    <BrandLogo
+      to="/"
+      class="mb-8"
+    />
+    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+      <div class="space-y-3">
+        <h1 class="font-display text-3xl font-semibold tracking-tight">
+          Sign in to eypi.cc
+        </h1>
+        <p class="text-base leading-relaxed text-muted-foreground">
+          Use your APC Microsoft 365 account (@apc.edu.ph or @student.apc.edu.ph).
+        </p>
+      </div>
       <p
         v-if="errorMessage"
         id="sign-in-error"
         role="alert"
-        class="mt-4 text-sm text-red-600 dark:text-red-400"
+        class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base text-destructive"
       >
         {{ errorMessage }}
       </p>
-      <a
-        :href="signInHref"
-        class="mt-6 inline-flex h-12 min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#8C8C8C] bg-white px-4 text-base font-semibold text-[#5E5E5E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+      <Button
+        as-child
+        size="lg"
+        class="h-12 w-full"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="21"
-          height="21"
-          viewBox="0 0 21 21"
-          aria-hidden="true"
-        >
-          <rect
-            x="1"
-            y="1"
-            width="9"
-            height="9"
-            fill="#f25022"
-          />
-          <rect
-            x="11"
-            y="1"
-            width="9"
-            height="9"
-            fill="#7fba00"
-          />
-          <rect
-            x="1"
-            y="11"
-            width="9"
-            height="9"
-            fill="#00a4ef"
-          />
-          <rect
-            x="11"
-            y="11"
-            width="9"
-            height="9"
-            fill="#ffb900"
-          />
-        </svg>
-        Sign in with Microsoft
-      </a>
-    </div>
+        <a :href="signInHref">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="21"
+            height="21"
+            viewBox="0 0 21 21"
+            aria-hidden="true"
+          >
+            <rect
+              x="1"
+              y="1"
+              width="9"
+              height="9"
+              fill="#f25022"
+            />
+            <rect
+              x="11"
+              y="1"
+              width="9"
+              height="9"
+              fill="#7fba00"
+            />
+            <rect
+              x="1"
+              y="11"
+              width="9"
+              height="9"
+              fill="#00a4ef"
+            />
+            <rect
+              x="11"
+              y="11"
+              width="9"
+              height="9"
+              fill="#ffb900"
+            />
+          </svg>
+          Sign in with Microsoft
+        </a>
+      </Button>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import BrandLogo from '@/components/brand/BrandLogo.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/config/api'
 
 const route = useRoute()

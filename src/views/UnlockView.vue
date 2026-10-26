@@ -1,61 +1,67 @@
 <template>
-  <section
-    class="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:py-24"
-  >
-    <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 sm:p-8 dark:border-slate-600"
-    >
-
-      <h1 class="text-section-title mb-2 text-center text-[#34418F] dark:text-slate-200">
-        This link is password protected
-      </h1>
-      <p class="text-data mb-6 text-center text-sm text-gray-500 dark:text-slate-400">
-        {{ slug }}
-      </p>
+  <section class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24">
+    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+      <div class="space-y-3 text-center">
+        <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Lock
+            class="size-7"
+            aria-hidden="true"
+          />
+        </div>
+        <h1 class="font-display text-3xl font-semibold tracking-tight">
+          This link is password protected
+        </h1>
+        <p class="font-mono text-sm text-muted-foreground">
+          {{ slug }}
+        </p>
+      </div>
 
       <form
-        class="flex flex-col"
+        class="flex flex-col gap-2"
         @submit.prevent="onSubmit"
       >
-        <label
-          for="unlock-password"
-          class="mb-1 text-sm font-medium text-gray-700 dark:text-slate-300"
-        >
+        <Label for="unlock-password">
           Password
-        </label>
-        <input
+        </Label>
+        <Input
           id="unlock-password"
           v-model="password"
           type="password"
           name="password"
           autocomplete="current-password"
-          class="control h-11 font-mono text-base"
+          class="font-mono"
           :aria-invalid="Boolean(error)"
           :aria-describedby="error ? 'password-error' : undefined"
-        >
+        />
         <p
           v-if="error"
           id="password-error"
           role="alert"
-          class="mt-2 text-sm text-red-600 dark:text-red-400"
+          class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base text-destructive"
         >
           {{ error }}
         </p>
-        <button
+        <Button
           type="submit"
-          class="btn-primary btn-lg mt-6 w-full"
+          size="lg"
+          class="mt-4 w-full"
           :disabled="pending"
         >
           Continue
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Lock } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { API_BASE_URL } from '@/config/api'
 
 const route = useRoute()

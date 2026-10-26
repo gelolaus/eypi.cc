@@ -25,7 +25,14 @@ describe('mobile-first auth and static pages', () => {
     expect(read(file)).not.toContain('data-cursor')
   })
 
-  it.each(['views/UnlockView.vue', 'views/ReportView.vue'])('%s uses 44px+ 16px fields and a full-width h-12 primary button', (file) => {
+  it('views/UnlockView.vue uses the Input primitive and a full-width lg Button', () => {
+    const src = read('views/UnlockView.vue')
+    expect(src).toContain('<Input')
+    expect(src).toMatch(/<Button[^>]*size="lg"[^>]*class="[^"]*w-full/)
+    expect(src).toContain('aria-invalid')
+  })
+
+  it.each(['views/ReportView.vue'])('%s uses 44px+ 16px fields and a full-width h-12 primary button', (file) => {
     const src = read(file)
     expect(src).toMatch(/class="control[^"]*"/)
     expect(src).toMatch(/btn-primary[^"]*btn-lg[^"]*w-full|btn-lg[^"]*btn-primary[^"]*w-full/)
@@ -42,7 +49,7 @@ describe('mobile-first auth and static pages', () => {
     const src = read('views/ConsentView.vue')
     expect(src).not.toContain('h-4 w-4')
     expect(src).toContain('min-h-11')
-    expect(src).toMatch(/btn-primary[^"]*btn-lg/)
+    expect(src).toMatch(/<Button[^>]*size="lg"/)
   })
 
   it('login keeps a 44px+ Microsoft button', () => {
