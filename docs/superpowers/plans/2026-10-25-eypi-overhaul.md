@@ -626,7 +626,7 @@ Disallow: /manage
 Sitemap: https://eypi.cc/sitemap.xml
 ```
 
-- [ ] Failing tests (worker): `/sitemap.xml` returns XML with public org URLs; `/orgs/foo` HTML has an `og:title` with the org name; `/no/such/page` → 404 status with the HTML body. Commit `feat(seo): add robots, sitemap, per-page meta, and real 404 status`.
+- [x] Failing tests (worker): `/sitemap.xml` returns XML with public org URLs; `/orgs/foo` HTML has an `og:title` with the org name; `/no/such/page` → 404 status with the HTML body. Commit `feat(seo): add robots, sitemap, per-page meta, and real 404 status`.
 
 ---
 
