@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Thumbnail strip -->
-    <p v-if="frames.length > 1" class="mb-2 text-sm font-medium text-g-muted">Drag to reorder or use the arrows</p>
+    <p v-if="frames.length > 1" class="mb-2 text-sm font-medium text-muted-foreground">Drag to reorder or use the arrows</p>
     <div v-if="frames.length" class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- pointer drag reorder; remove stays a button -->
       <div
@@ -10,7 +10,7 @@
         class="group relative cursor-move rounded-xl transition-opacity"
         :class="[
           dragIndex === i ? 'opacity-40' : '',
-          overIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-[#DEAC4B] ring-offset-2 ring-offset-transparent' : '',
+          overIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : '',
         ]"
         draggable="true"
         @dragstart="onDragStart(i, $event)"
@@ -19,35 +19,38 @@
         @drop.prevent="onDropThumb(i)"
         @dragend="onDragEnd"
       >
-        <div class="dp-checker overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700">
+        <div class="overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
           <img :src="frame.src" alt="" draggable="false" class="block aspect-square w-full object-contain" />
         </div>
-        <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-xs font-bold text-white">{{ i + 1 }}</span>
-        <span class="pointer-events-none absolute left-1.5 top-9 hidden items-center rounded-md bg-black/50 px-1 py-1 text-white sm:flex" aria-hidden="true">
+        <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">{{ i + 1 }}</span>
+        <span class="pointer-events-none absolute left-1.5 top-9 hidden items-center rounded-md bg-background/70 px-1 py-1 text-foreground sm:flex" aria-hidden="true">
           <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" /></svg>
         </span>
         <div class="mt-1 flex items-center justify-between gap-1">
-          <button
+          <Button
             type="button"
-            class="min-h-11 min-w-11 rounded-xl border border-g-border bg-g-surface px-2 font-mono text-xs font-bold text-g-text disabled:opacity-40"
+            variant="outline"
+            class="min-w-11 px-2 font-mono text-xs font-bold"
             :disabled="i === 0"
             aria-label="Move up"
             @click.stop="$emit('reorder', i, i - 1)"
-          >Up</button>
-          <button
+          >Up</Button>
+          <Button
             type="button"
-            class="min-h-11 min-w-11 rounded-xl border border-g-border bg-g-surface px-2 font-mono text-xs font-bold text-g-text disabled:opacity-40"
+            variant="outline"
+            class="min-w-11 px-2 font-mono text-xs font-bold"
             :disabled="i === frames.length - 1"
             aria-label="Move down"
             @click.stop="$emit('reorder', i, i + 1)"
-          >Down</button>
-          <button
+          >Down</Button>
+          <Button
             type="button"
+            variant="destructive"
+            class="min-w-11 px-2 font-mono text-lg leading-none"
             :disabled="busyIndex === i"
-            class="min-h-11 min-w-11 rounded-xl border border-red-300 bg-g-surface font-mono text-lg leading-none text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400"
             aria-label="Remove frame"
             @click="$emit('remove', i)"
-          >{{ busyIndex === i ? '…' : '×' }}</button>
+          >{{ busyIndex === i ? '…' : '×' }}</Button>
         </div>
       </div>
     </div>
@@ -55,10 +58,12 @@
     <!-- Add drop-zone (hidden once at the cap) -->
     <div
       v-if="frames.length < max"
-      class="dp-dropzone relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition-colors"
-      :class="dragging ? 'dp-dropzone--active' : ''"
+      class="relative flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-dot-grid p-5 text-center outline-none transition-colors hover:border-ring focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      :class="dragging ? 'border-ring ring-3 ring-ring/50' : ''"
+      :data-dragging="dragging ? 'true' : 'false'"
       role="button"
       tabindex="0"
+      aria-label="Add PNG frames"
       :aria-invalid="Boolean(uploadError)"
       :aria-describedby="uploadError ? 'frame-upload-error' : undefined"
       @click="fileInput?.click()"
@@ -69,20 +74,21 @@
       @drop.prevent="onDrop"
     >
       <input ref="fileInput" type="file" accept="image/png, image/x-png, .png" multiple class="hidden" aria-hidden="true" tabindex="-1" @change="onPicked" />
-      <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-400 dark:border-slate-600 dark:text-slate-500">
+      <div class="mb-2 flex size-10 items-center justify-center rounded-full border border-dashed border-border text-muted-foreground">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
       </div>
-      <p class="text-sm font-medium text-gray-500 dark:text-slate-400">{{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}</p>
-      <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">transparent PNG, up to 3 MB</p>
+      <p class="text-sm font-medium text-foreground">{{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}</p>
+      <p class="mt-1 text-xs text-muted-foreground">transparent PNG, up to 3 MB</p>
     </div>
 
-    <p v-if="uploadError" id="frame-upload-error" class="mt-2 text-sm text-red-500">{{ uploadError }}</p>
-    <p class="text-data mt-2 text-right text-xs text-gray-400 dark:text-slate-500">{{ frames.length }} / {{ max }} frames</p>
+    <p v-if="uploadError" id="frame-upload-error" role="alert" class="mt-2 text-sm text-destructive">{{ uploadError }}</p>
+    <p class="mt-2 text-right font-mono text-xs text-muted-foreground">{{ frames.length }} / {{ max }} frames</p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { getCurrentInstance, ref } from 'vue'
+import { Button } from '@/components/ui/button'
 import { useToast } from '@/composables/useToast'
 import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpUploaderFrame } from '@/types/dp'
 
@@ -196,26 +202,3 @@ function onDrop(e: DragEvent) {
 }
 </script>
 
-<style scoped>
-.dp-dropzone { border-color: var(--color-border); cursor: pointer; }
-.dp-dropzone:hover,
-.dp-dropzone--active { border-color: #DEAC4B; }
-.dp-checker {
-  background-color: #ffffff;
-  background-image:
-    linear-gradient(45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(-45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e9e9e9 75%),
-    linear-gradient(-45deg, transparent 75%, #e9e9e9 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-}
-:global(html.dark) .dp-checker {
-  background-color: #0d0d0d;
-  background-image:
-    linear-gradient(45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(-45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1c1c1c 75%),
-    linear-gradient(-45deg, transparent 75%, #1c1c1c 75%);
-}
-</style>

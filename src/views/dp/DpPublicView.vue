@@ -4,19 +4,22 @@
 
     <!-- Not found -->
     <AppPage v-else-if="error" title="Frame not found">
-      <div class="mica-card rounded-3xl border border-gray-200 p-8 text-center sm:p-12 dark:border-slate-600">
-        <p role="alert" class="font-mono text-sm uppercase tracking-widest text-red-700 dark:text-red-400">{{ error }}</p>
-        <router-link to="/" class="btn-secondary mt-6">← Back to eypi.cc</router-link>
-      </div>
+      <Card class="gap-0 rounded-3xl p-8 text-center sm:p-12">
+        <p role="alert" class="font-mono text-sm text-destructive">{{ error }}</p>
+        <Button as-child variant="outline" class="mx-auto mt-6">
+          <router-link to="/">← Back to eypi.cc</router-link>
+        </Button>
+      </Card>
     </AppPage>
 
     <!-- Editor -->
     <AppPage v-else :title="campaign.title" :description="campaign.description ?? undefined">
     <div class="mx-auto w-full max-w-3xl">
       <!-- Canvas card -->
-      <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-4 sm:p-8 dark:border-slate-600">
+      <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
+        <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
         <div
-          class="dp-checker w-full overflow-hidden border border-gray-200 dark:border-slate-700 relative transition-all duration-300"
+          class="relative w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300"
           :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
           :style="{ aspectRatio: frameAspect }"
         >
@@ -35,109 +38,106 @@
 
         <!-- Frame switcher -->
         <div v-if="frameImgs.length > 1" class="mt-4 flex items-center justify-center gap-3">
-          <button
+          <Button
             type="button"
-            class="flex size-11 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            variant="outline"
+            size="icon"
+            class="rounded-full font-mono text-lg leading-none"
             aria-label="Previous frame"
             @click="prevFrame"
-          >‹</button>
+          >‹</Button>
           <div class="flex items-center gap-1.5">
             <button
               v-for="(_, i) in frameImgs"
               :key="i"
               type="button"
-              class="relative size-3 rounded-full transition-colors before:absolute before:-inset-4 before:content-['']"
-              :class="i === selectedIndex ? 'bg-[#DEAC4B]' : 'bg-gray-300 dark:bg-slate-600'"
+              class="relative size-3 rounded-full transition-colors outline-none before:absolute before:-inset-4 before:content-[''] focus-visible:ring-3 focus-visible:ring-ring/50"
+              :class="i === selectedIndex ? 'bg-primary' : 'bg-muted-foreground/40'"
               :aria-label="`Frame ${i + 1}`"
+              :aria-current="i === selectedIndex ? 'true' : undefined"
               @click="selectedIndex = i"
             />
           </div>
-          <button
+          <Button
             type="button"
-            class="flex size-11 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            variant="outline"
+            size="icon"
+            class="rounded-full font-mono text-lg leading-none"
             aria-label="Next frame"
             @click="nextFrame"
-          >›</button>
+          >›</Button>
         </div>
 
-        <p class="mt-3 text-center font-mono text-xs uppercase tracking-widest text-gray-400 dark:text-slate-500">
+        <p class="mt-3 text-center font-mono text-xs text-muted-foreground">
           {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
         </p>
 
         <!-- Controls -->
         <div class="mt-6 flex flex-col gap-4">
-          <label class="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 text-base font-semibold text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
-            {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
-            <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
-          </label>
+          <Button as-child variant="outline" class="w-full cursor-pointer font-semibold focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+            <label>
+              {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
+              <input ref="photoInput" type="file" accept="image/*" class="sr-only" @change="onHeadshotPicked" />
+            </label>
+          </Button>
 
           <div v-if="headshot" class="flex items-center gap-4">
-            <label for="frame-zoom" class="font-mono text-xs uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</label>
-            <input
-              id="frame-zoom"
-              v-model.number="zoomPercent"
-              type="range"
-              min="20"
-              max="800"
-              step="1"
-              class="h-11 flex-1 cursor-pointer accent-[#DEAC4B]"
+            <Label class="w-auto font-mono text-xs text-muted-foreground">Zoom</Label>
+            <Slider
+              class="h-11 flex-1"
+              thumb-label="Zoom"
+              :model-value="[zoomPercent]"
+              :min="20"
+              :max="800"
+              :step="1"
+              @update:model-value="onZoom"
             />
-            <button
-              type="button"
-              class="btn-secondary"
-              @click="reset"
-            >Reset</button>
+            <Button type="button" variant="outline" @click="reset">Reset</Button>
           </div>
 
           <!-- Preview shape toggler -->
           <div class="grid grid-cols-2 gap-3">
-            <button
+            <Button
               type="button"
-              class="min-h-11 rounded-xl border text-sm font-semibold transition-all"
-              :class="previewShape === 'square'
-                ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
-                : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
+              :variant="previewShape === 'square' ? 'default' : 'outline'"
+              :aria-pressed="previewShape === 'square'"
+              class="min-h-11 text-sm font-semibold"
               @click="previewShape = 'square'"
             >
               Square Preview
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class="min-h-11 rounded-xl border text-sm font-semibold transition-all"
-              :class="previewShape === 'circle'
-                ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
-                : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
+              :variant="previewShape === 'circle' ? 'default' : 'outline'"
+              :aria-pressed="previewShape === 'circle'"
+              class="min-h-11 text-sm font-semibold"
               @click="previewShape = 'circle'"
             >
               Circle Preview
-            </button>
+            </Button>
           </div>
 
-          <button
+          <Button
             type="button"
+            size="lg"
             :disabled="!headshot || exporting"
- class="btn-gold min-h-11 w-full rounded-xl px-8 text-base font-semibold transition-all"
-            :class="(!headshot || exporting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
+            class="w-full font-semibold"
             @click="download"
-          >{{ exporting ? 'Rendering…' : 'Download' }}</button>
+          >{{ exporting ? 'Rendering…' : 'Download' }}</Button>
         </div>
-      </div>
+      </Card>
 
       <!-- Caption -->
-      <div
+      <Card
         v-if="campaign.captionTemplate"
-        class="mica-card reveal delay-2 relative mt-6 rounded-3xl border border-gray-200 p-6 dark:border-slate-600"
+        class="relative mt-6 gap-0 rounded-3xl p-6"
       >
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption</p>
-          <button
-            type="button"
-            class="btn-secondary"
-            @click="copyCaption"
-          >Copy to clipboard</button>
+          <p class="text-sm font-semibold text-foreground">Caption</p>
+          <Button type="button" variant="outline" @click="copyCaption">Copy to clipboard</Button>
         </div>
-        <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed" style="color: var(--color-text-muted);">{{ campaign.captionTemplate }}</p>
-      </div>
+        <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground">{{ campaign.captionTemplate }}</p>
+      </Card>
     </div>
     </AppPage>
   </div>
@@ -147,17 +147,19 @@
 import { api } from '@/lib/api'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { saveAs } from 'file-saver'
 import { useToast } from '@/composables/useToast'
-import { useReveal } from '@/composables/useReveal'
 import { useDpCanvas } from '@/composables/useDpCanvas'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
 const toast = useToast()
-useReveal()
 
 const slug = route.params.slug as string
 
@@ -209,6 +211,11 @@ const zoomPercent = computed({
     scale.value = target
   },
 })
+
+function onZoom(value: number[] | undefined) {
+  const next = value?.[0]
+  if (typeof next === 'number') zoomPercent.value = next
+}
 
 function prevFrame() { selectedIndex.value = (selectedIndex.value - 1 + frameImgs.value.length) % frameImgs.value.length }
 function nextFrame() { selectedIndex.value = (selectedIndex.value + 1) % frameImgs.value.length }
@@ -363,23 +370,3 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
-.dp-checker {
-  background-color: #ffffff;
-  background-image:
-    linear-gradient(45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(-45deg, #e9e9e9 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #e9e9e9 75%),
-    linear-gradient(-45deg, transparent 75%, #e9e9e9 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-}
-:global(html.dark) .dp-checker {
-  background-color: #0d0d0d;
-  background-image:
-    linear-gradient(45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(-45deg, #1c1c1c 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1c1c1c 75%),
-    linear-gradient(-45deg, transparent 75%, #1c1c1c 75%);
-}
-</style>

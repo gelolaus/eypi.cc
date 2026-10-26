@@ -3,115 +3,113 @@
     <AppPage title="New DP Blast">
     <div class="mx-auto w-full max-w-xl">
       <!-- Success state -->
-      <div
+      <Card
         v-if="created"
-        class="mica-card reveal relative rounded-3xl border border-gray-200 p-5 text-center sm:p-8 dark:border-slate-600"
+        class="relative gap-0 rounded-3xl p-5 text-center sm:p-8"
       >
-        <p class="mb-2 font-mono text-xs uppercase tracking-widest text-emerald-500">Campaign Created</p>
-        <h2 class="mb-6 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.title }}</h2>
+        <p class="mb-2 text-sm font-medium text-primary">Campaign Created</p>
+        <h2 class="mb-6 font-mono text-xl font-bold text-foreground">{{ form.title }}</h2>
 
-        <div class="mb-6 flex items-center gap-2 rounded-xl border-2 border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input">
-          <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-[#34418F] dark:text-slate-200">{{ shareDisplay }}</span>
-          <button
+        <div class="mb-6 flex items-center gap-2 rounded-xl border border-input bg-muted px-4 py-3">
+          <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-foreground">{{ shareDisplay }}</span>
+          <Button
             type="button"
-            class="btn-primary min-h-11 min-w-11 shrink-0"
+            class="min-w-11 shrink-0"
             @click="copyShare"
-          >Copy</button>
+          >Copy</Button>
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <router-link
-            :to="`/frames/${createdSlug}`"
- class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110"
-           
-          >Open Public Page →</router-link>
-          <router-link
-            to="/manage/frames"
-            class="btn-secondary"
-          >All Campaigns</router-link>
+          <Button as-child>
+            <router-link :to="`/frames/${createdSlug}`">Open Public Page →</router-link>
+          </Button>
+          <Button as-child variant="outline">
+            <router-link to="/manage/frames">All Campaigns</router-link>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       <!-- Form -->
-      <form
-        v-else
-        class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600"
-        @submit.prevent="submit"
-      >
-        <!-- Title -->
-        <div>
-          <label for="new-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
-          <input
-            id="new-campaign-title"
-            v-model="form.title"
-            type="text"
-            maxlength="200"
-            placeholder="e.g. I'm attending CompSci Week 2026"
-            required
-            class="control font-mono"
-          />
-        </div>
-
-        <!-- Slug -->
-        <div>
-          <label for="new-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
-          <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
-            <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
-            <input
-              id="new-campaign-slug"
-              v-model="form.slug"
+      <Card v-else class="relative gap-0 rounded-3xl p-5 sm:p-8">
+        <form
+          class="flex flex-col gap-5"
+          @submit.prevent="submit"
+        >
+          <!-- Title -->
+          <div class="space-y-1.5">
+            <Label for="new-campaign-title">Title</Label>
+            <Input
+              id="new-campaign-title"
+              v-model="form.title"
               type="text"
-              maxlength="60"
-              placeholder="compsci-week"
-              class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted"
-              @input="sanitizeSlug"
+              maxlength="200"
+              placeholder="e.g. I'm attending CompSci Week 2026"
+              required
+              class="font-mono"
             />
           </div>
-          <p class="mt-1 font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">Lowercase letters, numbers, and hyphens.</p>
-        </div>
 
-        <!-- Description -->
-        <div>
-          <label for="new-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-          <input
-            id="new-campaign-description"
-            v-model="form.description"
-            type="text"
-            maxlength="1000"
-            placeholder="A short line shown on the public page"
-            class="control font-mono"
-          />
-        </div>
+          <!-- Slug -->
+          <div class="space-y-1.5">
+            <Label for="new-campaign-slug">Link <span class="text-muted-foreground">(optional, auto from title)</span></Label>
+            <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
+              <input
+                id="new-campaign-slug"
+                v-model="form.slug"
+                type="text"
+                maxlength="60"
+                placeholder="compsci-week"
+                class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
+                @input="sanitizeSlug"
+              />
+            </div>
+            <p class="text-xs font-medium text-muted-foreground">Lowercase letters, numbers, and hyphens.</p>
+          </div>
 
-        <!-- Caption template -->
-        <div>
-          <label for="new-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-          <textarea
-            id="new-campaign-caption"
-            v-model="form.captionTemplate"
-            rows="3"
-            maxlength="2000"
-            placeholder="The suggested caption people copy when they share…"
-            class="control resize-y font-mono"
-          />
-        </div>
+          <!-- Description -->
+          <div class="space-y-1.5">
+            <Label for="new-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
+            <Input
+              id="new-campaign-description"
+              v-model="form.description"
+              type="text"
+              maxlength="1000"
+              placeholder="A short line shown on the public page"
+              class="font-mono"
+            />
+          </div>
 
-        <!-- Frames -->
-        <div>
-          <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames <span class="text-gray-400 dark:text-slate-500">(at least one)</span></p>
-          <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
-        </div>
+          <!-- Caption template -->
+          <div class="space-y-1.5">
+            <Label for="new-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
+            <Textarea
+              id="new-campaign-caption"
+              v-model="form.captionTemplate"
+              rows="3"
+              maxlength="2000"
+              placeholder="The suggested caption people copy when they share…"
+              class="resize-y font-mono"
+            />
+          </div>
 
-        <!-- Submit -->
-        <button
-          type="submit"
-          :disabled="!canSubmit || submitting"
- class="btn-gold mt-2 min-h-11 w-full rounded-xl px-8 text-base font-semibold transition-all"
-          :class="(!canSubmit || submitting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
-        >
-          {{ submitting ? 'Creating…' : 'Create Campaign' }}
-        </button>
-      </form>
+          <!-- Frames -->
+          <div class="space-y-1.5">
+            <p class="text-base font-medium">Frames <span class="text-muted-foreground">(at least one)</span></p>
+            <DpFrameUploader :frames="frames" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
+          </div>
+
+          <!-- Submit -->
+          <Button
+            type="submit"
+            size="lg"
+            :disabled="!canSubmit || submitting"
+            class="mt-2 w-full font-semibold"
+          >
+            {{ submitting ? 'Creating…' : 'Create Campaign' }}
+          </Button>
+        </form>
+      </Card>
     </div>
     </AppPage>
   </div>
@@ -122,12 +120,15 @@ import AppPage from '@/components/layout/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, reactive, computed } from 'vue'
 import { useToast } from '@/composables/useToast'
-import { useReveal } from '@/composables/useReveal'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import type { DpUploaderFrame } from '@/types/dp'
 
 const toast = useToast()
-useReveal()
 
 const form = reactive({
   title: '',

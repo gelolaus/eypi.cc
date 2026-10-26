@@ -14,12 +14,14 @@ import { cn } from '@/lib/cn'
 
 interface Props extends SliderRootProps {
   class?: HTMLAttributes['class']
+  /** Accessible name for each thumb. */
+  thumbLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), { min: 0, max: 100 })
 const emits = defineEmits<SliderRootEmits>()
 const delegated = computed(() => {
-  const { class: _class, ...rest } = props
+  const { class: _class, thumbLabel: _thumbLabel, ...rest } = props
   return rest
 })
 const forwarded = useForwardPropsEmits(delegated, emits)
@@ -41,6 +43,6 @@ const thumb = "relative block size-3 shrink-0 rounded-full border border-ring bg
     <RSliderTrack data-slot="slider-track" :class="track">
       <RSliderRange data-slot="slider-range" :class="range" />
     </RSliderTrack>
-    <RSliderThumb v-for="(_, index) in values" :key="index" data-slot="slider-thumb" :class="thumb" />
+    <RSliderThumb v-for="(_, index) in values" :key="index" data-slot="slider-thumb" :aria-label="props.thumbLabel" :class="thumb" />
   </RSliderRoot>
 </template>

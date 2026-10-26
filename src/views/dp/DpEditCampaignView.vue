@@ -4,80 +4,80 @@
     <div class="mx-auto w-full max-w-xl">
       <!-- Loading -->
       <div v-if="loading" role="status" aria-busy="true" class="space-y-4"><span class="sr-only">Loading</span>
-        <div class="mx-auto h-8 w-1/2 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
-        <div class="h-72 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
+        <div class="mx-auto h-8 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
+        <div class="h-72 rounded-3xl bg-muted motion-safe:animate-pulse" />
       </div>
 
       <!-- Not found / error -->
-      <div
+      <Card
         v-else-if="error"
-        class="mica-card rounded-3xl border border-gray-200 p-8 text-center sm:p-12 dark:border-slate-600"
+        class="gap-0 rounded-3xl p-8 text-center sm:p-12"
       >
-        <p class="font-mono text-sm uppercase tracking-widest text-red-500">{{ error }}</p>
-        <router-link to="/manage/frames" class="btn-secondary mt-6">← All campaigns</router-link>
-      </div>
+        <p role="alert" class="font-mono text-sm text-destructive">{{ error }}</p>
+        <Button as-child variant="outline" class="mx-auto mt-6">
+          <router-link to="/manage/frames">← All campaigns</router-link>
+        </Button>
+      </Card>
 
       <template v-else>
-        <div class="reveal mb-6 flex items-center justify-between gap-3">
-          <div>
-            <p class="min-w-0 break-all font-mono text-sm text-g-muted">eypi.cc/frames/{{ form.slug }}</p>
-          </div>
-          <router-link
-            :to="`/frames/${form.slug}`"
-            class="btn-secondary shrink-0"
-          >View →</router-link>
+        <div class="mb-6 flex items-center justify-between gap-3">
+          <p class="min-w-0 break-all font-mono text-sm text-muted-foreground">eypi.cc/frames/{{ form.slug }}</p>
+          <Button as-child variant="outline" class="shrink-0">
+            <router-link :to="`/frames/${form.slug}`">View →</router-link>
+          </Button>
         </div>
 
-        <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
+        <Card class="relative gap-5 rounded-3xl p-5 sm:p-8">
           <!-- Title -->
-          <div>
-            <label for="edit-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
-            <input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="control font-mono" />
+          <div class="space-y-1.5">
+            <Label for="edit-campaign-title">Title</Label>
+            <Input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="font-mono" />
           </div>
 
           <!-- Slug -->
-          <div>
-            <label for="edit-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
-            <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
-              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
-              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted" @input="sanitizeSlug" />
+          <div class="space-y-1.5">
+            <Label for="edit-campaign-slug">Link</Label>
+            <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+              <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
+              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground" @input="sanitizeSlug" />
             </div>
           </div>
 
           <!-- Description -->
-          <div>
-            <label for="edit-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="control font-mono" />
+          <div class="space-y-1.5">
+            <Label for="edit-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
+            <Input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="font-mono" />
           </div>
 
           <!-- Caption -->
-          <div>
-            <label for="edit-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="control resize-y font-mono" />
+          <div class="space-y-1.5">
+            <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
+            <Textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="resize-y font-mono" />
           </div>
 
           <!-- Save metadata -->
-          <button
+          <Button
             type="button"
+            size="lg"
             :disabled="saving || !form.title.trim()"
-            class="btn-primary w-full"
-                        @click="saveDetails"
-          >{{ saving ? 'Saving…' : 'Save Details' }}</button>
+            class="w-full font-semibold"
+            @click="saveDetails"
+          >{{ saving ? 'Saving…' : 'Save Details' }}</Button>
 
           <!-- Frames (persisted immediately) -->
-          <div class="border-t border-gray-200 pt-5 dark:border-slate-700">
-            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</p>
-            <p class="mb-3 font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
+          <div class="border-t border-border pt-5">
+            <p class="mb-1 text-base font-medium">Frames</p>
+            <p class="mb-3 text-xs text-muted-foreground">Changes here save instantly.</p>
             <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
           </div>
-        </div>
+        </Card>
 
-        <div class="reveal delay-2 mt-6 text-center">
-          <button
+        <div class="mt-6 text-center">
+          <Button
             type="button"
-            class="btn-secondary border-red-300 text-red-600 dark:border-red-900/60 dark:text-red-400"
+            variant="destructive"
             @click="removeCampaign"
-          >Delete this campaign</button>
+          >Delete this campaign</Button>
         </div>
       </template>
     </div>
@@ -92,7 +92,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useReveal } from '@/composables/useReveal'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import type { DpUploaderFrame, DpFrame } from '@/types/dp'
 
@@ -100,7 +104,6 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const dialog = useDialog()
-useReveal()
 
 const slug = route.params.slug as string
 const campaignId = ref('')

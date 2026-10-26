@@ -258,8 +258,8 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `views/dp/*`, `components/dp/DpFrameUploader.vue`, `views/forms/*` (including `generators/`).
 
-- [ ] **Step 1:** Tests: `DpPublicView` range control is the `Slider` primitive and still emits the same values; the frame canvas preview and downloaded output are unaffected by theme colours (**Review Focus 4**); `DpFrameUploader` drop zone is `bg-dot-grid` with a ring on focus and drag-over.
-- [ ] **Step 2:** Restyle. Commit `feat(dp): restyle profile frames and forms`.
+- [x] **Step 1:** Tests: `DpPublicView` range control is the `Slider` primitive and still emits the same values; the frame canvas preview and downloaded output are unaffected by theme colours (**Review Focus 4**); `DpFrameUploader` drop zone is `bg-dot-grid` with a ring on focus and drag-over.
+- [x] **Step 2:** Restyle. Commit `feat(dp): restyle profile frames and forms`.
 
 ### Task 14: Admin and legal pages
 

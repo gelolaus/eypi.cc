@@ -6,141 +6,126 @@
           novalidate
           @submit.prevent="generateDocuments"
         >
-          <div>
-            <label for="submissionDate" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Submission Date
-            </label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="submissionDate">Submission Date</Label>
+            <Input
               id="submissionDate"
               v-model="formData.submissionDate"
               type="text"
               :aria-invalid="Boolean(errors.submissionDate)"
               :aria-describedby="errors.submissionDate ? 'submissionDate-error' : undefined"
-              :class="fieldClass"
               placeholder="e.g., March 17, 2026"
-            >
+            />
             <p
               v-if="errors.submissionDate"
               id="submissionDate-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.submissionDate }}
             </p>
           </div>
-          <div>
-            <label for="eventName" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Event Name
-            </label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="eventName">Event Name</Label>
+            <Input
               id="eventName"
               v-model="formData.eventName"
               type="text"
               :aria-invalid="Boolean(errors.eventName)"
               :aria-describedby="errors.eventName ? 'eventName-error' : undefined"
-              :class="fieldClass"
               placeholder="e.g., SoCIT Fest 2026"
-            >
+            />
             <p
               v-if="errors.eventName"
               id="eventName-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.eventName }}
             </p>
           </div>
-          <div>
-            <label for="orgName" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Organization Name
-            </label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="orgName">Organization Name</Label>
+            <Input
               id="orgName"
               v-model="formData.orgName"
               type="text"
               :aria-invalid="Boolean(errors.orgName)"
               :aria-describedby="errors.orgName ? 'orgName-error' : undefined"
-              :class="fieldClass"
               placeholder="e.g., Junior Philippine Computer Society"
-            >
+            />
             <p
               v-if="errors.orgName"
               id="orgName-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.orgName }}
             </p>
           </div>
-          <div>
-            <label for="eventLocation" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Event Location
-            </label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="eventLocation">Event Location</Label>
+            <Input
               id="eventLocation"
               v-model="formData.eventLocation"
               type="text"
               :aria-invalid="Boolean(errors.eventLocation)"
               :aria-describedby="errors.eventLocation ? 'eventLocation-error' : undefined"
-              :class="fieldClass"
               placeholder="e.g., 12/F Auditorium"
-            >
+            />
             <p
               v-if="errors.eventLocation"
               id="eventLocation-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.eventLocation }}
             </p>
           </div>
-          <div>
-            <label for="eventDate" class="mb-1.5 block text-sm font-medium text-g-muted">
-              Event Date
-            </label>
-            <input
+          <div class="space-y-1.5">
+            <Label for="eventDate">Event Date</Label>
+            <Input
               id="eventDate"
               v-model="formData.eventDate"
               type="text"
               :aria-invalid="Boolean(errors.eventDate)"
               :aria-describedby="errors.eventDate ? 'eventDate-error' : undefined"
-              :class="fieldClass"
               placeholder="e.g., March 21, 2026"
-            >
+            />
             <p
               v-if="errors.eventDate"
               id="eventDate-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.eventDate }}
             </p>
           </div>
 
           <div class="md:col-span-2">
-            <p class="mb-1.5 block text-sm font-medium text-g-muted">
+            <p class="mb-1.5 text-base font-medium">
               Student Names (CSV)
             </p>
             <label
               for="csvFile"
-              class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-g-accent"
+              class="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-dot-grid px-4 py-8 transition-colors hover:border-ring focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
             >
-              <svg class="mb-2 h-8 w-8 text-slate-400 dark:text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <svg class="mb-2 h-8 w-8 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              <span v-if="!csvFileName" class="text-sm text-slate-500 dark:text-slate-400">
+              <span v-if="!csvFileName" class="text-sm text-muted-foreground">
                 Click to upload a .csv file
               </span>
-              <span v-else class="text-sm text-g-text dark:text-slate-200">
+              <span v-else class="text-sm text-foreground">
                 {{ csvFileName }}
-                <span class="text-slate-400 dark:text-slate-500">&mdash; {{ parsedNames.length }} name(s)</span>
+                <span class="text-muted-foreground">· {{ parsedNames.length }} name(s)</span>
               </span>
               <input
                 id="csvFile"
                 ref="csvInput"
                 type="file"
                 accept=".csv"
-                class="hidden"
+                class="sr-only"
                 :aria-invalid="Boolean(errors.csv)"
                 :aria-describedby="errors.csv ? 'csvFile-error' : undefined"
                 @change="onFileChange"
@@ -150,7 +135,7 @@
               v-if="errors.csv"
               id="csvFile-error"
               role="alert"
-              class="mt-1 text-sm text-red-500"
+              class="mt-1 text-sm text-destructive"
             >
               {{ errors.csv }}
             </p>
@@ -164,7 +149,7 @@
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col" class="py-1 font-medium text-g-muted">
+                    <th scope="col" class="py-1 font-medium text-muted-foreground">
                       Name
                     </th>
                   </tr>
@@ -174,7 +159,7 @@
                     v-for="(name, index) in previewNames"
                     :key="`${index}-${name}`"
                   >
-                    <td class="py-1 text-g-text">
+                    <td class="py-1 text-foreground">
                       {{ name }}
                     </td>
                   </tr>
@@ -182,7 +167,7 @@
               </table>
               <p
                 v-if="parsedNames.length > previewNames.length"
-                class="mt-1 text-sm text-g-muted"
+                class="mt-1 text-sm text-muted-foreground"
               >
                 And {{ parsedNames.length - previewNames.length }} more.
               </p>
@@ -190,10 +175,10 @@
           </div>
 
           <div class="md:col-span-2 flex justify-end pt-2">
-            <button
+            <Button
               type="submit"
               :disabled="isGenerating"
-              class="btn-gold flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+              class="w-full font-semibold sm:w-auto"
             >
               <svg
                 v-if="isGenerating"
@@ -218,7 +203,7 @@
                 />
               </svg>
               {{ isGenerating ? 'GENERATING...' : 'GENERATE BATCH ZIP' }}
-            </button>
+            </Button>
           </div>
         </form>
     </AppSection>
@@ -228,6 +213,9 @@
 <script setup lang="ts">
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useDialog } from '@/composables/useDialog'
 import {
   fetchFormTemplate,
@@ -244,8 +232,6 @@ import {
 import { useToast } from '@/composables/useToast'
 import { LETTER_TEMPLATE, LETTER_ZIP_NAME } from '@shared/formsCatalog'
 import { computed, reactive, ref } from 'vue'
-
-const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base transition-colors sm:text-sm focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
 
 const toast = useToast()
 const dialog = useDialog()

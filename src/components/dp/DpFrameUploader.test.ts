@@ -66,7 +66,7 @@ describe('DpFrameUploader tap targets', () => {
     expect(html).not.toContain('text-[0.6rem]')
     for (const label of ['Move up', 'Move down', 'Remove frame']) {
       for (const button of wrapper.findAll(`[aria-label="${label}"]`)) {
-        expect(button.classes().join(' ')).toContain('min-h-11')
+        expect(button.classes().join(' ')).toContain('h-11')
         expect(button.classes().join(' ')).toContain('min-w-11')
       }
     }

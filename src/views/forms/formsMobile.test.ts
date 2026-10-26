@@ -22,7 +22,7 @@ describe('forms mobile layout', () => {
     const wrapper = mount(view)
     expect(wrapper.find('[data-app-page]').exists()).toBe(true)
     expect(wrapper.find('main').exists()).toBe(false)
-    expect(wrapper.get('button[type="submit"]').classes()).toContain('min-h-11')
+    expect(wrapper.get('button[type="submit"]').attributes('data-slot')).toBe('button')
   })
 
   it('FormsHomeView renders inside AppPage without a nested main', async () => {

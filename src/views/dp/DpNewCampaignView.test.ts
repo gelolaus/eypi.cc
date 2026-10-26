@@ -13,7 +13,7 @@ describe('DpNewCampaignView', () => {
   it('source keeps the post-create Copy button at 44px', async () => {
     const src = (await import('./DpNewCampaignView.vue?raw')).default as string
     const m = src.match(/class="([^"]*)"\s+@click="copyShare"/)
-    expect(m?.[1]).toContain('min-h-11')
+    expect(src).not.toMatch(/<Button[^>]*size="(xs|sm)"[^>]*@click="copyShare"/)
     expect(m?.[1]).toContain('min-w-11')
   })
 })

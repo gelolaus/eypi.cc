@@ -1,29 +1,33 @@
 <template>
   <PageSkeleton v-if="loading" />
   <AppPage v-else title="Forms" description="Generate organization documents.">
-    <input
+    <Input
       v-model="searchQuery"
       type="search"
       placeholder="Search forms..."
       aria-label="Search forms"
-      class="control mb-6 w-full"
+      class="mb-6 w-full"
     />
 
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-      <button
+      <Card
         v-for="form in filteredForms"
         :key="form.id"
-        type="button"
-        class="mica-card min-h-11 rounded-2xl border border-g-border p-5 text-left transition-all duration-200 hover:border-g-accent/50 sm:p-6"
-        @click="router.push(form.route)"
+        class="relative min-h-11 gap-0 rounded-2xl p-5 transition-shadow hover:ring-foreground/30 sm:p-6"
       >
-        <h2 class="text-card-title mb-2 text-g-primary dark:text-white">
-          {{ form.title }}
+        <h2 class="mb-2 text-lg font-semibold">
+          <button
+            type="button"
+            class="text-left outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-3 focus-visible:after:ring-ring/50"
+            @click="router.push(form.route)"
+          >
+            {{ form.title }}
+          </button>
         </h2>
-        <p class="text-sm text-g-muted">
+        <p class="text-sm text-muted-foreground">
           {{ form.description }}
         </p>
-      </button>
+      </Card>
     </div>
   </AppPage>
 </template>
@@ -31,6 +35,8 @@
 <script setup lang="ts">
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { FORM_CATALOG, type FormCatalogItem } from '@shared/formsCatalog'
 import { ref, computed, onMounted } from 'vue'
