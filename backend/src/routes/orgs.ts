@@ -951,7 +951,7 @@ app.get('/:org_id/members', async (c) => {
 
     const { rows } = await database.execute({
       sql: `
-        SELECT m.email, m.user_id, m.invited_at, m.activated_at, u.name AS name
+        SELECT m.email, m.user_id, m.invited_at, m.activated_at, m.declined_at, u.name AS name
         FROM org_members m
         LEFT JOIN users u ON lower(u.email) = lower(m.email)
         WHERE m.org_id = ?
@@ -1193,7 +1193,7 @@ app.post('/:org_id/transfer', async (c) => {
       sql: `
         SELECT user_id
         FROM org_members
-        WHERE org_id = ? AND email = ? AND activated_at IS NOT NULL
+        WHERE org_id = ? AND lower(email) = lower(?) AND activated_at IS NOT NULL
         LIMIT 1
       `,
       args: [orgId, targetEmail],

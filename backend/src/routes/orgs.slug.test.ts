@@ -124,6 +124,44 @@ describe('PATCH /api/orgs/admin/:id slug rename', () => {
   })
 })
 
+describe('POST /api/orgs/:id/transfer', () => {
+  it('transfers to a member whose stored email differs in case', async () => {
+    const { client, request } = await createTestApp({
+      user: owner,
+      seed: async (db) => {
+        await enableForeignKeys(db)
+        await insertUser(db, owner)
+        await insertUser(db, member)
+        await db.execute({
+          sql: 'INSERT INTO organizations (id, name, owner_id) VALUES (?, ?, ?)',
+          args: ['jpcs', 'JPCS', owner.id],
+        })
+        await db.execute({
+          sql: `INSERT INTO org_members (org_id, email, user_id, activated_at)
+                VALUES (?, ?, ?, ?)`,
+          args: ['jpcs', member.email, member.id, '2026-01-03T00:00:00.000Z'],
+        })
+      },
+    })
+
+    const res = await request('/api/orgs/jpcs/transfer', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: ORIGIN,
+      },
+      body: JSON.stringify({ targetEmail: member.email.toLowerCase() }),
+    })
+
+    expect(res.status).toBe(200)
+    const orgs = await client.execute({
+      sql: 'SELECT owner_id FROM organizations WHERE id = ?',
+      args: ['jpcs'],
+    })
+    expect(String(orgs.rows[0]?.owner_id)).toBe(member.id)
+  })
+})
+
 describe('POST /api/orgs/:id/leave', () => {
   it('matches the session email with lower()', async () => {
     const { client, request } = await createTestApp({

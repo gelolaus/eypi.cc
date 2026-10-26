@@ -215,9 +215,9 @@
               <tr v-for="member in members" :key="member.email" class="border-b border-g-border/70 last:border-0">
                 <td class="px-4 py-3">{{ member.name?.trim() || 'No account yet' }}</td>
                 <td class="px-4 py-3">{{ member.email }}</td>
-                <td class="px-4 py-3 text-center">{{ member.activated_at ? 'Active' : 'Pending' }}</td>
+                <td class="px-4 py-3 text-center">{{ memberStatus(member) }}</td>
                 <td class="px-4 py-3 text-right">
-                  <div v-if="!member.activated_at" class="flex justify-end gap-3">
+                  <div v-if="isPendingMember(member)" class="flex justify-end gap-3">
                     <button
                       type="button"
                       class="font-semibold text-g-text disabled:opacity-50"
@@ -235,14 +235,14 @@
                     </button>
                   </div>
                   <button
-                    v-else-if="!isOwnerMember(member)"
+                    v-else-if="member.activated_at && !isOwnerMember(member)"
                     type="button"
                     class="font-semibold text-red-500"
                     @click="removeMember(member.email)"
                   >
                     Remove
                   </button>
-                  <span v-else class="text-g-muted">Owner</span>
+                  <span v-else-if="member.activated_at" class="text-g-muted">Owner</span>
                 </td>
               </tr>
             </tbody>
@@ -345,6 +345,7 @@ interface OrgMember {
   email: string
   user_id?: string | null
   activated_at: string | null
+  declined_at?: string | null
   name?: string | null
 }
 
@@ -393,6 +394,16 @@ const resendingEmail = ref('')
 const isLocked = computed(() => !loading.value && userOrgs.value.length === 0)
 const isOwner = computed(() => org.value?.is_owner === 1)
 const activeMembers = computed(() => members.value.filter((member) => member.activated_at && !isOwnerMember(member)))
+
+function isPendingMember(member: OrgMember): boolean {
+  return !member.activated_at && !member.declined_at
+}
+
+function memberStatus(member: OrgMember): string {
+  if (member.activated_at) return 'Active'
+  if (member.declined_at) return 'Declined'
+  return 'Pending'
+}
 
 function isOwnerMember(member: OrgMember): boolean {
   if (org.value?.owner_id && member.user_id && member.user_id === org.value.owner_id) return true

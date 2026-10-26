@@ -62,13 +62,19 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
-function installFetch() {
+type FetchOptions = {
+  asOwner?: boolean
+  members?: unknown[]
+}
+
+function installFetch(options: FetchOptions = {}) {
   formsFetches = 0
   leavePosted = false
   recordedRefetch = false
   activeClearedBeforeRefetch = false
   cacheClearedBeforeRefetch = false
   routeAtRefetch = ''
+  const org = options.asOwner ? { ...memberOrg, is_owner: 1 } : memberOrg
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = pathname(input)
     const method = init?.method ?? 'GET'
@@ -83,6 +89,9 @@ function installFetch() {
     if (path === '/api/orgs/jpcs/profile' && method === 'GET') {
       return json({ profile })
     }
+    if (path === '/api/orgs/jpcs/members' && method === 'GET') {
+      return json({ members: options.members ?? [] })
+    }
     if (path === '/api/orgs' && method === 'GET') {
       if (leavePosted && !recordedRefetch) {
         recordedRefetch = true
@@ -92,7 +101,7 @@ function installFetch() {
         await useOrgMembership().checkOrgMembership()
         cacheClearedBeforeRefetch = formsFetches > before
       }
-      return json({ orgs: leavePosted ? [] : [memberOrg] })
+      return json({ orgs: leavePosted ? [] : [org] })
     }
     return json({ error: { code: 'not_found', message: 'Missing.' } }, 404)
   }))
@@ -161,6 +170,34 @@ describe('OrgModifyView leave', () => {
     expect(routeAtRefetch).toBe('/orgs/modify/jpcs')
     expect(localStorage.getItem('active_org_id')).toBeNull()
     expect(router.currentRoute.value.path).toBe('/orgs/modify')
+    wrapper.unmount()
+  })
+})
+
+describe('OrgModifyView members', () => {
+  it('does not label a declined row as pending or offer resend', async () => {
+    installFetch({
+      asOwner: true,
+      members: [{
+        email: 'bea@student.apc.edu.ph',
+        user_id: null,
+        name: null,
+        activated_at: null,
+        declined_at: '2026-10-20T00:00:00.000Z',
+      }],
+    })
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+
+    const row = wrapper.findAll('tr').find((tr) => tr.text().includes('bea@student.apc.edu.ph'))
+    expect(row).toBeTruthy()
+    expect(row!.text()).toContain('Declined')
+    expect(row!.text()).not.toContain('Pending')
+    expect(row!.text()).not.toContain('Resend')
+    expect(row!.text()).not.toContain('Cancel invite')
     wrapper.unmount()
   })
 })
