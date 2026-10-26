@@ -7,9 +7,15 @@ function prefersReducedMotion(): boolean {
 }
 
 function findHashTarget(pane: HTMLElement, hash: string): HTMLElement | null {
-  const id = decodeURIComponent(hash.slice(1))
+  let id = hash.slice(1)
+  try {
+    id = decodeURIComponent(id)
+  } catch {
+    // malformed escape sequence: fall back to the raw fragment
+  }
   if (!id) return null
-  return pane.querySelector<HTMLElement>(`[id="${id.replace(/"/g, '\\"')}"]`)
+  const el = document.getElementById(id)
+  return el && pane.contains(el) ? el : null
 }
 
 /**

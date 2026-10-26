@@ -89,6 +89,45 @@ describe('pane scroll', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
   })
 
+  it('does not throw on a malformed percent-encoded hash and falls back to the raw id', async () => {
+    const target = document.createElement('section')
+    target.id = '%E0%A4%A'
+    const scrollIntoView = vi.fn()
+    target.scrollIntoView = scrollIntoView
+    pane.appendChild(target)
+    await router.push('/manage/tix#%E0%A4%A')
+    await flushPromises()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('scrolls to the top when a malformed hash matches nothing', async () => {
+    await router.push('/manage/tix#%E0%A4%A')
+    await flushPromises()
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+  })
+
+  it('finds ids containing backslashes and quotes without selector escaping', async () => {
+    const target = document.createElement('section')
+    target.id = 'a\b"c'
+    const scrollIntoView = vi.fn()
+    target.scrollIntoView = scrollIntoView
+    pane.appendChild(target)
+    await router.push({ path: '/manage/tix', hash: '#' + encodeURIComponent('a\b"c') })
+    await flushPromises()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('ignores elements outside the pane', async () => {
+    const outside = document.createElement('section')
+    outside.id = 'elsewhere'
+    const scrollIntoView = vi.fn()
+    outside.scrollIntoView = scrollIntoView
+    document.body.appendChild(outside)
+    await router.push('/manage/tix#elsewhere')
+    await flushPromises()
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('leaves the pane alone on query-only changes', async () => {
     pane.scrollTop = 300
     scrollTo.mockClear()
