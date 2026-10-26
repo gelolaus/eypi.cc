@@ -366,9 +366,9 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Copy:** card meta "Invited by {name} · {relative time}"; buttons "Accept" / "Decline"; decline confirm title "Decline invite to {org}?"; empty state "No pending invites."; banner "You have {n} pending org invite(s)." with link "Review invites".
 
-- [ ] **Step 1: Failing tests:** list renders cards; Accept calls the API then `clearOrgMembershipCache()`, `fetchOrgs()`, sets `active_org_id`, routes to `/orgs/:slug`; Decline asks to confirm; the lockout shows invites when present.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(orgs): restore invite accept and decline with an inbox and badge`.
+- [x] **Step 1: Failing tests:** list renders cards; Accept calls the API then `clearOrgMembershipCache()`, `fetchOrgs()`, sets `active_org_id`, routes to `/orgs/:slug`; Decline asks to confirm; the lockout shows invites when present.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(orgs): restore invite accept and decline with an inbox and badge`.
 
 ### Task 3.3: Org management fixes (F-ORG-3, 5, 6, 7, 13, 14)
 
@@ -481,7 +481,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `shared/urlSafety.ts` (server-only adapter in `backend/src/lib/links/safeBrowsing.ts` + test).
 
-- [ ] When `SAFE_BROWSING_API_KEY` is set, `POST https://safebrowsing.googleapis.com/v4/threatMatches:find` on create/edit; a match → 422 `unsafe_destination`; a timeout over 1500 ms or an API error → allow and `reportError` (fail open). Tests stub fetch for match, no match, timeout. Commit `feat(links): check destinations against Google Safe Browsing when configured`.
+- [x] When `SAFE_BROWSING_API_KEY` is set, `POST https://safebrowsing.googleapis.com/v4/threatMatches:find` on create/edit; a match → 422 `unsafe_destination`; a timeout over 1500 ms or an API error → allow and `reportError` (fail open). Tests stub fetch for match, no match, timeout. Commit `feat(links): check destinations against Google Safe Browsing when configured`.
 
 ### Task 4.8: KV reconcile (F-LINK-11)
 
