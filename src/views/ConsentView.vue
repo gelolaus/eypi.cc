@@ -1,6 +1,6 @@
 <template>
   <section class="relative flex min-h-dvh w-full flex-1 flex-col items-center justify-center px-4 py-10 sm:py-24">
-    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-2xl sm:p-8">
       <h1 class="font-display text-3xl font-semibold tracking-tight">
         Accept the privacy policy and terms
       </h1>

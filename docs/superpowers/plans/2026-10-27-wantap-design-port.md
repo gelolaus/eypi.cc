@@ -272,9 +272,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Delete `src/styles/legacy.css`; modify `src/styles/design.test.ts`, `src/removedChrome.test.ts`, `src/components/a11ySurfaces.test.ts`.
 
-- [ ] **Step 1:** Add failing tests: `it('uses no legacy design tokens')` globs `src/**/*.{vue,ts,css}` and `index.html` and fails on any of `mica`, `pill-nav`, `g-bg`, `g-surface`, `g-border`, `g-text`, `g-muted`, `g-accent`, `g-primary`, `eypi-gold`, `apc-blue`, `apc-gold`, `#34418F`, `#DEAC4B`, `Geist`, `useDarkMode`, `tap-scale`, `data-cursor`; `it('has no hard-coded hex colours in components except the QR designer defaults')`. Add `a11ySurfaces` cases that every `<button>` and `<a>` in the shell renders an accessible name.
-- [ ] **Step 2:** Run; list offenders; fix each file in place (replace with tokens). Delete `legacy.css` and its import.
-- [ ] **Step 3:** `npm run typecheck && npm test && npm run build && npm run lint` (warnings may not increase beyond 1061). Commit `refactor(design): remove the legacy eypi styles`.
+- [x] **Step 1:** Add failing tests: `it('uses no legacy design tokens')` globs `src/**/*.{vue,ts,css}` and `index.html` and fails on any of `mica`, `pill-nav`, `g-bg`, `g-surface`, `g-border`, `g-text`, `g-muted`, `g-accent`, `g-primary`, `eypi-gold`, `apc-blue`, `apc-gold`, `#34418F`, `#DEAC4B`, `Geist`, `useDarkMode`, `tap-scale`, `data-cursor`; `it('has no hard-coded hex colours in components except the QR designer defaults')`. Add `a11ySurfaces` cases that every `<button>` and `<a>` in the shell renders an accessible name.
+- [x] **Step 2:** Run; list offenders; fix each file in place (replace with tokens). Delete `legacy.css` and its import.
+- [x] **Step 3:** `npm run typecheck && npm test && npm run build && npm run lint` (warnings may not increase beyond 1061). Commit `refactor(design): remove the legacy eypi styles`.
 
 ### Task 16: Documentation
 

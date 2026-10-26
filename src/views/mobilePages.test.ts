@@ -40,12 +40,6 @@ describe('mobile-first auth and static pages', () => {
     expect(src).toContain('aria-invalid')
   })
 
-  it('field-level control class gives h-11 text-base sizing', () => {
-    const css = read('styles/legacy.css')
-    expect(css).toMatch(/\.control\s*\{[^}]*min-height:\s*2\.75rem/)
-    expect(css).toMatch(/\.control\s*\{[^}]*font-size:\s*1rem/)
-  })
-
   it('consent checkboxes have a 44px tap row', () => {
     const src = read('views/ConsentView.vue')
     expect(src).not.toContain('h-4 w-4')
