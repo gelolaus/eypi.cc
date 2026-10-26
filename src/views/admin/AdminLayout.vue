@@ -5,25 +5,30 @@
         class="flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto"
         aria-label="Admin sections"
       >
-        <router-link
+        <Button
           v-for="tab in tabs"
           :key="tab.name"
-          :to="{ name: tab.name }"
-          :class="[
-            'inline-flex min-h-11 shrink-0 snap-start items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-            isActive(tab)
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-500 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-          ]"
-          :aria-current="isActive(tab) ? 'page' : undefined"
-         
+          as-child
+          :variant="isActive(tab) ? 'secondary' : 'ghost'"
+          class="shrink-0 snap-start"
         >
-          {{ tab.label }}
-        </router-link>
+          <router-link
+            :to="{ name: tab.name }"
+            :aria-current="isActive(tab) ? 'page' : undefined"
+          >
+            {{ tab.label }}
+          </router-link>
+        </Button>
       </nav>
-      <router-link to="/dashboard" class="btn-secondary shrink-0">
-        Dashboard
-      </router-link>
+      <Button
+        as-child
+        variant="outline"
+        class="shrink-0"
+      >
+        <router-link to="/dashboard">
+          Dashboard
+        </router-link>
+      </Button>
     </div>
 
     <router-view />
@@ -32,6 +37,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import { Button } from '@/components/ui/button'
 import AppPage from '@/components/layout/AppPage.vue'
 
 interface AdminTab {

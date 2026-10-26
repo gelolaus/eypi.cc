@@ -1,6 +1,6 @@
 <template>
   <section class="relative flex min-h-dvh w-full flex-col items-center px-4 py-8 sm:justify-center sm:py-24">
-    <div class="mica-card relative w-full max-w-3xl rounded-3xl border border-gray-200 p-6 dark:border-slate-600 sm:p-8 md:p-14">
+    <div class="relative w-full max-w-3xl rounded-2xl border border-border bg-card p-6 text-card-foreground sm:p-8 md:p-14">
       <slot />
     </div>
   </section>

@@ -3,32 +3,32 @@
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <form class="flex w-full max-w-md gap-2" role="search" @submit.prevent="search">
         <label for="admin-link-search" class="sr-only">Search links</label>
-        <input
+        <Input
           id="admin-link-search"
           v-model="query"
           type="search"
-          class="control"
           placeholder="Search by slug, destination, or owner"
           autocomplete="off"
         />
-        <button type="submit" class="btn-gold inline-flex min-h-11 shrink-0 items-center rounded-xl px-5 text-base font-semibold transition-all hover:opacity-90">
+        <Button type="submit" class="shrink-0">
           Search
-        </button>
+        </Button>
       </form>
-      <p class="text-sm text-g-muted">
+      <p class="text-sm text-muted-foreground">
         {{ links.length }} {{ links.length === 1 ? 'link' : 'links' }}
       </p>
     </div>
 
-    <div v-if="loading" class="mica-card h-40 animate-pulse rounded-3xl" aria-hidden="true" />
+    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
 
-    <p v-else-if="links.length === 0" class="rounded-2xl border border-g-border px-5 py-8 text-center text-sm text-g-muted">
+    <p v-else-if="links.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
       No links match that search.
     </p>
 
-    <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
-      <div>
-        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-xs font-semibold text-g-muted md:grid">
+    <div v-else class="md:overflow-hidden md:rounded-2xl md:border md:border-border">
+      <div class="overflow-x-auto">
+        <div class="space-y-3 md:min-w-3xl md:space-y-0">
+        <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
           <div class="col-span-3">Slug</div>
           <div class="col-span-4">Destination</div>
           <div class="col-span-2">Owner</div>
@@ -38,26 +38,26 @@
           v-for="link in links"
           :key="link.id"
           data-admin-row
-          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-white/30 dark:md:hover:bg-mica-navy-row-hover"
+          class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
         >
           <div class="min-w-0 md:col-span-3">
             <a
               :href="`/${link.slug}`"
               target="_blank"
               rel="noopener"
-              class="text-data inline-flex min-h-[44px] items-center text-sm font-semibold text-g-primary hover:text-g-accent"
+              class="font-mono inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:text-foreground"
             >
               /{{ link.slug }}
             </a>
-            <p v-if="link.disabled && link.disabledReason" class="text-xs text-red-500">
+            <p v-if="link.disabled && link.disabledReason" class="text-xs text-destructive">
               {{ link.disabledReason === 'abuse' ? 'Disabled for abuse' : 'Disabled by admin' }}
             </p>
           </div>
-          <div class="text-data min-w-0 text-xs text-g-muted md:col-span-4">
+          <div class="font-mono min-w-0 text-xs text-muted-foreground md:col-span-4">
             <span class="block truncate" :title="link.originalUrl">{{ link.originalUrl }}</span>
           </div>
           <div class="min-w-0 md:col-span-2">
-            <span class="text-data block truncate text-xs text-g-muted" :title="link.ownerEmail ?? ''">
+            <span class="font-mono block truncate text-xs text-muted-foreground" :title="link.ownerEmail ?? ''">
               {{ link.ownerEmail ?? 'Deleted user' }}
             </span>
           </div>
@@ -67,7 +67,7 @@
               <select
                 :id="`reason-${link.id}`"
                 v-model="reasons[link.id]"
-                class="control !w-auto"
+                class="h-11 w-auto min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
               >
                 <option value="abuse">
                   Abuse
@@ -76,37 +76,40 @@
                   Admin
                 </option>
               </select>
-              <button
+              <Button
                 type="button"
-                class="btn-danger"
+                variant="destructive"
                 :disabled="busyId === link.id"
                 :aria-label="`Disable /${link.slug}`"
                 @click="disable(link)"
               >
                 Disable
-              </button>
+              </Button>
             </template>
-            <span v-else class="text-xs font-semibold text-red-500">Disabled</span>
+            <Badge v-else variant="destructive">Disabled</Badge>
           </div>
         </div>
+      </div>
       </div>
     </div>
 
     <div v-if="nextCursor" class="mt-6 flex justify-center">
-      <button
+      <Button
         type="button"
-        class="btn-secondary"
+        variant="outline"
         :disabled="loadingMore"
-       
         @click="load(false)"
       >
         {{ loadingMore ? 'Loading...' : 'Load more' }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'

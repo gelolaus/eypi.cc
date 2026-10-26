@@ -1,32 +1,27 @@
 <template>
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <nav class="flex gap-2 overflow-x-auto" aria-label="Report status">
-        <button
+      <nav class="flex min-w-0 gap-2 overflow-x-auto" aria-label="Report status">
+        <Button
           v-for="option in statuses"
           :key="option.value"
           type="button"
+          :variant="status === option.value ? 'secondary' : 'ghost'"
           :aria-pressed="status === option.value"
-          :class="[
-            'inline-flex min-h-11 shrink-0 items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-            status === option.value
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-500 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-          ]"
-         
+          class="shrink-0"
           @click="setStatus(option.value)"
         >
           {{ option.label }}
-        </button>
+        </Button>
       </nav>
-      <p class="text-sm text-g-muted">
+      <p class="text-sm text-muted-foreground">
         {{ reports.length }} {{ reports.length === 1 ? 'report' : 'reports' }}
       </p>
     </div>
 
-    <div v-if="loading" class="mica-card h-40 animate-pulse rounded-3xl" aria-hidden="true" />
+    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
 
-    <p v-else-if="reports.length === 0" class="rounded-2xl border border-g-border px-5 py-8 text-center text-sm text-g-muted">
+    <p v-else-if="reports.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
       {{ status === 'open' ? 'No open reports. Nice.' : 'No resolved reports yet.' }}
     </p>
 
@@ -35,7 +30,7 @@
         v-for="report in reports"
         :key="report.id"
         data-admin-row
-        class="rounded-2xl border border-g-border bg-g-surface p-4 sm:px-5 sm:py-5"
+        class="rounded-2xl border border-border bg-card p-4 sm:px-5 sm:py-5"
       >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div class="min-w-0">
@@ -44,54 +39,54 @@
                 :href="`/${report.slug}`"
                 target="_blank"
                 rel="noopener"
-                class="text-data inline-flex min-h-11 items-center text-sm font-semibold text-g-primary hover:text-g-accent"
+                class="font-mono inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:text-foreground"
               >
                 /{{ report.slug }}
               </a>
-              <span class="rounded-full border border-g-border px-2 py-0.5 text-xs font-semibold text-g-muted">
+              <Badge variant="outline">
                 {{ reasonLabel(report.reason) }}
-              </span>
-              <span
+              </Badge>
+              <Badge
                 v-if="report.linkDisabled"
-                class="rounded-full border border-red-500/60 px-2 py-0.5 text-xs font-semibold text-red-500"
+                variant="destructive"
               >
                 Link disabled
-              </span>
+              </Badge>
             </div>
-            <p v-if="report.details" class="mt-3 whitespace-pre-line text-sm text-g-text">
+            <p v-if="report.details" class="mt-3 whitespace-pre-line text-sm text-foreground">
               {{ report.details }}
             </p>
-            <p class="mt-3 text-xs text-g-muted">
+            <p class="mt-3 text-xs text-muted-foreground">
               Reported {{ formatDate(report.createdAt) }}
               <template v-if="report.ownerEmail">
                 · owner {{ report.ownerEmail }}
               </template>
             </p>
-            <p v-if="report.status === 'resolved'" class="mt-1 text-xs text-g-muted">
+            <p v-if="report.status === 'resolved'" class="mt-1 text-xs text-muted-foreground">
               {{ report.resolution === 'disable_link' ? 'Link disabled' : 'Dismissed' }}
               {{ report.resolvedAt ? `on ${formatDate(report.resolvedAt)}` : '' }}
             </p>
           </div>
 
           <div v-if="report.status === 'open'" class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
-            <button
+            <Button
               type="button"
-              class="btn-danger"
+              variant="destructive"
               :disabled="busyId === report.id"
               :aria-label="`Disable /${report.slug} and resolve this report`"
               @click="resolve(report, 'disable_link')"
             >
               Disable link
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              class="btn-secondary"
+              variant="outline"
               :disabled="busyId === report.id"
               :aria-label="`Dismiss report for /${report.slug}`"
               @click="resolve(report, 'dismiss')"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         </div>
       </li>
@@ -100,6 +95,8 @@
 </template>
 
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { formatManilaDate } from '@/lib/manilaTime'

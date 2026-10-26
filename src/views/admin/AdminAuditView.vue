@@ -2,13 +2,13 @@
   <section>
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div class="w-full max-w-xs">
-        <label for="admin-audit-action" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-g-muted">
+        <Label for="admin-audit-action" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Action
-        </label>
+        </Label>
         <select
           id="admin-audit-action"
           v-model="action"
-          class="control"
+          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
           @change="load(true)"
         >
           <option value="">
@@ -19,20 +19,21 @@
           </option>
         </select>
       </div>
-      <p class="text-sm text-g-muted">
+      <p class="text-sm text-muted-foreground">
         {{ events.length }} {{ events.length === 1 ? 'entry' : 'entries' }}
       </p>
     </div>
 
-    <div v-if="loading" class="mica-card h-40 animate-pulse rounded-3xl" aria-hidden="true" />
+    <div v-if="loading" class="h-40 animate-pulse rounded-2xl bg-muted" aria-hidden="true" />
 
-    <p v-else-if="events.length === 0" class="rounded-2xl border border-g-border px-5 py-8 text-center text-sm text-g-muted">
+    <p v-else-if="events.length === 0" class="rounded-2xl border border-border px-5 py-8 text-center text-sm text-muted-foreground">
       No audit events yet.
     </p>
 
-    <div v-else class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
-      <div>
-        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface px-4 py-3 text-xs font-semibold text-g-muted md:grid">
+    <div v-else class="md:overflow-hidden md:rounded-2xl md:border md:border-border">
+      <div class="overflow-x-auto">
+        <div class="space-y-3 md:min-w-3xl md:space-y-0">
+        <div class="hidden grid-cols-12 border-b border-border bg-muted/40 px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
           <div class="col-span-3">Action</div>
           <div class="col-span-3">Actor</div>
           <div class="col-span-3">Target</div>
@@ -43,56 +44,58 @@
           v-for="event in events"
           :key="event.id"
           data-admin-row
-          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-start md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-white/30 dark:md:hover:bg-mica-navy-row-hover"
+          class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-start md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
         >
           <div class="min-w-0 md:col-span-3">
-            <p class="text-sm font-semibold text-g-text">{{ actionLabel(event.action) }}</p>
-            <p class="text-data text-xs text-g-muted">{{ event.action }}</p>
+            <p class="text-sm font-semibold text-foreground">{{ actionLabel(event.action) }}</p>
+            <p class="font-mono text-xs text-muted-foreground">{{ event.action }}</p>
           </div>
-          <div class="text-data min-w-0 truncate text-xs text-g-muted md:col-span-3" :title="event.actorEmail ?? event.actorUserId">
+          <div class="font-mono min-w-0 truncate text-xs text-muted-foreground md:col-span-3" :title="event.actorEmail ?? event.actorUserId">
             {{ event.actorEmail ?? event.actorUserId ?? 'Unknown' }}
           </div>
           <div class="min-w-0 md:col-span-3">
-            <p class="text-xs font-semibold text-g-muted">{{ event.targetType ?? '—' }}</p>
-            <p class="text-data truncate text-xs text-g-muted" :title="event.targetId ?? ''">
+            <p class="text-xs font-semibold text-muted-foreground">{{ event.targetType ?? 'None' }}</p>
+            <p class="font-mono truncate text-xs text-muted-foreground" :title="event.targetId ?? ''">
               {{ event.targetId ?? '' }}
             </p>
           </div>
-          <div class="text-data text-xs text-g-muted md:col-span-2">{{ formatDate(event.createdAt) }}</div>
+          <div class="font-mono text-xs text-muted-foreground md:col-span-2">{{ formatDate(event.createdAt) }}</div>
           <div class="flex md:col-span-1 md:justify-end">
-            <button
+            <Button
               v-if="event.meta !== null"
               type="button"
-              class="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-g-primary hover:text-g-accent md:text-xs"
+              variant="ghost"
               :aria-label="`Show details for ${actionLabel(event.action)}`"
               :aria-expanded="expanded === event.id"
               @click="toggle(event.id)"
             >
               {{ expanded === event.id ? 'Hide' : 'Show' }}
-            </button>
+            </Button>
           </div>
           <div v-if="expanded === event.id && event.meta !== null" class="md:col-span-12 md:mt-3">
-            <pre class="text-data overflow-x-auto rounded-lg border border-g-border bg-white/40 p-3 text-xs text-g-muted dark:bg-mica-navy-header">{{ formatMeta(event.meta) }}</pre>
+            <pre class="font-mono overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">{{ formatMeta(event.meta) }}</pre>
           </div>
         </div>
+      </div>
       </div>
     </div>
 
     <div v-if="nextCursor" class="mt-6 flex justify-center">
-      <button
+      <Button
         type="button"
-        class="btn-secondary"
+        variant="outline"
         :disabled="loadingMore"
-       
         @click="load(false)"
       >
         {{ loadingMore ? 'Loading...' : 'Load more' }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { formatManilaDateTime } from '@/lib/manilaTime'

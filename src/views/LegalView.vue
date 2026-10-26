@@ -2,34 +2,34 @@
   <LegalLayout>
     <div
       v-if="document"
-      class="mb-10 border-b border-gray-200 pb-8 dark:border-slate-700"
+      class="mb-10 max-w-prose border-b border-border pb-8"
     >
-      <h1 class="text-section-title mb-1">
+      <h1 class="mb-2 font-heading text-3xl font-semibold tracking-tight">
         {{ document.title }}
       </h1>
-      <p class="text-data text-xs text-gray-500 dark:text-slate-400">
+      <p class="font-mono text-xs text-muted-foreground">
         Version {{ document.version }}
       </p>
-      <p class="text-data text-xs text-gray-500 dark:text-slate-400">
+      <p class="font-mono text-xs text-muted-foreground">
         Effective {{ document.effectiveDate }}
       </p>
     </div>
 
     <div
       v-if="document"
-      class="space-y-8 text-sm leading-relaxed"
+      class="max-w-prose space-y-8 text-sm leading-relaxed"
     >
       <section
         v-for="(section, index) in document.sections"
         :key="`${section.heading}-${index}`"
       >
-        <h2 class="text-card-title mb-4 border-b border-gray-200 pb-2 dark:border-slate-700">
+        <h2 class="mb-4 border-b border-border pb-2 font-heading text-lg font-semibold tracking-tight">
           {{ section.heading }}
         </h2>
         <p
           v-for="(paragraph, paragraphIndex) in section.paragraphs"
           :key="paragraphIndex"
-          class="mb-4 text-gray-600 last:mb-0 dark:text-slate-400"
+          class="mb-4 text-muted-foreground last:mb-0"
         >
           {{ paragraph }}
         </p>

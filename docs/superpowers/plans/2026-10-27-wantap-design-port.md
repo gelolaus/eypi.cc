@@ -265,8 +265,8 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `views/admin/*`, `views/LegalView.vue`, `components/LegalLayout.vue`, `views/ContactView.vue` leftovers.
 
-- [ ] **Step 1:** Update `adminViews.test.ts` and `LegalView.test.ts` for structure; tables scroll at 375px; legal prose uses `text-muted-foreground`, `max-w-prose`, headings in `font-heading`.
-- [ ] **Step 2:** Restyle. Commit `feat(admin): restyle admin tools and legal pages`.
+- [x] **Step 1:** Update `adminViews.test.ts` and `LegalView.test.ts` for structure; tables scroll at 375px; legal prose uses `text-muted-foreground`, `max-w-prose`, headings in `font-heading`.
+- [x] **Step 2:** Restyle. Commit `feat(admin): restyle admin tools and legal pages`.
 
 ### Task 15: Remove legacy styles and lock it in
 
