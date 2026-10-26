@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import { api } from '@/lib/api'
+import { ApiError, api } from '@/lib/api'
 
 export type SessionUser = {
   id: string
@@ -46,35 +46,52 @@ function reset(): void {
   inflight = null
 }
 
+function isUnauthorized(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401
+}
+
 async function pull(): Promise<void> {
+  const hadUser = user.value !== null
   try {
     const data = await api.get<MeResponse>('/api/me')
     user.value = asUser(data.user)
     pendingInviteCount.value = asCount(data.pendingInviteCount)
-  } catch {
-    user.value = null
-    pendingInviteCount.value = 0
-  } finally {
     status.value = 'ready'
+  } catch (error) {
+    if (isUnauthorized(error)) {
+      user.value = null
+      pendingInviteCount.value = 0
+      status.value = 'ready'
+      return
+    }
+    // A 500 or a dropped connection is not a sign-out. Leave the loaded
+    // user in place. With no user yet, idle lets the next load() retry.
+    status.value = hadUser ? 'ready' : 'idle'
   }
+}
+
+function track(task: Promise<void>): Promise<void> {
+  const tracked = task.finally(() => {
+    if (inflight === tracked) inflight = null
+  })
+  inflight = tracked
+  return tracked
 }
 
 function load(): Promise<void> {
   if (status.value === 'ready') return Promise.resolve()
   if (inflight) return inflight
   status.value = 'loading'
-  inflight = pull().finally(() => {
-    inflight = null
-  })
-  return inflight
+  return track(pull())
 }
 
 function reload(): Promise<void> {
-  if (inflight) return inflight
-  inflight = pull().finally(() => {
-    inflight = null
-  })
-  return inflight
+  const previous = inflight
+  // Do not reuse a probe that started before this refresh.
+  return track((async () => {
+    if (previous) await previous
+    await pull()
+  })())
 }
 
 async function logout(): Promise<void> {

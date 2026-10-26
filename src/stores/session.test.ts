@@ -15,6 +15,25 @@ function jsonResponse(status: number, body: unknown): Response {
   })
 }
 
+const ada = {
+  id: 'user-1',
+  email: 'ada@apc.edu.ph',
+  name: 'Ada',
+  role: 'user' as const,
+}
+
+function meBody(pendingInviteCount: number) {
+  return { user: ada, pendingInviteCount }
+}
+
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
 function filesUnder(dir: string): string[] {
   const found: string[] = []
   for (const entry of readdirSync(dir)) {
@@ -118,6 +137,102 @@ describe('useSession', () => {
     expect(session.user.value).toBeNull()
     expect(session.status.value).toBe('ready')
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/api/me')
+  })
+
+  it('keeps a loaded user when a later /api/me returns 500', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(2)))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, {
+      error: { code: 'server_error', message: 'Something went wrong.' },
+    }))
+    await session.reload()
+
+    expect(session.user.value).toEqual(ada)
+    expect(session.pendingInviteCount.value).toBe(2)
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('keeps a loaded user when a later /api/me drops the connection', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(2)))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await session.reload()
+
+    expect(session.user.value).toEqual(ada)
+    expect(session.pendingInviteCount.value).toBe(2)
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('clears a loaded user when a later /api/me returns 401', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(2)))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, {
+      error: { code: 'unauthorized', message: 'Sign in to continue.' },
+    }))
+    await session.reload()
+
+    expect(session.user.value).toBeNull()
+    expect(session.pendingInviteCount.value).toBe(0)
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('retries load() after a 500 when no user was loaded', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, {
+      error: { code: 'server_error', message: 'Something went wrong.' },
+    }))
+    const session = useSession()
+    await session.load()
+
+    expect(session.user.value).toBeNull()
+    expect(session.status.value).toBe('idle')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(1)))
+    await session.load()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(session.user.value).toEqual(ada)
+    expect(session.pendingInviteCount.value).toBe(1)
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('issues a new GET /api/me for each overlapping reload()', async () => {
+    const session = useSession()
+    session.user.value = ada
+    session.pendingInviteCount.value = 2
+    session.status.value = 'ready'
+
+    const firstResponse = deferred<Response>()
+    const secondResponse = deferred<Response>()
+    fetchMock
+      .mockImplementationOnce(() => firstResponse.promise)
+      .mockImplementationOnce(() => secondResponse.promise)
+
+    const firstReload = session.reload()
+    const secondReload = session.reload()
+
+    expect(secondReload).not.toBe(firstReload)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    firstResponse.resolve(jsonResponse(200, meBody(1)))
+    await firstReload
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(session.pendingInviteCount.value).toBe(1)
+
+    secondResponse.resolve(jsonResponse(200, meBody(0)))
+    await secondReload
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(session.user.value).toEqual(ada)
+    expect(session.pendingInviteCount.value).toBe(0)
+    expect(session.status.value).toBe('ready')
   })
 
   it('logout posts to /api/auth/logout and clears the active org', async () => {
