@@ -1,9 +1,9 @@
 <template>
   <section
-    class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-24"
+    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24"
   >
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-8 text-center dark:border-slate-600"
+      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 text-center sm:p-8 dark:border-slate-600"
     >
       <PageShell />
 
@@ -15,7 +15,7 @@
       </p>
       <router-link
         to="/"
- class="btn-gold mt-8 inline-block rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:brightness-110"
+        class="btn-primary btn-lg mt-8 w-full sm:w-auto"
       >
         Back to home
       </router-link>

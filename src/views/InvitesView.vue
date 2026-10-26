@@ -1,20 +1,18 @@
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col px-4 py-12 sm:px-6 lg:px-8">
-    <header class="mb-8 border-b border-g-border pb-8">
-      <h1 class="text-page-title">
-        Invites
-      </h1>
-    </header>
-
+  <AppPage
+    title="Invites"
+    class="!max-w-3xl"
+  >
     <p
       v-if="loadError"
       role="alert"
-      class="text-sm text-red-500"
+      class="text-sm text-red-600 dark:text-red-400"
     >
       {{ loadError }}
     </p>
+    <PageSkeleton v-else-if="loading" />
     <p
-      v-else-if="!loading && invites.length === 0"
+      v-else-if="invites.length === 0"
       class="text-sm text-g-muted"
     >
       No pending invites.
@@ -30,11 +28,13 @@
         @declined="removeInvite"
       />
     </div>
-  </main>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import AppPage from '@/components/AppPage.vue'
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import InviteCard from '@/components/orgs/InviteCard.vue'
 import { loadPendingInvites, type OrgInvite } from '@/components/orgs/invites'
 import { ApiError } from '@/lib/api'

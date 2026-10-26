@@ -1,8 +1,8 @@
 <template>
   <section
-    class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-24"
+    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24"
   >
-    <div class="mica-card w-full max-w-md rounded-3xl border border-g-border p-8">
+    <div class="mica-card w-full max-w-md rounded-3xl border border-g-border p-6 sm:p-8">
       <h1 class="text-section-title text-g-text">
         Sign in to eypi.cc
       </h1>
@@ -13,14 +13,13 @@
         v-if="errorMessage"
         id="sign-in-error"
         role="alert"
-        class="mt-4 text-sm text-red-500"
+        class="mt-4 text-sm text-red-600 dark:text-red-400"
       >
         {{ errorMessage }}
       </p>
       <a
         :href="signInHref"
-        class="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-3 rounded-lg border border-[#8C8C8C] bg-white px-4 py-3 text-sm font-semibold text-[#5E5E5E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-        data-cursor="cta"
+        class="mt-6 inline-flex h-12 min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#8C8C8C] bg-white px-4 text-base font-semibold text-[#5E5E5E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

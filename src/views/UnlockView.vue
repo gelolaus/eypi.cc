@@ -1,9 +1,9 @@
 <template>
   <section
-    class="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-24"
+    class="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:py-24"
   >
     <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-8 dark:border-slate-600"
+      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 sm:p-8 dark:border-slate-600"
     >
       <PageShell />
 
@@ -30,7 +30,7 @@
           type="password"
           name="password"
           autocomplete="current-password"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+          class="control h-11 font-mono text-base"
           :aria-invalid="Boolean(error)"
           :aria-describedby="error ? 'password-error' : undefined"
         >
@@ -38,13 +38,13 @@
           v-if="error"
           id="password-error"
           role="alert"
-          class="mt-1 text-sm text-red-500"
+          class="mt-2 text-sm text-red-600 dark:text-red-400"
         >
           {{ error }}
         </p>
         <button
           type="submit"
- class="btn-gold mt-6 w-full rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+          class="btn-primary btn-lg mt-6 w-full"
           :disabled="pending"
         >
           Continue

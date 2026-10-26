@@ -1,38 +1,33 @@
 <template>
-  <main class="mx-auto flex w-full max-w-3xl flex-col px-4 py-12 sm:px-6 lg:px-8">
-    <header class="mb-10 border-b border-g-border pb-8">
-      <h1 class="text-page-title">
-        Account
-      </h1>
-    </header>
+  <AppPage
+    title="Account"
+    class="!max-w-3xl"
+  >
+    <div class="flex flex-col gap-6">
+    <AppSection title="Profile">
+      <div class="flex flex-col gap-3">
+        <p class="text-g-text">
+          {{ name }}
+        </p>
+        <p class="text-data break-all text-sm text-g-muted">
+          {{ email }}
+        </p>
+        <p>
+          <span class="inline-flex min-h-6 items-center rounded-full border border-g-border px-2.5 py-0.5 text-xs font-semibold text-g-text">
+            {{ roleLabel }}
+          </span>
+        </p>
+        <p class="text-sm text-g-muted">
+          Signed in with Microsoft (APC)
+        </p>
+      </div>
+    </AppSection>
 
-    <section class="flex flex-col gap-3">
-      <h2 class="text-section-title text-g-text">
-        Profile
-      </h2>
-      <p class="text-g-text">
-        {{ name }}
-      </p>
-      <p class="text-data text-sm text-g-muted">
-        {{ email }}
-      </p>
-      <p>
-        <span class="inline-flex min-h-6 items-center rounded-full border border-g-border px-2.5 py-0.5 text-xs font-semibold text-g-text">
-          {{ roleLabel }}
-        </span>
-      </p>
-      <p class="text-sm text-g-muted">
-        Signed in with Microsoft (APC)
-      </p>
-    </section>
-
-    <section class="mt-12 flex flex-col gap-4">
-      <h2 class="text-section-title text-g-text">
-        Sessions
-      </h2>
+    <AppSection title="Sessions">
+      <div class="flex flex-col gap-4">
       <p
         v-if="loadError"
-        class="text-sm text-red-500"
+        class="text-sm text-red-600 dark:text-red-400"
         role="alert"
       >
         {{ loadError }}
@@ -72,7 +67,7 @@
             Current
           </p>
           <button
-            class="min-h-[44px] self-start rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            class="btn-secondary w-full sm:w-auto"
             type="button"
             @click="revoke(row)"
           >
@@ -82,34 +77,33 @@
       </ul>
       <p
         v-if="actionError"
-        class="text-sm text-red-500"
+        class="text-sm text-red-600 dark:text-red-400"
         role="alert"
       >
         {{ actionError }}
       </p>
       <button
-        class="min-h-[44px] self-start rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+        class="btn-secondary w-full sm:w-auto"
         type="button"
         @click="signOutEverywhere"
       >
         Sign out everywhere
       </button>
-    </section>
+      </div>
+    </AppSection>
 
-    <section class="mt-12 flex flex-col gap-4">
-      <h2 class="text-section-title text-g-text">
-        Export
-      </h2>
+    <AppSection title="Export">
+      <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-3 sm:flex-row">
         <button
-          class="min-h-[44px] rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+          class="btn-secondary w-full sm:w-auto"
           type="button"
           @click="downloadData"
         >
           Download my data (JSON)
         </button>
         <button
-          class="min-h-[44px] rounded-lg border border-g-border px-4 py-2 text-sm font-semibold text-g-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+          class="btn-secondary w-full sm:w-auto"
           type="button"
           @click="downloadLinks"
         >
@@ -118,17 +112,16 @@
       </div>
       <p
         v-if="exportError"
-        class="text-sm text-red-500"
+        class="text-sm text-red-600 dark:text-red-400"
         role="alert"
       >
         {{ exportError }}
       </p>
-    </section>
+      </div>
+    </AppSection>
 
-    <section class="mt-12 flex flex-col gap-4">
-      <h2 class="text-section-title text-g-text">
-        Delete account
-      </h2>
+    <AppSection title="Delete account">
+      <div class="flex flex-col gap-4">
       <p class="text-sm text-g-muted">
         This permanently deletes your links, sessions, and profile.
       </p>
@@ -147,13 +140,16 @@
             id="delete-confirm-email"
             v-model="confirmEmail"
             autocomplete="off"
-            class="min-h-[44px] rounded-lg border border-g-border bg-transparent px-3 py-2 text-sm text-g-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            class="control"
+            :aria-invalid="Boolean(deleteError)"
+            :aria-describedby="deleteError ? 'delete-error' : undefined"
             type="email"
           >
         </div>
         <p
           v-if="deleteError"
-          class="text-sm text-red-500"
+          id="delete-error"
+          class="text-sm text-red-600 dark:text-red-400"
           role="alert"
         >
           {{ deleteError }}
@@ -175,18 +171,22 @@
           </li>
         </ul>
         <button
-          class="min-h-[44px] self-start rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:text-red-400"
+          class="btn-danger w-full sm:w-auto"
           type="submit"
           :disabled="!canDelete"
         >
           Delete account
         </button>
       </form>
-    </section>
-  </main>
+      </div>
+    </AppSection>
+    </div>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
+import AppPage from '@/components/AppPage.vue'
+import AppSection from '@/components/AppSection.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/lib/api'
