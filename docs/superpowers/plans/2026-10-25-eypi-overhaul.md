@@ -531,7 +531,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Remove `xlsx`; add `exceljs` (lazy import) and `papaparse`. Modify `AttendeeSelectionView.vue` (split into step components under `src/components/tix/selection/`), `NewEventView.vue`, `backend/src/routes/events.ts` (5,000-row cap → 422 `too_many_rows`; validate `firstName`).
 
-- [ ] Failing tests: a BOM CSV parses headers; quoted commas and newlines parse; a blank header column keeps later columns aligned; `.XLSX` is accepted; 5,001 rows → 422. Implement → PASS; `npm audit` no longer lists `xlsx`. Commit `fix(tix): replace xlsx and harden CSV and spreadsheet parsing`.
+- [x] Failing tests: a BOM CSV parses headers; quoted commas and newlines parse; a blank header column keeps later columns aligned; `.XLSX` is accepted; 5,001 rows → 422. Implement → PASS; `npm audit` no longer lists `xlsx`. Commit `fix(tix): replace xlsx and harden CSV and spreadsheet parsing`.
 
 ### Task 5.6: Remove Apple Wallet; fix Google Wallet (F-TIX-14, F-TIX-18, F-DEP-2)
 
