@@ -16,74 +16,132 @@ function src(path: string) {
   return readFileSync(new URL(path, import.meta.url), 'utf8')
 }
 
-afterEach(() => {
+const mounted: { unmount: () => void }[] = []
+function track<T extends { unmount: () => void }>(w: T): T {
+  mounted.push(w)
+  return w
+}
+
+afterEach(async () => {
   const toast = useToast()
   while (toast.toasts.value.length > 0) toast.dismiss(toast.toasts.value[0].id)
   const dialog = useDialog()
   if (dialog.current.value) dialog.abort()
+  await nextTick()
+  while (mounted.length) mounted.pop()!.unmount()
   document.body.innerHTML = ''
 })
 
-describe('DialogHost bottom sheet', () => {
+describe('DialogHost on the Dialog primitive', () => {
   async function open(opts: Parameters<ReturnType<typeof useDialog>['confirm']>[0]) {
-    mount(DialogHost, { attachTo: document.body })
+    track(mount(DialogHost, { attachTo: document.body }))
     void useDialog().confirm(opts)
     await nextTick()
     await nextTick()
   }
 
-  it('anchors to the bottom below sm and centers from sm', async () => {
+  it('renders an aria-modal dialog with title and body wired up', async () => {
     await open({ title: 'Delete', body: 'Sure?', confirmLabel: 'Delete', abortLabel: 'Cancel' } as never)
-    const overlay = document.querySelector('[role="presentation"]') as HTMLElement
-    expect(overlay.className).toContain('items-end')
-    expect(overlay.className).toContain('sm:items-center')
     const panel = document.querySelector('[role="dialog"]') as HTMLElement
-    expect(panel.className).toContain('rounded-t-3xl')
-    expect(panel.className).toContain('sm:rounded-3xl')
-    expect(panel.className).toContain('max-h-[90dvh]')
-    expect(panel.className).toContain('overflow-y-auto')
-    expect(panel.className).toContain('pb-[calc(1.25rem+env(safe-area-inset-bottom))]')
-    expect(panel.getAttribute('aria-modal')).toBe('true')
+    expect(panel.getAttribute('data-slot')).toBe('dialog-content')
+    const labelled = document.getElementById(panel.getAttribute('aria-labelledby')!)
+    const described = document.getElementById(panel.getAttribute('aria-describedby')!)
+    expect(labelled?.textContent).toContain('Delete')
+    expect(described?.textContent).toContain('Sure?')
+    expect(document.querySelector('[data-slot="dialog-overlay"]')).toBeTruthy()
   })
 
-  it('stacks the footer reversed on mobile and uses 44px text-base inputs', async () => {
-    await open({ title: 'Delete', body: 'Sure?', confirmLabel: 'Delete', abortLabel: 'Cancel', requireText: 'slug' } as never)
+  it('uses the destructive Button variant for the confirm action', async () => {
+    await open({ title: 'Delete', body: 'Sure?', confirmLabel: 'Delete', abortLabel: 'Cancel' } as never)
     const footer = document.querySelector('[data-dialog-footer]') as HTMLElement
     expect(footer.className).toContain('flex-col-reverse')
-    expect(footer.className).toContain('sm:flex-row')
+    const btns = [...footer.querySelectorAll('button')]
+    expect(btns[btns.length - 1].className).toContain('text-destructive')
+  })
+
+  it('type-to-confirm keeps confirm disabled until the text matches', async () => {
+    await open({ title: 'Delete', body: 'Sure?', confirmLabel: 'Delete', abortLabel: 'Cancel', requireText: 'slug' } as never)
     const input = document.querySelector('input') as HTMLInputElement
     expect(input.className).toContain('h-11')
-    expect(input.className).toContain('text-base')
+    const confirm = [...document.querySelectorAll('[data-dialog-footer] button')].pop() as HTMLButtonElement
+    expect(confirm.disabled).toBe(true)
+    input.value = 'slug'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    expect(confirm.disabled).toBe(false)
   })
 })
 
-describe('ToastContainer placement', () => {
-  it('clears the tab bar on mobile and sits bottom-right from lg', () => {
-    const wrapper = mount(ToastContainer, { attachTo: document.body })
-    const cls = wrapper.get('[aria-relevant]').classes().join(' ')
-    expect(cls).toContain('inset-x-4')
-    expect(cls).toContain('bottom-[calc(8.75rem+env(safe-area-inset-bottom))]')
-    expect(cls).toContain('lg:inset-x-auto')
-    expect(cls).toContain('lg:right-6')
-    expect(cls).toContain('lg:bottom-[5.25rem]')
-    expect(cls).not.toContain('bottom-24')
+describe('DialogHost queue focus', () => {
+  it('focuses the type-to-confirm input of a queued second dialog', async () => {
+    track(mount(DialogHost, { attachTo: document.body }))
+    const d = useDialog()
+    void d.confirm({ title: 'One', body: 'a', confirmLabel: 'Go', abortLabel: 'No' } as never)
+    void d.confirm({ title: 'Two', body: 'b', confirmLabel: 'Go', abortLabel: 'No', requireText: 'slug' } as never)
+    await nextTick()
+    await nextTick()
+    d.abort()
+    await nextTick()
+    await nextTick()
+    await nextTick()
+    expect(document.activeElement).toBe(document.querySelector('input'))
+    expect(document.querySelector('[role="dialog"]')!.textContent).toContain('Two')
+  })
+})
+
+describe('ToastContainer on vue-sonner', () => {
+  it('mirrors a store toast into the sonner Toaster', async () => {
+    const wrapper = track(mount(ToastContainer, { attachTo: document.body }))
+    useToast().success('Saved', { detail: 'All good' })
+    await nextTick()
+    await nextTick()
+    expect(document.body.textContent).toContain('Saved')
+    expect(document.body.textContent).toContain('All good')
+    wrapper.unmount()
   })
 
-  it('has a 44px dismiss target and pauses on touch', async () => {
+  it('dismisses the newest toast on Escape when no dialog is open', async () => {
+    const wrapper = mount(ToastContainer, { attachTo: document.body })
+    const toast = useToast()
+    toast.info('Saved')
+    await nextTick()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(toast.toasts.value).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('renders the Toaster rich-colors at top-center', async () => {
+    track(mount(ToastContainer, { attachTo: document.body }))
+    await nextTick()
+    const list = document.querySelector('[data-sonner-toaster]') as HTMLElement
+    expect(list.getAttribute('data-y-position')).toBe('top')
+    expect(list.getAttribute('data-x-position')).toBe('center')
+    useToast().error('Bad')
+    await nextTick()
+    await nextTick()
+    expect(document.querySelector('[data-sonner-toast]')!.getAttribute('data-rich-colors')).toBe('true')
+  })
+
+  it('pauses and resumes the store timer on hover, focus and touch', async () => {
     vi.useFakeTimers()
     try {
-      const wrapper = mount(ToastContainer, { attachTo: document.body })
+      track(mount(ToastContainer, { attachTo: document.body }))
       const toast = useToast()
       toast.info('Saved')
       await nextTick()
-      expect(wrapper.get('button[aria-label="Dismiss"]').classes()).toContain('size-11')
-      const item = wrapper.get('[role="status"]')
-      await item.trigger('touchstart')
-      vi.advanceTimersByTime(10000)
-      expect(toast.toasts.value).toHaveLength(1)
-      await item.trigger('touchend')
-      vi.advanceTimersByTime(10000)
-      expect(toast.toasts.value).toHaveLength(0)
+      await nextTick()
+      for (const [on, off] of [['mouseover', 'mouseout'], ['focusin', 'focusout'], ['touchstart', 'touchend']]) {
+        const el = document.querySelector('[data-sonner-toast]') as HTMLElement
+        el.dispatchEvent(new Event(on, { bubbles: true }))
+        vi.advanceTimersByTime(10000)
+        expect(toast.toasts.value, on).toHaveLength(1)
+        el.dispatchEvent(new Event(off, { bubbles: true }))
+        vi.advanceTimersByTime(10000)
+        expect(toast.toasts.value, off).toHaveLength(0)
+        toast.info('Saved')
+        await nextTick()
+        await nextTick()
+      }
     } finally {
       vi.useRealTimers()
     }
@@ -109,21 +167,5 @@ describe('slide panels are bottom sheets on mobile', () => {
     const s = src('./links/LinkEditorPanel.vue')
     expect(s).toContain('sticky bottom-0')
     expect(s).toContain('env(safe-area-inset-bottom)')
-  })
-})
-
-describe('toast clears the scroll-top button', () => {
-  const read = (f: string) => src(f)
-
-  it('sits at least 44px plus a gap above scroll-top at both breakpoints', () => {
-    const css = read('./ScrollTop.vue')
-    const toastSrc = read('./ToastContainer.vue')
-    const scrollMobile = /\.scroll-top-btn--tabbar \{\s*bottom: calc\(4\.5rem \+ 1rem/.test(css)
-    expect(scrollMobile).toBe(true)
-    // scroll-top top edge: 5.5rem + 2.75rem = 8.25rem (mobile); 2rem + 2.75rem = 4.75rem (lg)
-    const mobile = Number(/bottom-\[calc\(([\d.]+)rem\+env/.exec(toastSrc)![1])
-    const lg = Number(/lg:bottom-\[([\d.]+)rem\]/.exec(toastSrc)![1])
-    expect(mobile).toBeGreaterThanOrEqual(5.5 + 2.75 + 0.5)
-    expect(lg).toBeGreaterThanOrEqual(2 + 2.75 + 0.5)
   })
 })

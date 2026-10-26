@@ -189,9 +189,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `src/components/ToastContainer.vue`, `src/components/DialogHost.vue`, `src/App.vue` (or the root), their stores' tests untouched; create `src/components/ui/sonner/Toaster.vue`.
 
-- [ ] **Step 1:** Add a test: after the existing toast store pushes a success toast, the `Toaster` text appears; `richColors` and `position="top-center"` props are set. Keep `dialogEsc.test.ts` unchanged and green.
-- [ ] **Step 2:** Back the toast store with `vue-sonner` (the store API is unchanged; the container renders `<Toaster rich-colors position="top-center" />` styled per wantap `ui/sonner.tsx`). Re-skin `DialogHost` onto the Dialog primitive, keeping its store-driven API and Esc behaviour.
-- [ ] **Step 3:** Run `npm test` and `npm run build`; PASS. Commit `feat(ui): move toasts and dialogs onto the wantap primitives`.
+- [x] **Step 1:** Add a test: after the existing toast store pushes a success toast, the `Toaster` text appears; `richColors` and `position="top-center"` props are set. Keep `dialogEsc.test.ts` unchanged and green.
+- [x] **Step 2:** Back the toast store with `vue-sonner` (the store API is unchanged; the container renders `<Toaster rich-colors position="top-center" />` styled per wantap `ui/sonner.tsx`). Re-skin `DialogHost` onto the Dialog primitive, keeping its store-driven API and Esc behaviour.
+- [x] **Step 3:** Run `npm test` and `npm run build`; PASS. Commit `feat(ui): move toasts and dialogs onto the wantap primitives`.
 
 ### Task 6: Brand and theme removal
 
