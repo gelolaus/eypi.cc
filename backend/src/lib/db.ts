@@ -61,6 +61,8 @@ export type Bindings = {
   LINKS_KV: KVNamespace
   /** HMAC key for IP hashing. Reports store the hash, never the raw IP. */
   IP_HASH_SECRET?: string
+  /** Optional Google Safe Browsing v4 key. Unset skips the lookup and does not fail health. */
+  SAFE_BROWSING_API_KEY?: string
   /** `production` drops localhost from the CORS and CSRF allowlists. */
   ENVIRONMENT?: string
   MS_CLIENT_ID?: string

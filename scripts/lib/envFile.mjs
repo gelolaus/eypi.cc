@@ -11,6 +11,7 @@ export const OPTIONAL_KEYS = [
   { key: 'MS_CLIENT_SECRET', feature: 'Microsoft sign-in' },
   { key: 'MS_ALLOWED_TENANT_IDS', feature: 'Microsoft sign-in' },
   { key: 'RESEND_API_KEY', feature: 'invite emails' },
+  { key: 'SAFE_BROWSING_API_KEY', feature: 'Safe Browsing' },
   { key: 'APPLE_PASS_TYPE_ID', feature: 'Apple Wallet' },
   { key: 'APPLE_TEAM_ID', feature: 'Apple Wallet' },
   { key: 'APPLE_PASS_CERT_PEM', feature: 'Apple Wallet' },

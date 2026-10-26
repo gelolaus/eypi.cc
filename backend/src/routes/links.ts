@@ -8,6 +8,8 @@ import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
 import { toCsv } from '../lib/links/csv'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
+import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
+import { reportError } from '../lib/reportError'
 import { manilaDaySpan, manilaSql, manilaTimestamp, manilaWindow } from '../lib/manilaTime'
 import { getOS, logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
@@ -203,6 +205,21 @@ function destinationMessage(code: DestinationCode): string {
   if (code === 'shortener') return 'Use the full destination instead of another shortener.'
   if (code === 'private_address' || code === 'blocked_host') return 'That destination is not allowed.'
   return 'Enter a valid http or https URL.'
+}
+
+async function rejectUnsafeDestination(c: AppContext, url: string): Promise<Response | null> {
+  const decision = await checkSafeBrowsing(url, c.env.SAFE_BROWSING_API_KEY)
+  if (decision.outcome === 'unsafe') {
+    const message = 'That destination is unsafe.'
+    return fail(c, 422, 'unsafe_destination', message, { url: message })
+  }
+  if (decision.outcome === 'fail_open') {
+    reportError(c, decision.error, {
+      code: 'safe_browsing_unavailable',
+      message: 'Safe Browsing lookup failed.',
+    })
+  }
+  return null
 }
 
 async function readBody(c: Context): Promise<Record<string, unknown> | Response> {
@@ -571,6 +588,8 @@ app.post('/api/links', requireAuth, async (c) => {
       url: destinationMessage(destination.code),
     })
   }
+  const blocked = await rejectUnsafeDestination(c, destination.url)
+  if (blocked) return blocked
 
   let customSlug: string | null = null
   if (body.slug != null && body.slug !== '') {
@@ -769,6 +788,8 @@ app.patch('/api/links/:id', requireAuth, async (c) => {
       })
     }
     url = destination.url
+    const blocked = await rejectUnsafeDestination(c, url)
+    if (blocked) return blocked
   }
 
   let slug = current.slug

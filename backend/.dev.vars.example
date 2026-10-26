@@ -36,6 +36,10 @@ ENVIRONMENT=development
 
 RESEND_API_KEY=your-resend-api-key
 
+# Optional. When set, link create and edit check Google Safe Browsing v4.
+# An empty value skips the lookup. It does not make /api/health return 503.
+SAFE_BROWSING_API_KEY=
+
 # Apple Wallet — Pass Type ID certificate + WWDR intermediate (PEM, single line or multiline)
 APPLE_PASS_TYPE_ID=pass.cc.eypi.event
 APPLE_TEAM_ID=XXXXXXXXXX
