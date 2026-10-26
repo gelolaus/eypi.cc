@@ -201,6 +201,17 @@ const BALLS = new Set<LinkQrEyeBallType>(['square', 'dot'])
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 
 let generation = 0
+let logoRequests = 0
+
+function beginLogoRequest() {
+  logoRequests += 1
+  if (logoRequests === 1) emit('uploading', true)
+}
+
+function endLogoRequest() {
+  logoRequests = Math.max(0, logoRequests - 1)
+  if (logoRequests === 0) emit('uploading', false)
+}
 
 async function paint() {
   await nextTick()
@@ -251,7 +262,7 @@ function onColor(event: Event) {
 
 async function removeLogo() {
   logoError.value = ''
-  emit('uploading', true)
+  beginLogoRequest()
   try {
     if (props.linkId) {
       await api.put(`/api/links/${props.linkId}/qr-logo`, { imageData: null })
@@ -260,7 +271,7 @@ async function removeLogo() {
   } catch (err) {
     logoError.value = err instanceof ApiError ? err.message : 'Could not remove that logo.'
   } finally {
-    emit('uploading', false)
+    endLogoRequest()
   }
 }
 
@@ -298,7 +309,7 @@ async function onLogo(event: Event) {
     input.value = ''
     return
   }
-  emit('uploading', true)
+  beginLogoRequest()
   try {
     const raw = await readFile(file)
     const normalized = await normalizeQrLogoDataUrl(raw)
@@ -313,7 +324,7 @@ async function onLogo(event: Event) {
   } catch (err) {
     logoError.value = err instanceof ApiError ? err.message : 'Could not read that image.'
   } finally {
-    emit('uploading', false)
+    endLogoRequest()
     input.value = ''
   }
 }
