@@ -1,10 +1,20 @@
 <template>
+  <Teleport to="body">
   <Transition name="panel">
-    <div v-if="open" class="fixed inset-0 z-50 flex items-end justify-center sm:items-stretch sm:justify-end">
+    <div v-if="open" class="fixed inset-0 flex items-end justify-center sm:items-stretch sm:justify-end" style="z-index: 99990">
       <button type="button" class="absolute inset-0 cursor-default border-0 bg-black/30 p-0 backdrop-blur-sm" aria-label="Close add guest" @click="emit('close')" />
-      <div class="relative z-10 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none dark:bg-slate-900">
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
+      <div
+        ref="panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-guest-title"
+        tabindex="-1"
+        class="relative z-10 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none dark:bg-slate-900"
+        @keydown.esc.stop="emit('close')"
+      >
         <div class="flex items-center justify-between border-b border-gray-100 px-5 py-2 sm:px-8 dark:border-slate-700">
-          <h2 class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add guest</h2>
+          <h2 id="add-guest-title" class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add guest</h2>
           <button type="button" class="flex size-11 items-center justify-center font-mono text-lg text-gray-400 transition-colors hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="Close" @click="emit('close')">×</button>
         </div>
 
@@ -111,10 +121,12 @@
       </div>
     </div>
   </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, onScopeDispose, ref, watch } from 'vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import { api } from '@/lib/api'
 import { useToast } from '@/composables/useToast'
 import { downloadAttendeeQr } from '@/lib/tix/qrFiles'
@@ -138,6 +150,14 @@ const props = defineProps<{
 const emit = defineEmits<{ close: []; added: [] }>()
 
 const toast = useToast()
+const panel = ref<HTMLElement | null>(null)
+const trap = useFocusTrap(panel)
+
+watch(() => props.open, (open) => {
+  if (open) void nextTick(() => trap.activate())
+  else trap.release()
+}, { immediate: true })
+onScopeDispose(() => trap.release())
 const guestMode = ref<'search' | 'freeform'>(props.hasCsvRows ? 'search' : 'freeform')
 const guestSearch = ref('')
 const addingGuest = ref(false)
