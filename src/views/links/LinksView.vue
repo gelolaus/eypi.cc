@@ -44,10 +44,25 @@
         @update:sort="onSort"
         @update:status="onStatus"
       />
+      <LinkList
+        :filtered="filtered"
+        :has-more="Boolean(nextCursor)"
+        :items="items"
+        :loading="loading"
+        :selected-ids="selectedIds"
+        @analytics="openAnalytics"
+        @copy="copyLink"
+        @delete="confirmDelete"
+        @disable="setDisabled($event, true)"
+        @edit="openEdit"
+        @enable="setDisabled($event, false)"
+        @load-more="loadMore"
+        @toggle="toggleSelected"
+      />
       <div
         v-if="selectedIds.length"
         data-bulk-bar
-        class="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-g-border bg-g-surface p-3 shadow-lg lg:bottom-0"
+        class="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-g-border bg-g-surface py-3 pl-3 pr-20 shadow-lg lg:bottom-0"
       >
         <p class="text-sm text-g-muted">
           {{ selectedIds.length }} selected
@@ -69,21 +84,6 @@
           Delete selected
         </button>
       </div>
-      <LinkList
-        :filtered="filtered"
-        :has-more="Boolean(nextCursor)"
-        :items="items"
-        :loading="loading"
-        :selected-ids="selectedIds"
-        @analytics="openAnalytics"
-        @copy="copyLink"
-        @delete="confirmDelete"
-        @disable="setDisabled($event, true)"
-        @edit="openEdit"
-        @enable="setDisabled($event, false)"
-        @load-more="loadMore"
-        @toggle="toggleSelected"
-      />
     </AppPage>
     <Teleport to="body">
       <LinkEditorPanel

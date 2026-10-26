@@ -203,6 +203,11 @@ describe('LinksView mobile layout', () => {
     expect(bar.classes()).toContain('sticky')
     expect(bar.classes()).toContain('bottom-[calc(4.5rem+env(safe-area-inset-bottom))]')
     expect(bar.classes()).toContain('lg:bottom-0')
+    // sticky only pins within its parent, so it must follow the list it overlays
+    const list = wrapper.get('[aria-label="Select alpha"]').element
+    expect(list.compareDocumentPosition(bar.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // keep the actions clear of the floating back-to-top button
+    expect(bar.classes()).toContain('pr-20')
     wrapper.unmount()
   })
 })
