@@ -356,9 +356,9 @@ feat(db): add versioned migrations with a ledger and baseline
   - `POST /api/orgs/:id/members` → 201 `{ emailSent: boolean }` | 409 `already_member` | 409 `already_invited` | 429 `recently_declined`
   - `POST /api/orgs/:id/members/:email/resend` (1 per 24h)
   - `renderOrgInviteEmail({ orgName, inviterName, inviteUrl }) → { subject, html, text }` (subject `You're invited to join ${orgName} on eypi.cc`)
-- [ ] **Step 1: Failing tests:** accept sets `activated_at` for the session email (case-insensitive); decline keeps the row with `declined_at`; re-invite within 7 days of decline → 429; duplicate pending → 409 `already_invited`; email HTML escapes `<script>` in org name; Resend failure still returns 201 `{emailSent:false}`; declined invites don't appear in the list.
-- [ ] **Step 2–4:** Run (FAIL) → implement → run (PASS).
-- [ ] **Step 5: Commit** `feat(orgs): complete invite API with decline state and invite emails`.
+- [x] **Step 1: Failing tests:** accept sets `activated_at` for the session email (case-insensitive); decline keeps the row with `declined_at`; re-invite within 7 days of decline → 429; duplicate pending → 409 `already_invited`; email HTML escapes `<script>` in org name; Resend failure still returns 201 `{emailSent:false}`; declined invites don't appear in the list.
+- [x] **Step 2–4:** Run (FAIL) → implement → run (PASS).
+- [x] **Step 5: Commit** `feat(orgs): complete invite API with decline state and invite emails`.
 
 ### Task 3.2: Invite inbox UI and lockout fix (F-ORG-1, F-ORG-2)
 
@@ -452,9 +452,9 @@ feat(db): add versioned migrations with a ledger and baseline
   - `GET /api/links/export.csv`
   - `GET /api/links/:id/analytics.csv`
   - `toCsv(rows: string[][]) → string` (RFC 4180; prefix `'` to cells starting with `=`, `+`, `-`, `@`)
-- [ ] **Step 1: Failing tests:** top lists ordered by count; timeline buckets by Manila day (a click at 2026-10-25T17:00Z lands on 2026-10-26); `toCsv([['=1+1','a,b','he said "hi"']])` → `'\'=1+1,"a,b","he said ""hi"""\r\n'`; export headers `slug,short_url,destination,clicks,created_at,expires_at,status`.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(links): add unique visitors, QR source, ranked analytics, and CSV export`.
+- [x] **Step 1: Failing tests:** top lists ordered by count; timeline buckets by Manila day (a click at 2026-10-25T17:00Z lands on 2026-10-26); `toCsv([['=1+1','a,b','he said "hi"']])` → `'\'=1+1,"a,b","he said ""hi"""\r\n'`; export headers `slug,short_url,destination,clicks,created_at,expires_at,status`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(links): add unique visitors, QR source, ranked analytics, and CSV export`.
 
 ### Task 4.5: Links UI rebuild (§6.4, §6.5, F-LINK-12, 13, 17, 18)
 
@@ -525,7 +525,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `backend/src/routes/events.ts` (guarded insert; `ORDER BY actioned_at DESC, rowid DESC`; checkout only from `checked_in`; restore action; add-guest uses `requireEventLead`), `src/views/tix/EventDetailView.vue` → split into `src/components/tix/{ScannerPanel,AttendeeTable,ClusterBars,AddGuestPanel}.vue` + `src/composables/{useEventAttendees,useQrScanner}.ts`; per-attendee "Download QR"; "Download all (ZIP)" any time with names `{last}_{first}_{id8}.png`; UTC parsing fix; scanner 5s same-token memory and result-specific feedback.
 
-- [ ] Failing tests: two parallel check-ins → one 200, one 409 `already_checked_in`; checkout of a removed attendee → 409; restore returns to `not_checked_in`; ZIP names unique for same-name attendees; `useQrScanner` ignores the same token within 5 s. Implement → PASS. Commit `fix(tix): harden check-in and add per-attendee QR downloads`.
+- [x] Failing tests: two parallel check-ins → one 200, one 409 `already_checked_in`; checkout of a removed attendee → 409; restore returns to `not_checked_in`; ZIP names unique for same-name attendees; `useQrScanner` ignores the same token within 5 s. Implement → PASS. Commit `fix(tix): harden check-in and add per-attendee QR downloads`.
 
 ### Task 5.5: Safe CSV and XLSX parsing (F-TIX-11, 12, 13)
 
@@ -557,7 +557,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `backend/src/routes/dp.ts` (store keys; atomic create; conditional add under 10; slug history; download rate limit 1/day/IP/campaign; `Cache-Control: public, max-age=60` on public JSON), `src/views/dp/DpPublicView.vue` (frame-sized canvas; `createImageBitmap` downscale ≤ 2160 px; error toast "We couldn't read that photo. Try a JPG or PNG."; input reset; `navigator.share({files})` with fallback), `src/components/dp/DpFrameUploader.vue` (serial adds; up/down reorder buttons), `src/views/dp/DpEditCampaignView.vue` (`router.replace` on slug change).
 
-- [ ] Failing tests: concurrent adds never exceed 10; create failure leaves no campaign; old slug resolves via history; download counter increments once per IP per day. Implement → PASS. Commit `feat(dp): serve frames from R2 and fix mobile photo handling`.
+- [x] Failing tests: concurrent adds never exceed 10; create failure leaves no campaign; old slug resolves via history; download counter increments once per IP per day. Implement → PASS. Commit `feat(dp): serve frames from R2 and fix mobile photo handling`.
 
 ### Task 6.3: Org images and QR logos on R2
 
