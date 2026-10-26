@@ -117,9 +117,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** none changed.
 
-- [ ] **Step 1:** Create branch `feat/wantap-design-port` from `main`. Run `Test-Path C:\Users\gelo\Documents\GitHub\wantap.cc\src\app\globals.css`; if false, stop and ask the owner.
-- [ ] **Step 2:** Run `npm run typecheck`, `npm test`, `npm run build` on the untouched branch. Record pass/fail counts in `.superpowers/sdd/2026-10-27-wantap-design-port/progress.md` (gitignored). Note the flaky `src/lib/tix/spreadsheet.test.ts` if it fails once.
-- [ ] **Step 3:** Inventory `src/**/*.vue` for the legacy class families `mica`, `pill-nav`, `g-bg`, `g-surface`, `g-border`, `g-text`, `g-muted`, `g-accent`, `g-primary`, `eypi-gold`, `apc-`, `bg-dot-grid`, `tap-scale`, `data-cursor`, `dark:` slate/gold literals (`grep -rln`), and write the per-file list into the ledger. This list drives Tasks 7-14.
+- [x] **Step 1:** Create branch `feat/wantap-design-port` from `main`. Run `Test-Path C:\Users\gelo\Documents\GitHub\wantap.cc\src\app\globals.css`; if false, stop and ask the owner.
+- [x] **Step 2:** Run `npm run typecheck`, `npm test`, `npm run build` on the untouched branch. Record pass/fail counts in `.superpowers/sdd/2026-10-27-wantap-design-port/progress.md` (gitignored). Note the flaky `src/lib/tix/spreadsheet.test.ts` if it fails once.
+- [x] **Step 3:** Inventory `src/**/*.vue` for the legacy class families `mica`, `pill-nav`, `g-bg`, `g-surface`, `g-border`, `g-text`, `g-muted`, `g-accent`, `g-primary`, `eypi-gold`, `apc-`, `bg-dot-grid`, `tap-scale`, `data-cursor`, `dark:` slate/gold literals (`grep -rln`), and write the per-file list into the ledger. This list drives Tasks 7-14.
 
 ### Task 1: Tailwind v4, tokens, fonts, base layer
 
