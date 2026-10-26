@@ -101,4 +101,47 @@ describe('event spreadsheet upload', () => {
     })
     expect(events.rows).toHaveLength(0)
   })
+
+  it('does not append csv rows after the event is finalized', async () => {
+    const { client, request } = await createTestApp({
+      user: lead,
+      seed: async (db) => {
+        await seedLead(db)
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, org_id, selection_locked)
+                VALUES ('event-1', 'sheet-night', ?, 'Sheet Night', '2026-11-01', '09:00', 'Hall', 'org-1', 1)`,
+          args: [lead.id],
+        })
+        await db.execute({
+          sql: `INSERT INTO event_csv_rows (id, event_id, row_index, raw_data, is_selected)
+                VALUES ('row-kept', 'event-1', 0, ?, 1)`,
+          args: [JSON.stringify({ email: 'kept@x.com' })],
+        })
+      },
+    })
+
+    const res = await request('/api/events/sheet-night/upload-csv', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        rows: [{ email: 'new@x.com' }],
+        columnMapping: {
+          emailCol: 'email',
+          firstNameCol: null,
+          lastNameCol: null,
+          fullNameCol: null,
+          clusterCol: null,
+          criteriaColumns: [],
+        },
+      }),
+    })
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toMatchObject({ error: { code: 'already_finalized' } })
+    const kept = await client.execute({
+      sql: 'SELECT id FROM event_csv_rows WHERE event_id = ? ORDER BY row_index',
+      args: ['event-1'],
+    })
+    expect(kept.rows.map((row) => row.id)).toEqual(['row-kept'])
+  })
 })

@@ -40,13 +40,6 @@ RESEND_API_KEY=your-resend-api-key
 # An empty value skips the lookup. It does not make /api/health return 503.
 SAFE_BROWSING_API_KEY=
 
-# Apple Wallet — Pass Type ID certificate + WWDR intermediate (PEM, single line or multiline)
-APPLE_PASS_TYPE_ID=pass.cc.eypi.event
-APPLE_TEAM_ID=XXXXXXXXXX
-APPLE_PASS_CERT_PEM=
-APPLE_PASS_KEY_PEM=
-APPLE_WWDR_CERT_PEM=
-
 # Google Wallet — service account with Wallet Object Issuer role
 GOOGLE_WALLET_ISSUER_ID=1234567890123456789
 GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL=wallet@your-project.iam.gserviceaccount.com

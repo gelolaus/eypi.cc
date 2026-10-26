@@ -125,7 +125,7 @@ describe('ticket lookup rate limits', () => {
         expect(res.status).not.toBe(429)
       }
 
-      const blocked = await passDownload(request, 'passes', 'apple', tokenA)
+      const blocked = await passDownload(request, 'passes', 'google', tokenA)
       expect(blocked.status).toBe(429)
       expect(await blocked.json()).toMatchObject({ status: 'error', message: TOO_MANY })
 
@@ -223,7 +223,7 @@ function lookup(
 function passDownload(
   request: (path: string, init?: RequestInit) => Promise<Response>,
   slug: string,
-  kind: 'apple' | 'google',
+  kind: 'google',
   token: string,
 ) {
   return request(`/api/events/${slug}/passes/${kind}?token=${encodeURIComponent(token)}`, {

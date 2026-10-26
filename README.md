@@ -25,7 +25,6 @@ Copy real values from `backend/.dev.vars.example` (comments there say where each
 | `TURSO_AUTH_TOKEN` | yes | Production Turso database token |
 | `JWT_SECRET` | yes | Auth tokens (`setup` generates one if the file is created) |
 | `RESEND_API_KEY` | no | Verification emails |
-| `APPLE_PASS_TYPE_ID`, `APPLE_TEAM_ID`, `APPLE_PASS_CERT_PEM`, `APPLE_PASS_KEY_PEM`, `APPLE_WWDR_CERT_PEM` | no | Apple Wallet |
 | `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY` | no | Google Wallet |
 
 Then check the file:

@@ -9,7 +9,7 @@ const example = {
   IP_HASH_SECRET: 'your-local-only-ip-hash-secret-min-32-chars',
   RESEND_API_KEY: 'your-resend-api-key',
   MS_CLIENT_ID: '',
-  APPLE_TEAM_ID: 'XXXXXXXXXX',
+  GOOGLE_WALLET_ISSUER_ID: '1234567890123456789',
 }
 
 const setRequired = {
@@ -50,9 +50,9 @@ describe('checkDevVars', () => {
     expect(r.optionalUnset).toContainEqual({ key: 'RESEND_API_KEY', feature: 'invite emails' })
     expect(r.optionalUnset).toContainEqual({ key: 'MS_CLIENT_ID', feature: 'Microsoft sign-in' })
   })
-  it('treats a copied XXXXXXXXXX placeholder as unset', () => {
-    const r = checkDevVars({ ...setRequired, APPLE_TEAM_ID: 'XXXXXXXXXX' }, example)
-    expect(r.optionalUnset.map((o) => o.key)).toContain('APPLE_TEAM_ID')
+  it('treats a copied example placeholder as unset', () => {
+    const r = checkDevVars({ ...setRequired, GOOGLE_WALLET_ISSUER_ID: '1234567890123456789' }, example)
+    expect(r.optionalUnset.map((o) => o.key)).toContain('GOOGLE_WALLET_ISSUER_ID')
   })
 })
 

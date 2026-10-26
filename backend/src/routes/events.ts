@@ -4,7 +4,6 @@ import { noOrgBody, orgContext } from '../middleware/orgContext'
 import { attachSession } from '../middleware/requireAuth'
 import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
-import { buildApplePass } from '../lib/passes/applePass'
 import { loadPassContext, parsePassFields, signPassToken, verifyPassToken } from '../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
 import { selectAttendees } from '../../../src/lib/tix/selection'
@@ -165,7 +164,7 @@ async function performCheckIn(
 function eventRouteUsesOrg(path: string): boolean {
   if (path === '/api/events') return true
   if (!path.startsWith('/api/events/')) return false
-  if (path.endsWith('/lookup') || path.endsWith('/passes/apple') || path.endsWith('/passes/google')) return false
+  if (path.endsWith('/lookup') || path.endsWith('/passes/google')) return false
   return true
 }
 
@@ -399,8 +398,7 @@ app.get('/api/events/:slug/attendees', async (c) => {
 })
 
 // ── POST /api/events/:slug/upload-csv ─────────────────────────────────────────
-// Store parsed CSV rows. Pre-finalization: replaces all unselected rows.
-// Post-finalization: appends (only deletes unselected rows, keeps selected).
+// Replace unselected rows before finalization. A locked event does not append.
 app.post('/api/events/:slug/upload-csv', async (c) => {
   const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
@@ -411,6 +409,7 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {
     rows: Record<string, string>[]
@@ -1168,52 +1167,6 @@ app.post('/api/events/:slug/lookup', async (c) => {
       event: { slug, name: event.name, eventDate: event.event_date, eventTime: event.event_time, location: event.location },
     },
   })
-})
-
-// ── GET /api/events/:slug/passes/apple ─────────────────────────────────────────
-app.get('/api/events/:slug/passes/apple', async (c) => {
-  const slug = c.req.param('slug')
-  const token = (c.req.query('token') ?? '').trim()
-  if (!token) {
-    return c.json({ status: 'error', message: 'Pass token is required.' }, 400)
-  }
-
-  try {
-    const claims = await verifyPassToken(c.env, token, slug)
-    if (!claims) {
-      return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
-    }
-
-    const client = db(c)
-    const ctx = await loadPassContext(client, slug, claims.sub)
-    if (!ctx || ctx.event.id !== claims.eventId) {
-      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-    }
-
-    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-      bucket: 'pass',
-      subject: claims.sub,
-      limit: PASS_LIMIT,
-      windowSec: PASS_WINDOW,
-    })
-    if (!allowed.ok) {
-      return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
-    }
-
-    const pkpass = await buildApplePass(ctx, c.env)
-    return new Response(pkpass, {
-      headers: {
-        'Content-Type': 'application/vnd.apple.pkpass',
-        'Content-Disposition': 'attachment; filename="ticket.pkpass"',
-      },
-    })
-  } catch (err) {
-    console.error('GET /passes/apple error:', err instanceof Error ? err.message : err)
-    const message = err instanceof Error && err.message.includes('not configured')
-      ? 'Wallet passes are not available right now.'
-      : LOOKUP_FAIL_MSG
-    return c.json({ status: 'error', message }, 503)
-  }
 })
 
 // ── GET /api/events/:slug/passes/google ────────────────────────────────────────

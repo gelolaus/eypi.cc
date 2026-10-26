@@ -27,11 +27,6 @@ function qrIdentity(attendee: AttendeeRow) {
   }
 }
 
-function isApcAttendee(attendee: AttendeeRow): boolean {
-  const cluster = (attendee.cluster_value ?? '').toLowerCase()
-  return cluster.includes('asia pacific college') || cluster.includes('jpcs')
-}
-
 async function downloadAttendeeWorkbook(
   filename: string,
   sheetName: string,
@@ -149,12 +144,8 @@ export function useEventAttendees(slug: string) {
         cluster: (attendee.cluster_value ?? '').trim(),
         qr: attendeeQrFileName(qrIdentity(attendee)),
       })
-      const active = attendees.value.filter((attendee) => attendee.status !== 'removed')
-      const apc = active.filter((attendee) => isApcAttendee(attendee)).map(toRow)
-      const nonApc = active.filter((attendee) => !isApcAttendee(attendee)).map(toRow)
-
-      await downloadAttendeeWorkbook(`${slug}-attendees-apc.xlsx`, 'APC Attendees', apc)
-      await downloadAttendeeWorkbook(`${slug}-attendees-non-apc.xlsx`, 'Other Attendees', nonApc)
+      const rows = attendees.value.filter((attendee) => attendee.status !== 'removed').map(toRow)
+      await downloadAttendeeWorkbook(`${slug}-attendees.xlsx`, 'Attendees', rows)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Export failed.')
     } finally {

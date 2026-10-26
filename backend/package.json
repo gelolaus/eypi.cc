@@ -14,12 +14,10 @@
     "fflate": "^0.8.3",
     "hono": "^4.13.14",
     "jose": "^6.2.13",
-    "node-forge": "^1.4.0",
     "resend": "^6.9.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node-forge": "^1.3.14",
     "wrangler": "^4.152.0"
   },
   "allowScripts": {
