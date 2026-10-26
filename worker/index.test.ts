@@ -4,7 +4,10 @@ import { encodeLinkKvEntry } from '../shared/linksKv'
 import worker, { type Env } from './index'
 
 const logLinkClick = vi.hoisted(() => vi.fn(async () => {}))
-const execute = vi.hoisted(() => vi.fn(async () => ({ rows: [] as Array<Record<string, unknown>> })))
+const execute = vi.hoisted(() => vi.fn(async (query?: { sql?: string; args?: unknown[] }) => {
+  void query
+  return { rows: [] as Array<Record<string, unknown>> }
+}))
 const createClient = vi.hoisted(() => vi.fn(() => ({
   execute,
   close() {},
@@ -564,5 +567,218 @@ describe('frame campaign share preview', () => {
     expect(failed.headers.get('Cache-Control')).toBe('no-cache')
     expect(await failed.text()).toBe(FRAME_SHELL)
     expect(failedAsset).toHaveBeenCalledOnce()
+  })
+})
+
+const SITE_TITLE = 'eypi.cc · Links and org tools for APC'
+const SITE_DESCRIPTION = 'Short links, official paperwork, event tickets, and org pages. One APC login, zero ads.'
+
+class SitemapMemoryCache {
+  private stored: Response | null = null
+
+  async match(): Promise<Response | undefined> {
+    return this.stored ? this.stored.clone() : undefined
+  }
+
+  async put(_request: Request, response: Response): Promise<void> {
+    this.stored = response.clone()
+  }
+}
+
+async function catalogQuery(query?: { sql?: string; args?: unknown[] }): Promise<{ rows: Array<Record<string, unknown>> }> {
+  const sql = String(query?.sql ?? '')
+  const filtered = /is_public_catalog\s*=\s*1/i.test(sql)
+  const publicOrg = {
+    id: 'foo',
+    name: 'Foo Org',
+    tagline: 'Build week projects',
+    logo_url: 'orgs/foo/logo.png',
+    social_links: '{"website":"https://jpcs.apc.edu.ph"}',
+  }
+  const privateOrg = {
+    id: 'secret-org',
+    name: 'Secret Org',
+    tagline: 'Hidden',
+    logo_url: null,
+    social_links: null,
+  }
+  if (/from organizations/i.test(sql)) {
+    const rows = filtered ? [publicOrg] : [publicOrg, privateOrg]
+    if (query?.args && query.args.length > 0) {
+      const id = String(query.args[0])
+      return { rows: rows.filter((row) => row.id === id) }
+    }
+    return { rows: rows.map((row) => ({ id: row.id, name: row.name })) }
+  }
+  if (/from dp_campaigns/i.test(sql) && !/dp_frames/i.test(sql)) {
+    return { rows: [{ slug: 'rams-day' }] }
+  }
+  return { rows: [] }
+}
+
+describe('seo surface', () => {
+  beforeEach(() => {
+    logLinkClick.mockClear()
+    execute.mockReset()
+    execute.mockImplementation(catalogQuery)
+    createClient.mockClear()
+    vi.stubGlobal('HTMLRewriter', SharePreviewHTMLRewriter)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('returns sitemap xml with public org and campaign urls cached for one hour', async () => {
+    const cache = new SitemapMemoryCache()
+    vi.stubGlobal('caches', { default: cache })
+    const fetchAsset = vi.fn(async () => new Response(FRAME_SHELL, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    }))
+    const env = makeEnv({}, fetchAsset)
+
+    const response = await worker.fetch(new Request('https://eypi.cc/sitemap.xml'), env, ctx())
+    const xml = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toContain('application/xml')
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600')
+    expect(xml).toContain('<loc>https://eypi.cc/</loc>')
+    expect(xml).toContain('<loc>https://eypi.cc/privacy</loc>')
+    expect(xml).toContain('<loc>https://eypi.cc/terms</loc>')
+    expect(xml).toContain('<loc>https://eypi.cc/orgs/foo</loc>')
+    expect(xml).toContain('<loc>https://eypi.cc/frames/rams-day</loc>')
+    expect(xml).not.toContain('secret-org')
+    expect(fetchAsset).not.toHaveBeenCalled()
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+      sql: expect.stringMatching(/is_public_catalog\s*=\s*1/i),
+    }))
+
+    execute.mockClear()
+    const cached = await worker.fetch(new Request('https://eypi.cc/sitemap.xml'), env, ctx())
+    expect(await cached.text()).toContain('<loc>https://eypi.cc/orgs/foo</loc>')
+    expect(cached.headers.get('Cache-Control')).toBe('public, max-age=3600')
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('serves the static sitemap without the hour cache when the catalog query fails', async () => {
+    execute.mockRejectedValue(new Error('turso down'))
+    const fetchAsset = vi.fn(async () => new Response(FRAME_SHELL, { status: 200 }))
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/sitemap.xml'),
+      makeEnv({}, fetchAsset),
+      ctx(),
+    )
+    const xml = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toContain('application/xml')
+    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
+    expect(xml).toContain('<loc>https://eypi.cc/</loc>')
+    expect(xml).toContain('<loc>https://eypi.cc/privacy</loc>')
+    expect(xml).not.toContain('/orgs/foo')
+    expect(xml).not.toContain('/frames/')
+    expect(fetchAsset).not.toHaveBeenCalled()
+  })
+
+  it('puts the org name in og:title and Organization json-ld on /orgs/foo', async () => {
+    const fetchAsset = frameShellFetch()
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/orgs/foo'),
+      makeEnv({}, fetchAsset),
+      ctx(),
+    )
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Location')).toBeNull()
+    expect(html).toContain('<meta property="og:title" content="Foo Org">')
+    expect(html).toContain('<meta property="og:description" content="Build week projects">')
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/orgs/foo/logo.png">')
+    expect(html).toContain('"@type":"Organization"')
+    expect(html).toContain('"name":"Foo Org"')
+    expect(html).toContain('"url":"https://eypi.cc/orgs/foo"')
+    expect(html).toContain('"logo":"https://eypi.cc/media/orgs/foo/logo.png"')
+    expect(html).toContain('https://jpcs.apc.edu.ph')
+    expect(fetchAsset).toHaveBeenCalledOnce()
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+      sql: expect.stringMatching(/is_public_catalog\s*=\s*1/i),
+      args: ['foo'],
+    }))
+  })
+
+  it('does not publish a private org name on /orgs/secret-org', async () => {
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/orgs/secret-org'),
+      makeEnv({}, frameShellFetch()),
+      ctx(),
+    )
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe(FRAME_SHELL)
+  })
+
+  it('sets the homepage title and description meta on /', async () => {
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/'),
+      makeEnv({}, frameShellFetch()),
+      ctx(),
+    )
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(html).toContain(`<title>${SITE_TITLE}</title>`)
+    expect(html).toContain(`<meta property="og:title" content="${SITE_TITLE}">`)
+    expect(html).toContain(`<meta name="description" content="${SITE_DESCRIPTION}">`)
+    expect(html).toContain(`<meta property="og:description" content="${SITE_DESCRIPTION}">`)
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 with the spa html body for an unknown multi-segment path', async () => {
+    const fetchAsset = frameShellFetch()
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/no/such/page'),
+      makeEnv({}, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get('Location')).toBeNull()
+    expect(await response.text()).toBe(FRAME_SHELL)
+    expect(fetchAsset).toHaveBeenCalledOnce()
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 with the spa html body when a single-segment slug misses KV and is not an spa route', async () => {
+    const fetchAsset = frameShellFetch()
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/missing-slug'),
+      makeEnv({}, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(404)
+    expect(response.headers.get('Location')).toBeNull()
+    expect(response.headers.get('Cache-Control')).not.toBe('private, max-age=0')
+    expect(await response.text()).toBe(FRAME_SHELL)
+    expect(fetchAsset).toHaveBeenCalledOnce()
+    expect(logLinkClick).not.toHaveBeenCalled()
+  })
+
+  it('keeps known spa routes on 200', async () => {
+    const fetchAsset = frameShellFetch()
+    const env = makeEnv({}, fetchAsset)
+
+    for (const path of ['/privacy', '/forms/concessionaire', '/unlock/abc', '/orgs/modify']) {
+      const response = await worker.fetch(new Request(`https://eypi.cc${path}`), env, ctx())
+      expect(response.status, path).toBe(200)
+      expect(await response.text()).toBe(FRAME_SHELL)
+    }
+
+    expect(logLinkClick).not.toHaveBeenCalled()
   })
 })
