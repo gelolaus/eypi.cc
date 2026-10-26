@@ -653,7 +653,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 - `GET /api/account/sessions`, `DELETE /api/account/sessions/:id`, `POST /api/account/sessions/revoke-all`
 - `DELETE /api/account { confirmEmail }` → 204; 409 `owns_org` with `{ orgs: [{id,name}] }`
 
-- [ ] Failing tests: export contains links, memberships and consents and excludes other users' data; delete as an org owner → 409 `owns_org`; delete otherwise removes links (and analytics by cascade), memberships by user id **and** email, sessions, identities, consents, the user; reassigns `events.lead_user_id` and `dp_campaigns.creator_id` to the org owner; revoke-all leaves zero sessions. Commit `feat(account): add data export, account deletion, and session management`.
+- [x] Failing tests: export contains links, memberships and consents and excludes other users' data; delete as an org owner → 409 `owns_org`; delete otherwise removes links (and analytics by cascade), memberships by user id **and** email, sessions, identities, consents, the user; reassigns `events.lead_user_id` and `dp_campaigns.creator_id` to the org owner; revoke-all leaves zero sessions. Commit `feat(account): add data export, account deletion, and session management`.
 
 ### Task 8.4: Admin panel (D7)
 
