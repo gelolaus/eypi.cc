@@ -186,7 +186,7 @@ watch(
   gap: 1rem;
   padding: 0.75rem 0.25rem;
   border-bottom: 1px solid var(--color-border);
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 1.125rem;
   font-weight: 500;
   letter-spacing: -0.02em;

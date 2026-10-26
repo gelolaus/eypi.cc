@@ -133,19 +133,19 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 **Interfaces:**
 - Produces: CSS variables and Tailwind theme colours `background foreground card popover primary secondary muted accent destructive border input ring sidebar-*`, fonts `font-sans font-mono font-heading font-display`, utilities listed in the contract.
 
-- [ ] **Step 1: Write failing tests in `src/styles/design.test.ts`.**
+- [x] **Step 1: Write failing tests in `src/styles/design.test.ts`.**
   - `it('defines every wantap token in the dark block')`: read `tokens.css` and assert each variable name and exact value from the contract.
   - `it('meets WCAG AA for text pairs')`: implement `oklchToLuminance` in the test (oklch to linear sRGB) and assert contrast >= 4.5 for foreground/background, muted-foreground/background, primary-foreground/primary, card-foreground/card-over-background, and >= 3 for ring-colour/background.
   - `it('disables decorative animation under reduced motion')`: assert `main.css` contains `@media (prefers-reduced-motion: reduce)` covering `.float-slow`, `.float-slow-2`, `.animate-sparkle`, `.animate-blink-caret`.
   - Update `src/selfHostedFonts.test.ts`: expect the three new woff2 files, `font-display: swap`, no Geist, and no `http` font URLs.
-- [ ] **Step 2:** Run `npx vitest run src/styles src/selfHostedFonts.test.ts`; expect FAIL.
-- [ ] **Step 3: Implement.**
+- [x] **Step 2:** Run `npx vitest run src/styles src/selfHostedFonts.test.ts`; expect FAIL.
+- [x] **Step 3: Implement.**
   - Install `tailwindcss@^4 @tailwindcss/vite tw-animate-css`; uninstall `autoprefixer postcss` if nothing else uses them. Add `tailwindcss()` to the Vite plugins next to the Cloudflare plugin.
   - `main.css`: `@import "tailwindcss"; @import "tw-animate-css"; @import "./tokens.css"; @import "./legacy.css";`, `@custom-variant dark (&:is(.dark *));`, `@font-face` for the three fonts (`font-weight` ranges: sans `200 800`, mono `100 800`, display `400 800`), the `@theme inline` block mapping tokens exactly as wantap's `globals.css` (colours, `--font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif`, `--font-mono`, `--font-heading: "Syne", ui-sans-serif, sans-serif`, radius scale), base layer and utilities from the contract, plus the reduced-motion block.
   - `legacy.css`: move every remaining rule from the old `main.css` there unchanged (including `@apply` lines, rewritten to v4-valid syntax: `@reference "./main.css";` at the top where `@apply` is used). Legacy rules may reference the removed `g-*` colours only through raw `var()` fallbacks defined at the top of `legacy.css` so existing views still render.
   - `index.html`: `<html lang="en" class="dark">`, `<meta name="theme-color" content="#...">` set to the sRGB hex of `oklch(0.14 0.01 55)` (compute it; expected near `#14110e`), remove the Geist preloads and add preloads for the sans and display woff2.
-- [ ] **Step 4:** Run `npm run typecheck && npm test && npm run build`; expect PASS. Fix v3-to-v4 utility renames only where the build or a test breaks; the full restyle happens later.
-- [ ] **Step 5: Commit** `feat(design): adopt tailwind v4 with the wantap tokens and fonts`.
+- [x] **Step 4:** Run `npm run typecheck && npm test && npm run build`; expect PASS. Fix v3-to-v4 utility renames only where the build or a test breaks; the full restyle happens later.
+- [x] **Step 5: Commit** `feat(design): adopt tailwind v4 with the wantap tokens and fonts`.
 
 ### Task 2: Utilities and dependencies
 

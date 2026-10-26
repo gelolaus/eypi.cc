@@ -26,7 +26,7 @@ useReveal()
 
 <style scoped>
 .closing-cta-title {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: clamp(1.75rem, 4.5vw, 3rem);
   font-weight: 700;
   line-height: 1.15;

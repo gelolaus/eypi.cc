@@ -7,7 +7,7 @@
   <!-- Background layer: dot grid -->
   <div
     id="base-layer"
-    class="fixed inset-0 pointer-events-none bg-dot-grid"
+    class="fixed inset-0 pointer-events-none legacy-dot-grid"
     style="z-index: -10;"
   />
 

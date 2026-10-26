@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const css = readFileSync('src/styles/main.css', 'utf8')
+const css = readFileSync('src/styles/legacy.css', 'utf8')
 
 describe('button states', () => {
   it('defines hover only for fine hover-capable pointers', () => {

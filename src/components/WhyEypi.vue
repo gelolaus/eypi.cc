@@ -50,7 +50,7 @@ const pillars = [
 
 <style scoped>
 .why-eypi-title {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: clamp(1.75rem, 4vw, 2.75rem);
   font-weight: 600;
   line-height: 1.2;

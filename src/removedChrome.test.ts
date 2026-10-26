@@ -12,7 +12,7 @@ describe('removed chrome', () => {
   })
 
   it('does not hide the native cursor', () => {
-    const css = read('./styles/main.css')
+    const css = read('./styles/legacy.css')
     expect(css).not.toContain('has-custom-cursor')
     expect(css).not.toContain('cursor: none')
   })

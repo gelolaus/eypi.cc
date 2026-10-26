@@ -1,0 +1,35 @@
+/* The .dark block is the only palette. The app is dark only. */
+.dark {
+  --background: oklch(0.14 0.01 55);
+  --foreground: oklch(0.96 0.01 75);
+  --card: oklch(0.18 0.012 55 / 75%);
+  --card-foreground: oklch(0.96 0.01 75);
+  --popover: oklch(0.17 0.012 55);
+  --popover-foreground: oklch(0.96 0.01 75);
+  --primary: #e8a87c;
+  --primary-foreground: oklch(0.18 0.02 55);
+  --secondary: oklch(0.22 0.012 55);
+  --secondary-foreground: oklch(0.96 0.01 75);
+  --muted: oklch(0.2 0.01 55);
+  --muted-foreground: oklch(0.72 0.02 65);
+  --accent: color-mix(in oklch, #e8a87c 18%, transparent);
+  --accent-foreground: oklch(0.9 0.04 65);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: color-mix(in oklch, #e8a87c 55%, transparent);
+  --chart-1: #e8a87c;
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.15 0.01 55);
+  --sidebar-foreground: oklch(0.96 0.01 75);
+  --sidebar-primary: #e8a87c;
+  --sidebar-primary-foreground: oklch(0.18 0.02 55);
+  --sidebar-accent: oklch(0.22 0.012 55);
+  --sidebar-accent-foreground: oklch(0.96 0.01 75);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: color-mix(in oklch, #e8a87c 55%, transparent);
+  --radius: 0.875rem;
+}

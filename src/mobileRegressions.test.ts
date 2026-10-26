@@ -28,7 +28,7 @@ describe('mobile regression guards', () => {
   })
 
   it('never uses bare 100vh or min-h-screen outside the dvh fallback utility', () => {
-    const css = readFileSync(join(SRC, 'styles/main.css'), 'utf8').replace(
+    const css = readFileSync(join(SRC, 'styles/legacy.css'), 'utf8').replace(
       /height:\s*100vh;\s*height:\s*100dvh;/g,
       '',
     )

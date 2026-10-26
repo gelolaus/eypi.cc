@@ -342,7 +342,7 @@ watch(
 .org-markdown :deep(h1),
 .org-markdown :deep(h2),
 .org-markdown :deep(h3) {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.01em;
   margin-top: 1.25rem;

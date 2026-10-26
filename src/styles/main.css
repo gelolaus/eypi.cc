@@ -1,641 +1,208 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./tokens.css";
+@import "./legacy.css";
+
+@custom-variant dark (&:is(.dark *));
+
 @font-face {
-  font-family: 'Geist';
-  src: url('../assets/fonts/Geist-Variable.woff2') format('woff2');
-  font-weight: 100 900;
+  font-family: "Plus Jakarta Sans";
+  src: url("../assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2");
+  font-weight: 200 800;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist Mono';
-  src: url('../assets/fonts/GeistMono-Variable.woff2') format('woff2');
-  font-weight: 100 900;
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 800;
   font-style: normal;
   font-display: swap;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@font-face {
+  font-family: "Syne";
+  src: url("../assets/fonts/syne-latin-wght-normal.woff2") format("woff2");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
 
-/* ============================================================
-   DESIGN TOKENS — gelolaus design language + eypi branding
-   ============================================================ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-heading: "Syne", ui-sans-serif, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
 @layer base {
-  :root {
-    --color-bg:         #F5F5F5;
-    --color-surface:    #ffffff;
-    --color-border:     #E8E8E8;
-    --color-text:       #0A0A0A;
-    --color-text-muted: #6B6B6B;
-    --color-accent:     #DEAC4B;  /* APC Gold */
-    --color-primary:    #34418F;  /* APC Blue */
-    --color-focus:      #34418F;  /* navy ring on light grey, 8.38:1 */
-    --color-dot:        #000000;
+  * {
+    @apply border-border outline-ring/50;
   }
-
-  html.dark {
-    color-scheme: dark;
-    --color-bg:         #000000;
-    --color-surface:    #161616;
-    --color-border:     #262626;
-    --color-text:       #F5F5F5;
-    --color-text-muted: #AAAAAA;
-    --color-accent:     #DEAC4B;  /* gold never changes */
-    --color-primary:    #8FA0E8;  /* light APC blue, 8.36:1 on black */
-    --color-focus:      #DEAC4B;  /* gold ring on black, 10.11:1 */
-    --color-dot:        #ffffff;
-  }
-
-  html {
-    @apply antialiased;
-    scroll-behavior: smooth;
-    color-scheme: light;
-  }
-
   body {
-    font-family: 'Geist', system-ui, sans-serif;
-    background-color: var(--color-bg);
-    color: var(--color-text);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    @apply bg-background text-foreground;
   }
-
-  html.nav-scroll-lock,
-  body.nav-scroll-lock {
-    overflow: hidden;
+  html {
+    @apply font-sans;
   }
-
-  :focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 2px;
-    border-radius: 0.5rem;
-  }
-
-  :focus:not(:focus-visible) {
-    outline: none;
-  }
-}
-
-/* ============================================================
-   DOT GRID UTILITIES
-   ============================================================ */
-@layer utilities {
-  /* Theme-aware dot grid (body background) */
-  .bg-dot-grid {
-    background-color: var(--color-bg);
-    background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
-    background-size: 120px 120px;
-  }
-
-  /* Fixed attachment janks iOS Safari, so only pointer-hover devices get it. */
-  @media (hover: hover) {
-    .bg-dot-grid {
-      background-attachment: fixed;
-    }
-  }
-
-  /* Always-dark dot grid (footer only) */
-  .bg-dot-grid-dark {
-    background-color: #040d1f;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.28) 1.5px, transparent 1.5px);
-    background-size: 120px 120px;
-  }
-
-  @media (hover: hover) {
-    .bg-dot-grid-dark {
-      background-attachment: fixed;
-    }
-  }
-
-  /* Glassmorphism card — preserved for dashboard/settings/auth views */
-  .mica-card {
-    background-color: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  }
-
-  .dark .mica-card {
-    background-color: rgba(15, 23, 42, 0.25);
-    border: 1px solid rgba(51, 65, 85, 0.5);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  }
-
-  /* Typography utilities — v2 sans-first hierarchy */
-  .text-eyebrow {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-  }
-
-  .text-page-title {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    color: var(--color-primary);
-  }
-
-  html.dark .text-page-title {
-    color: var(--color-text);
-  }
-
-  .text-section-title {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: -0.02em;
-    color: var(--color-text);
-  }
-
-  .text-card-title {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 1.125rem;
-    font-weight: 600;
-    line-height: 1.35;
-    letter-spacing: -0.01em;
-    color: var(--color-text);
-  }
-
-  .text-data {
-    font-family: 'Geist Mono', monospace;
-    font-size: 0.875rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Skip to content — keyboard accessibility */
-  .skip-link {
-    position: fixed;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 100000;
-    padding: 0.625rem 1rem;
-    border-radius: 0.5rem;
-    background: #34418F;
-    color: #fff;
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: none;
-    transform: translateY(-150%);
-    transition: transform 0.2s ease;
-  }
-
-  .skip-link:focus {
-    transform: translateY(0);
-  }
-
-  /* Gold controls: #1a1a2e on #DEAC4B is 8.21:1. White on gold is 2.08:1. */
-  .btn-gold {
-    background-color: #DEAC4B;
-    color: #1a1a2e;
-  }
-
-  .btn-gold:hover,
-  .btn-gold:focus,
-  .btn-gold:focus-visible {
-    color: #1a1a2e;
-  }
-
-  #route-announcer {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-}
-
-/* ============================================================
-   SCROLL-REVEAL ANIMATION CLASSES
-   ============================================================ */
-@layer utilities {
-  .reveal {
-    opacity: 0;
-    transform: translateY(28px);
-    transition:
-      opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .reveal.delay-1 { transition-delay: 0.12s; }
-  .reveal.delay-2 { transition-delay: 0.24s; }
-  .reveal.delay-3 { transition-delay: 0.36s; }
-  .reveal.delay-4 { transition-delay: 0.48s; }
-
-  .reveal.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ============================================================
-   PRESS AND HOVER FEEDBACK
-   ============================================================ */
-@layer components {
-  /* Press feedback — alexi.life tap-scale pattern */
-  .tap-scale {
-    transition-property: scale, transform, color, background-color, border-color, opacity;
-    transition-duration: 0.15s;
-    transition-timing-function: ease-out;
-  }
-
-  .tap-scale:active {
-    scale: 0.96;
-  }
-
-  /* Hover feedback — fine pointer devices only */
-  @media (hover: hover) and (pointer: fine) {
-    a:not(.skip-link),
-    button:not(:disabled),
-    [role="button"]:not([aria-disabled="true"]),
-    input[type="submit"]:not(:disabled),
-    input[type="button"]:not(:disabled),
-    select,
-    summary {
-      transition:
-        color 0.2s ease,
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        opacity 0.2s ease,
-        transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-        box-shadow 0.22s ease,
-        scale 0.15s ease-out;
-    }
-
-    a:not(.skip-link):not(.footer-link-row):not(.nav-sidebar-link):hover {
-      opacity: 0.88;
-    }
-
-    .footer-link-row:hover {
-      transform: translateX(4px);
-    }
-
-    .nav-sidebar-link:hover {
-      transform: translateX(6px);
-    }
-
-    .nav-sidebar-link:hover .nav-sidebar-link__arrow {
-      opacity: 1;
-      transform: translate(4px, -4px);
-    }
-
-    .btn-primary:not(:disabled):hover {
-      filter: brightness(1.12);
-    }
-
-    .btn-secondary:not(:disabled):hover {
-      border-color: var(--color-primary);
-    }
-
-    .btn-danger:not(:disabled):hover {
-      filter: brightness(1.12);
-    }
-  }
-}
-
-/* ============================================================
-   SLIDE-OVER PANELS (nav sidebar, analytics, link editor)
-   ============================================================ */
-.slide-over-fade-enter-active,
-.slide-over-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.slide-over-fade-enter-from,
-.slide-over-fade-leave-to {
-  opacity: 0;
-}
-
-.slide-over-panel-enter-active,
-.slide-over-panel-leave-active {
-  transition: transform 0.42s cubic-bezier(0.2, 1, 0.3, 1);
-}
-
-.slide-over-panel-enter-from,
-.slide-over-panel-leave-to {
-  transform: translateX(100%);
-}
-
-/* ============================================================
-   FOOTER
-   ============================================================ */
-@layer components {
-  .footer-dark {
-    color: #F5F5F5;
-    border-top: 1px solid #1a1a1a;
-    position: relative;
-    z-index: 1;
-  }
-
-  .footer-inner {
-    max-width: 87.5rem;
-    margin: 0 auto;
-    padding: clamp(3rem, 8vw, 6rem) clamp(1.25rem, 6vw, 6rem) clamp(2.5rem, 5vw, 4rem);
-  }
-
-  .footer-heading {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(2.25rem, 7vw, 5.5rem);
-    font-weight: 700;
-    line-height: 0.95;
-    color: #F5F5F5;
-    letter-spacing: -0.04em;
-    margin-bottom: clamp(2rem, 6vw, 5rem);
-    max-width: 900px;
-  }
-
-  /* Full-width stacked link rows — gelolaus style */
-  .footer-links-full {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .footer-link-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: clamp(0.75rem, 2.5vw, 1.75rem) 0;
-    min-height: 2.75rem;
-    border-top: 1px solid #1f1f1f;
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(1.1rem, 3vw, 2rem);
-    font-weight: 500;
-    letter-spacing: -0.03em;
-    color: #F5F5F5;
-    text-decoration: none;
-    transition: color 0.22s ease;
-  }
-
-  .footer-link-row:last-child {
-    border-bottom: 1px solid #1f1f1f;
-  }
-
-  .footer-link-row:hover {
-    color: #DEAC4B;
-  }
-
-  .footer-arrow {
-    display: inline-block;
-    font-size: 0.85em;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    flex-shrink: 0;
-  }
-
-  .footer-link-row:hover .footer-arrow {
-    transform: translate(4px, -4px);
-  }
-
-  .footer-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding-top: clamp(2rem, 4vw, 3rem);
-    border-top: 1px solid #1f1f1f;
-    margin-top: clamp(2rem, 4vw, 3rem);
-  }
-
-  .footer-label {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
-    font-weight: 500;
-    color: #444;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .footer-year {
-    font-family: 'Geist', system-ui, sans-serif;
-    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
-    font-weight: 500;
-    color: #444;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-}
-
-/* ============================================================
-   CUSTOM SCROLLBAR
-   ============================================================ */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-  background: #333333;
-}
-
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
-
-::selection {
-  background-color: #DEAC4B;
-  color: #000000;
-}
-
-/* ============================================================
-   MOBILE-FIRST CONTROLS AND SURFACES
-   Base targets a 360px phone: 44px hit areas, 16px text (no iOS zoom).
-   ============================================================ */
-@layer components {
-  .control {
-    min-height: 2.75rem;
-    width: 100%;
-    border-radius: 0.75rem;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text);
-    padding: 0.5rem 0.875rem;
-    font-size: 1rem;
-    line-height: 1.5rem;
-  }
-
-  .control::placeholder {
-    color: var(--color-text-muted);
-  }
-
-  .control:focus-visible {
-    outline: 3px solid var(--color-focus);
-    outline-offset: 2px;
-  }
-
-  .control[aria-invalid='true'] {
-    border-color: #dc2626;
-  }
-
-  .control[aria-invalid='true']:focus-visible {
-    outline-color: #dc2626;
-  }
-
-  .control:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-primary,
-  .btn-secondary,
-  .btn-danger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0.5rem 1.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid transparent;
-    font-size: 1rem;
-    font-weight: 600;
-    line-height: 1.5rem;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .btn-primary:active,
-  .btn-secondary:active,
-  .btn-danger:active {
-    transform: translateY(1px);
-  }
-
-  .btn-primary:disabled,
-  .btn-secondary:disabled,
-  .btn-danger:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-primary {
-    background-color: var(--color-primary);
-    color: #ffffff;
-  }
-
-  html.dark .btn-primary {
-    background-color: var(--color-primary);
-    color: #0A0A0A;
-  }
-
-  .btn-secondary {
-    background-color: var(--color-surface);
-    border-color: var(--color-border);
-    color: var(--color-text);
-  }
-
-  .btn-danger {
-    background-color: #b91c1c;
-    color: #ffffff;
-  }
-
-  .btn-lg {
-    min-height: 3rem;
-    padding-inline: 1.5rem;
-  }
-
-  .section-card {
-    border-radius: 1.5rem;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    padding: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .section-card {
-      padding: 1.75rem;
-    }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
   }
 }
 
 @layer utilities {
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+  .glass-panel {
+    @apply bg-card backdrop-blur-xl border border-border;
   }
 
-  .h-screen-dvh {
-    height: 100vh;
-    height: 100dvh;
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
   }
 
+  .font-display {
+    font-family: "Syne", ui-sans-serif, sans-serif;
+  }
+
+  .marketing-block-enter {
+    animation: marketing-block-in 280ms ease-out;
+  }
+
+  /* Hide scrollbars in the builder preview chrome without disabling scroll. */
   .scrollbar-none {
+    -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  /* Subtle dot texture for full-bleed empty/error states. */
+  .bg-dot-grid {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklch, var(--foreground) 16%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  .float-slow-2 {
+    animation: float-slow-2 8s ease-in-out infinite;
+  }
+
+  .animate-sparkle {
+    animation: sparkle-pulse 2.6s ease-in-out infinite;
+  }
+
+  .animate-blink-caret {
+    animation: blink-caret 1.1s step-end infinite;
+  }
 }
 
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-2deg);
   }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  50% {
+    transform: translateY(-14px) rotate(1deg);
   }
+}
 
-  .reveal {
+@keyframes marketing-block-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
     opacity: 1;
-    transform: none;
-    transition: none;
+    transform: translateY(0);
   }
+}
 
-  .animate-pulse {
+@keyframes float-slow-2 {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(2deg);
+  }
+  50% {
+    transform: translateY(16px) rotate(-2deg);
+  }
+}
+
+@keyframes sparkle-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(12deg);
+  }
+}
+
+@keyframes blink-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  95% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Decorative motion stops for people who ask for less of it. */
+@media (prefers-reduced-motion: reduce) {
+  .float-slow,
+  .float-slow-2,
+  .animate-sparkle,
+  .animate-blink-caret,
+  .marketing-block-enter {
     animation: none;
-  }
-
-  .btn-primary,
-  .btn-secondary,
-  .btn-danger,
-  .control {
-    transition: none;
-  }
-
-  .slide-over-fade-enter-active,
-  .slide-over-fade-leave-active,
-  .slide-over-panel-enter-active,
-  .slide-over-panel-leave-active {
-    transition: none;
-  }
-
-  .slide-over-panel-enter-from,
-  .slide-over-panel-leave-to {
-    transform: none;
   }
 }

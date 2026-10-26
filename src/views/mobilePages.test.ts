@@ -33,7 +33,7 @@ describe('mobile-first auth and static pages', () => {
   })
 
   it('field-level control class gives h-11 text-base sizing', () => {
-    const css = read('styles/main.css')
+    const css = read('styles/legacy.css')
     expect(css).toMatch(/\.control\s*\{[^}]*min-height:\s*2\.75rem/)
     expect(css).toMatch(/\.control\s*\{[^}]*font-size:\s*1rem/)
   })

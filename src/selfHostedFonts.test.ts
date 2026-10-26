@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 function read(path: string): string {
@@ -54,7 +54,7 @@ describe('asset caching and content security policy', () => {
     expect(headersFor(rules, '/assets/index-AbCd1234.js')['cache-control']).toBe(
       'public, max-age=31536000, immutable',
     )
-    expect(headersFor(rules, '/assets/Geist-Variable-AbCd1234.woff2')['cache-control']).toBe(
+    expect(headersFor(rules, '/assets/plus-jakarta-sans-latin-wght-normal-AbCd1234.woff2')['cache-control']).toBe(
       'public, max-age=31536000, immutable',
     )
     for (const path of ['/', '/index.html', '/links']) {
@@ -83,37 +83,51 @@ describe('asset caching and content security policy', () => {
   })
 })
 
-describe('self-hosted Geist fonts', () => {
-  it('preloads the two variable fonts and does not call Google', () => {
+describe('self-hosted wantap fonts', () => {
+  const files = [
+    'plus-jakarta-sans-latin-wght-normal.woff2',
+    'jetbrains-mono-latin-wght-normal.woff2',
+    'syne-latin-wght-normal.woff2',
+  ]
+
+  it('preloads the sans and display fonts and does not call Google', () => {
     const html = read('../index.html')
     expect(html).not.toContain('fonts.googleapis.com')
     expect(html).not.toContain('fonts.gstatic.com')
-    for (const file of ['Geist-Variable.woff2', 'GeistMono-Variable.woff2']) {
-      expect(html).toContain(`href="/src/assets/fonts/${file}"`)
+    expect(html).not.toContain('Geist')
+    for (const file of [files[0], files[2]]) {
       expect(html).toMatch(new RegExp(
         `<link[^>]*rel="preload"[^>]*href="/src/assets/fonts/${file}"[^>]*as="font"[^>]*type="font/woff2"[^>]*crossorigin`,
       ))
     }
   })
 
-  it('declares swap-displayed faces for Geist and Geist Mono', () => {
+  it('declares swap-displayed faces with local urls only', () => {
     const css = read('./styles/main.css')
-    expect(css).toMatch(
-      /@font-face\s*\{[^}]*font-family:\s*'Geist';[^}]*url\('\.\.\/assets\/fonts\/Geist-Variable\.woff2'\)\s*format\('woff2'\);[^}]*font-weight:\s*100 900;[^}]*font-display:\s*swap;/,
-    )
-    expect(css).toMatch(
-      /@font-face\s*\{[^}]*font-family:\s*'Geist Mono';[^}]*url\('\.\.\/assets\/fonts\/GeistMono-Variable\.woff2'\)\s*format\('woff2'\);[^}]*font-weight:\s*100 900;[^}]*font-display:\s*swap;/,
-    )
+    expect(css).not.toContain('Geist')
+    const faces = css.match(/@font-face\s*\{[^}]*\}/g) ?? []
+    expect(faces).toHaveLength(3)
+    const ranges: Record<string, string> = {
+      'Plus Jakarta Sans': '200 800',
+      'JetBrains Mono': '100 800',
+      Syne: '400 800',
+    }
+    for (const [family, range] of Object.entries(ranges)) {
+      const face = faces.find((f) => f.includes(family)) ?? ''
+      expect(face, family).toMatch(/font-display:\s*swap;/)
+      expect(face, family).toContain(`font-weight: ${range}`)
+    }
+    for (const face of faces) expect(face).not.toMatch(/url\(['"]?https?:/)
+    for (const file of files) expect(css).toContain(`../assets/fonts/${file}`)
   })
 
-  it('ships the real variable font bytes and the OFL text', () => {
-    for (const file of ['Geist-Variable.woff2', 'GeistMono-Variable.woff2']) {
+  it('ships real woff2 bytes, the attribution file and no Geist files', () => {
+    for (const file of files) {
       const bytes = readFileSync(new URL(`./assets/fonts/${file}`, import.meta.url))
       expect(bytes.subarray(0, 4).toString('ascii')).toBe('wOF2')
       expect(bytes.length).toBeGreaterThan(10_000)
     }
-    const license = read('./assets/fonts/OFL.txt')
-    expect(license).toContain('Copyright (c) 2023 Vercel, in collaboration with basement.studio')
-    expect(license).toContain('SIL Open Font License, Version 1.1')
+    expect(read('./assets/fonts/ATTRIBUTION.txt')).toContain('SIL Open Font License')
+    expect(readdirSync(new URL('./assets/fonts/', import.meta.url)).filter((f) => /geist/i.test(f))).toEqual([])
   })
 })

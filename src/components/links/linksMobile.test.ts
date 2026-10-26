@@ -30,7 +30,7 @@ describe('LinkRow mobile card', () => {
     expect(root).toContain('md:rounded-none')
   })
 
-  it('shows the slug in Geist Mono and truncates the destination', () => {
+  it('shows the slug in the mono font and truncates the destination', () => {
     expect(wrapper.get('span.font-mono').text()).toBe('eypi.cc/alpha')
     expect(wrapper.find('p.truncate').exists()).toBe(true)
   })

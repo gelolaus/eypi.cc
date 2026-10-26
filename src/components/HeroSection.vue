@@ -44,7 +44,7 @@ function scrollToFeatures() {
 
 <style scoped>
 .hero-title {
-  font-family: 'Geist', system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: clamp(2.25rem, 9vw, 5rem);
   font-weight: 700;
   line-height: 1.05;
