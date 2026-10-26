@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[9999] flex flex-col gap-3 lg:inset-x-auto lg:right-6 lg:bottom-6 lg:w-80"
+    class="pointer-events-none fixed inset-x-4 bottom-[calc(8.75rem+env(safe-area-inset-bottom))] z-[9999] flex flex-col gap-3 lg:inset-x-auto lg:right-6 lg:bottom-[5.25rem] lg:w-80"
     :aria-live="hasError ? 'assertive' : 'polite'"
     aria-relevant="additions text"
   >

@@ -62,10 +62,10 @@ describe('ToastContainer placement', () => {
     const wrapper = mount(ToastContainer, { attachTo: document.body })
     const cls = wrapper.get('[aria-relevant]').classes().join(' ')
     expect(cls).toContain('inset-x-4')
-    expect(cls).toContain('bottom-[calc(5.5rem+env(safe-area-inset-bottom))]')
+    expect(cls).toContain('bottom-[calc(8.75rem+env(safe-area-inset-bottom))]')
     expect(cls).toContain('lg:inset-x-auto')
     expect(cls).toContain('lg:right-6')
-    expect(cls).toContain('lg:bottom-6')
+    expect(cls).toContain('lg:bottom-[5.25rem]')
     expect(cls).not.toContain('bottom-24')
   })
 
@@ -109,5 +109,21 @@ describe('slide panels are bottom sheets on mobile', () => {
     const s = src('./links/LinkEditorPanel.vue')
     expect(s).toContain('sticky bottom-0')
     expect(s).toContain('env(safe-area-inset-bottom)')
+  })
+})
+
+describe('toast clears the scroll-top button', () => {
+  const read = (f: string) => src(f)
+
+  it('sits at least 44px plus a gap above scroll-top at both breakpoints', () => {
+    const css = read('./ScrollTop.vue')
+    const toastSrc = read('./ToastContainer.vue')
+    const scrollMobile = /\.scroll-top-btn--tabbar \{\s*bottom: calc\(4\.5rem \+ 1rem/.test(css)
+    expect(scrollMobile).toBe(true)
+    // scroll-top top edge: 5.5rem + 2.75rem = 8.25rem (mobile); 2rem + 2.75rem = 4.75rem (lg)
+    const mobile = Number(/bottom-\[calc\(([\d.]+)rem\+env/.exec(toastSrc)![1])
+    const lg = Number(/lg:bottom-\[([\d.]+)rem\]/.exec(toastSrc)![1])
+    expect(mobile).toBeGreaterThanOrEqual(5.5 + 2.75 + 0.5)
+    expect(lg).toBeGreaterThanOrEqual(2 + 2.75 + 0.5)
   })
 })

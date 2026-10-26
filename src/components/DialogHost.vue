@@ -10,7 +10,7 @@
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
         <div
           ref="panelRef"
-          class="mica-card max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-g-border bg-g-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-left shadow-2xl sm:rounded-3xl sm:p-8"
+          class="mica-card max-h-[90dvh] w-full max-w-none sm:max-w-md overflow-y-auto rounded-t-3xl border border-g-border bg-g-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-left shadow-2xl sm:rounded-3xl sm:p-8"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"

@@ -532,12 +532,12 @@ Do not use `window.confirm()` or `alert()` for product feedback.
 
 ### 6.6 Signal strip toast
 
-Position: `fixed; z-index: 9999`. Below `lg`: `inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))]` (clears the 72px tab bar). From `lg`: `right-6 bottom-6 w-80`.
+Position: `fixed; z-index: 9999`. Below `lg`: `inset-x-4 bottom-[calc(8.75rem+env(safe-area-inset-bottom))]` (clears the 72px tab bar and the 44px scroll-top button above it, with a gap). From `lg`: `right-6 bottom-[5.25rem] w-80` (clears the scroll-top button at `2rem`+44px).
 Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
 
 **Strip**:
 ```
-width: min(100vw - 2rem, 20rem)
+width: calc(100vw - 2rem) below lg; 20rem (w-80) from lg
 background: #ffffff; dark: mica-navy.modal
 border: 1px solid var(--color-border) / slate-600
 box-shadow: shadow-xl

@@ -30,7 +30,7 @@
       </button>
       <h2
         id="analytics-panel-title"
-        class="text-section-title mb-2 text-slate-900 dark:text-slate-100"
+        class="text-section-title mb-2 pr-12 text-slate-900 dark:text-slate-100"
       >
         Analytics
       </h2>
