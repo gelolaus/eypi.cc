@@ -1,820 +1,323 @@
 <template>
   <div class="relative w-full">
-    <div
-      class="mx-auto flex w-full max-w-5xl flex-col items-center px-4 pt-8 pb-24 md:pt-16 md:pb-32"
-    >
-    <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1
-          class="text-page-title"
-        >
+    <div class="mx-auto flex w-full max-w-5xl flex-col px-4 pb-24 pt-8 md:pb-32 md:pt-16">
+      <header class="mb-8 flex w-full flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
+        <h1 class="text-page-title">
           Links
         </h1>
-      </div>
-    </header>
-
-    <!-- Top Bar (Create Link) -->
-    <div class="mb-10 flex w-full flex-col gap-4 md:flex-row">
-      <div class="flex-1">
-        <input
-          v-model="longUrlInput"
-          type="url"
-          placeholder="Paste your long link here..."
-          aria-label="Long link"
-          class="w-full rounded-xl border-2 border-gray-200 bg-white px-6 py-4 font-mono text-slate-900 shadow-inner outline-none transition-colors placeholder-slate-500 focus:border-g-accent dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-slate-500"
-          :aria-invalid="Boolean(longUrlError)"
-          :aria-describedby="longUrlError ? 'long-url-error' : undefined"
-        />
-        <p v-if="longUrlError" id="long-url-error" class="mt-1 text-sm text-red-500">{{ longUrlError }}</p>
-      </div>
-      <button
-        type="button"
- class="btn-gold rounded-xl px-8 py-4 font-semibold transition-all"
-        :disabled="isShortening"
-        :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isShortening, 'hover:scale-105': !isShortening }"
-        @click="handleShorten"
-      >
-        {{ isShortening ? 'Processing...' : 'Shorten' }}
-      </button>
-    </div>
-
-    <input
-      v-model="searchQuery"
-      type="search"
-      placeholder="Search links..."
-      aria-label="Search links"
-      class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
-    />
-
-    <!-- Unified Table (horizontal scroll on mobile) -->
-    <div class="w-full overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-    <div
-      class="mica-card w-full min-w-[600px] overflow-hidden rounded-2xl border border-g-border shadow-sm"
-    >
-      <!-- Table Header -->
-      <div
-        class="flex items-center justify-between border-b border-g-border bg-white/40 px-4 md:px-6 py-3 text-data text-xs font-semibold text-g-muted dark:bg-mica-navy-header"
-      >
-        <span class="flex-1">Short link</span>
-        <span class="w-32 text-center">Clicks</span>
-        <span class="w-40 text-center">Actions</span>
-      </div>
-
-      <!-- Table Rows -->
-      <template v-if="filteredLinks.length > 0">
-        <div
-          v-for="link in filteredLinks"
-          :key="link.id"
-          class="flex items-center justify-between border-b border-g-border px-4 md:px-6 py-5 transition-colors last:border-0 hover:bg-white/50 dark:border-slate-700/30 dark:bg-mica-navy-row dark:backdrop-blur-md dark:hover:bg-mica-navy-row-hover"
-        >
-          <div class="flex flex-1 flex-col truncate pr-4">
-            <span class="font-mono text-lg font-bold text-g-primary dark:text-slate-200">
-              {{ link.short }}
-            </span>
-            <span class="truncate font-mono text-sm text-gray-500 dark:text-slate-400">
-              {{ link.original }}
-            </span>
-          </div>
-          <div class="w-32 text-center font-mono text-sm text-gray-600 dark:text-slate-400">
-            {{ link.clicks ?? 0 }} clicks
-          </div>
-          <div class="flex w-40 items-center justify-center gap-2">
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
-              aria-label="Copy link"
-              @click="copyToClipboard(link.short)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-emerald-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-slate-600/30"
-              aria-label="Analytics"
-              @click="activeAnalyticsLinkId = link.id; activeAnalyticsShortUrl = link.short; isAnalyticsOpen = true"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-g-muted transition-colors hover:bg-gray-100 hover:text-g-text dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-600/30"
-              aria-label="Edit"
-              @click="openSidebar(link)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="min-h-[44px] min-w-[44px] rounded-full p-2.5 text-red-500 transition-colors hover:bg-gray-100 hover:text-red-700 dark:hover:bg-slate-600/30"
-              aria-label="Delete"
-              @click="confirmDelete(link)"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-            </button>
-          </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            class="rounded-xl border-2 border-g-border px-5 py-3 text-sm font-semibold text-g-text"
+            type="button"
+            @click="exportCsv"
+          >
+            Export CSV
+          </button>
+          <button
+            class="btn-gold rounded-xl px-5 py-3 text-sm font-semibold"
+            type="button"
+            @click="openCreate"
+          >
+            New link
+          </button>
         </div>
-      </template>
-      <div
-        v-else
-        class="flex flex-col items-center justify-center py-20 px-6 text-center"
+      </header>
+      <p
+        v-if="quotaMessage"
+        class="mb-4 text-sm text-red-500"
+        role="alert"
       >
-        <div class="w-16 h-16 mb-6 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 relative dark:border-slate-600 dark:text-slate-400">
-          <div class="absolute w-2 h-[1px] bg-gray-400"></div>
-          <div class="absolute h-2 w-[1px] bg-gray-400"></div>
-        </div>
-        <h3 class="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2">
-          {{ links.length ? 'No matching links' : 'No links yet' }}
-        </h3>
-        <p v-if="!links.length" class="text-sm text-gray-400 dark:text-slate-500 max-w-md leading-relaxed">
-          Create your first short link using the field above.
-        </p>
-      </div>
-    </div>
-    </div>
-
-    <!-- Backdrop (separate fade transition) - Teleported to body to elevate above header/footer -->
-    <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="isSidebarOpen"
-        class="fixed inset-0 bg-black/20 backdrop-blur-sm"
-        style="z-index: 99990"
-        aria-hidden="true"
-        @click="isSidebarOpen = false"
+        {{ quotaMessage }}
+      </p>
+      <p
+        v-if="pageError"
+        class="mb-4 text-sm text-red-500"
+        role="alert"
+      >
+        {{ pageError }}
+      </p>
+      <LinkFilters
+        :query="query"
+        :sort="sort"
+        :status="status"
+        @update:query="onQuery"
+        @update:sort="onSort"
+        @update:status="onStatus"
       />
-    </Transition>
-
-    <!-- Slide-out Panel (separate slide-right transition) -->
-    <Transition name="slide-right">
       <div
-        v-if="isSidebarOpen"
-        role="dialog"
-        aria-labelledby="link-config-title"
-        aria-modal="true"
-        class="fixed top-0 right-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900"
-        style="z-index: 99991"
+        v-if="selectedIds.length"
+        class="mb-4 flex flex-wrap items-center gap-3"
       >
+        <p class="text-sm text-g-muted">
+          {{ selectedIds.length }} selected
+        </p>
         <button
+          aria-label="Disable selected"
+          class="rounded-xl border-2 border-g-border px-4 py-2 text-sm font-semibold"
           type="button"
-          class="absolute right-6 top-6 font-mono text-2xl text-gray-500 transition-colors hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
-          aria-label="Close"
-          @click="isSidebarOpen = false"
+          @click="confirmBulkDisable"
         >
-          &times;
+          Disable selected
         </button>
-
-        <h2 id="link-config-title" class="mb-8 text-section-title text-g-primary dark:text-slate-200">
-          Link configuration
-        </h2>
-
-        <div class="flex flex-1 flex-col">
-          <!-- Original Link Input -->
-          <div class="mb-4">
-            <input
-              v-model="sidebarOriginalUrl"
-              type="url"
-              placeholder="Original URL"
-              aria-label="Original URL"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
-              :aria-invalid="Boolean(sidebarUrlError)"
-              :aria-describedby="sidebarUrlError ? 'sidebar-url-error' : undefined"
-            />
-            <p v-if="sidebarUrlError" id="sidebar-url-error" class="mt-1 text-sm text-red-500">{{ sidebarUrlError }}</p>
-          </div>
-
-          <!-- Arrow -->
-          <div class="my-4 text-center font-black text-g-text dark:text-slate-300 text-4xl">
-            &darr;
-          </div>
-
-          <!-- Custom Slug Input (eypi.cc/ prefix + slug) -->
-          <div class="mb-6">
-            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus-within:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
-              <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
-              <input
-                :value="sidebarSlug"
-                type="text"
-                placeholder="custom-slug"
-                aria-label="Custom slug"
-                class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200 dark:placeholder-slate-400"
-                :aria-invalid="Boolean(slugError)"
-                :aria-describedby="slugError ? 'slug-error' : undefined"
-                @input="sanitizeSlugInput"
-              />
-            </div>
-            <p v-if="slugError" id="slug-error" class="mt-1 text-sm text-red-500">{{ slugError }}</p>
-          </div>
-
-          <!-- Optical Routing Matrix (QR Code Generator) -->
-          <div class="mt-8 mb-auto flex flex-col border-t border-gray-200 pt-8">
-            <h4 class="text-card-title mb-4 text-gray-400 dark:text-slate-400">
-              QR code
-            </h4>
-
-            <div class="flex justify-center mb-6">
-              <div class="p-2 bg-white border-2 border-gray-200 rounded-xl shadow-sm dark:bg-slate-800/50 dark:border-slate-600" ref="qrContainer"></div>
-            </div>
-
-            <div class="mb-6 flex flex-col gap-4 text-sm">
-              <div class="flex flex-col gap-1">
-                <label for="qr-body-shape" class="text-sm font-medium text-gray-500 dark:text-slate-400">Body shape</label>
-                <select id="qr-body-shape" v-model="qrConfig.dotType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                  <option value="square">Standard Square</option>
-                  <option value="dots">Dotted</option>
-                  <option value="rounded">Rounded</option>
-                  <option value="classy">Classy</option>
-                </select>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-1">
-                  <label for="qr-eye-frame" class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye frame</label>
-                  <select id="qr-eye-frame" v-model="qrConfig.eyeFrameType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                    <option value="square">Square</option>
-                    <option value="dot">Dot</option>
-                    <option value="extra-rounded">Rounded</option>
-                  </select>
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label for="qr-eye-ball" class="text-sm font-medium text-gray-500 dark:text-slate-400">Eye ball</label>
-                  <select id="qr-eye-ball" v-model="qrConfig.eyeBallType" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500">
-                    <option value="square">Square</option>
-                    <option value="dot">Dot</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label for="qr-matrix-color" class="text-sm font-medium text-gray-500 dark:text-slate-400">Matrix color</label>
-                <div class="flex items-center gap-3">
-                  <div class="h-10 w-12 rounded-lg border-2 border-gray-200 overflow-hidden shrink-0 focus-within:border-g-accent transition-colors dark:border-slate-600 dark:focus-within:border-slate-500">
-                    <input type="color" v-model="qrConfig.color" aria-label="Matrix color picker" class="h-[150%] w-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer" />
-                  </div>
-                  <input id="qr-matrix-color" type="text" v-model="qrConfig.color" class="bg-white border-2 border-gray-200 rounded-lg p-2 outline-none focus:border-g-accent font-mono text-sm w-full uppercase transition-colors dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" placeholder="#DEAC4B" maxlength="7" />
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label for="qr-center-logo" class="text-sm font-medium text-gray-500 dark:text-slate-400">Center logo</label>
-                <input id="qr-center-logo" type="file" @change="handleLogoUpload" accept="image/png,image/jpeg,image/webp,image/gif" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-g-text hover:file:bg-gray-200 dark:file:bg-slate-700 dark:file:text-slate-200 dark:hover:file:bg-slate-600 transition-colors cursor-pointer" :aria-invalid="Boolean(logoError)" :aria-describedby="logoError ? 'logo-error' : logoPersistHint ? 'logo-persist-hint' : undefined" />
-                <button
-                  v-if="qrConfig.logoDataUrl"
-                  type="button"
-                  class="self-start text-xs font-medium text-gray-500 underline-offset-2 hover:underline dark:text-slate-400"
-                  @click="clearLogo"
-                >
-                  Remove logo
-                </button>
-                <p v-if="logoError" id="logo-error" class="text-sm text-red-500">{{ logoError }}</p>
-                <p v-else-if="logoPersistHint" id="logo-persist-hint" class="text-sm text-amber-600 dark:text-amber-400">{{ logoPersistHint }}</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              :disabled="isExporting || isQrRendering"
-              @click="downloadQR"
-              class="w-full flex justify-center items-center gap-2 px-6 py-3 border-2 border-g-primary text-g-primary text-sm font-semibold rounded-lg hover:border-g-accent hover:text-g-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-            >
-              {{ isExporting ? 'Exporting…' : 'Export PNG' }}
-            </button>
-          </div>
-
-          <!-- Save Button -->
-          <div class="mt-6">
-            <button
-              type="button"
- class="btn-gold w-full rounded-xl px-8 py-4 font-semibold transition-all"
-              :disabled="isSaving"
-              :class="{ 'opacity-70 cursor-not-allowed animate-pulse': isSaving, 'hover:bg-[#c5963b]': !isSaving }"
-              @click="handleSave"
-            >
-              {{ isSaving ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
-        </div>
+        <button
+          aria-label="Delete selected"
+          class="rounded-xl border-2 border-red-500 px-4 py-2 text-sm font-semibold text-red-500"
+          type="button"
+          @click="confirmBulkDelete"
+        >
+          Delete selected
+        </button>
       </div>
-    </Transition>
+      <LinkList
+        :filtered="filtered"
+        :has-more="Boolean(nextCursor)"
+        :items="items"
+        :loading="loading"
+        :selected-ids="selectedIds"
+        @analytics="openAnalytics"
+        @copy="copyLink"
+        @delete="confirmDelete"
+        @disable="setDisabled($event, true)"
+        @edit="openEdit"
+        @enable="setDisabled($event, false)"
+        @load-more="loadMore"
+        @toggle="toggleSelected"
+      />
+    </div>
+    <Teleport to="body">
+      <LinkEditorPanel
+        :destination="draftDestination"
+        :link-id="editingId"
+        :open="editorOpen"
+        @close="closeEditor"
+      />
     </Teleport>
+    <AnalyticsPanel
+      v-if="analyticsOpen"
+      :is-open="true"
+      :link-id="analyticsId"
+      :short-url="analyticsShort"
+      @close="analyticsOpen = false"
+    />
   </div>
-  </div>
-
-  <AnalyticsPanel
-    :link-id="activeAnalyticsLinkId"
-    :is-open="isAnalyticsOpen"
-    :short-url="activeAnalyticsShortUrl"
-    @close="isAnalyticsOpen = false"
-  />
 </template>
 
 <script setup lang="ts">
+import { computed, defineAsyncComponent, onMounted, onScopeDispose, provide, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import AnalyticsPanel from '@/components/AnalyticsPanel.vue'
-import { isReservedSlug } from '@shared/reservedSlugs'
+import { useToast } from '@/composables/useToast'
 import {
-  DEFAULT_LINK_QR_CONFIG,
-  QR_LOGO_PREVIEW_MAX_BYTES,
-  logoExceedsSaveLimit,
-  parseLinkQrConfig,
-  type LinkQrConfig,
-} from '@shared/linkQrConfig'
-import { normalizeQrLogoDataUrl } from '@/utils/normalizeQrLogo'
-import { downloadLinkQrPng, renderLinkQrCanvas } from '@/utils/renderLinkQr'
+  linksKey,
+  useLinks,
+  type LinkListItem,
+  type LinkSort,
+  type LinkStatusFilter,
+} from '@/composables/useLinks'
+import LinkFilters from '@/components/links/LinkFilters.vue'
+import LinkList from '@/components/links/LinkList.vue'
+import LinkEditorPanel from '@/components/links/LinkEditorPanel.vue'
 
-const toast = useToast()
-const dialog = useDialog()
-const router = useRouter()
+const AnalyticsPanel = defineAsyncComponent(() =>
+  import('@/components/AnalyticsPanel.vue').then((mod) => mod.default),
+)
+
 const route = useRoute()
+const dialog = useDialog()
+const toast = useToast()
+const links = useLinks()
+provide(linksKey, links)
 
-const normalizeUrl = (url: string): string => {
-  const trimmed = url.trim()
-  if (!trimmed) return ''
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`
+const {
+  items,
+  nextCursor,
+  loading,
+  error,
+  quotaMessage,
+  query,
+  sort,
+  status,
+  load,
+  loadMore,
+  update,
+  remove,
+  bulk,
+} = links
+
+const selectedIds = ref<string[]>([])
+const initialDestination = typeof route.query.url === 'string' ? route.query.url : ''
+const editorOpen = ref(initialDestination.length > 0)
+const editingId = ref<string | null>(null)
+const draftDestination = ref(initialDestination)
+const analyticsOpen = ref(false)
+const analyticsId = ref<string | null>(null)
+const analyticsShort = ref('')
+const pageError = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+const filtered = computed(() => query.value.trim().length > 0 || status.value !== 'all')
+
+function prefillFromRoute() {
+  const value = route.query.url
+  if (typeof value !== 'string' || !value) return
+  draftDestination.value = value
+  editingId.value = null
+  editorOpen.value = true
+}
+
+function openCreate() {
+  editingId.value = null
+  draftDestination.value = ''
+  editorOpen.value = true
+}
+
+function openEdit(link: LinkListItem) {
+  editingId.value = link.id
+  draftDestination.value = link.url
+  editorOpen.value = true
+}
+
+function closeEditor() {
+  editorOpen.value = false
+  editingId.value = null
+}
+
+function openAnalytics(link: LinkListItem) {
+  analyticsId.value = link.id
+  analyticsShort.value = `eypi.cc/${link.slug}`
+  analyticsOpen.value = true
+}
+
+function toggleSelected(id: string, checked: boolean) {
+  if (checked) {
+    if (!selectedIds.value.includes(id)) selectedIds.value = [...selectedIds.value, id]
+    return
   }
-  return trimmed
+  selectedIds.value = selectedIds.value.filter((item) => item !== id)
 }
 
-const isValidUrl = (url: string) => {
-  const pattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/
-  return pattern.test(url.trim())
+async function reload() {
+  selectedIds.value = []
+  await load()
 }
-const isValidSlug = (slug: string) => /^[a-zA-Z0-9]+$/.test(slug)
 
-const copyToClipboard = async (text: string) => {
+function onQuery(value: string) {
+  query.value = value
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { void reload() }, 300)
+}
+
+function onSort(value: LinkSort) {
+  sort.value = value
+  void reload()
+}
+
+function onStatus(value: LinkStatusFilter) {
+  status.value = value
+  void reload()
+}
+
+async function copyLink(link: LinkListItem) {
   try {
-    const url = text.startsWith('http') ? text : `https://${text}`
-    await navigator.clipboard.writeText(url)
-    toast.success('Link copied to clipboard!')
+    await navigator.clipboard.writeText(`https://eypi.cc/${link.slug}`)
+    toast.success('Link copied.')
   } catch {
-    toast.error('Failed to copy link')
+    toast.error('Could not copy the link.')
   }
 }
 
-interface Link {
-  id: string
-  original: string
-  short: string
-  clicks?: number
-  qrConfig?: LinkQrConfig
-}
-
-const longUrlInput = ref('')
-const isSidebarOpen = ref(false)
-const activeAnalyticsLinkId = ref<string | number | null>(null)
-const activeAnalyticsShortUrl = ref('')
-const isAnalyticsOpen = ref(false)
-const activeLink = ref<Link | null>(null)
-const sidebarOriginalUrl = ref('')
-const sidebarSlug = ref('')
-const isShortening = ref(false)
-const isSaving = ref(false)
-const longUrlError = ref('')
-const sidebarUrlError = ref('')
-const slugError = ref('')
-const logoError = ref('')
-const logoPersistHint = ref('')
-
-watch(longUrlInput, () => { longUrlError.value = '' })
-watch(sidebarOriginalUrl, () => { sidebarUrlError.value = '' })
-watch(sidebarSlug, () => { slugError.value = '' })
-
-const qrContainer = ref<HTMLElement | null>(null)
-const qrConfig = ref<LinkQrConfig>({ ...DEFAULT_LINK_QR_CONFIG })
-const liveShortUrl = computed(() => 'https://eypi.cc/' + (sidebarSlug.value.trim() || 'preview'))
-const isQrRendering = ref(false)
-const isExporting = ref(false)
-let qrRenderGeneration = 0
-
-async function updateQR() {
-  if (!isSidebarOpen.value || !qrContainer.value) return
-  const generation = ++qrRenderGeneration
-  const container = qrContainer.value
-  const config = { ...qrConfig.value }
-  const data = liveShortUrl.value
-  isQrRendering.value = true
-  try {
-    const canvas = await renderLinkQrCanvas(240, data, config, 'white')
-    if (generation !== qrRenderGeneration || !qrContainer.value) return
-    container.replaceChildren(canvas)
-  } catch (err) {
-    console.error('QR preview update failed', err)
-    if (generation === qrRenderGeneration) {
-      container.replaceChildren()
-      toast.error('Could not render QR preview')
-    }
-  } finally {
-    if (generation === qrRenderGeneration) isQrRendering.value = false
-  }
-}
-
-watch(liveShortUrl, () => { void updateQR() })
-watch(qrConfig, () => { void updateQR() }, { deep: true })
-watch(isSidebarOpen, async (open) => {
-  if (open) {
-    await nextTick()
-    await updateQR()
-  }
-})
-
-const LOGO_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
-
-function refreshLogoPersistHint() {
-  logoPersistHint.value = logoExceedsSaveLimit(qrConfig.value.logoDataUrl)
-    ? 'This logo is larger than 2 MB. Preview and Export will include it, but Save will keep your QR styles without the logo. Use a file under 2 MB to persist the logo.'
-    : ''
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result)
-      else reject(new Error('Failed to read image.'))
-    }
-    reader.onerror = () => reject(new Error('Failed to read image.'))
-    reader.readAsDataURL(file)
-  })
-}
-
-const handleLogoUpload = async (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  logoError.value = ''
-  if (!LOGO_ALLOWED_TYPES.includes(file.type)) {
-    logoError.value = 'Choose a PNG, JPEG, WebP, or GIF image.'
-    input.value = ''
-    return
-  }
-  if (file.size > QR_LOGO_PREVIEW_MAX_BYTES) {
-    logoError.value = 'Choose an image smaller than 10 MB for preview.'
-    input.value = ''
-    return
-  }
-  try {
-    const raw = await readFileAsDataUrl(file)
-    qrConfig.value.logoDataUrl = await normalizeQrLogoDataUrl(raw)
-    refreshLogoPersistHint()
-    if (logoPersistHint.value) {
-      toast.info('Logo won’t be saved at this size', {
-        detail: 'Export still includes it. Save will keep styles only unless you use a file under 2 MB.',
-        duration: 9000,
-      })
-    }
-  } catch {
-    logoError.value = 'Failed to read that image.'
-    input.value = ''
-  }
-}
-
-function clearLogo() {
-  qrConfig.value.logoDataUrl = null
-  logoError.value = ''
-  logoPersistHint.value = ''
-}
-
-const downloadQR = async () => {
-  if (isExporting.value) return
-  isExporting.value = true
-  try {
-    let config = { ...qrConfig.value }
-    if (config.logoDataUrl) {
-      config.logoDataUrl = await normalizeQrLogoDataUrl(config.logoDataUrl)
-    }
-    await downloadLinkQrPng(
-      1920,
-      liveShortUrl.value,
-      config,
-      `eypi-qr-${sidebarSlug.value || 'link'}`,
-      'transparent',
-    )
-    toast.success('QR code exported')
-  } catch (err) {
-    console.error('QR export failed', err)
-    toast.error('Failed to export QR code')
-  } finally {
-    isExporting.value = false
-  }
-}
-
-const links = ref<Link[]>([])
-const searchQuery = ref('')
-const filteredLinks = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return links.value
-  return links.value.filter((link) =>
-    link.short.toLowerCase().includes(q) ||
-    link.original.toLowerCase().includes(q)
-  )
-})
-
-async function fetchLinks() {
-  try {
-    const response = await api.raw('/api/links', { method: 'GET' })
-    const data = await response.json() as { links?: Link[] }
-    links.value = (data.links || []).map((link) => ({
-      ...link,
-      qrConfig: parseLinkQrConfig(link.qrConfig ?? null),
-    }))
-  } catch (error) {
-    console.error('Fetch error:', error)
-  }
-}
-
-const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-function hashToSlug(str: string): string {
-  if (!str.trim()) return ''
-  let hash = 5381
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) + hash + str.charCodeAt(i)
-    hash = hash | 0
-  }
-  const n = Math.abs(hash)
-  let result = ''
-  let remaining = n
-  for (let i = 0; i < 5; i++) {
-    result = BASE62[remaining % 62] + result
-    remaining = Math.floor(remaining / 62)
-  }
-  return result
-}
-
-function extractSlug(short: string): string {
-  const prefix = 'eypi.cc/'
-  return short.startsWith(prefix) ? short.slice(prefix.length) : short
-}
-
-function sanitizeSlugInput(e: Event) {
-  const target = e.target as HTMLInputElement
-  sidebarSlug.value = target.value.replace(/[^a-zA-Z0-9]/g, '')
-}
-
-async function applyQrConfig(config: LinkQrConfig) {
-  const next = parseLinkQrConfig(config)
-  if (next.logoDataUrl) {
-    try {
-      next.logoDataUrl = await normalizeQrLogoDataUrl(next.logoDataUrl)
-    } catch {
-      next.logoDataUrl = null
-      logoError.value = 'Saved logo could not be loaded. Upload it again.'
-    }
-  }
-  qrConfig.value = next
-  refreshLogoPersistHint()
-}
-
-async function openSidebar(link?: Link): Promise<void> {
-  activeLink.value = link ?? null
-  logoError.value = ''
-  if (link) {
-    sidebarOriginalUrl.value = link.original
-    sidebarSlug.value = extractSlug(link.short)
-    await applyQrConfig(link.qrConfig ?? DEFAULT_LINK_QR_CONFIG)
-  } else {
-    sidebarOriginalUrl.value = longUrlInput.value
-    sidebarSlug.value = hashToSlug(longUrlInput.value)
-    qrConfig.value = { ...DEFAULT_LINK_QR_CONFIG }
-    refreshLogoPersistHint()
-  }
-  isSidebarOpen.value = true
-}
-
-async function handleShorten() {
-  const urlToProcess = normalizeUrl(longUrlInput.value)
-  if (!urlToProcess) {
-    longUrlError.value = 'Enter the URL you want to shorten.'
-    return
-  }
-
-  if (!isValidUrl(urlToProcess)) {
-    longUrlError.value = 'Enter a valid URL.'
-    return
-  }
-
-  isShortening.value = true
-  try {
-    const res = await api.raw('/api/links', {
-      method: 'POST',
-      body: JSON.stringify({ original_url: urlToProcess }),
-    })
-    const data = await res.json() as { status?: string; error?: string; link?: Link }
-
-    if (res.status === 401) return
-
-    if (!res.ok) {
-      toast.error(data.error || 'Failed to create link')
-      return
-    }
-
-    if (data.status === 'success' && data.link) {
-      longUrlInput.value = ''
-      toast.success('Link created')
-      await fetchLinks()
-      const newLink = links.value.find((l) => l.original === urlToProcess || normalizeUrl(l.original) === urlToProcess)
-      if (newLink) {
-        openSidebar(newLink)
-      }
-    }
-  } catch {
-    toast.error('Failed to create link')
-  } finally {
-    isShortening.value = false
-  }
-}
-
-async function onSave(): Promise<void> {
-  if (!activeLink.value) {
-    isSidebarOpen.value = false
-    return
-  }
-  const slug = sidebarSlug.value.trim()
-    ? sidebarSlug.value.trim()
-    : hashToSlug(sidebarOriginalUrl.value)
-  const originalUrl = sidebarOriginalUrl.value.trim()
-  try {
-    const res = await api.raw(`/api/links/${activeLink.value.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        original_url: originalUrl,
-        slug,
-        qr_config: qrConfig.value,
-      }),
-    })
-    const data = await res.json() as {
-      status?: string
-      error?: string
-      logoOmitted?: boolean
-      qrConfig?: LinkQrConfig
-    }
-    if (res.ok && data.status === 'success') {
-      if (data.logoOmitted) {
-        toast.info('Saved without logo', {
-          detail: 'QR styles were saved, but the logo was over 2 MB so it was not stored. Re-attach a smaller logo next time if you want it saved.',
-          duration: 10000,
-        })
-      } else {
-        toast.success('Link updated')
-      }
-      isSidebarOpen.value = false
-      await fetchLinks()
-    } else {
-      toast.error(data.error || 'Failed to update link')
-    }
-  } catch {
-    toast.error('Failed to update link')
-  }
-}
-
-async function handleSave() {
-  const url = sidebarOriginalUrl.value.trim()
-  const slug = sidebarSlug.value.trim()
-
-  if (!isValidUrl(url)) {
-    sidebarUrlError.value = 'Enter a valid destination URL.'
-    return
-  }
-
-  if (slug && !isValidSlug(slug)) {
-    slugError.value = 'Use letters and numbers only.'
-    return
-  }
-
-  if (slug && isReservedSlug(slug)) {
-    slugError.value = 'Choose a different slug. This one is reserved.'
-    return
-  }
-
-  if (!/^#[0-9A-Fa-f]{6}$/.test(qrConfig.value.color.trim())) {
-    toast.error('Matrix color must be a hex value like #DEAC4B.')
-    return
-  }
-
-  isSaving.value = true
-  try {
-    await onSave()
-  } finally {
-    isSaving.value = false
-  }
-}
-
-async function confirmDelete(link: Link): Promise<void> {
+async function confirmDelete(link: LinkListItem) {
   const ok = await dialog.confirm({
     title: 'Delete this link?',
-    body: `Removes "${link.short}" and breaks its redirect to ${link.original}. This cannot be undone.`,
+    body: `Removes eypi.cc/${link.slug}. This cannot be undone.`,
     confirmLabel: 'Delete link',
   })
   if (!ok) return
-  await executeDelete(link)
-}
-
-async function executeDelete(link: Link): Promise<void> {
-  const linkId = link.id
   try {
-    const res = await api.raw(`/api/links/${linkId}`, { method: 'DELETE' })
-    const data = await res.json() as { status?: string; error?: string }
-    if (res.ok && data.status === 'success') {
-      links.value = links.value.filter((l) => l.id !== linkId)
-      toast.success('Link deleted')
-    } else {
-      toast.error(data.error || 'Failed to delete link')
-    }
+    await remove(link.id)
+    selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
+    toast.success('Link deleted.')
   } catch {
-    toast.error('Failed to delete link')
+    toast.error('Could not delete the link.')
   }
 }
 
-onMounted(async () => {
-  await fetchLinks()
-
-  // Check for pending URL from Landing Page
-  const routeUrl = route.query.url as string
-  const savedUrl = localStorage.getItem('pending_url')
-  const rawUrl = routeUrl || savedUrl || ''
-  const urlToShorten = normalizeUrl(rawUrl)
-
-  if (urlToShorten && isValidUrl(urlToShorten)) {
-    longUrlInput.value = urlToShorten
-    localStorage.removeItem('pending_url')
-    await handleShorten()
-    router.replace({ path: '/links', query: {} })
+async function confirmBulkDelete() {
+  const count = selectedIds.value.length
+  const ok = await dialog.confirm({
+    title: `Delete ${count} links?`,
+    body: 'Deleted links stop redirecting. This cannot be undone.',
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
+  try {
+    await bulk('delete', selectedIds.value)
+    selectedIds.value = []
+    toast.success('Links deleted.')
+  } catch {
+    toast.error('Could not delete the selected links.')
   }
+}
+
+async function confirmBulkDisable() {
+  const count = selectedIds.value.length
+  const ok = await dialog.confirm({
+    title: `Disable ${count} links?`,
+    body: 'Disabled links stop redirecting until you enable them.',
+    confirmLabel: 'Disable',
+  })
+  if (!ok) return
+  try {
+    await bulk('disable', selectedIds.value)
+    selectedIds.value = []
+    toast.success('Links disabled.')
+  } catch {
+    toast.error('Could not disable the selected links.')
+  }
+}
+
+async function setDisabled(link: LinkListItem, disabled: boolean) {
+  if (!disabled && (link.disabledReason === 'admin' || link.disabledReason === 'abuse')) {
+    pageError.value = 'A moderator disabled this link.'
+    return
+  }
+  try {
+    await update(link.id, { disabled })
+    pageError.value = ''
+  } catch {
+    pageError.value = disabled ? 'Could not disable this link.' : 'Could not enable this link.'
+  }
+}
+
+async function exportCsv() {
+  try {
+    const res = await api.raw('/api/links/export.csv')
+    if (!res.ok) {
+      toast.error('Could not export links.')
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'links.csv'
+    anchor.click()
+    URL.revokeObjectURL(url)
+  } catch {
+    toast.error('Could not export links.')
+  }
+}
+
+watch(() => route.query.url, () => { prefillFromRoute() })
+watch(error, (value) => { pageError.value = value })
+
+onMounted(() => {
+  prefillFromRoute()
+  void load()
+})
+
+onScopeDispose(() => {
+  if (searchTimer) clearTimeout(searchTimer)
 })
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-}
-.slide-right-enter-from,
-.slide-right-leave-to {
-  transform: translateX(100%);
-}
-</style>
-
-
-
-
