@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   DEFAULT_LINK_QR_CONFIG,
   QR_LOGO_DATA_URL_MAX,
+  logoExceedsSaveLimit,
   parseLinkQrConfig,
   prepareQrConfigForSave,
   serializeLinkQrConfig,
@@ -36,6 +37,21 @@ describe('parseLinkQrConfig', () => {
         color: 'red',
       }),
     ).toEqual(DEFAULT_LINK_QR_CONFIG)
+  })
+
+  it('keeps a same-origin QR logo URL', () => {
+    const logo = '/media/qr-logos/link-1-abcd1234.png'
+    expect(parseLinkQrConfig({
+      ...DEFAULT_LINK_QR_CONFIG,
+      logoDataUrl: logo,
+    }).logoDataUrl).toBe(logo)
+    const saved = prepareQrConfigForSave({
+      ...DEFAULT_LINK_QR_CONFIG,
+      logoDataUrl: logo,
+    })
+    expect(saved.logoOmitted).toBe(false)
+    expect(saved.config.logoDataUrl).toBe(logo)
+    expect(logoExceedsSaveLimit(logo)).toBe(false)
   })
 
   it('keeps styles when logo prefix is invalid', () => {

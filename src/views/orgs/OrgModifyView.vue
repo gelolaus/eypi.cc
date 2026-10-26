@@ -120,7 +120,8 @@
                 v-if="profileForm.bannerUrl"
                 type="button"
                 class="text-left text-sm font-medium text-red-500"
-                @click="profileForm.bannerUrl = ''"
+                :disabled="uploadingBanner"
+                @click="clearOrgImage('bannerUrl')"
               >
                 Remove banner
               </button>
@@ -150,7 +151,8 @@
                 v-if="profileForm.logoUrl"
                 type="button"
                 class="text-left text-sm font-medium text-red-500"
-                @click="profileForm.logoUrl = ''"
+                :disabled="uploadingLogo"
+                @click="clearOrgImage('logoUrl')"
               >
                 Remove logo
               </button>
@@ -500,31 +502,62 @@ async function fetchMembers() {
   }
 }
 
+const ORG_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+
+async function storeOrgImage(field: 'bannerUrl' | 'logoUrl', value: string | null, fallback: string) {
+  if (!profileForm.value) return
+  const res = await api.raw(`/api/orgs/${slug.value}/profile`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ [field]: value }),
+  })
+  const data = await res.json() as { profile?: OrgProfileSettings }
+  if (!res.ok || !data.profile) throw new Error(messageFrom(data, fallback))
+  profileForm.value[field] = data.profile[field] ?? ''
+}
+
 async function onBannerPicked(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file || !profileForm.value) return
   uploadingBanner.value = true
   try {
-    profileForm.value.bannerUrl = await readImageAsDataUrl(file, 2 * 1024 * 1024)
+    const dataUrl = await readImageAsDataUrl(file, ORG_IMAGE_MAX_BYTES)
+    await storeOrgImage('bannerUrl', dataUrl, 'Upload failed.')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Upload failed.')
   } finally {
     uploadingBanner.value = false
-    ;(e.target as HTMLInputElement).value = ''
+    input.value = ''
   }
 }
 
 async function onLogoPicked(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file || !profileForm.value) return
   uploadingLogo.value = true
   try {
-    profileForm.value.logoUrl = await readImageAsDataUrl(file, 1024 * 1024)
+    const dataUrl = await readImageAsDataUrl(file, ORG_IMAGE_MAX_BYTES)
+    await storeOrgImage('logoUrl', dataUrl, 'Upload failed.')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Upload failed.')
   } finally {
     uploadingLogo.value = false
-    ;(e.target as HTMLInputElement).value = ''
+    input.value = ''
+  }
+}
+
+async function clearOrgImage(field: 'bannerUrl' | 'logoUrl') {
+  if (!profileForm.value) return
+  const uploading = field === 'bannerUrl' ? uploadingBanner : uploadingLogo
+  uploading.value = true
+  try {
+    await storeOrgImage(field, null, 'Could not remove that image.')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Could not remove that image.')
+  } finally {
+    uploading.value = false
   }
 }
 

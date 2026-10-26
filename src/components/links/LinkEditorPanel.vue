@@ -132,6 +132,7 @@
       </label>
       <QrDesigner
         :config="qrConfig"
+        :link-id="linkId"
         :slug="slug"
         :track-scans="trackScans"
         @update:config="qrConfig = $event"

@@ -1,10 +1,13 @@
 import { Hono } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { z } from 'zod'
 import type { Client, InStatement, InValue } from '@libsql/client/web'
 import { isApcEmail, normalizeEmail } from '../../../shared/apcIdentity'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
+import { ApiError } from '../lib/errors'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
+import { deleteObject, mediaUrl, putImage } from '../lib/media'
 import { requireAdmin } from '../middleware/requireAdmin'
 import { requireAuth } from '../middleware/requireAuth'
 
@@ -22,7 +25,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 const TAGLINE_MAX = 160
 const ABOUT_MAX = 8000
 const URL_MAX = 2048
-const IMAGE_DATA_URL_MAX = 2_800_000
+const IMAGE_DATA_URL_MAX = 3 * 1024 * 1024
+const ORG_IMAGE_MAX_BYTES = 3 * 1024 * 1024
 
 const ORG_TYPE_VALUES = [
   'shs_academic',
@@ -38,6 +42,7 @@ const ORG_TYPE_VALUES = [
 
 function validateImageUrl(value: string): boolean {
   if (!value) return true
+  if (value.length <= URL_MAX && value.startsWith('/media/orgs/') && !value.includes('..')) return true
   if (value.length <= URL_MAX && /^https?:\/\//i.test(value)) return true
   const prefix = value.slice(0, 40).toLowerCase()
   const okPrefix =
@@ -45,6 +50,98 @@ function validateImageUrl(value: string): boolean {
     || prefix.startsWith('data:image/png;base64,')
     || prefix.startsWith('data:image/webp;base64,')
   return okPrefix && value.length <= IMAGE_DATA_URL_MAX
+}
+
+function decodeDataUrl(value: string): Uint8Array | null {
+  const match = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)$/i.exec(value.trim())
+  if (!match?.[1]) return null
+  let binary: string
+  try {
+    binary = atob(match[1].replace(/\s/g, ''))
+  } catch {
+    return null
+  }
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function isOrgImageKey(orgId: string, kind: 'logo' | 'banner', key: string): boolean {
+  const prefix = `orgs/${orgId}/${kind}-`
+  if (!key.startsWith(prefix) || key.includes('..') || key.includes('\\')) return false
+  return /^[0-9a-f]{8}\.(png|jpg|webp)$/.test(key.slice(prefix.length))
+}
+
+function presentImage(value: unknown, catalog: boolean): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.toLowerCase().includes('data:')) return catalog ? null : trimmed
+  if (trimmed.startsWith('/media/')) return trimmed
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (trimmed.startsWith('orgs/') && !trimmed.includes('..') && !trimmed.includes('\\')) {
+    return mediaUrl(trimmed)
+  }
+  return catalog ? null : trimmed
+}
+
+type ImageChange = {
+  value: string | null
+  uploadedKey: string | null
+  deleteKey: string | null
+}
+
+async function resolveOrgImage(
+  env: Bindings,
+  orgId: string,
+  kind: 'logo' | 'banner',
+  incoming: string | null,
+  current: string | null,
+): Promise<ImageChange> {
+  const currentKey = current && isOrgImageKey(orgId, kind, current) ? current : null
+  const trimmed = incoming?.trim() || ''
+  if (!trimmed) return { value: null, uploadedKey: null, deleteKey: currentKey }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return { value: trimmed, uploadedKey: null, deleteKey: currentKey }
+  }
+
+  const fromMedia = trimmed.startsWith('/media/') ? trimmed.slice('/media/'.length) : trimmed
+  if (isOrgImageKey(orgId, kind, fromMedia)) {
+    return {
+      value: fromMedia,
+      uploadedKey: null,
+      deleteKey: fromMedia === currentKey ? null : currentKey,
+    }
+  }
+
+  if (trimmed.toLowerCase().startsWith('data:')) {
+    const bytes = decodeDataUrl(trimmed)
+    if (!bytes) throw new ApiError(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
+    const stored = await putImage(env, {
+      prefix: `orgs/${orgId}`,
+      id: kind,
+      bytes,
+      allowed: ['png', 'jpeg', 'webp'],
+      maxBytes: ORG_IMAGE_MAX_BYTES,
+    })
+    return {
+      value: stored.key,
+      uploadedKey: stored.key === currentKey ? null : stored.key,
+      deleteKey: stored.key === currentKey ? null : currentKey,
+    }
+  }
+
+  throw new ApiError(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
+}
+
+function imageError(err: ApiError) {
+  const error: { code: string; message: string; fields?: Record<string, string> } = {
+    code: err.code,
+    message: err.message,
+  }
+  if (err.fields) error.fields = err.fields
+  return { error }
 }
 
 const imageUrlField = z.literal('').or(z.string().refine(validateImageUrl, 'Invalid image URL or data URL.'))
@@ -164,7 +261,8 @@ function mapPublicEvent(row: Record<string, unknown>) {
   }
 }
 
-function mapOrgProfileRow(row: Record<string, unknown>) {
+function mapOrgProfileRow(row: Record<string, unknown>, options?: { catalog?: boolean }) {
+  const catalog = options?.catalog === true
   const rawOrgType = row.org_type as string | null | undefined
   const orgType = rawOrgType && ORG_TYPE_VALUES.includes(rawOrgType as typeof ORG_TYPE_VALUES[number])
     ? rawOrgType
@@ -176,8 +274,8 @@ function mapOrgProfileRow(row: Record<string, unknown>) {
     tagline: (row.tagline as string | null) ?? null,
     orgType,
     aboutMarkdown: (row.about_markdown as string | null) ?? null,
-    bannerUrl: (row.banner_url as string | null) ?? null,
-    logoUrl: (row.logo_url as string | null) ?? null,
+    bannerUrl: presentImage(row.banner_url, catalog),
+    logoUrl: presentImage(row.logo_url, catalog),
     socialLinks: parseSocialLinks(row.social_links),
     isPublicCatalog: Number(row.is_public_catalog ?? 0) === 1,
   }
@@ -238,7 +336,7 @@ app.get('/public', async (c) => {
         name: row.name as string,
         tagline: (row.tagline as string | null) ?? null,
         orgType: mapOrgProfileRow(row).orgType,
-        logoUrl: (row.logo_url as string | null) ?? null,
+        logoUrl: presentImage(row.logo_url, true),
       })),
     })
   } catch (error) {
@@ -293,7 +391,7 @@ app.get('/public/:slug', async (c) => {
       }),
     ])
 
-    const { isPublicCatalog: _omit, ...org } = mapOrgProfileRow(orgRow)
+    const { isPublicCatalog: _omit, ...org } = mapOrgProfileRow(orgRow, { catalog: true })
 
     return c.json({
       org,
@@ -349,7 +447,17 @@ app.get('/', async (c) => {
       args: [userId, userId, userId],
     })
 
-    return c.json({ orgs: rows }, 200)
+    return c.json({
+      orgs: rows.map((row) => ({
+        org_id: row.org_id,
+        org_name: row.org_name,
+        logo_url: presentImage(row.logo_url, false),
+        owner_id: row.owner_id,
+        is_public_catalog: row.is_public_catalog,
+        is_owner: row.is_owner,
+        created_at: row.created_at,
+      })),
+    }, 200)
   } catch (error) {
     console.error('Error fetching organizations:', error)
     return c.json({ error: 'Internal server error' }, 500)
@@ -460,7 +568,7 @@ app.get('/invites', async (c) => {
   return c.json(rows.map((row) => ({
     orgId: String(row.org_id),
     orgName: String(row.org_name),
-    logoUrl: row.logo_url == null ? null : String(row.logo_url),
+    logoUrl: presentImage(row.logo_url, false),
     invitedByName: row.invited_by_name == null ? null : String(row.invited_by_name),
     invitedAt: row.invited_at == null ? null : String(row.invited_at),
   })))
@@ -847,30 +955,57 @@ app.patch('/:org_id/profile', async (c) => {
     updates.push('about_markdown = ?')
     args.push(data.aboutMarkdown?.trim() || null)
   }
-  if (data.bannerUrl !== undefined) {
-    updates.push('banner_url = ?')
-    args.push(data.bannerUrl?.trim() || null)
-  }
-  if (data.logoUrl !== undefined) {
-    updates.push('logo_url = ?')
-    args.push(data.logoUrl?.trim() || null)
-  }
   if (data.socialLinks !== undefined) {
     updates.push('social_links = ?')
     args.push(JSON.stringify(data.socialLinks))
   }
 
-  if (updates.length === 0) {
-    return c.json({ error: 'No profile fields to update.' }, 400)
-  }
-
-  args.push(orgId)
+  const uploaded: string[] = []
+  const deletes: string[] = []
+  let committed = false
 
   try {
+    if (data.bannerUrl !== undefined || data.logoUrl !== undefined) {
+      const current = await database.execute({
+        sql: 'SELECT banner_url, logo_url FROM organizations WHERE id = ? LIMIT 1',
+        args: [orgId],
+      })
+      const row = current.rows[0]
+      const currentBanner = row?.banner_url == null ? null : String(row.banner_url)
+      const currentLogo = row?.logo_url == null ? null : String(row.logo_url)
+      if (data.bannerUrl !== undefined) {
+        const change = await resolveOrgImage(c.env, orgId, 'banner', data.bannerUrl, currentBanner)
+        if (change.uploadedKey) uploaded.push(change.uploadedKey)
+        if (change.deleteKey) deletes.push(change.deleteKey)
+        updates.push('banner_url = ?')
+        args.push(change.value)
+      }
+      if (data.logoUrl !== undefined) {
+        const change = await resolveOrgImage(c.env, orgId, 'logo', data.logoUrl, currentLogo)
+        if (change.uploadedKey) uploaded.push(change.uploadedKey)
+        if (change.deleteKey) deletes.push(change.deleteKey)
+        updates.push('logo_url = ?')
+        args.push(change.value)
+      }
+    }
+
+    if (updates.length === 0) {
+      return c.json({ error: 'No profile fields to update.' }, 400)
+    }
+
+    args.push(orgId)
     await database.execute({
       sql: `UPDATE organizations SET ${updates.join(', ')} WHERE id = ?`,
       args,
     })
+    committed = true
+    await Promise.all(deletes.map(async (key) => {
+      try {
+        await deleteObject(c.env, key)
+      } catch {
+        // The row already points at the new object.
+      }
+    }))
 
     const { rows } = await database.execute({
       sql: `
@@ -884,6 +1019,18 @@ app.patch('/:org_id/profile', async (c) => {
 
     return c.json({ success: true, profile: mapOrgProfileRow(rows[0]) })
   } catch (error) {
+    if (!committed) {
+      await Promise.all(uploaded.map(async (key) => {
+        try {
+          await deleteObject(c.env, key)
+        } catch {
+          // Keep the original error.
+        }
+      }))
+    }
+    if (error instanceof ApiError) {
+      return c.json(imageError(error), error.status as ContentfulStatusCode)
+    }
     console.error('Error updating org profile:', error)
     return c.json({ error: 'Internal server error' }, 500)
   }

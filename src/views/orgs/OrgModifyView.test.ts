@@ -218,3 +218,46 @@ describe('OrgModifyView members', () => {
     wrapper.unmount()
   })
 })
+
+describe('OrgModifyView images', () => {
+  it('previews a logo from the uploaded media URL', async () => {
+    class ImmediateReader {
+      result: string | null = null
+      onload: null | (() => void) = null
+      onerror: null | (() => void) = null
+      readAsDataURL() {
+        this.result = 'data:image/png;base64,AAAA'
+        this.onload?.()
+      }
+    }
+    vi.stubGlobal('FileReader', ImmediateReader)
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = pathname(input)
+      const method = init?.method ?? 'GET'
+      if (path === '/api/orgs' && method === 'GET') return json({ orgs: [memberOrg] })
+      if (path === '/api/orgs/jpcs/profile' && method === 'GET') return json({ profile })
+      if (path === '/api/orgs/jpcs/profile' && method === 'PATCH') {
+        return json({
+          profile: { ...profile, logoUrl: '/media/orgs/jpcs/logo-abcd1234.png' },
+        })
+      }
+      return json({ error: { code: 'not_found', message: 'Missing.' } }, 404)
+    }))
+
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+
+    const input = wrapper.findAll('input[type="file"]')[1]
+    const file = new File([new Uint8Array([1, 2, 3])], 'logo.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', { value: [file] })
+    await input.trigger('change')
+    await flushPromises()
+
+    expect(wrapper.get('img[alt="Logo preview"]').attributes('src')).toBe('/media/orgs/jpcs/logo-abcd1234.png')
+    expect(wrapper.html()).not.toContain('data:')
+    wrapper.unmount()
+  })
+})

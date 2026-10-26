@@ -125,7 +125,7 @@
           v-if="config.logoDataUrl"
           class="self-start text-xs font-medium text-gray-500 underline-offset-2 hover:underline dark:text-slate-400"
           type="button"
-          @click="emit('update:config', { ...config, logoDataUrl: null })"
+          @click="removeLogo"
         >
           Remove logo
         </button>
@@ -167,6 +167,7 @@ import {
   type LinkQrEyeBallType,
   type LinkQrEyeFrameType,
 } from '@shared/linkQrConfig'
+import { ApiError, api } from '@/lib/api'
 import { normalizeQrLogoDataUrl } from '@/utils/normalizeQrLogo'
 import { downloadLinkQrPng, renderLinkQrCanvas } from '@/utils/renderLinkQr'
 import { useToast } from '@/composables/useToast'
@@ -175,6 +176,7 @@ const props = defineProps<{
   slug: string
   config: LinkQrConfig
   trackScans: boolean
+  linkId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -246,6 +248,19 @@ function onColor(event: Event) {
   if (value != null) emit('update:config', { ...props.config, color: value })
 }
 
+async function removeLogo() {
+  logoError.value = ''
+  if (props.linkId) {
+    try {
+      await api.put(`/api/links/${props.linkId}/qr-logo`, { imageData: null })
+    } catch (err) {
+      logoError.value = err instanceof ApiError ? err.message : 'Could not remove that logo.'
+      return
+    }
+  }
+  emit('update:config', { ...props.config, logoDataUrl: null })
+}
+
 function eventValue(event: Event): string | null {
   const target = event.target
   if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) return target.value
@@ -282,10 +297,18 @@ async function onLogo(event: Event) {
   }
   try {
     const raw = await readFile(file)
-    const logoDataUrl = await normalizeQrLogoDataUrl(raw)
-    emit('update:config', { ...props.config, logoDataUrl })
-  } catch {
-    logoError.value = 'Could not read that image.'
+    const normalized = await normalizeQrLogoDataUrl(raw)
+    if (props.linkId) {
+      const saved = await api.put<{ url: string }>(`/api/links/${props.linkId}/qr-logo`, {
+        imageData: normalized,
+      })
+      emit('update:config', { ...props.config, logoDataUrl: saved.url })
+    } else {
+      emit('update:config', { ...props.config, logoDataUrl: normalized })
+    }
+    input.value = ''
+  } catch (err) {
+    logoError.value = err instanceof ApiError ? err.message : 'Could not read that image.'
     input.value = ''
   }
 }
@@ -295,7 +318,9 @@ async function download() {
   exporting.value = true
   try {
     let config = { ...props.config }
-    if (config.logoDataUrl) config.logoDataUrl = await normalizeQrLogoDataUrl(config.logoDataUrl)
+    if (config.logoDataUrl?.startsWith('data:')) {
+      config.logoDataUrl = await normalizeQrLogoDataUrl(config.logoDataUrl)
+    }
     await downloadLinkQrPng(1920, dataUrl.value, config, `eypi-qr-${props.slug || 'link'}`, 'transparent')
     toast.success('QR code exported.')
   } catch {

@@ -2,6 +2,8 @@ import { Hono, type Context } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import type { InValue } from '@libsql/client'
 import { db, type Bindings } from '../lib/db'
+import { ApiError } from '../lib/errors'
+import { deleteObject, mediaUrl, putImage } from '../lib/media'
 import { requireAuth } from '../middleware/requireAuth'
 import { checkRateLimit } from '../lib/rateLimit'
 import { visitorHash } from '../lib/ipHash'
@@ -31,6 +33,7 @@ const UNLOCK_LIMIT = 10
 const UNLOCK_WINDOW_SEC = 15 * 60
 const RESOLVE_LIMIT = 60
 const RESOLVE_WINDOW_SEC = 60
+const QR_LOGO_MAX_BYTES = 3 * 1024 * 1024
 
 const LINK_COLUMNS = `id, slug, original_url, clicks, created_at, expires_at, disabled_at,
   disabled_reason, password_hash, qr_config`
@@ -135,7 +138,102 @@ function sqlNow(now = new Date()): string {
   return now.toISOString().slice(0, 19).replace('T', ' ')
 }
 
+function decodeDataUrl(value: string): Uint8Array | null {
+  const match = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)$/i.exec(value.trim())
+  if (!match?.[1]) return null
+  let binary: string
+  try {
+    binary = atob(match[1].replace(/\s/g, ''))
+  } catch {
+    return null
+  }
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function readLogoKey(raw: string | null): string | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { logo?: unknown }
+    if (!parsed.logo || typeof parsed.logo !== 'object') return null
+    const key = (parsed.logo as { key?: unknown }).key
+    if (typeof key !== 'string' || !key.startsWith('qr-logos/') || key.includes('..') || key.includes('\\')) {
+      return null
+    }
+    return key
+  } catch {
+    return null
+  }
+}
+
+function isOwnQrLogoKey(linkId: string, key: string): boolean {
+  const prefix = `qr-logos/${linkId}-`
+  if (!key.startsWith(prefix) || !key.endsWith('.png') || key.includes('..')) return false
+  return /^[0-9a-f]{8}$/.test(key.slice(prefix.length, -'.png'.length))
+}
+
+function storeQrConfig(config: ReturnType<typeof parseLinkQrConfig>, logoKey: string | null): string {
+  const styles = JSON.parse(serializeLinkQrConfig({ ...config, logoDataUrl: null })) as Record<string, unknown>
+  delete styles.logoDataUrl
+  if (logoKey) styles.logo = { key: logoKey }
+  return JSON.stringify(styles)
+}
+
+type LogoWrite = {
+  qrConfig: string
+  deleteKey: string | null
+  uploadedKey: string | null
+}
+
+async function writeQrLogo(
+  c: AppContext,
+  linkId: string,
+  config: ReturnType<typeof parseLinkQrConfig>,
+  currentRaw: string | null,
+): Promise<LogoWrite> {
+  const previousKey = readLogoKey(currentRaw)
+  const logo = config.logoDataUrl?.trim() || null
+  let nextKey = previousKey
+  let uploadedKey: string | null = null
+
+  if (!logo) {
+    nextKey = null
+  } else if (logo.startsWith('/media/')) {
+    const key = logo.slice('/media/'.length)
+    nextKey = isOwnQrLogoKey(linkId, key) ? key : previousKey
+  } else if (logo.startsWith('data:')) {
+    const bytes = decodeDataUrl(logo)
+    if (!bytes) throw new ApiError(422, 'invalid_image', 'Use a PNG image.')
+    const stored = await putImage(c.env, {
+      prefix: 'qr-logos',
+      id: linkId,
+      bytes,
+      allowed: ['png'],
+      maxBytes: QR_LOGO_MAX_BYTES,
+    })
+    nextKey = stored.key
+    uploadedKey = stored.key === previousKey ? null : stored.key
+  }
+
+  return {
+    qrConfig: storeQrConfig(config, nextKey),
+    deleteKey: nextKey === previousKey ? null : previousKey,
+    uploadedKey,
+  }
+}
+
+async function discardLogo(c: AppContext, key: string | null) {
+  if (!key) return
+  try {
+    await deleteObject(c.env, key)
+  } catch (err) {
+    reportError(c, err, { code: 'media_delete_failed', message: 'Could not delete the QR logo.' })
+  }
+}
+
 function hasLogo(raw: string | null): boolean {
+  if (readLogoKey(raw)) return true
   if (!raw) return false
   try {
     const parsed = JSON.parse(raw) as { logoDataUrl?: unknown }
@@ -161,9 +259,12 @@ function toListItem(row: LinkRow) {
 }
 
 function toDetail(row: LinkRow) {
+  const config = parseLinkQrConfig(row.qr_config)
+  const key = readLogoKey(row.qr_config)
+  if (key) config.logoDataUrl = mediaUrl(key)
   return {
     ...toListItem(row),
-    qrConfig: parseLinkQrConfig(row.qr_config),
+    qrConfig: config,
   }
 }
 
@@ -620,7 +721,6 @@ app.post('/api/links', requireAuth, async (c) => {
   }
 
   const prepared = prepareQrConfigForSave(parseLinkQrConfig(body.qrConfig ?? null))
-  const qrConfig = serializeLinkQrConfig(prepared.config)
   const client = db(c)
   const counted = await client.execute({
     sql: 'SELECT COUNT(*) AS n FROM links WHERE user_id = ?',
@@ -646,10 +746,21 @@ app.post('/api/links', requireAuth, async (c) => {
     if (existing) return fail(c, 409, 'slug_taken', 'That slug is taken.')
   }
 
+  const id = crypto.randomUUID()
+  let logoWrite: LogoWrite
+  try {
+    logoWrite = await writeQrLogo(c, id, prepared.config, null)
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return fail(c, err.status as ContentfulStatusCode, err.code, err.message)
+    }
+    throw err
+  }
+  const qrConfig = logoWrite.qrConfig
+
   for (let attempt = 0; attempt < 8; attempt++) {
     const slug = customSlug ?? generateSlug()
     if (!customSlug && validateSlug(slug) !== 'ok') continue
-    const id = crypto.randomUUID()
     const row: LinkRow = {
       id,
       slug,
@@ -663,6 +774,7 @@ app.post('/api/links', requireAuth, async (c) => {
       qr_config: qrConfig,
     }
     await c.env.LINKS_KV.put(slug, kvValue(row))
+    let inserted = false
     try {
       await client.execute({
         sql: `INSERT INTO links
@@ -670,18 +782,26 @@ app.post('/api/links', requireAuth, async (c) => {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [id, c.var.userId, destination.url, slug, expiresAt, passwordHash, qrConfig, row.created_at],
       })
+      inserted = true
       const saved = await loadOwned(c, id)
       return c.json(toDetail(saved ?? row), 201)
     } catch (err) {
       if (isSlugConflict(err)) {
         await restoreEdge(c, slug)
-        if (customSlug) return fail(c, 409, 'slug_taken', 'That slug is taken.')
+        if (customSlug) {
+          await discardLogo(c, logoWrite.uploadedKey)
+          return fail(c, 409, 'slug_taken', 'That slug is taken.')
+        }
         continue
       }
-      await deleteKvKey(c.env.LINKS_KV, slug).catch(() => {})
+      if (!inserted) {
+        await deleteKvKey(c.env.LINKS_KV, slug).catch(() => {})
+        await discardLogo(c, logoWrite.uploadedKey)
+      }
       throw err
     }
   }
+  await discardLogo(c, logoWrite.uploadedKey)
   throw new Error('Could not allocate a slug')
 })
 
@@ -765,6 +885,59 @@ app.post('/api/links/:slug/unlock', async (c) => {
   return c.json({ url: target.url })
 })
 
+app.put('/api/links/:id/qr-logo', requireAuth, async (c) => {
+  const limited = await enforceEditLimit(c)
+  if (limited) return limited
+  const current = await loadOwned(c, c.req.param('id'))
+  if (!current) return fail(c, 404, 'not_found', 'Not found')
+
+  const body = await readBody(c)
+  if (body instanceof Response) return body
+  const imageData = body.imageData
+  const clearing = imageData === null
+  if (!clearing && (typeof imageData !== 'string' || !imageData.trim().toLowerCase().startsWith('data:'))) {
+    return fail(c, 422, 'invalid_image', 'Use a PNG image.', { imageData: 'Use a PNG image.' })
+  }
+
+  const config = parseLinkQrConfig(current.qr_config)
+  config.logoDataUrl = typeof imageData === 'string' ? imageData : null
+  let logoWrite: LogoWrite
+  try {
+    logoWrite = await writeQrLogo(c, current.id, config, current.qr_config)
+  } catch (err) {
+    if (err instanceof ApiError) {
+      return fail(c, err.status as ContentfulStatusCode, err.code, err.message, {
+        imageData: err.message,
+      })
+    }
+    throw err
+  }
+
+  const key = clearing ? null : readLogoKey(logoWrite.qrConfig)
+  if (!clearing && !key) {
+    await discardLogo(c, logoWrite.uploadedKey)
+    return fail(c, 422, 'invalid_image', 'Use a PNG image.', { imageData: 'Use a PNG image.' })
+  }
+
+  try {
+    const updated = await db(c).execute({
+      sql: 'UPDATE links SET qr_config = ?, updated_at = ? WHERE id = ? AND user_id = ?',
+      args: [logoWrite.qrConfig, sqlNow(), current.id, c.var.userId],
+    })
+    if (updated.rowsAffected === 0) {
+      await discardLogo(c, logoWrite.uploadedKey)
+      return fail(c, 404, 'not_found', 'Not found')
+    }
+  } catch (err) {
+    await discardLogo(c, logoWrite.uploadedKey)
+    throw err
+  }
+
+  await discardLogo(c, logoWrite.deleteKey)
+  if (clearing || !key) return c.json({ url: null, logo: null })
+  return c.json({ url: mediaUrl(key), logo: { key } })
+})
+
 app.patch('/api/links/:id', requireAuth, async (c) => {
   const limited = await enforceEditLimit(c)
   if (limited) return limited
@@ -832,8 +1005,18 @@ app.patch('/api/links/:id', requireAuth, async (c) => {
   }
 
   let qrConfig = current.qr_config
+  let logoWrite: LogoWrite | null = null
   if ('qrConfig' in body) {
-    qrConfig = serializeLinkQrConfig(prepareQrConfigForSave(parseLinkQrConfig(body.qrConfig)).config)
+    const prepared = prepareQrConfigForSave(parseLinkQrConfig(body.qrConfig))
+    try {
+      logoWrite = await writeQrLogo(c, current.id, prepared.config, current.qr_config)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        return fail(c, err.status as ContentfulStatusCode, err.code, err.message)
+      }
+      throw err
+    }
+    qrConfig = logoWrite.qrConfig
   }
 
   let disabledAt = current.disabled_at
@@ -868,13 +1051,16 @@ app.patch('/api/links/:id', requireAuth, async (c) => {
     })
     if (updated.rowsAffected === 0) {
       if (!disabledAt) await restoreEdge(c, slug)
+      await discardLogo(c, logoWrite?.uploadedKey ?? null)
       return fail(c, 404, 'not_found', 'Not found')
     }
   } catch (err) {
     if (!disabledAt) await restoreEdge(c, slug)
+    await discardLogo(c, logoWrite?.uploadedKey ?? null)
     if (isSlugConflict(err)) return fail(c, 409, 'slug_taken', 'That slug is taken.')
     throw err
   }
+  await discardLogo(c, logoWrite?.deleteKey ?? null)
 
   if (disabledAt) await deleteKvKey(c.env.LINKS_KV, slug)
   if (slug !== current.slug) await deleteKvKey(c.env.LINKS_KV, current.slug)

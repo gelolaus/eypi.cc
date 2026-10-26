@@ -7,6 +7,8 @@ import { shouldPunchToTransparent } from '@shared/qrTransparency'
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    // Same-origin /media URLs must stay readable when the canvas samples the logo.
+    if (!src.startsWith('data:')) img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = () => reject(new Error('Failed to decode logo image.'))
     img.src = src
@@ -45,10 +47,10 @@ function punchWhiteBackground(ctx: CanvasRenderingContext2D, size: number): void
 
 /** Prepare logo: scale, knock out edge-connected bg (black/white pads), keep artwork. */
 async function prepareLogoCanvas(
-  logoDataUrl: string,
+  logoSrc: string,
   logoSize: number,
 ): Promise<HTMLCanvasElement> {
-  const logo = await loadImage(logoDataUrl)
+  const logo = await loadImage(logoSrc)
   const canvas = document.createElement('canvas')
   canvas.width = logoSize
   canvas.height = logoSize
@@ -65,11 +67,11 @@ async function prepareLogoCanvas(
 async function drawLogo(
   ctx: CanvasRenderingContext2D,
   size: number,
-  logoDataUrl: string,
+  logoSrc: string,
   backdrop: 'white' | 'none',
 ): Promise<void> {
   const { logoSize, x, y } = qrLogoLayout(size, 0.28, 0)
-  const logoCanvas = await prepareLogoCanvas(logoDataUrl, logoSize)
+  const logoCanvas = await prepareLogoCanvas(logoSrc, logoSize)
 
   if (backdrop === 'white') {
     // Preview only: solid plate so the mark reads on the dark sidebar.
