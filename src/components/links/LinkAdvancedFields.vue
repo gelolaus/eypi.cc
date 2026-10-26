@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 
 const props = defineProps<{
   url: string
@@ -97,6 +97,20 @@ const utm = reactive<Record<UtmKey, string>>({
   utm_term: '',
   utm_content: '',
 })
+
+function readUtm(url: string) {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return
+  }
+  for (const field of fields) {
+    utm[field.key] = parsed.searchParams.get(field.key) ?? ''
+  }
+}
+
+watch(() => props.url, (url) => { readUtm(url) }, { immediate: true })
 
 function onExpires(event: Event) {
   const target = event.target

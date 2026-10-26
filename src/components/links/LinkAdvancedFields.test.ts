@@ -31,4 +31,27 @@ describe('LinkAdvancedFields UTM builder', () => {
     expect(params.get('utm_content')).toBe('banner')
     expect(params.get('ref')).toBe('1')
   })
+
+  it('keeps an existing utm_medium and ref when the user sets utm_source', async () => {
+    const wrapper = mount(LinkAdvancedFields, {
+      props: {
+        url: 'https://example.com/path?utm_medium=email&ref=1',
+        expiresAt: '',
+        password: '',
+      },
+    })
+
+    expect((wrapper.get('#utm-medium').element as HTMLInputElement).value).toBe('email')
+
+    await wrapper.get('#utm-source').setValue('newsletter')
+
+    const updates = wrapper.emitted('update:url')
+    expect(updates?.length).toBeGreaterThan(0)
+    const next = String(updates![updates!.length - 1]![0])
+    const params = new URL(next).searchParams
+
+    expect(params.getAll('utm_source')).toEqual(['newsletter'])
+    expect(params.get('utm_medium')).toBe('email')
+    expect(params.get('ref')).toBe('1')
+  })
 })
