@@ -182,6 +182,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:config': [config: LinkQrConfig]
   'update:trackScans': [value: boolean]
+  uploading: [busy: boolean]
 }>()
 
 const toast = useToast()
@@ -250,15 +251,17 @@ function onColor(event: Event) {
 
 async function removeLogo() {
   logoError.value = ''
-  if (props.linkId) {
-    try {
+  emit('uploading', true)
+  try {
+    if (props.linkId) {
       await api.put(`/api/links/${props.linkId}/qr-logo`, { imageData: null })
-    } catch (err) {
-      logoError.value = err instanceof ApiError ? err.message : 'Could not remove that logo.'
-      return
     }
+    emit('update:config', { ...props.config, logoDataUrl: null })
+  } catch (err) {
+    logoError.value = err instanceof ApiError ? err.message : 'Could not remove that logo.'
+  } finally {
+    emit('uploading', false)
   }
-  emit('update:config', { ...props.config, logoDataUrl: null })
 }
 
 function eventValue(event: Event): string | null {
@@ -295,6 +298,7 @@ async function onLogo(event: Event) {
     input.value = ''
     return
   }
+  emit('uploading', true)
   try {
     const raw = await readFile(file)
     const normalized = await normalizeQrLogoDataUrl(raw)
@@ -306,9 +310,10 @@ async function onLogo(event: Event) {
     } else {
       emit('update:config', { ...props.config, logoDataUrl: normalized })
     }
-    input.value = ''
   } catch (err) {
     logoError.value = err instanceof ApiError ? err.message : 'Could not read that image.'
+  } finally {
+    emit('uploading', false)
     input.value = ''
   }
 }

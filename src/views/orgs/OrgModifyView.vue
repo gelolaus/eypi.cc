@@ -186,7 +186,7 @@
             </div>
           </div>
 
-          <button type="submit" :disabled="savingProfile" class="btn-primary btn-gold" data-cursor="cta">
+          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-primary btn-gold" data-cursor="cta">
             {{ savingProfile ? 'Saving...' : 'Save profile' }}
           </button>
         </form>
@@ -599,7 +599,7 @@ function openPreview() {
 }
 
 async function saveProfile() {
-  if (!profileForm.value) return
+  if (!profileForm.value || uploadingLogo.value || uploadingBanner.value) return
   savingProfile.value = true
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/profile`, {

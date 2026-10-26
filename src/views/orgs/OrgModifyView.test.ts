@@ -260,4 +260,72 @@ describe('OrgModifyView images', () => {
     expect(wrapper.html()).not.toContain('data:')
     wrapper.unmount()
   })
+
+  it.each([
+    ['logo', 1, 'logoUrl', '/media/orgs/jpcs/logo-aaaaaaaa.png', '/media/orgs/jpcs/logo-bbbbbbbb.png', 'Logo preview'],
+    ['banner', 0, 'bannerUrl', '/media/orgs/jpcs/banner-aaaaaaaa.jpg', '/media/orgs/jpcs/banner-bbbbbbbb.jpg', 'Banner preview'],
+  ] as const)(
+    'does not commit a stale %s while that upload is in flight',
+    async (_label, inputIndex, field, staleUrl, nextUrl, alt) => {
+      class ImmediateReader {
+        result: string | null = null
+        onload: null | (() => void) = null
+        onerror: null | (() => void) = null
+        readAsDataURL() {
+          this.result = 'data:image/png;base64,AAAA'
+          this.onload?.()
+        }
+      }
+      vi.stubGlobal('FileReader', ImmediateReader)
+      const loaded = { ...profile, logoUrl: staleUrl, bannerUrl: staleUrl, [field]: staleUrl }
+      const saves: Array<Record<string, unknown>> = []
+      const pending: { release: ((response: Response) => void) | null } = { release: null }
+      vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const path = pathname(input)
+        const method = init?.method ?? 'GET'
+        if (path === '/api/orgs' && method === 'GET') return json({ orgs: [memberOrg] })
+        if (path === '/api/orgs/jpcs/profile' && method === 'GET') return json({ profile: loaded })
+        if (path === '/api/orgs/jpcs/profile' && method === 'PATCH') {
+          const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+          const image = body[field]
+          if (Object.keys(body).length === 1 && typeof image === 'string' && image.startsWith('data:')) {
+            return new Promise<Response>((resolve) => {
+              pending.release = resolve
+            })
+          }
+          saves.push(body)
+          return json({ profile: loaded })
+        }
+        return json({ error: { code: 'not_found', message: 'Missing.' } }, 404)
+      }))
+
+      const wrapper = mount(Harness, {
+        attachTo: document.body,
+        global: { plugins: [router] },
+      })
+      await flushPromises()
+
+      const input = wrapper.findAll('input[type="file"]')[inputIndex]
+      const file = new File([new Uint8Array([1, 2, 3])], `${field}.png`, { type: 'image/png' })
+      Object.defineProperty(input.element, 'files', { value: [file] })
+      await input.trigger('change')
+      await flushPromises()
+      const releaseUpload = pending.release
+      if (!releaseUpload) throw new Error('upload did not start')
+
+      const save = wrapper.findAll('button').find((button) => button.text() === 'Save profile')
+      expect(save).toBeTruthy()
+      await save!.element.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      await flushPromises()
+
+      expect(saves).toEqual([])
+      expect((save!.element as HTMLButtonElement).disabled).toBe(true)
+
+      releaseUpload(json({ profile: { ...loaded, [field]: nextUrl } }))
+      await flushPromises()
+      expect(saves).toEqual([])
+      expect(wrapper.get(`img[alt="${alt}"]`).attributes('src')).toBe(nextUrl)
+      wrapper.unmount()
+    },
+  )
 })

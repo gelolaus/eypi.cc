@@ -137,6 +137,7 @@
         :track-scans="trackScans"
         @update:config="qrConfig = $event"
         @update:track-scans="trackScans = $event"
+        @uploading="qrImageBusy = $event"
       />
       <p
         v-if="formError"
@@ -148,7 +149,7 @@
       <button
         class="btn-gold mt-6 w-full rounded-xl px-8 py-4 font-semibold disabled:cursor-not-allowed disabled:opacity-70"
         type="button"
-        :disabled="saving"
+        :disabled="saving || qrImageBusy"
         @click="submit"
       >
         {{ linkId ? 'Save changes' : 'Create link' }}
@@ -199,6 +200,7 @@ const slugError = ref('')
 const passwordError = ref('')
 const formError = ref('')
 const saving = ref(false)
+const qrImageBusy = ref(false)
 
 const slugDescribedBy = computed(() => {
   const ids = ['slug-help']
@@ -313,6 +315,7 @@ async function checkAvailability(slugValue: string) {
 }
 
 async function submit() {
+  if (saving.value || qrImageBusy.value) return
   urlError.value = ''
   slugError.value = ''
   passwordError.value = ''
