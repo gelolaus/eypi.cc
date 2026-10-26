@@ -198,25 +198,26 @@
           No members yet.
         </p>
         <div v-else class="mb-6 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
-          <table class="text-data block w-full border-collapse text-left text-sm md:table md:text-xs">
-            <thead class="hidden md:table-header-group">
-              <tr class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
-                <th class="px-4 py-3">Name</th>
-                <th class="px-4 py-3">Email</th>
-                <th class="px-4 py-3 text-center">Status</th>
-                <th class="px-4 py-3 text-right">Actions</th>
+          <table role="table" aria-label="Members" class="text-data block w-full border-collapse text-left text-sm md:table md:text-xs">
+            <thead role="rowgroup" class="sr-only md:not-sr-only md:table-header-group">
+              <tr role="row" class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
+                <th role="columnheader" class="px-4 py-3">Name</th>
+                <th role="columnheader" class="px-4 py-3">Email</th>
+                <th role="columnheader" class="px-4 py-3 text-center">Status</th>
+                <th role="columnheader" class="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody class="block space-y-3 md:table-row-group md:space-y-0">
+            <tbody role="rowgroup" class="block space-y-3 md:table-row-group md:space-y-0">
               <tr
                 v-for="member in members"
                 :key="member.email"
+                role="row"
                 class="block rounded-2xl border border-g-border bg-g-surface p-4 md:table-row md:rounded-none md:border-0 md:border-b md:border-g-border/70 md:bg-transparent md:p-0 md:last:border-0"
               >
-                <td class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal">{{ member.name?.trim() || 'No account yet' }}</td>
-                <td class="block break-all text-g-muted md:table-cell md:px-4 md:py-3 md:text-inherit">{{ member.email }}</td>
-                <td class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center">{{ memberStatus(member) }}</td>
-                <td class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right">
+                <td role="cell" class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal">{{ member.name?.trim() || 'No account yet' }}</td>
+                <td role="cell" class="block break-all text-g-muted md:table-cell md:px-4 md:py-3 md:text-inherit">{{ member.email }}</td>
+                <td role="cell" class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center">{{ memberStatus(member) }}</td>
+                <td role="cell" class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right">
                   <div v-if="isPendingMember(member)" class="flex flex-wrap gap-2 md:justify-end">
                     <button
                       type="button"

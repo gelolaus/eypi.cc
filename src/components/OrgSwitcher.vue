@@ -6,6 +6,9 @@
       :class="block ? 'w-full' : 'max-w-[min(100%,14rem)]'"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
       :aria-label="compact ? `Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}` : undefined"
+      ref="triggerRef"
+      aria-haspopup="dialog"
+      :aria-controls="isOpen ? menuId : undefined"
       :aria-expanded="isOpen ? 'true' : 'false'"
       data-cursor="nav"
       @click="isOpen = !isOpen"
@@ -48,9 +51,11 @@
 
       <div
         v-if="isOpen"
+        :id="menuId"
         data-org-switcher-menu
-        role="dialog"
-        aria-label="Switch organization"
+        :role="isMobile ? 'dialog' : undefined"
+        :aria-modal="isMobile ? 'true' : undefined"
+        :aria-label="isMobile ? 'Switch organization' : undefined"
         class="fixed inset-x-0 bottom-0 z-[10001] max-h-[80dvh] overflow-y-auto rounded-t-3xl border border-g-border bg-g-surface px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-left shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:z-50 sm:max-h-none sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:overflow-visible sm:rounded-xl sm:p-0 sm:py-1.5 sm:shadow-xl"
         :class="placement === 'up' ? 'sm:bottom-full sm:left-0 sm:mb-1.5' : 'sm:right-0 sm:mt-1.5'"
       >
@@ -82,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, useId, onMounted, onBeforeUnmount } from 'vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import OrgLogo from '@/components/OrgLogo.vue'
 import type { OrgListItem } from '@/types/orgs'
@@ -103,6 +108,8 @@ const props = withDefaults(
 
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 const isOpen = ref(false)
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const menuId = useId()
 const isMobile = ref(false)
 let mql: MediaQueryList | null = null
 
@@ -115,8 +122,12 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 watch(isOpen, (open) => {
-  if (open) window.addEventListener('keydown', onKeydown)
-  else window.removeEventListener('keydown', onKeydown)
+  if (open) {
+    window.addEventListener('keydown', onKeydown)
+  } else {
+    window.removeEventListener('keydown', onKeydown)
+    void nextTick(() => triggerRef.value?.focus())
+  }
 })
 
 function handleSelect(org: OrgListItem) {
