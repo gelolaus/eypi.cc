@@ -280,8 +280,8 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Rewrite `DESIGN_SYSTEM.md`; modify `AGENTS.md` (table row), `CONTEXT.md` (any design vocabulary), `docs/superpowers/plans/2026-10-27-wantap-design-port.md` (tick boxes).
 
-- [ ] **Step 1:** `DESIGN_SYSTEM.md` sections: brand and source of truth (wantap.cc), the token table, typography, radius and control scale, surfaces, layout (shell, marketing, auth, empty states), component catalogue (each `ui/*` primitive with variants), motion and reduced motion, accessibility (focus ring, contrast ratios as tested), z-index (`z-40` bars, overlays from reka-ui), UI writing rules kept from the old §2. Every value must match `tokens.css` and `design.test.ts`.
-- [ ] **Step 2:** Add a test in `design.test.ts` that every token name in `DESIGN_SYSTEM.md` exists in `tokens.css`. Commit `docs(design): rewrite the design system for the wantap language`.
+- [x] **Step 1:** `DESIGN_SYSTEM.md` sections: brand and source of truth (wantap.cc), the token table, typography, radius and control scale, surfaces, layout (shell, marketing, auth, empty states), component catalogue (each `ui/*` primitive with variants), motion and reduced motion, accessibility (focus ring, contrast ratios as tested), z-index (`z-40` bars, overlays from reka-ui), UI writing rules kept from the old §2. Every value must match `tokens.css` and `design.test.ts`.
+- [x] **Step 2:** Add a test in `design.test.ts` that every token name in `DESIGN_SYSTEM.md` exists in `tokens.css`. Commit `docs(design): rewrite the design system for the wantap language`.
 
 ### Task 17: Whole-app verification
 

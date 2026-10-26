@@ -7,7 +7,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Need | Read |
 |---|---|
 | Product vocabulary, modules, seams | `CONTEXT.md` |
-| UI, copy, accessibility rules | `DESIGN_SYSTEM.md` |
+| Design language (wantap tokens, components, layout), UI copy, accessibility | `DESIGN_SYSTEM.md` |
 | Current overhaul (what and why) | `docs/superpowers/specs/2026-10-25-eypi-overhaul-design.md` |
 | Current overhaul (task-by-task) | `docs/superpowers/plans/2026-10-25-eypi-overhaul.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |

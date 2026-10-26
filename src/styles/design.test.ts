@@ -217,3 +217,19 @@ describe('legacy design cleanup', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('DESIGN_SYSTEM.md', () => {
+  const doc = readFileSync('DESIGN_SYSTEM.md', 'utf8')
+
+  it('names only tokens that exist in tokens.css, and names every one', () => {
+    const named = new Set([...doc.matchAll(/`--([a-z0-9-]+)`/g)].map((m) => m[1]))
+    const defined = new Set([...darkBlock().matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]))
+    expect([...named].filter((n) => !defined.has(n))).toEqual([])
+    expect([...defined].filter((n) => !named.has(n))).toEqual([])
+  })
+
+  it('carries no legacy design vocabulary or em dashes', () => {
+    expect(doc).not.toContain(String.fromCharCode(0x2014))
+    for (const re of [/mica/i, /Geist/, /#34418F/i, /#DEAC4B/i]) expect(re.test(doc), String(re)).toBe(false)
+  })
+})

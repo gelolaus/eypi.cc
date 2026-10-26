@@ -68,9 +68,11 @@ Use these terms. Prefer them over invented synonyms.
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |
 | **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list |
 | **Legacy redirects** | `redirects/` | Only `tix.eypi.cc` / `forms.eypi.cc` → unified `eypi.cc` — **not** general short links |
-| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (APC colors + gelolaus patterns) |
+| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (wantap design language: dark only, coral accent, Plus Jakarta Sans, Syne, JetBrains Mono) |
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |
 | **Runbooks** | `docs/RELEASE.md`, `docs/operations.md` | Deploys, cutover, restore, rotation, incidents, accepted risks |
+
+Removed in the wantap port: the light theme and theme toggle (dark only), the glass-card (mica) surfaces, the Geist fonts, and the APC blue and gold brand colors. Do not reintroduce them.
 
 ### Backend route ownership
 
