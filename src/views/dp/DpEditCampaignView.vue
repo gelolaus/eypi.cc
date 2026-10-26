@@ -1,8 +1,9 @@
 <template>
-  <section class="relative flex w-full flex-1 flex-col items-center px-4 py-24">
-    <div class="w-full max-w-xl">
+  <div class="relative w-full">
+    <AppPage title="Edit Campaign">
+    <div class="mx-auto w-full max-w-xl">
       <!-- Loading -->
-      <div v-if="loading" class="space-y-4">
+      <div v-if="loading" role="status" aria-busy="true" class="space-y-4"><span class="sr-only">Loading</span>
         <div class="mx-auto h-8 w-1/2 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
         <div class="h-72 animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
       </div>
@@ -10,65 +11,63 @@
       <!-- Not found / error -->
       <div
         v-else-if="error"
-        class="mica-card rounded-3xl border border-gray-200 p-12 text-center dark:border-slate-600"
+        class="mica-card rounded-3xl border border-gray-200 p-8 text-center sm:p-12 dark:border-slate-600"
       >
         <p class="font-mono text-sm uppercase tracking-widest text-red-500">{{ error }}</p>
-        <router-link to="/manage/frames" class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300">← All campaigns</router-link>
+        <router-link to="/manage/frames" class="btn-secondary mt-6">← All campaigns</router-link>
       </div>
 
       <template v-else>
-        <div class="reveal mb-8 flex items-center justify-between">
+        <div class="reveal mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200" style="font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.03em;">Edit Campaign</h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-slate-400">eypi.cc/frames/{{ form.slug }}</p>
+            <p class="min-w-0 break-all font-mono text-sm text-g-muted">eypi.cc/frames/{{ form.slug }}</p>
           </div>
           <router-link
             :to="`/frames/${form.slug}`"
-            class="shrink-0 rounded-lg border-2 border-gray-200 px-4 py-2 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
+            class="btn-secondary shrink-0"
           >View →</router-link>
         </div>
 
-        <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-8 md:p-10 dark:border-slate-600">
+        <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
           <!-- Title -->
           <div>
             <label for="edit-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
-            <input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="control font-mono" />
           </div>
 
           <!-- Slug -->
           <div>
             <label for="edit-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
-            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
+            <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
-              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
+              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted" @input="sanitizeSlug" />
             </div>
           </div>
 
           <!-- Description -->
           <div>
             <label for="edit-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="control font-mono" />
           </div>
 
           <!-- Caption -->
           <div>
             <label for="edit-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="control resize-y font-mono" />
           </div>
 
           <!-- Save metadata -->
           <button
             type="button"
             :disabled="saving || !form.title.trim()"
-            class="w-full rounded-xl bg-[#34418F] px-8 py-3.5 text-sm font-semibold text-white transition-all dark:bg-slate-700 dark:text-slate-100"
-            :class="(saving || !form.title.trim()) ? 'cursor-not-allowed opacity-50' : 'hover:bg-[#2a3578]'"
-            @click="saveDetails"
+            class="btn-primary w-full"
+                        @click="saveDetails"
           >{{ saving ? 'Saving…' : 'Save Details' }}</button>
 
           <!-- Frames (persisted immediately) -->
           <div class="border-t border-gray-200 pt-5 dark:border-slate-700">
             <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</p>
-            <p class="mb-3 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
+            <p class="mb-3 font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
             <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
           </div>
         </div>
@@ -76,17 +75,19 @@
         <div class="reveal delay-2 mt-6 text-center">
           <button
             type="button"
-            class="font-mono text-[0.65rem] font-bold uppercase tracking-widest text-red-400 transition-colors hover:text-red-500"
+            class="btn-secondary border-red-300 text-red-600 dark:border-red-900/60 dark:text-red-400"
             @click="removeCampaign"
           >Delete this campaign</button>
         </div>
       </template>
     </div>
-  </section>
+    </AppPage>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
+import AppPage from '@/components/AppPage.vue'
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'

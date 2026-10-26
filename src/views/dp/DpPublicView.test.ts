@@ -153,3 +153,14 @@ describe('DpPublicView photos', () => {
     expect(vi.mocked(saveAs)).not.toHaveBeenCalled()
   })
 })
+
+describe('DpPublicView mobile controls', () => {
+  it('uses AppPage, 44px shape toggles and no tiny text controls', async () => {
+    const wrapper = await mountReady()
+    expect(wrapper.find('[data-app-page]').exists()).toBe(true)
+    expect(wrapper.find('main').exists()).toBe(false)
+    expect(wrapper.html()).not.toContain('text-[0.65rem]')
+    const shape = wrapper.findAll('button').find((b) => b.text() === 'Circle Preview')
+    expect(shape!.classes().join(' ')).toContain('min-h-11')
+  })
+})

@@ -1,17 +1,11 @@
 <template>
-  <section class="relative flex w-full flex-1 flex-col items-center px-4 py-24">
-    <div class="w-full max-w-xl">
-      <h1
-        class="reveal mb-2 text-center font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
-        style="font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em;"
-      >
-        New DP Blast
-      </h1>
-
+  <div class="relative w-full">
+    <AppPage title="New DP Blast">
+    <div class="mx-auto w-full max-w-xl">
       <!-- Success state -->
       <div
         v-if="created"
-        class="mica-card reveal relative rounded-3xl border border-gray-200 p-8 text-center dark:border-slate-600"
+        class="mica-card reveal relative rounded-3xl border border-gray-200 p-5 text-center sm:p-8 dark:border-slate-600"
       >
         <p class="mb-2 font-mono text-xs uppercase tracking-widest text-emerald-500">Campaign Created</p>
         <h2 class="mb-6 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.title }}</h2>
@@ -20,7 +14,7 @@
           <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-[#34418F] dark:text-slate-200">{{ shareDisplay }}</span>
           <button
             type="button"
-            class="shrink-0 rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
+            class="shrink-0 rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-xs font-semibold text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
             @click="copyShare"
           >Copy</button>
         </div>
@@ -28,12 +22,12 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <router-link
             :to="`/frames/${createdSlug}`"
- class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
+ class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110"
             data-cursor="cta"
           >Open Public Page →</router-link>
           <router-link
             to="/manage/frames"
-            class="rounded-xl border-2 border-gray-200 px-6 py-3 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
+            class="btn-secondary"
           >All Campaigns</router-link>
         </div>
       </div>
@@ -41,7 +35,7 @@
       <!-- Form -->
       <form
         v-else
-        class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-8 md:p-10 dark:border-slate-600"
+        class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600"
         @submit.prevent="submit"
       >
         <!-- Title -->
@@ -54,14 +48,14 @@
             maxlength="200"
             placeholder="e.g. I'm attending CompSci Week 2026"
             required
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control font-mono"
           />
         </div>
 
         <!-- Slug -->
         <div>
           <label for="new-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link <span class="text-gray-400 dark:text-slate-500">(optional — auto from title)</span></label>
-          <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
+          <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
             <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
             <input
               id="new-campaign-slug"
@@ -69,11 +63,11 @@
               type="text"
               maxlength="60"
               placeholder="compsci-week"
-              class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 placeholder-gray-400 dark:text-slate-200 dark:placeholder-slate-500"
+              class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted"
               @input="sanitizeSlug"
             />
           </div>
-          <p class="mt-1 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Lowercase letters, numbers, and hyphens.</p>
+          <p class="mt-1 font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">Lowercase letters, numbers, and hyphens.</p>
         </div>
 
         <!-- Description -->
@@ -85,7 +79,7 @@
             type="text"
             maxlength="1000"
             placeholder="A short line shown on the public page"
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control font-mono"
           />
         </div>
 
@@ -98,7 +92,7 @@
             rows="3"
             maxlength="2000"
             placeholder="The suggested caption people copy when they share…"
-            class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control resize-y font-mono"
           />
         </div>
 
@@ -112,17 +106,19 @@
         <button
           type="submit"
           :disabled="!canSubmit || submitting"
- class="btn-gold mt-2 w-full rounded-xl px-8 py-4 text-sm font-semibold transition-all"
+ class="btn-gold mt-2 min-h-11 w-full rounded-xl px-8 text-base font-semibold transition-all"
           :class="(!canSubmit || submitting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
         >
           {{ submitting ? 'Creating…' : 'Create Campaign' }}
         </button>
       </form>
     </div>
-  </section>
+    </AppPage>
+  </div>
 </template>
 
 <script setup lang="ts">
+import AppPage from '@/components/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, reactive, computed } from 'vue'
 import { useToast } from '@/composables/useToast'

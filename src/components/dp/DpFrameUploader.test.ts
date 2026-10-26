@@ -57,3 +57,17 @@ describe('DpFrameUploader', () => {
     expect(started).toHaveLength(2)
   })
 })
+
+describe('DpFrameUploader tap targets', () => {
+  it('keeps reorder and remove controls at 44px with no tiny text', () => {
+    const wrapper = mount(DpFrameUploader, { props: { frames } })
+    const html = wrapper.html()
+    expect(html).not.toContain('text-[0.6rem]')
+    for (const label of ['Move up', 'Move down', 'Remove frame']) {
+      for (const button of wrapper.findAll(`[aria-label="${label}"]`)) {
+        expect(button.classes().join(' ')).toContain('min-h-11')
+        expect(button.classes().join(' ')).toContain('min-w-11')
+      }
+    }
+  })
+})

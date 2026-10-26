@@ -1,40 +1,20 @@
 <template>
-  <section class="relative mx-auto w-full max-w-3xl px-4 py-16">
-    <!-- Loading -->
-    <div v-if="loading" class="space-y-4">
-      <div class="mx-auto h-8 w-2/3 animate-pulse rounded-lg bg-gray-200 dark:bg-slate-800/60" />
-      <div class="aspect-square w-full animate-pulse rounded-3xl bg-gray-200 dark:bg-slate-800/60" />
-    </div>
+  <div class="relative w-full">
+    <PageSkeleton v-if="loading" :rows="2" />
 
     <!-- Not found -->
-    <div
-      v-else-if="error"
-      class="mica-card rounded-3xl border border-gray-200 p-12 text-center dark:border-slate-600"
-    >
-      <p class="font-mono text-sm uppercase tracking-widest text-red-500">{{ error }}</p>
-      <router-link
-        to="/"
-        class="mt-6 inline-block font-mono text-xs uppercase tracking-widest text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
-      >← Back to eypi.cc</router-link>
-    </div>
+    <AppPage v-else-if="error" title="Frame not found">
+      <div class="mica-card rounded-3xl border border-gray-200 p-8 text-center sm:p-12 dark:border-slate-600">
+        <p role="alert" class="font-mono text-sm uppercase tracking-widest text-red-700 dark:text-red-400">{{ error }}</p>
+        <router-link to="/" class="btn-secondary mt-6">← Back to eypi.cc</router-link>
+      </div>
+    </AppPage>
 
     <!-- Editor -->
-    <template v-else>
-      <header class="mb-8 text-center reveal">
-        <p class="mb-3 font-mono text-xs uppercase tracking-[0.3em]" style="color: var(--color-text-muted);">DP Blast</p>
-        <h1
-          class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
-          style="font-size: clamp(1.75rem, 5vw, 3rem); letter-spacing: -0.03em;"
-        >{{ campaign.title }}</h1>
-        <p
-          v-if="campaign.description"
-          class="mx-auto mt-3 max-w-xl font-mono text-sm leading-relaxed"
-          style="color: var(--color-text-muted);"
-        >{{ campaign.description }}</p>
-      </header>
-
+    <AppPage v-else :title="campaign.title" :description="campaign.description ?? undefined">
+    <div class="mx-auto w-full max-w-3xl">
       <!-- Canvas card -->
-      <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
+      <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-4 sm:p-8 dark:border-slate-600">
         <div
           class="dp-checker w-full overflow-hidden border border-gray-200 dark:border-slate-700 relative transition-all duration-300"
           :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
@@ -54,10 +34,10 @@
         </div>
 
         <!-- Frame switcher -->
-        <div v-if="frameImgs.length > 1" class="mt-4 flex items-center justify-center gap-4">
+        <div v-if="frameImgs.length > 1" class="mt-4 flex items-center justify-center gap-3">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            class="flex size-11 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
             aria-label="Previous frame"
             @click="prevFrame"
           >‹</button>
@@ -66,7 +46,7 @@
               v-for="(_, i) in frameImgs"
               :key="i"
               type="button"
-              class="h-2.5 w-2.5 rounded-full transition-colors"
+              class="relative size-3 rounded-full transition-colors before:absolute before:-inset-4 before:content-['']"
               :class="i === selectedIndex ? 'bg-[#DEAC4B]' : 'bg-gray-300 dark:bg-slate-600'"
               :aria-label="`Frame ${i + 1}`"
               @click="selectedIndex = i"
@@ -74,25 +54,25 @@
           </div>
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
+            class="flex size-11 items-center justify-center rounded-full border-2 border-gray-200 font-mono text-lg leading-none text-[#34418F] transition-colors hover:border-[#34418F] dark:border-slate-600 dark:text-slate-200"
             aria-label="Next frame"
             @click="nextFrame"
           >›</button>
         </div>
 
-        <p class="mt-3 text-center font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">
+        <p class="mt-3 text-center font-mono text-xs uppercase tracking-widest text-gray-400 dark:text-slate-500">
           {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
         </p>
 
         <!-- Controls -->
         <div class="mt-6 flex flex-col gap-4">
-          <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 text-sm font-semibold text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+          <label class="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 text-base font-semibold text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
             {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
             <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
           </label>
 
           <div v-if="headshot" class="flex items-center gap-4">
-            <label for="frame-zoom" class="font-mono text-[0.65rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</label>
+            <label for="frame-zoom" class="font-mono text-xs uppercase tracking-widest text-gray-400 dark:text-slate-500">Zoom</label>
             <input
               id="frame-zoom"
               v-model.number="zoomPercent"
@@ -100,11 +80,11 @@
               min="20"
               max="800"
               step="1"
-              class="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-gray-200 accent-[#DEAC4B] dark:bg-slate-700"
+              class="h-11 flex-1 cursor-pointer accent-[#DEAC4B]"
             />
             <button
               type="button"
-              class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
+              class="btn-secondary"
               @click="reset"
             >Reset</button>
           </div>
@@ -113,7 +93,7 @@
           <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-xl border py-2.5 text-sm font-semibold transition-all"
+              class="min-h-11 rounded-xl border text-sm font-semibold transition-all"
               :class="previewShape === 'square'
                 ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
                 : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
@@ -123,7 +103,7 @@
             </button>
             <button
               type="button"
-              class="rounded-xl border py-2.5 text-sm font-semibold transition-all"
+              class="min-h-11 rounded-xl border text-sm font-semibold transition-all"
               :class="previewShape === 'circle'
                 ? 'border-[#34418F] bg-[#34418F] text-white dark:border-slate-400 dark:bg-slate-700 dark:text-slate-100'
                 : 'border-gray-200 text-gray-500 hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-400 dark:hover:text-slate-200'"
@@ -136,7 +116,7 @@
           <button
             type="button"
             :disabled="!headshot || exporting"
- class="btn-gold w-full rounded-xl px-8 py-4 text-sm font-semibold transition-all"
+ class="btn-gold min-h-11 w-full rounded-xl px-8 text-base font-semibold transition-all"
             :class="(!headshot || exporting) ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5'"
             @click="download"
           >{{ exporting ? 'Rendering…' : 'Download' }}</button>
@@ -148,22 +128,25 @@
         v-if="campaign.captionTemplate"
         class="mica-card reveal delay-2 relative mt-6 rounded-3xl border border-gray-200 p-6 dark:border-slate-600"
       >
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption</p>
           <button
             type="button"
-            class="rounded-lg border border-gray-200 px-3 py-1.5 font-mono text-[0.65rem] font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400 dark:hover:text-slate-200"
+            class="btn-secondary"
             @click="copyCaption"
           >Copy to clipboard</button>
         </div>
         <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed" style="color: var(--color-text-muted);">{{ campaign.captionTemplate }}</p>
       </div>
-    </template>
-  </section>
+    </div>
+    </AppPage>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
+import AppPage from '@/components/AppPage.vue'
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { saveAs } from 'file-saver'

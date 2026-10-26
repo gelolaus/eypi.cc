@@ -1,8 +1,8 @@
 <template>
   <div>
     <!-- Thumbnail strip -->
-    <p v-if="frames.length > 1" class="mb-2 text-xs font-medium text-gray-400 dark:text-slate-500">Drag to reorder</p>
-    <div v-if="frames.length" class="mb-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
+    <p v-if="frames.length > 1" class="mb-2 text-sm font-medium text-g-muted">Drag to reorder or use the arrows</p>
+    <div v-if="frames.length" class="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- pointer drag reorder; remove stays a button -->
       <div
         v-for="(frame, i) in frames"
@@ -22,33 +22,33 @@
         <div class="dp-checker overflow-hidden rounded-xl border border-gray-200 dark:border-slate-700">
           <img :src="frame.src" alt="" draggable="false" class="block aspect-square w-full object-contain" />
         </div>
-        <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white">{{ i + 1 }}</span>
-        <span class="pointer-events-none absolute bottom-1.5 left-1.5 flex items-center rounded-md bg-black/50 px-1 py-1 text-white" aria-hidden="true">
+        <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-xs font-bold text-white">{{ i + 1 }}</span>
+        <span class="pointer-events-none absolute left-1.5 top-9 hidden items-center rounded-md bg-black/50 px-1 py-1 text-white sm:flex" aria-hidden="true">
           <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" /></svg>
         </span>
-        <div class="absolute bottom-1.5 right-1.5 flex gap-1">
+        <div class="mt-1 flex items-center justify-between gap-1">
           <button
             type="button"
-            class="rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white disabled:opacity-40"
+            class="min-h-11 min-w-11 rounded-xl border border-g-border bg-g-surface px-2 font-mono text-xs font-bold text-g-text disabled:opacity-40"
             :disabled="i === 0"
             aria-label="Move up"
             @click.stop="$emit('reorder', i, i - 1)"
           >Up</button>
           <button
             type="button"
-            class="rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white disabled:opacity-40"
+            class="min-h-11 min-w-11 rounded-xl border border-g-border bg-g-surface px-2 font-mono text-xs font-bold text-g-text disabled:opacity-40"
             :disabled="i === frames.length - 1"
             aria-label="Move down"
             @click.stop="$emit('reorder', i, i + 1)"
           >Down</button>
+          <button
+            type="button"
+            :disabled="busyIndex === i"
+            class="min-h-11 min-w-11 rounded-xl border border-red-300 bg-g-surface font-mono text-lg leading-none text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400"
+            aria-label="Remove frame"
+            @click="$emit('remove', i)"
+          >{{ busyIndex === i ? '…' : '×' }}</button>
         </div>
-        <button
-          type="button"
-          :disabled="busyIndex === i"
-          class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 font-mono text-sm leading-none text-white transition-colors hover:bg-red-500 disabled:opacity-50"
-          aria-label="Remove frame"
-          @click="$emit('remove', i)"
-        >{{ busyIndex === i ? '…' : '×' }}</button>
       </div>
     </div>
 
