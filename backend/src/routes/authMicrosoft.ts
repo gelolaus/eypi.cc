@@ -23,7 +23,9 @@ import { reportError } from '../lib/reportError'
 
 const app = new Hono<{ Bindings: OAuthEnv }>()
 
-const LIMIT = 30
+// Campus NAT shares one IP across many students, so this is generous. The
+// OAuth state, PKCE, and nonce still protect the flow itself.
+const LIMIT = 300
 const WINDOW_SEC = 10 * 60
 
 function bytesToBase64Url(bytes: Uint8Array): string {
@@ -76,7 +78,8 @@ async function underLimit(env: OAuthEnv, bucket: 'start' | 'callback', ip: strin
     })
     return decision.ok
   } catch {
-    return false
+    // Fail open: a KV outage must not block sign-in.
+    return true
   }
 }
 

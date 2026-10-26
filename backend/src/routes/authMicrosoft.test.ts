@@ -160,11 +160,11 @@ describe('GET /api/auth/microsoft/start', () => {
     expect(res.headers.get('location')).toBe(`${FRONTEND}/login?error=server`)
   })
 
-  it('redirects to login?error=server after 30 starts in 10 minutes', async () => {
+  it('redirects to login?error=server after 300 starts in 10 minutes', async () => {
     const app = testApp()
     const env = oauthEnv()
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 300; i++) {
       const res = await app.request(`${ORIGIN}/api/auth/microsoft/start`, {}, env)
       expect(res.status).toBe(302)
       expect(res.headers.get('location')).toContain('login.microsoftonline.com')
@@ -173,6 +173,32 @@ describe('GET /api/auth/microsoft/start', () => {
     const blocked = await app.request(`${ORIGIN}/api/auth/microsoft/start`, {}, env)
     expect(blocked.status).toBe(302)
     expect(blocked.headers.get('location')).toBe(`${FRONTEND}/login?error=server`)
+  })
+})
+
+describe('sign-in rate limit failing open', () => {
+  function brokenKv(): KVNamespace {
+    return {
+      get: async () => { throw new Error('kv down') },
+      put: async () => { throw new Error('kv down') },
+      delete: async () => {},
+      list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
+    } as unknown as KVNamespace
+  }
+
+  it('still starts sign-in when the rate limit KV errors', async () => {
+    const res = await testApp().request(`${ORIGIN}/api/auth/microsoft/start`, {}, oauthEnv(brokenKv()))
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toContain('login.microsoftonline.com')
+  })
+
+  it('does not turn a KV error into login?error=server on callback', async () => {
+    const res = await testApp().request(
+      `${ORIGIN}/api/auth/microsoft/callback?error=access_denied`,
+      {},
+      oauthEnv(brokenKv()),
+    )
+    expect(res.headers.get('location')).toBe(`${FRONTEND}/login?error=cancelled`)
   })
 })
 
@@ -211,11 +237,11 @@ describe('GET /api/auth/microsoft/callback', () => {
     expect(res.headers.get('location')).toBe(`${FRONTEND}/login?error=cancelled`)
   })
 
-  it('redirects to login?error=server after 30 callbacks in 10 minutes', async () => {
+  it('redirects to login?error=server after 300 callbacks in 10 minutes', async () => {
     const app = testApp()
     const env = oauthEnv()
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 300; i++) {
       const res = await app.request(
         `${ORIGIN}/api/auth/microsoft/callback?error=access_denied`,
         {},
