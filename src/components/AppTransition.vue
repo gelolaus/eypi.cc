@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isActive"
-    class="app-transition"
+    class="app-transition bg-primary"
     :class="{ 'app-transition--expanding': isExpanding }"
     aria-hidden="true"
   />
@@ -39,7 +39,6 @@ defineExpose({ trigger })
   position: fixed;
   inset: 0;
   z-index: 99997;
-  background-color: #34418F;
   clip-path: circle(0% at 50% 50%);
   pointer-events: none;
 }

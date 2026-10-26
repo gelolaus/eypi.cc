@@ -32,7 +32,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 
 interface AdminTab {
   name: string

@@ -105,7 +105,7 @@ export const privacy: LegalDocument = {
     {
       heading: 'Data on your device',
       paragraphs: [
-        'This browser stores two localStorage keys. eypi_dark_mode remembers the light or dark theme. active_org_id remembers the organization selected in this browser.',
+        'This browser stores one localStorage key. active_org_id remembers the organization selected in this browser.',
         'The only cookie is the session cookie. Its name is __Host-eypi_session in production and eypi_session in development. It is HttpOnly, Secure, and SameSite=Lax. It is strictly necessary to keep you signed in. eypi.cc does not use analytics or advertising cookies, and it does not show a cookie banner.',
       ],
     },

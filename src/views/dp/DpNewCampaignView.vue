@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, reactive, computed } from 'vue'
 import { useToast } from '@/composables/useToast'

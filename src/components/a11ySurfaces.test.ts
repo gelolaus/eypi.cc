@@ -4,7 +4,8 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ContactView from '@/views/ContactView.vue'
 import FeaturesCarousel from './FeaturesCarousel.vue'
-import NavSidebar from './NavSidebar.vue'
+import SiteNavSheet from './layout/SiteNavSheet.vue'
+import { useNavDrawer } from '@/composables/useNavDrawer'
 import TheFooter from './TheFooter.vue'
 import router from '@/router'
 import { useSession } from '@/stores/session'
@@ -37,25 +38,19 @@ beforeEach(() => {
 })
 
 describe('accessibility surfaces', () => {
-  it('treats the open sidebar as a modal dialog', () => {
-    const wrapper = mount(NavSidebar, {
+  it('treats the open sidebar as a modal dialog', async () => {
+    const wrapper = mount(SiteNavSheet, {
       attachTo: document.body,
-      props: {
-        isOpen: true,
-        isAuthenticated: false,
-        userName: 'Guest',
-        userEmail: '',
-        orgs: [],
-        activeOrg: null,
-      },
-      global: {
-        stubs: { RouterLink: { template: '<a><slot /></a>' } },
-      },
+      global: { plugins: [router] },
     })
+    useNavDrawer().open()
+    await nextTick()
+    await nextTick()
 
     const dialog = document.getElementById('site-nav-sidebar')
     expect(dialog?.getAttribute('role')).toBe('dialog')
-    expect(dialog?.getAttribute('aria-modal')).toBe('true')
+    expect(dialog?.querySelector('[data-slot="dialog-title"]')?.textContent).toBe('Site navigation')
+    useNavDrawer().close()
     wrapper.unmount()
   })
 

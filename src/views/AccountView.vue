@@ -185,8 +185,8 @@
 </template>
 
 <script setup lang="ts">
-import AppPage from '@/components/AppPage.vue'
-import AppSection from '@/components/AppSection.vue'
+import AppPage from '@/components/layout/AppPage.vue'
+import AppSection from '@/components/layout/AppSection.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/lib/api'

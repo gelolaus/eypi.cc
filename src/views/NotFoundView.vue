@@ -6,7 +6,6 @@
     <div
       class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-6 text-center shadow-xl sm:p-12"
     >
-      <PageShell />
 
       <!-- Error Code -->
       <h1
@@ -41,5 +40,4 @@
 </template>
 
 <script setup lang="ts">
-import PageShell from '@/components/PageShell.vue'
 </script>

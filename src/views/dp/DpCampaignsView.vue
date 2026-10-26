@@ -31,7 +31,6 @@
         v-else-if="!filteredCampaigns.length"
         class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
       >
-        <PageShell />
         <p class="text-sm font-medium text-g-muted">{{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}</p>
         <p class="mt-3 text-sm leading-relaxed text-g-muted">{{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}</p>
       </div>
@@ -87,8 +86,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
-import PageShell from '@/components/PageShell.vue'
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 
 const toast = useToast()

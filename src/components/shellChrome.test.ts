@@ -2,9 +2,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import NavSidebar from './NavSidebar.vue'
+import SiteNavSheet from './layout/SiteNavSheet.vue'
 import ScrollTop from './ScrollTop.vue'
 import TheHeader from './TheHeader.vue'
+import { useNavDrawer } from '@/composables/useNavDrawer'
 import { useScrollContainer } from '@/composables/useScrollContainer'
 import { useSession } from '@/stores/session'
 
@@ -59,41 +60,43 @@ describe('TheHeader top bar', () => {
     wrapper.unmount()
   })
 
-  it('shows the org switcher only in the app shell', async () => {
-    useSession().user.value = { id: 'u', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user' }
-    const app = mount(TheHeader, { props: { appShell: true }, global: { plugins: [router] } })
-    expect(app.find('[data-header-orgs]').exists()).toBe(true)
-    expect(app.find('[aria-label^="Open navigation menu"]').exists()).toBe(false)
-    expect(app.get('header').classes()).toContain('lg:hidden')
-    app.unmount()
+  it('offers the menu button and no org switcher on public pages', async () => {
+    const wrapper = mount(TheHeader, { global: { plugins: [router] } })
+    expect(wrapper.find('[data-header-orgs]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label^="Open navigation menu"]').exists()).toBe(true)
+    expect(wrapper.get('header').classes()).not.toContain('lg:hidden')
+    wrapper.unmount()
   })
 })
 
-describe('NavSidebar drawer', () => {
-  function open() {
-    return mount(NavSidebar, {
+describe('SiteNavSheet', () => {
+  async function open() {
+    const wrapper = mount({ components: { SiteNavSheet }, template: '<SiteNavSheet />' }, {
       attachTo: document.body,
-      props: { isOpen: true, isAuthenticated: false, userName: 'Guest', userEmail: '', orgs: [], activeOrg: null },
       global: { plugins: [router] },
     })
+    useNavDrawer().open()
+    await flushPromises()
+    return wrapper
   }
 
-  it('fits the dynamic viewport and has a 44px close button', () => {
-    const wrapper = open()
+  afterEach(() => useNavDrawer().close())
+
+  it('fits the dynamic viewport and has a 44px close button', async () => {
+    const wrapper = await open()
     const panel = document.getElementById('site-nav-sidebar')!
     expect(panel.classList.contains('max-h-dvh')).toBe(true)
-    const close = panel.querySelector('[aria-label="Close navigation"]')!
-    expect(close.classList.contains('size-11')).toBe(true)
+    expect(panel.getAttribute('role')).toBe('dialog')
+    const close = panel.querySelector('[data-slot="dialog-close"]')!
+    expect(close.textContent).toContain('Close')
     wrapper.unmount()
   })
 
-  it('shows items immediately without a staggered fade', () => {
-    const wrapper = open()
-    const panel = document.getElementById('site-nav-sidebar')!
-    expect(panel.querySelectorAll('.nav-sidebar-item')).toHaveLength(0)
-    for (const link of Array.from(panel.querySelectorAll('a'))) {
-      expect((link as HTMLElement).style.transitionDelay).toBe('')
-    }
+  it('closes on Escape', async () => {
+    const wrapper = await open()
+    document.getElementById('site-nav-sidebar')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(useNavDrawer().isOpen.value).toBe(false)
     wrapper.unmount()
   })
 })
@@ -104,7 +107,7 @@ describe('ScrollTop', () => {
     window.scrollY = 400
     window.dispatchEvent(new Event('scroll'))
     await flushPromises()
-    expect(wrapper.get('button').classes()).toContain('scroll-top-btn--tabbar')
+    expect(wrapper.get('button').classes()).toContain('bottom-[calc(5.5rem+env(safe-area-inset-bottom))]')
     window.scrollY = 0
     wrapper.unmount()
   })

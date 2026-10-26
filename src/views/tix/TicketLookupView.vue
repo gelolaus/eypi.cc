@@ -19,7 +19,6 @@
         v-if="ticket"
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 text-center sm:p-8"
       >
-        <PageShell />
 
         <p class="mb-4 font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">{{ ticket.firstName }} {{ ticket.lastName }}</p>
 
@@ -64,7 +63,6 @@
         v-else
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 sm:p-8"
       >
-        <PageShell />
 
         <h2 class="mb-6 text-center font-mono text-xl font-bold uppercase tracking-widest text-[#34418F] dark:text-slate-200">
           View Your Ticket
@@ -126,7 +124,6 @@
 </template>
 
 <script setup lang="ts">
-import PageShell from '@/components/PageShell.vue'
 import { api } from '@/lib/api'
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'

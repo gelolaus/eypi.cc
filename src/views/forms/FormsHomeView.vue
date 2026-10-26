@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { api } from '@/lib/api'
 import { FORM_CATALOG, type FormCatalogItem } from '@shared/formsCatalog'

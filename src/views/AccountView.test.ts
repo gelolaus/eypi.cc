@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import NavSidebar from '@/components/NavSidebar.vue'
+import SiteNavSheet from '@/components/layout/SiteNavSheet.vue'
+import { useNavDrawer } from '@/composables/useNavDrawer'
 import router from '@/router'
 import { useSession } from '@/stores/session'
 import AccountView from './AccountView.vue'
@@ -243,22 +244,18 @@ describe('AccountView', () => {
 })
 
 describe('account navigation', () => {
-  it('points the sidebar at Account', () => {
-    const wrapper = mount(NavSidebar, {
+  it('points the sidebar at Account', async () => {
+    useSession().user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user' }
+    const wrapper = mount(SiteNavSheet, {
       attachTo: document.body,
-      props: {
-        isOpen: true,
-        isAuthenticated: true,
-        userName: 'Ada',
-        userEmail: 'ada@apc.edu.ph',
-        orgs: [],
-        activeOrg: null,
-      },
       global: { plugins: [router] },
     })
+    useNavDrawer().open()
+    await flushPromises()
     const link = document.querySelector('a[href="/account"]')
     expect(link?.textContent).toContain('Account')
     expect(document.querySelector('a[href="/settings"]')).toBeNull()
+    useNavDrawer().close()
     wrapper.unmount()
   })
 })

@@ -5,7 +5,6 @@
     <div
       class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 sm:p-8 dark:border-slate-600"
     >
-      <PageShell />
 
       <h1 class="text-section-title mb-2 text-center text-[#34418F] dark:text-slate-200">
         This link is password protected
@@ -56,7 +55,6 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import PageShell from '@/components/PageShell.vue'
 import { useRoute } from 'vue-router'
 import { API_BASE_URL } from '@/config/api'
 

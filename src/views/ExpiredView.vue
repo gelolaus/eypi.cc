@@ -5,7 +5,6 @@
     <div
       class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 text-center sm:p-8 dark:border-slate-600"
     >
-      <PageShell />
 
       <h1 class="text-section-title text-[#34418F] dark:text-slate-200">
         This link has expired
@@ -24,5 +23,4 @@
 </template>
 
 <script setup lang="ts">
-import PageShell from '@/components/PageShell.vue'
 </script>

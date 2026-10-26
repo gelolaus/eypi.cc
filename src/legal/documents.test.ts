@@ -68,7 +68,6 @@ describe('legal documents', () => {
       'objection',
       'Form inputs',
       'stay in the browser',
-      'eypi_dark_mode',
       'active_org_id',
       '__Host-eypi_session',
       'eypi_session in development',

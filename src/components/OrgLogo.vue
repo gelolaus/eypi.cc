@@ -1,6 +1,6 @@
 <template>
   <div
-    class="org-logo shrink-0 overflow-hidden rounded-lg border border-g-border bg-g-surface"
+    class="shrink-0 overflow-hidden rounded-lg border border-border bg-card"
     :class="sizeClass"
     :title="name"
   >
@@ -12,7 +12,7 @@
     />
     <div
       v-else
-      class="flex h-full w-full items-center justify-center bg-[#34418F]/10 font-mono font-bold text-[#34418F] dark:text-[#DEAC4B]"
+      class="flex h-full w-full items-center justify-center bg-primary/10 font-mono font-bold text-primary"
       :class="initialsClass"
     >
       {{ orgInitials(name) }}

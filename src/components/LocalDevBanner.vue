@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="IS_LOCAL_DEV"
-    class="relative z-[9991] shrink-0 border-b border-amber-500/40 bg-amber-500 px-3 py-1.5 text-center text-xs font-semibold text-amber-950 dark:bg-amber-600 dark:text-amber-50"
+    class="relative z-[9991] shrink-0 border-b border-border bg-primary px-3 py-1.5 text-center text-xs font-semibold text-primary-foreground"
     role="status"
     aria-live="polite"
   >
@@ -32,9 +32,9 @@ const statusLabel = computed(() => {
 
 const statusClass = computed(() =>
   status.value === 'online'
-    ? 'text-emerald-950 dark:text-emerald-100'
+    ? 'font-bold'
     : status.value === 'offline' || status.value === 'misconfigured'
-      ? 'text-red-950 dark:text-red-100'
+      ? 'font-bold underline underline-offset-2'
       : '',
 )
 

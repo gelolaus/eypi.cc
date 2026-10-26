@@ -307,8 +307,8 @@
 </template>
 
 <script setup lang="ts">
-import AppPage from '@/components/AppPage.vue'
-import AppSection from '@/components/AppSection.vue'
+import AppPage from '@/components/layout/AppPage.vue'
+import AppSection from '@/components/layout/AppSection.vue'
 import { useDialog } from '@/composables/useDialog'
 import {
   concessionaireZipName,

@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import InviteCard from '@/components/orgs/InviteCard.vue'
 import { loadPendingInvites, type OrgInvite } from '@/components/orgs/invites'

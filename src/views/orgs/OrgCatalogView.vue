@@ -54,7 +54,6 @@
       v-else-if="orgs.length === 0"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <PageShell />
       <p class="font-mono text-sm uppercase tracking-widest text-g-muted">No organizations in the directory yet</p>
       <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
         Org officers can opt in from Settings → Org Management.
@@ -118,8 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import AppPage from '@/components/AppPage.vue'
-import PageShell from '@/components/PageShell.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useReveal } from '@/composables/useReveal'

@@ -3,13 +3,14 @@
     <button
       v-if="isVisible"
       type="button"
-      class="scroll-top-btn"
-      :class="withTabBar ? 'scroll-top-btn--tabbar' : ''"
+      class="fixed right-4 z-40 flex size-11 items-center justify-center rounded-full border border-border bg-card text-lg text-foreground shadow-md backdrop-blur-md outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:right-8"
+      :class="withTabBar
+        ? 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-8'
+        : 'bottom-[calc(1.5rem+env(safe-area-inset-bottom))] sm:bottom-[calc(2rem+env(safe-area-inset-bottom))]'"
       aria-label="Back to top"
-     
       @click="toTop"
     >
-      ↑
+      <span aria-hidden="true">↑</span>
     </button>
   </Transition>
 </template>
@@ -49,62 +50,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.scroll-top-btn {
-  position: fixed;
-  bottom: calc(1.5rem + env(safe-area-inset-bottom));
-  right: 1rem;
-  z-index: 9998;
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-/* Sits above the 4.5rem bottom tab bar and the home-indicator inset. */
-.scroll-top-btn--tabbar {
-  bottom: calc(4.5rem + 1rem + env(safe-area-inset-bottom));
-}
-
-@media (min-width: 640px) {
-  .scroll-top-btn {
-    right: 2rem;
-    bottom: calc(2rem + env(safe-area-inset-bottom));
-  }
-
-  .scroll-top-btn--tabbar {
-    bottom: calc(4.5rem + 1rem + env(safe-area-inset-bottom));
-  }
-}
-
-@media (min-width: 1024px) {
-  .scroll-top-btn--tabbar {
-    bottom: 2rem;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .scroll-top-btn:hover {
-    border-color: var(--color-accent);
-    background-color: var(--color-accent);
-    color: #1a1a2e;
-    transform: translateY(-2px);
-  }
-}
-
 .scroll-top-enter-active,
 .scroll-top-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -114,5 +59,12 @@ onUnmounted(() => {
 .scroll-top-leave-to {
   opacity: 0;
   transform: translateY(12px) scale(0.85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-top-enter-active,
+  .scroll-top-leave-active {
+    transition: none;
+  }
 }
 </style>

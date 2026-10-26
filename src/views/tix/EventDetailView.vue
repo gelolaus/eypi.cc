@@ -192,8 +192,8 @@ import AddGuestPanel, { type CsvColumnMapping } from '@/components/tix/AddGuestP
 import AttendeeTable from '@/components/tix/AttendeeTable.vue'
 import ClusterBars, { type EventClusterBar } from '@/components/tix/ClusterBars.vue'
 import ScannerPanel from '@/components/tix/ScannerPanel.vue'
-import AppPage from '@/components/AppPage.vue'
-import AppSection from '@/components/AppSection.vue'
+import AppPage from '@/components/layout/AppPage.vue'
+import AppSection from '@/components/layout/AppSection.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 
 const toast = useToast()

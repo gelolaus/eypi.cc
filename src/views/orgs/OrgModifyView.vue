@@ -324,8 +324,8 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
-import AppPage from '@/components/AppPage.vue'
-import AppSection from '@/components/AppSection.vue'
+import AppPage from '@/components/layout/AppPage.vue'
+import AppSection from '@/components/layout/AppSection.vue'
 import OrgLockout from '@/components/OrgLockout.vue'
 import {
   EMPTY_SOCIAL_LINKS,

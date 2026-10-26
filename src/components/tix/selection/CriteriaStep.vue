@@ -1,6 +1,5 @@
 <template>
   <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
-    <PageShell />
 
     <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
     <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
@@ -106,7 +105,6 @@
 </template>
 
 <script setup lang="ts">
-import PageShell from '@/components/PageShell.vue'
 import type { ClusterConfig } from '@/types/selection'
 
 defineProps<{

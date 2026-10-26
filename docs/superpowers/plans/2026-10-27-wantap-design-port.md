@@ -211,9 +211,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 - `appNav.ts`: `export const APP_NAV: { to: string; label: string; icon: Component }[]` built from the modules the current `NavSidebar.vue` lists, `isAppNavActive(to: string, path: string): boolean` (exact match or prefix + `/`).
 - `AppShell.vue` slots `default`; renders the layout table above. Bottom tabs show at most 4 module links; any further modules, the invites entry (keep the pending-invite count badge using `Badge`) and sign-out live in the account `DropdownMenu`.
 
-- [ ] **Step 1:** Tests: sidebar link for the current route has `bg-primary/15`; `isAppNavActive('/links', '/links/abc')` is true and `('/links', '/linksx')` false; at least the 4-item bottom nav renders `aria-label="Primary"`; main has the bottom padding class; account menu opens and contains sign-out; the invite badge shows the pending count.
-- [ ] **Step 2:** Implement exactly per the layout table; `AppPage` is `mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 space-y-6`, `AppSection` is a `Card`-based section with a `font-heading` title.
-- [ ] **Step 3:** Run tests; manually verify with the preview tools at 375, 768 and 1280 widths that nothing overflows and the primary action is reachable. Commit `feat(layout): rebuild the app shell on the wantap sidebar and bottom tabs`.
+- [x] **Step 1:** Tests: sidebar link for the current route has `bg-primary/15`; `isAppNavActive('/links', '/links/abc')` is true and `('/links', '/linksx')` false; at least the 4-item bottom nav renders `aria-label="Primary"`; main has the bottom padding class; account menu opens and contains sign-out; the invite badge shows the pending count.
+- [x] **Step 2:** Implement exactly per the layout table; `AppPage` is `mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 space-y-6`, `AppSection` is a `Card`-based section with a `font-heading` title.
+- [x] **Step 3:** Run tests; manually verify with the preview tools at 375, 768 and 1280 widths that nothing overflows and the primary action is reachable. Commit `feat(layout): rebuild the app shell on the wantap sidebar and bottom tabs`.
 
 ### Task 8: Marketing site
 

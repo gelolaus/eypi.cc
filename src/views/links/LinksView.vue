@@ -116,7 +116,7 @@ import {
   type LinkSort,
   type LinkStatusFilter,
 } from '@/composables/useLinks'
-import AppPage from '@/components/AppPage.vue'
+import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import LinkFilters from '@/components/links/LinkFilters.vue'
 import LinkList from '@/components/links/LinkList.vue'

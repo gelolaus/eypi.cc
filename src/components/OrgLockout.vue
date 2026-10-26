@@ -3,7 +3,6 @@
     <div
       class="mica-card relative flex w-full max-w-xl flex-col items-center rounded-3xl border border-gray-200 p-6 text-center shadow-xl sm:p-12 dark:border-slate-700"
     >
-      <PageShell screw-class="dark:bg-slate-600" />
 
       <div class="mb-4 text-[#ef4444]">
         <svg xmlns="http://www.w3.org/2000/svg" class="size-14 sm:size-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -44,7 +43,6 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import PageShell from '@/components/PageShell.vue'
 import InviteCard from '@/components/orgs/InviteCard.vue'
 import { loadPendingInvites, type OrgInvite } from '@/components/orgs/invites'
 import { ApiError } from '@/lib/api'

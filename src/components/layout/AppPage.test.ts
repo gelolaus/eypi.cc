@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest'
 import AppPage from './AppPage.vue'
 
 describe('AppPage', () => {
-  it('renders the title as an h1 inside the page container', () => {
+  it('renders the title as an h1 inside the wantap page container', () => {
     const wrapper = mount(AppPage, { props: { title: 'Links' }, slots: { default: '<p id="body">Body</p>' } })
     expect(wrapper.get('h1').text()).toBe('Links')
     const container = wrapper.get('[data-app-page]')
-    for (const cls of ['px-4', 'sm:px-6', 'py-6', 'sm:py-8', 'max-w-6xl']) {
+    for (const cls of ['mx-auto', 'w-full', 'max-w-6xl', 'px-4', 'py-6', 'sm:px-6', 'lg:px-8', 'space-y-6']) {
       expect(container.classes()).toContain(cls)
     }
     expect(wrapper.find('#body').exists()).toBe(true)

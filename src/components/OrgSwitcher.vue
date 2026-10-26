@@ -2,7 +2,7 @@
   <div v-if="orgs.length > 0" class="relative" :class="block ? 'block w-full' : 'inline-block'">
     <button
       type="button"
-      class="tap-scale flex min-h-11 items-center gap-2.5 rounded-xl border border-g-border bg-g-surface px-3 py-2 text-g-text transition-colors hover:border-g-primary/40"
+      class="flex min-h-11 items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       :class="block ? 'w-full' : 'max-w-[min(100%,14rem)]'"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
       :aria-label="compact ? `Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}` : undefined"
@@ -44,7 +44,7 @@
         v-if="isOpen"
         type="button"
         data-org-switcher-backdrop
-        class="fixed inset-0 z-[10000] cursor-default border-0 bg-slate-900/30 p-0 sm:z-40 sm:bg-transparent"
+        class="fixed inset-0 z-[10000] cursor-default border-0 bg-black/50 p-0 sm:z-40 sm:bg-transparent"
         aria-label="Close organization menu"
         @click="isOpen = false"
       />
@@ -57,29 +57,29 @@
         :role="isMobile ? 'dialog' : undefined"
         :aria-modal="isMobile ? 'true' : undefined"
         :aria-label="isMobile ? 'Switch organization' : undefined"
-        class="fixed inset-x-0 bottom-0 z-[10001] max-h-[80dvh] overflow-y-auto rounded-t-3xl border border-g-border bg-g-surface px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-left shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:z-50 sm:max-h-none sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:overflow-visible sm:rounded-xl sm:p-0 sm:py-1.5 sm:shadow-xl"
+        class="fixed inset-x-0 bottom-0 z-[10001] max-h-[80dvh] overflow-y-auto rounded-t-3xl bg-popover text-popover-foreground ring-1 ring-foreground/10 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-left shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:z-50 sm:max-h-none sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:overflow-visible sm:rounded-lg sm:p-0 sm:py-1.5 sm:shadow-md"
         :class="placement === 'up' ? 'sm:bottom-full sm:left-0 sm:mb-1.5' : 'sm:right-0 sm:mt-1.5'"
       >
-        <div class="mx-auto mb-2 h-1.5 w-10 rounded-full bg-g-border sm:hidden" aria-hidden="true" />
-        <p class="px-3 pb-2 text-sm font-semibold text-g-muted sm:hidden">Switch organization</p>
+        <div class="mx-auto mb-2 h-1.5 w-10 rounded-full bg-border sm:hidden" aria-hidden="true" />
+        <p class="px-3 pb-2 text-sm font-semibold text-muted-foreground sm:hidden">Switch organization</p>
         <div class="sm:max-h-56 sm:overflow-y-auto sm:py-1">
           <button
             v-for="org in orgs"
             :key="org.org_id"
             type="button"
-            class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-g-bg sm:rounded-none"
-            :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
+            class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted sm:rounded-none"
+            :class="activeOrg?.org_id === org.org_id ? 'bg-muted/80' : ''"
             :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
             @click="handleSelect(org)"
           >
             <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
             <span
               class="min-w-0 flex-1 truncate text-base leading-snug sm:text-sm"
-              :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-[#DEAC4B]' : 'text-g-text'"
+              :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
             >
               {{ org.org_name }}
             </span>
-            <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-[#DEAC4B]" aria-hidden="true">●</span>
+            <span v-if="activeOrg?.org_id === org.org_id" class="text-xs font-bold text-primary" aria-hidden="true">●</span>
           </button>
         </div>
       </div>

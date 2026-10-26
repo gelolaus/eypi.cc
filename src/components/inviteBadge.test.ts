@@ -2,7 +2,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import NavSidebar from './NavSidebar.vue'
+import SiteNavSheet from './layout/SiteNavSheet.vue'
+import { useNavDrawer } from '@/composables/useNavDrawer'
 import TheHeader from './TheHeader.vue'
 import { useSession } from '@/stores/session'
 
@@ -58,24 +59,19 @@ describe('invite badge', () => {
     wrapper.unmount()
   })
 
-  it('shows pendingInviteCount on the Invites nav link', () => {
+  it('shows pendingInviteCount on the Invites nav link', async () => {
     signIn(2)
-    const wrapper = mount(NavSidebar, {
+    const wrapper = mount(SiteNavSheet, {
       attachTo: document.body,
-      props: {
-        isOpen: true,
-        isAuthenticated: true,
-        userName: 'Ada',
-        userEmail: 'ada@apc.edu.ph',
-        orgs: [],
-        activeOrg: null,
-      },
       global: { plugins: [router] },
     })
+    useNavDrawer().open()
+    await flushPromises()
 
     const link = document.querySelector('a[href="/invites"]')
     expect(link?.textContent).toContain('Invites')
     expect(link?.textContent).toContain('2')
+    useNavDrawer().close()
     wrapper.unmount()
   })
 
