@@ -20,7 +20,7 @@ function prose(document: LegalDocument): string {
 describe('legal documents', () => {
   it('marks each draft for owner review and shares the version', () => {
     for (const name of ['privacy.ts', 'terms.ts', 'acceptable-use.ts']) {
-      expect(source(name).startsWith('// OWNER REVIEW REQUIRED before publish\n')).toBe(true)
+      expect(source(name).replace(/\r\n/g, '\n').startsWith('// OWNER REVIEW REQUIRED before publish\n')).toBe(true)
     }
 
     for (const document of [privacy, terms, acceptableUse]) {
