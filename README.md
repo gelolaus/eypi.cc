@@ -59,9 +59,15 @@ Local development uses the **production Turso database**. CONTEXT.md: "Do not in
 ```bash
 npm test
 npm run typecheck
+npm run lint
+npm run build
 ```
 
-Deploys follow [docs/RELEASE.md](docs/RELEASE.md).
+`npm run smoke` and `npm run release:check` are used before and after a deploy.
+
+## Database, media and operations
+
+Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run migrate --prefix backend -- --status` (then `--dry-run`, then `--yes`). Because local development points at the production database, never run `--yes` without the owner. Org logos, QR logos, frames and the private form templates live in the R2 bucket `eypi-media`. Restore, KV backfill, secret rotation and incident steps are in [docs/operations.md](docs/operations.md). Deploys and the Microsoft cutover are in [docs/RELEASE.md](docs/RELEASE.md). Agents start at [AGENTS.md](AGENTS.md).
 
 ## Known issues
 

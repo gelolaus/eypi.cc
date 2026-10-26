@@ -688,7 +688,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 
 `AGENTS.md` must cover: stack and commands (`npm run setup|doctor|dev:local|lint|typecheck|test|build`, `npm run migrate --prefix backend`); where truth lives (CONTEXT, DESIGN_SYSTEM, this spec and plan, schema baseline); safety (production DB, no destructive SQL without approval, never `DROP TABLE users`, never commit secrets); the Global Constraints commit rules (no AI trailers); the definition of done.
 
-- [ ] Commit `docs: add AGENTS.md and refresh CONTEXT for the overhaul` (this task may land first as a stub and be finished last).
+- [x] Commit `docs: add AGENTS.md and refresh CONTEXT for the overhaul` (this task may land first as a stub and be finished last).
 
 ### Task 9.2: Operations runbook (F-OPS-3)
 

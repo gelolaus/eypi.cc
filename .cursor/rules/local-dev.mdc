@@ -32,4 +32,4 @@ Schema additions and non-destructive reads/writes for feature work are fine.
 
 ## Secrets
 
-Never commit or log `TURSO_AUTH_TOKEN`, `JWT_SECRET`, `RESEND_API_KEY`, or wallet keys. Example templates (`.env.example`, `.dev.vars.example`) only.
+Never commit or log `TURSO_AUTH_TOKEN`, `MS_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`, `PASS_TOKEN_SECRET`, `IP_HASH_SECRET`, `RESEND_API_KEY`, or wallet keys. Example templates (`.env.example`, `.dev.vars.example`) only.
