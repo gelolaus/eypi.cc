@@ -64,6 +64,111 @@ async function servePublicMedia(request: Request, env: Env, pathname: string): P
   return new Response(object.body, { status: 200, headers })
 }
 
+type FrameSharePreview = {
+  title: string
+  description: string
+  imageUrl: string
+}
+
+function frameCampaignSlug(pathname: string): string | null {
+  const match = pathname.match(/^\/frames\/([^/]+)\/?$/)
+  if (!match) return null
+  const slug = match[1].toLowerCase()
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return null
+  return slug
+}
+
+function textCell(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'bigint') return String(value)
+  return ''
+}
+
+function frameMediaUrl(origin: string, stored: string): string | null {
+  const key = publicMediaKey(`/media/${stored}`)
+  if (!key?.startsWith('frames/')) return null
+  return `${origin}/media/${key}`
+}
+
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+async function loadFrameSharePreview(env: Env, slug: string, origin: string): Promise<FrameSharePreview | null> {
+  const client = createClient({
+    url: env.TURSO_DATABASE_URL,
+    authToken: env.TURSO_AUTH_TOKEN,
+  })
+  try {
+    const result = await client.execute({
+      sql: `SELECT c.title AS title, c.description AS description,
+                   f.image_url AS image_url, f.position AS position, f.created_at AS created_at
+            FROM dp_campaigns c
+            INNER JOIN dp_frames f ON f.campaign_id = c.id
+            WHERE c.slug = ?`,
+      args: [slug],
+    })
+    const frames = result.rows.flatMap((row) => {
+      const imageUrl = frameMediaUrl(origin, textCell(row.image_url))
+      if (!imageUrl) return []
+      const position = Number(row.position)
+      return [{
+        title: textCell(row.title).trim(),
+        description: textCell(row.description).trim(),
+        imageUrl,
+        position: Number.isFinite(position) ? position : Number.MAX_SAFE_INTEGER,
+        createdAt: textCell(row.created_at),
+      }]
+    })
+    frames.sort((left, right) => {
+      if (left.position !== right.position) return left.position - right.position
+      if (left.createdAt < right.createdAt) return -1
+      if (left.createdAt > right.createdAt) return 1
+      return 0
+    })
+    const first = frames[0]
+    if (!first || first.title.length === 0) return null
+    return { title: first.title, description: first.description, imageUrl: first.imageUrl }
+  } finally {
+    try {
+      client.close()
+    } catch {
+      // A failed close must not drop a preview that was already read.
+    }
+  }
+}
+
+function withFrameSharePreview(response: Response, preview: FrameSharePreview): Response {
+  const title = escapeHtmlAttr(preview.title)
+  const description = escapeHtmlAttr(preview.description)
+  const image = escapeHtmlAttr(preview.imageUrl)
+  const meta = [
+    `<meta name="description" content="${description}">`,
+    `<meta property="og:title" content="${title}">`,
+    `<meta property="og:description" content="${description}">`,
+    `<meta property="og:image" content="${image}">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:image" content="${image}">`,
+  ].join('')
+
+  return new HTMLRewriter()
+    .on('title', {
+      element(element) {
+        element.setInnerContent(preview.title)
+      },
+    })
+    .on('head', {
+      element(element) {
+        element.append(meta, { html: true })
+      },
+    })
+    .transform(response)
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -85,6 +190,18 @@ export default {
 
     if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) {
       return env.ASSETS.fetch(request)
+    }
+
+    const frameSlug = frameCampaignSlug(pathname)
+    if (frameSlug) {
+      const asset = await env.ASSETS.fetch(request)
+      if (request.method !== 'GET') return asset
+      const contentType = asset.headers.get('Content-Type') ?? ''
+      if (asset.status !== 200 || !contentType.toLowerCase().includes('text/html')) return asset
+      const origin = new URL(request.url).origin
+      const preview = await loadFrameSharePreview(env, frameSlug, origin).catch(() => null)
+      if (!preview) return asset
+      return withFrameSharePreview(asset, preview)
     }
 
     const match = pathname.match(/^\/([^/]+)\/?$/)

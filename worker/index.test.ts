@@ -1,14 +1,85 @@
 /// <reference types="@cloudflare/workers-types" />
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { encodeLinkKvEntry } from '../shared/linksKv'
 import worker, { type Env } from './index'
 
 const logLinkClick = vi.hoisted(() => vi.fn(async () => {}))
+const execute = vi.hoisted(() => vi.fn(async () => ({ rows: [] as Array<Record<string, unknown>> })))
+const createClient = vi.hoisted(() => vi.fn(() => ({
+  execute,
+  close() {},
+})))
 
 vi.mock('../shared/linkAnalytics', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../shared/linkAnalytics')>()
   return { ...actual, logLinkClick }
 })
+
+vi.mock('@libsql/client/web', () => ({
+  createClient,
+}))
+
+// Node Vitest has no Workers HTMLRewriter. This covers the handlers the frame
+// preview uses: replace `<title>` text and append HTML at the end of `<head>`.
+class SharePreviewHTMLRewriter {
+  private rules: Array<{
+    selector: string
+    element?: (element: {
+      setInnerContent: (content: string) => void
+      append: (content: string, options?: { html?: boolean }) => void
+    }) => void
+  }> = []
+
+  on(
+    selector: string,
+    handlers: {
+      element?: (element: {
+        setInnerContent: (content: string) => void
+        append: (content: string, options?: { html?: boolean }) => void
+      }) => void
+    },
+  ): this {
+    this.rules.push({ selector, element: handlers.element })
+    return this
+  }
+
+  transform(response: Response): Response {
+    const rules = this.rules
+    const headers = new Headers(response.headers)
+    headers.delete('Content-Length')
+    const stream = new ReadableStream({
+      async start(controller) {
+        let html = await response.text()
+        for (const rule of rules) {
+          if (rule.selector === 'title') {
+            rule.element?.({
+              setInnerContent(content: string) {
+                const text = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${text}</title>`)
+              },
+              append() {},
+            })
+          }
+          if (rule.selector === 'head') {
+            rule.element?.({
+              setInnerContent() {},
+              append(content: string) {
+                html = html.replace(/<\/head>/i, `${content}</head>`)
+              },
+            })
+          }
+        }
+        controller.enqueue(new TextEncoder().encode(html))
+        controller.close()
+      },
+    })
+    return new Response(stream, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    })
+  }
+}
 
 const DESTINATION = 'https://example.com/dest'
 const SLUG = 'abc'
@@ -309,5 +380,189 @@ describe('public media route', () => {
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('app-shell')
     expect(fetchAsset).toHaveBeenCalledOnce()
+  })
+})
+
+const FRAME_SHELL = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>eypi.cc - Link shortener for APC Rams</title>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>`
+
+function frameShellFetch() {
+  return vi.fn(async () => new Response(FRAME_SHELL, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache',
+    },
+  }))
+}
+
+describe('frame campaign share preview', () => {
+  beforeEach(() => {
+    logLinkClick.mockClear()
+    execute.mockReset()
+    execute.mockResolvedValue({ rows: [] })
+    createClient.mockClear()
+    vi.stubGlobal('HTMLRewriter', SharePreviewHTMLRewriter)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('injects the first frame as an absolute og:image on /frames/abc', async () => {
+    execute.mockResolvedValue({
+      rows: [
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'frames/camp-1/frame-2-bbbbbbbb.png',
+          position: 2,
+        },
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'frames/camp-1/frame-1-abcd1234.png',
+          position: 0,
+        },
+      ],
+    })
+    const fetchAsset = frameShellFetch()
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/frames/abc'),
+      makeEnv({}, fetchAsset),
+      ctx(),
+    )
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Cache-Control')).toBe('no-cache')
+    expect(response.headers.get('Location')).toBeNull()
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/frames/camp-1/frame-1-abcd1234.png">')
+    expect(html).toContain('<title>Rams Day</title>')
+    expect(html).toContain('<meta name="description" content="Wear the frame.">')
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">')
+    expect(html).not.toContain('frames/camp-1/frame-2-bbbbbbbb.png')
+    expect(fetchAsset).toHaveBeenCalledOnce()
+    expect(logLinkClick).not.toHaveBeenCalled()
+    expect(createClient).toHaveBeenCalledWith({
+      url: 'libsql://test.turso.io',
+      authToken: 'test-token',
+    })
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ args: ['abc'] }))
+  })
+
+  it('uses the earlier frame when two frames share a position', async () => {
+    execute.mockResolvedValue({
+      rows: [
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'frames/camp-1/frame-2-bbbbbbbb.png',
+          position: 0,
+          created_at: '2026-02-02 00:00:00',
+        },
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'frames/camp-1/frame-1-abcd1234.png',
+          position: 0,
+          created_at: '2026-01-01 00:00:00',
+        },
+      ],
+    })
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/frames/abc'),
+      makeEnv({}, frameShellFetch()),
+      ctx(),
+    )
+
+    expect(await response.text()).toContain(
+      '<meta property="og:image" content="https://eypi.cc/media/frames/camp-1/frame-1-abcd1234.png">',
+    )
+  })
+
+  it('skips a data URL and previews the next stored frame key', async () => {
+    execute.mockResolvedValue({
+      rows: [
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'data:image/png;base64,aaaa',
+          position: 0,
+        },
+        {
+          title: 'Rams Day',
+          description: 'Wear the frame.',
+          image_url: 'frames/camp-1/frame-1-abcd1234.png',
+          position: 1,
+        },
+      ],
+    })
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/frames/abc'),
+      makeEnv({}, frameShellFetch()),
+      ctx(),
+    )
+    const html = await response.text()
+
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/frames/camp-1/frame-1-abcd1234.png">')
+    expect(html).not.toContain('data:image')
+  })
+
+  it('escapes the campaign title and description', async () => {
+    execute.mockResolvedValue({
+      rows: [{
+        title: 'Rams <Day> & "Night"',
+        description: 'Wear the "frame" & go',
+        image_url: 'frames/camp-1/frame-1-abcd1234.png',
+        position: 0,
+      }],
+    })
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/frames/abc'),
+      makeEnv({}, frameShellFetch()),
+      ctx(),
+    )
+    const html = await response.text()
+
+    expect(html).toContain('<title>Rams &lt;Day&gt; &amp; "Night"</title>')
+    expect(html).toContain('<meta name="description" content="Wear the &quot;frame&quot; &amp; go">')
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/frames/camp-1/frame-1-abcd1234.png">')
+  })
+
+  it('serves the shell when the campaign is missing or the lookup fails', async () => {
+    const missingAsset = frameShellFetch()
+    const missing = await worker.fetch(
+      new Request('https://eypi.cc/frames/missing'),
+      makeEnv({}, missingAsset),
+      ctx(),
+    )
+
+    expect(missing.status).toBe(200)
+    expect(await missing.text()).toBe(FRAME_SHELL)
+    expect(missingAsset).toHaveBeenCalledOnce()
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ args: ['missing'] }))
+    expect(logLinkClick).not.toHaveBeenCalled()
+
+    execute.mockRejectedValue(new Error('turso down'))
+    const failedAsset = frameShellFetch()
+    const failed = await worker.fetch(
+      new Request('https://eypi.cc/frames/abc'),
+      makeEnv({}, failedAsset),
+      ctx(),
+    )
+
+    expect(failed.status).toBe(200)
+    expect(failed.headers.get('Cache-Control')).toBe('no-cache')
+    expect(await failed.text()).toBe(FRAME_SHELL)
+    expect(failedAsset).toHaveBeenCalledOnce()
   })
 })
