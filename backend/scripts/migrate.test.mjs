@@ -58,8 +58,24 @@ describe('isDestructive', () => {
     expect(isDestructive('DELETE FROM x')).toBe(true)
   })
 
-  it('treats DELETE FROM with WHERE as not destructive', () => {
-    expect(isDestructive('DELETE FROM x WHERE id=1')).toBe(false)
+  it('treats DELETE FROM with WHERE as destructive', () => {
+    expect(isDestructive('DELETE FROM x WHERE id=1')).toBe(true)
+    expect(isDestructive('-- clean up\nDELETE FROM users\nWHERE id IS NULL')).toBe(true)
+  })
+
+  it('treats ALTER TABLE ... DROP COLUMN as destructive', () => {
+    expect(isDestructive('ALTER TABLE users DROP COLUMN password_hash')).toBe(true)
+    expect(isDestructive('alter table users\n  drop column is_verified')).toBe(true)
+  })
+
+  it('treats UPDATE without WHERE as destructive and UPDATE with WHERE as safe', () => {
+    expect(isDestructive("UPDATE users SET role = 'user'")).toBe(true)
+    expect(isDestructive("UPDATE users SET role = 'admin' WHERE id = 1")).toBe(false)
+  })
+
+  it('does not flag additive statements', () => {
+    expect(isDestructive('ALTER TABLE users ADD COLUMN role TEXT')).toBe(false)
+    expect(isDestructive('CREATE INDEX idx ON users(email)')).toBe(false)
   })
 })
 

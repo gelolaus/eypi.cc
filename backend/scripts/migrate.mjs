@@ -75,7 +75,9 @@ function sqlWithoutLeadingComments(stmt) {
 export function isDestructive(stmt) {
   const sql = sqlWithoutLeadingComments(stmt)
   if (/^DROP\s+TABLE\b/i.test(sql)) return true
-  if (/^DELETE\s+FROM\b/i.test(sql) && !/\bWHERE\b/i.test(sql)) return true
+  if (/^ALTER\s+TABLE\b[\s\S]*\bDROP\s+COLUMN\b/i.test(sql)) return true
+  if (/^DELETE\s+FROM\b/i.test(sql)) return true
+  if (/^UPDATE\b/i.test(sql) && !/\bWHERE\b/i.test(sql)) return true
   return false
 }
 

@@ -11,7 +11,7 @@ Versioned SQL lives in `backend/migrations/`. The runner is `backend/scripts/mig
 | `--status` | Show applied and pending files. Writes nothing. |
 | `--dry-run` | Print what would run. Writes nothing. |
 | `--yes` | Apply every pending file. |
-| `--allow-destructive` | Required for a file that contains `DROP`. Only `0002` needs it (it drops empty `board_*` tables). |
+| `--allow-destructive` | Required for a file that contains `DROP TABLE`, `ALTER TABLE ... DROP COLUMN`, any `DELETE FROM`, or an `UPDATE` without `WHERE`. `0002` (drops empty `board_*` tables) and `0004` (deletes unverified users, drops the password columns) need it. |
 | `--baseline` | Mark the current live schema as applied without running it. First use only. |
 
 Rules:
@@ -23,7 +23,7 @@ Rules:
 
 ### Applying 0003 and 0004 together (cutover)
 
-The runner has no stop-after option: it applies every pending file. `0003` adds sessions and roles. `0004` removes the legacy password columns and must wait until Microsoft sign-in is verified in production. To hold `0004` back, move the file out of `backend/migrations/` before the run. Files missing from the folder are ignored by the checksum check. Once sign-in is verified, restore it with `git checkout -- backend/migrations/` and run the runner again. The exact window and order are in [RELEASE.md section 10](RELEASE.md#10-microsoft-sign-in-cutover-one-time).
+The runner has no stop-after option: it applies every pending file. `0003` adds sessions and roles. `0004` removes the legacy password columns and must wait until Microsoft sign-in is verified in production. To hold `0004` back, move the file out of `backend/migrations/` before the run. Files missing from the folder are ignored by the checksum check. Once sign-in is verified, restore it with `git checkout -- backend/migrations/` and run the runner again with `--yes --allow-destructive`; `0004` is refused without `--allow-destructive`. The exact window and order are in [RELEASE.md section 10](RELEASE.md#10-microsoft-sign-in-cutover-one-time).
 
 ## Turso restore and branch rehearsal
 

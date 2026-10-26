@@ -159,7 +159,7 @@ Check that the printed host is the branch, not production.
 1. If `--status` lists `0001` as pending although the database already has tables, run `-- --baseline --yes` first. That records `0001` without executing SQL. If `0002` is pending, it drops the empty `board_*` tables, so the later `--yes` run needs `--allow-destructive`.
 2. Hide `0004` and apply everything else. See [operations.md](operations.md#migration-runner) for the hold-back commands. Confirm `--dry-run` lists `0003` and `0005` to `0009` and not `0004`.
 3. Back up `backend/.dev.vars` (for example to `backend/.dev.vars.prod`, which is gitignored), then point `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `backend/.dev.vars` at the branch. Fill the `MS_*` keys, `AUTH_COOKIE_SECRET`, and set `FRONTEND_ORIGIN=http://localhost:5173`. Run `npm run dev:local` and sign in with Microsoft with an `@apc.edu.ph` account and a `@student.apc.edu.ph` account. Sign in with a non-APC Microsoft account and confirm `?error=tenant` or `?error=domain`.
-4. Restore `0004`, then apply it: `npm run migrate --prefix backend -- --yes`. Its `DELETE ... WHERE` and `ALTER TABLE ... DROP COLUMN` statements do not trip the destructive guard, so `--allow-destructive` is not needed unless `0002` is still pending.
+4. Restore `0004`, then apply it: `npm run migrate --prefix backend -- --yes --allow-destructive`. Its `DELETE FROM users` and `ALTER TABLE ... DROP COLUMN` statements trip the destructive guard, so `--allow-destructive` is required.
 5. Run the count queries from 10.2 step 7 against the branch. `links`, `analytics`, and `org_members` counts must match production, and `users` must be lower only by the unverified, never-claimed accounts (2 at audit time). Sign in again.
 6. Restore the original `backend/.dev.vars`, `unset TURSO_DATABASE_URL TURSO_AUTH_TOKEN`, and delete the branch (`turso db destroy eypi-rehearsal`).
 
@@ -187,10 +187,10 @@ Order follows [spec section 12, step 4](superpowers/specs/2026-10-25-eypi-overha
 
    ```bash
    npm run migrate --prefix backend -- --status
-   npm run migrate --prefix backend -- --yes
+   npm run migrate --prefix backend -- --yes --allow-destructive
    ```
 
-   `--status` must now list only `0004` as pending. Re-run the count queries: `links`, `analytics`, and `org_members` unchanged.
+   `0004` contains `DELETE FROM` and `ALTER TABLE ... DROP COLUMN`, so the runner refuses it without `--allow-destructive`. `--status` must now list only `0004` as pending. Re-run the count queries: `links`, `analytics`, and `org_members` unchanged.
 7. Remove the retired secret:
 
    ```bash
