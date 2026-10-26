@@ -85,6 +85,7 @@ export function isDestructive(stmt) {
 // runner with a message that names what to fix by hand. Emails are never printed.
 const PREFLIGHTS = {
   '0007': {
+    table: 'attendees',
     sql: `SELECT event_id, COUNT(*) AS n FROM attendees
           GROUP BY event_id, lower(email) HAVING COUNT(*) > 1`,
     message: (rows) => {
@@ -101,6 +102,11 @@ export async function preflightProblems(client, files) {
   for (const file of files) {
     const check = PREFLIGHTS[versionOf(file.name)]
     if (!check) continue
+    // A fresh database has no table yet; the migration that creates it is also pending.
+    if (check.table) {
+      const found = await client.execute({ sql: "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", args: [check.table] })
+      if (found.rows.length === 0) continue
+    }
     const result = await client.execute(check.sql)
     if (result.rows.length > 0) problems.push(`Preflight failed for ${file.name}: ${check.message(result.rows)}`)
   }

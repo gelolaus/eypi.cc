@@ -143,6 +143,13 @@ describe('preflight for 0007 attendee email index', () => {
     expect(problems[0]).not.toContain('event-2')
   })
 
+  it('skips the check when attendees does not exist yet (fresh database)', async () => {
+    const { createClient } = await import('@libsql/client/node')
+    const client = createClient({ url: ':memory:' })
+
+    expect(await preflightProblems(client, [{ version: '0007', name: '0007_tix.sql' }])).toEqual([])
+  })
+
   it('passes when every email is unique per event, and ignores other versions', async () => {
     const client = await clientBefore0007()
     await addAttendee(client, 'a1', 'event-1', 'ada@student.apc.edu.ph')

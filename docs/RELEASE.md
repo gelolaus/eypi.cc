@@ -20,6 +20,8 @@ npm run migrate --prefix backend -- --dry-run
 npm run migrate --prefix backend -- --yes
 ```
 
+If `0004` is pending, the apply step needs `--yes --allow-destructive` (see section 10 for the hold-back procedure).
+
 The runner prints the target database host and every pending file, applies pending files in version order, and records each in `schema_migrations`. It has no "stop after N" option. Details, flags, and the hold-back technique are in [operations.md](operations.md#migration-runner).
 
 Migrations must be additive or backward compatible, because frontend and backend deploy at different times. Destructive migrations need explicit owner approval (`CONTEXT.md`). Record the filename and date in your release notes (outside the repo).
