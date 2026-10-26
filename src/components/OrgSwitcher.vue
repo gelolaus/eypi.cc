@@ -1,5 +1,5 @@
 <template>
-  <div v-if="orgs.length > 0" class="relative inline-block">
+  <div v-if="orgs.length > 0" class="relative" :class="block ? 'block w-full' : 'inline-block'">
     <button
       v-if="isOpen"
       type="button"
@@ -10,8 +10,11 @@
 
     <button
       type="button"
-      class="tap-scale flex max-w-[min(100%,14rem)] items-center gap-2.5 rounded-lg border border-g-border bg-g-surface px-3 py-2 text-g-text transition-colors hover:border-g-primary/40"
+      class="tap-scale flex min-h-11 items-center gap-2.5 rounded-xl border border-g-border bg-g-surface px-3 py-2 text-g-text transition-colors hover:border-g-primary/40"
+      :class="block ? 'w-full' : 'max-w-[min(100%,14rem)]'"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
+      :aria-label="compact ? `Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}` : undefined"
+      :aria-expanded="isOpen ? 'true' : 'false'"
       data-cursor="nav"
       @click="isOpen = !isOpen"
     >
@@ -20,7 +23,10 @@
         :name="activeOrg?.org_name ?? ''"
         size="sm"
       />
-      <span class="truncate text-left text-sm font-medium leading-tight">
+      <span
+        class="min-w-0 flex-1 truncate text-left text-sm font-medium leading-tight"
+        :class="compact ? 'hidden sm:inline' : ''"
+      >
         {{ activeOrg ? activeOrg.org_name : 'Select org' }}
       </span>
       <svg
@@ -31,6 +37,7 @@
         viewBox="0 0 24 24"
         stroke="currentColor"
         stroke-width="2.5"
+        aria-hidden="true"
       >
         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
       </svg>
@@ -38,14 +45,15 @@
 
     <div
       v-if="isOpen"
-      class="absolute right-0 z-50 mt-1.5 w-72 max-w-[min(90vw,18rem)] rounded-xl border border-g-border bg-g-surface py-1.5 text-left shadow-xl"
+      class="absolute z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-g-border bg-g-surface py-1.5 text-left shadow-xl"
+      :class="placement === 'up' ? 'bottom-full left-0 mb-1.5' : 'right-0 mt-1.5'"
     >
       <div class="max-h-56 overflow-y-auto py-1">
         <button
           v-for="org in orgs"
           :key="org.org_id"
           type="button"
-          class="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-g-bg"
+          class="flex min-h-11 w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-g-bg"
           :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
           data-cursor="nav"
           @click="handleSelect(org)"
@@ -70,6 +78,20 @@ import { useActiveOrg } from '@/composables/useActiveOrg'
 import OrgLogo from '@/components/OrgLogo.vue'
 import type { OrgListItem } from '@/types/orgs'
 
+const props = withDefaults(
+  defineProps<{
+    /** Logo only below `sm` (top bar). */
+    compact?: boolean
+    /** Fill the parent width (side rail). */
+    block?: boolean
+    /** Open the menu above the trigger (side rail footer). */
+    placement?: 'down' | 'up'
+    /** Load orgs on mount. The app shell already loads them. */
+    autoFetch?: boolean
+  }>(),
+  { compact: false, block: false, placement: 'down', autoFetch: true },
+)
+
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 const isOpen = ref(false)
 
@@ -79,6 +101,6 @@ function handleSelect(org: OrgListItem) {
 }
 
 onMounted(() => {
-  fetchOrgs()
+  if (props.autoFetch) fetchOrgs()
 })
 </script>

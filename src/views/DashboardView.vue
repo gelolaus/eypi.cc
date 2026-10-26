@@ -1,5 +1,5 @@
 ﻿<template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)]">
+  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col flex-1">
     <header class="mb-10 border-b border-g-border pb-8">
       <h1 class="text-page-title">
         {{ userName ? `Hi, ${userName}` : 'Hi' }}.

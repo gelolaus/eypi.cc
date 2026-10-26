@@ -2,10 +2,12 @@
   <Transition name="scroll-top">
     <button
       v-if="isVisible"
+      type="button"
       class="scroll-top-btn"
+      :class="withTabBar ? 'scroll-top-btn--tabbar' : ''"
       aria-label="Back to top"
       data-cursor="nav"
-      @click="scrollToTop"
+      @click="toTop"
     >
       ↑
     </button>
@@ -13,28 +15,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { useScrollContainer } from '@/composables/useScrollContainer'
 
+withDefaults(defineProps<{ withTabBar?: boolean }>(), { withTabBar: false })
+
+const { container, scrollTop, scrollToTop } = useScrollContainer()
 const isVisible = ref(false)
+let target: HTMLElement | Window | null = null
 
 function onScroll() {
-  isVisible.value = window.scrollY > 300
+  isVisible.value = scrollTop() > 300
 }
 
-function scrollToTop() {
+function bind() {
+  target?.removeEventListener('scroll', onScroll)
+  target = container.value ?? window
+  target.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()
+}
+
+function toTop() {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
+  scrollToTop(reduce ? 'auto' : 'smooth')
 }
 
-onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
-onUnmounted(() => window.removeEventListener('scroll', onScroll))
+onMounted(bind)
+watch(container, bind)
+onUnmounted(() => {
+  target?.removeEventListener('scroll', onScroll)
+  target = null
+})
 </script>
 
 <style scoped>
 .scroll-top-btn {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  right: 1rem;
   z-index: 9998;
   width: 44px;
   height: 44px;
@@ -56,11 +74,35 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
     transform 0.2s ease;
 }
 
-.scroll-top-btn:hover {
-  border-color: var(--color-accent);
-  background-color: var(--color-accent);
-  color: #1a1a2e;
-  transform: translateY(-2px);
+/* Sits above the 4.5rem bottom tab bar and the home-indicator inset. */
+.scroll-top-btn--tabbar {
+  bottom: calc(4.5rem + 1rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  .scroll-top-btn {
+    right: 2rem;
+    bottom: calc(2rem + env(safe-area-inset-bottom));
+  }
+
+  .scroll-top-btn--tabbar {
+    bottom: calc(4.5rem + 1rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 1024px) {
+  .scroll-top-btn--tabbar {
+    bottom: 2rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scroll-top-btn:hover {
+    border-color: var(--color-accent);
+    background-color: var(--color-accent);
+    color: #1a1a2e;
+    transform: translateY(-2px);
+  }
 }
 
 .scroll-top-enter-active,

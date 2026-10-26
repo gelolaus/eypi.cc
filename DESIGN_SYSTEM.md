@@ -27,7 +27,7 @@
 | Source | What it owns |
 |---|---|
 | **APC (Asia Pacific College)** | Brand colors: APC Blue `#34418F` (`--color-primary`), APC Gold `#DEAC4B` (`--color-accent`), and the gold hover variants listed in §3. These are APC brand colors, not gelolaus.com brand marks. |
-| **gelolaus design language** | How eypi.cc is built: Geist / Geist Mono roles, light-default theme, fixed 120px dot grid, mica and pill glass surfaces, one heading per section, motion curves, z-index stack, UI copy rules in §2. gelolaus applies APC colors; it does not own them. |
+| **gelolaus design language** | How eypi.cc is built: Geist / Geist Mono roles, light-default theme, 120px dot grid, mica glass surfaces, one heading per section, motion curves, z-index stack, UI copy rules in §2. gelolaus applies APC colors; it does not own them. |
 | **eypi.cc** | The product: URL shortener and related modules for the APC student community. |
 
 ### Visual rules
@@ -36,9 +36,9 @@
 - **Geist for UI copy; Geist Mono for data**: `Geist` for headings, body, nav, buttons, and form labels. `Geist Mono` for slugs, codes, timestamps, and table numerics only.
 - **One heading per section**: No eyebrow label above a heading when it repeats the same words. One heading at the correct hierarchy level per section.
 - **APC Gold accent; APC Blue primary**: Accent is APC Gold `#DEAC4B` (`--color-accent`) for CTAs, hovers, and selection. Primary actions and focus borders use APC Blue `#34418F` (`--color-primary`). No third accent color.
-- **Dot grid**: `.bg-dot-grid` uses `radial-gradient` dots, `background-size: 120px 120px`, `background-attachment: fixed`.
-- **Glass surfaces**: `.mica-card` and `.pill-nav` use `backdrop-filter` blur (16px on cards, 20px on nav) over semi-transparent fills.
-- **Pill navigation**: Fixed `.pill-nav-wrapper` at `top: 16px`. Hides on scroll down via `.pill-nav--hidden` (`translateY(-80px)`, `opacity: 0`).
+- **Dot grid**: `.bg-dot-grid` uses `radial-gradient` dots, `background-size: 120px 120px`; `background-attachment: fixed` only under `@media (hover: hover)` (iOS Safari janks on fixed attachment).
+- **Glass surfaces**: `.mica-card` uses a 16px `backdrop-filter` blur over a semi-transparent fill. Navigation chrome is opaque (`bg-g-bg`).
+- **Navigation**: a sticky `h-14` top bar that never hides on scroll, a bottom tab bar below `lg` and a side rail from `lg` for signed-in app pages (§6.1, §10). The floating pill nav is gone.
 
 ---
 
@@ -238,7 +238,7 @@ No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` r
 
 | Zone | Max-Width | Notes |
 |---|---|---|
-| Pill nav wrapper | `min(92vw, 1100px)` | Centered, floats 16px from top |
+| Top bar | full width, `h-14` (56px) | Sticky, never hides on scroll |
 | Hero / main content | `max-w-5xl` (1024px) | Centered with `auto` margins |
 | Dashboard content | `max-w-5xl` (1024px) | Centered |
 | Login / auth card | `max-w-md` (448px) | Centered within full-screen |
@@ -251,9 +251,8 @@ No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` r
 
 | Context | Value |
 |---|---|
-| Pill nav internal padding | `0.5rem 1.25rem` (8px × 20px) |
-| Pill nav top offset | `16px` from viewport top |
-| Main content top padding | `5rem` (80px, pt-20) compensates for fixed nav |
+| Top bar padding | `px-4 sm:px-6`; controls are 44px (`size-11` / `min-h-11`) |
+| Main content top padding | none from the shell: the top bar sits in the document flow, so pages start below it with their own `py-*` |
 | Hero section padding | `1.5rem` sides; `3rem` to `6rem` vertical |
 | Card inner padding | `2rem` (p-8, 32px) |
 | Card inner padding (lg) | `3rem` (p-12, 48px) on settings |
@@ -297,79 +296,44 @@ Tailwind default breakpoints; no custom additions. Styles are mobile-first: base
 
 ## 6. Component anatomy
 
-### 6.1 Pill navigation (TheHeader)
+### 6.1 App shell and navigation
 
-Fixed-position pill with frosted glass (`.pill-nav`).
+`AppShell` picks the chrome from `isAppShellRoute()` in `src/config/nav.ts`: signed-in users on `requiresAuth` routes or any nav destination (for example `/orgs`) get the app shell; everything else gets public chrome. Nav items, tab order and active matching live in `src/config/nav.ts` (home items match exactly, every other item matches its path prefix).
 
-**Outer wrapper** (`.pill-nav-wrapper`):
-```css
-position: fixed;
-top: 16px;
-left: 50%;
-transform: translateX(-50%);
-z-index: 9990;
-width: min(92vw, 1100px);
-transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+**Top bar** (`TheHeader`):
 ```
-
-**Hidden state** (`.pill-nav--hidden`), triggered on scroll down:
-```css
-transform: translateX(-50%) translateY(-80px);
-opacity: 0;
-pointer-events: none;
+sticky top-0 z-[9990] flex h-14 items-center justify-between border-b border-g-border bg-g-bg px-4 sm:px-6
 ```
-Scroll logic: hides when `scrollY > lastScrollY && scrollY >= 50`; shows when scrolling up or `scrollY < 50`.
+- Never hides on scroll and has no scroll listener.
+- Logo `eypi.cc` (Geist, 15px, 700, `text-g-primary`, `dark:text-g-text`), links to `/dashboard` when signed in, `/` otherwise.
+- App shell: compact `OrgSwitcher` (logo only below `sm`) and `ThemeToggle`; the bar is `lg:hidden` because the side rail carries both from `lg`.
+- Public chrome: inline Orgs, Log in and Sign up (gold `.btn-gold`) from `sm`; below `sm` a 44px menu button opens the drawer. Signed-in users on public pages see a Dashboard link instead. The menu button keeps the invite count in its label (`Open navigation menu, 2 pending invites`).
+- `ThemeToggle`: `size-11` icon button, `aria-label="Toggle dark mode"`, `aria-pressed`.
 
-**Pill container** (`.pill-nav`):
+**Bottom tab bar** (`BottomTabBar`, below `lg`):
 ```
-display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-padding: 0.5rem 1.25rem;
-border-radius: 9999px;            /* Full pill */
-border: 1px solid var(--color-border);
-background: rgba(245, 245, 245, 0.82);   /* Light */
-backdrop-filter: blur(20px) saturate(180%);
-box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+nav[aria-label="Primary"].safe-bottom fixed inset-x-0 bottom-0 z-[9990] border-t bg-g-bg lg:hidden
+  div.grid.h-[4.5rem].grid-cols-5
 ```
-Dark mode: `background: rgba(22, 22, 22, 0.88); box-shadow: 0 2px 16px rgba(0,0,0,0.35);`
+- Four tabs (Dashboard, Links, Tix, Frames) plus More. Each cell is the full 72px tall and at least 72px wide at 360px.
+- Icon `size-5` over an `text-[11px]` label. Active tab: `text-primary` and `aria-current="page"`. More is marked current on pages that only live in the drawer.
+- More is a button with `aria-controls="site-nav-sidebar"`, `aria-expanded`, `aria-haspopup="dialog"`. The pending invite count shows as a gold badge, and the label reads `More, 2 pending invites`.
 
-**Scrolled state** (`.pill-nav--scrolled .pill-nav`):
+**Side rail** (`SideRail`, `lg` and up):
 ```
-box-shadow: 0 4px 28px rgba(0, 0, 0, 0.10);
-Dark: box-shadow: 0 4px 28px rgba(0, 0, 0, 0.50);
+aside.hidden.lg:flex.w-56 h-full flex-col border-r
+  item: flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium
+  active: bg-primary/15 text-g-text, icon text-primary, aria-current="page"
 ```
+Header row (`h-14`) holds the logo and theme toggle. The footer holds the `OrgSwitcher` (opens upward) and Logout.
 
-**Logo** (`.pill-nav__logo`):
-- Font: Geist Mono, 15px, weight 700
-- Color: `var(--color-primary)` (light) / `var(--color-text)` (dark)
-- Hover: `var(--color-accent)`
-- Transition: `color 0.2s ease`
+**Content pane** (app shell): `main#app-content.min-h-0.flex-1.overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0`. The pane resets to the top on route change and is the scroll target for `ScrollTop` (`useScrollContainer`). The footer renders at the end of the pane.
 
-**Nav links** (`.pill-nav__link`):
-- Font: Geist, 13px, weight 500
-- Color: `var(--color-text-muted)` → hover `var(--color-text)`
-- Transition: `color 0.2s ease`
+**Local dev banner**: in the document flow above the top bar (app shell: first row of the `h-dvh` column), so no offset constants are needed.
 
-**CTA button** (`.pill-nav__cta`):
-- Font: Geist, 13px, weight 600
-- Padding: `0.35rem 0.875rem`
-- Border-radius: `9999px`
-- Background: `var(--color-accent)` (#DEAC4B), text `#1a1a2e`
-- Hover: `opacity: 0.88; transform: translateY(-1px)`
-- Transition: `opacity 0.2s ease, transform 0.15s ease`
+**Drawer** (`NavSidebar`, opened by More or the public menu button): teleported `role="dialog"` `aria-modal="true"` `#site-nav-sidebar`, focus trap, Esc and backdrop close, `h-dvh max-h-dvh`, safe-area bottom padding. Close button `size-11`. Items render immediately, with no staggered fade. Holds the user card, every nav item, the active org list and Logout.
 
-**Dark mode toggle** (`.pill-nav__toggle`):
-- Size: `30px × 30px`, border-radius `9999px`
-- Border: `1px solid var(--color-border)`
-- Background: transparent → surface on hover
-- Border-color: `var(--color-text)` on hover
-- Icon size: `14px × 14px` (h-3.5 w-3.5)
-
-**User dropdown** (`.pill-nav__dropdown`):
-- Position: `absolute; top: calc(100% + 10px); right: 0;`
-- Width: `min-width: 210px`
-- Border-radius: `1rem`
-- Background: `var(--color-surface)`
-- Box-shadow: `0 8px 32px rgba(0,0,0,0.12)`; dark `0 8px 32px rgba(0,0,0,0.45)`
+**Tailwind `primary`**: `color-mix(in srgb, var(--color-primary) calc(<alpha-value> * 100%), transparent)`, so `text-primary` and `bg-primary/15` follow the light and dark tokens.
 
 ---
 
@@ -599,18 +563,18 @@ Both: `transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1)`
 ### 6.7 Scroll-top button
 
 ```
-position: fixed; bottom: 2rem; right: 2rem; z-index: 9998;
-width: 44px; height: 44px;
-border-radius: 9999px;
+position: fixed; right: 1rem (sm: 2rem); z-index: 9998;
+bottom: calc(1.5rem + env(safe-area-inset-bottom))        /* public, sm: 2rem + inset */
+.scroll-top-btn--tabbar (app shell, below lg):
+  bottom: calc(4.5rem + 1rem + env(safe-area-inset-bottom))  /* clears the tab bar */
+  lg: bottom: 2rem
+width: 44px; height: 44px; border-radius: 9999px;
 border: 1px solid var(--color-border);
 background: var(--color-surface);
 color: var(--color-text);
-font-size: 1.1rem;
-backdrop-filter: blur(12px);
-box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 ```
-Appears when `window.scrollY > 300`.
-Hover: `border-color: var(--color-accent); background: var(--color-accent); color: #ffffff; transform: translateY(-2px)`
+Appears when the scroll container passes 300px: the content pane in the app shell, the window on public pages (`useScrollContainer`).
+Hover (fine pointers only): `border-color` and `background` `var(--color-accent)`, `color: #1a1a2e`, `transform: translateY(-2px)`.
 
 ---
 
@@ -653,7 +617,7 @@ Four easing curves:
 
 | Name | Cubic Bezier | Behavior | Primary Use |
 |---|---|---|---|
-| **Spring Out** | `cubic-bezier(0.16, 1, 0.3, 1)` | Fast start, long deceleration | Scroll reveals, pill nav transitions, cursor size, footer arrow |
+| **Spring Out** | `cubic-bezier(0.16, 1, 0.3, 1)` | Fast start, long deceleration | Scroll reveals, footer arrow |
 | **Quick In-Out** | `cubic-bezier(0.2, 1, 0.3, 1)` | Slightly slower ease-in than Spring Out | Slide panels, toast notifications |
 | **Heavy Cinematic** | `cubic-bezier(0.76, 0, 0.24, 1)` | Slow in and slow out | Page transition wipe (`clip-path` expand, `0.6s`) |
 | **Linear ease** | `ease` | Standard browser ease | Color/opacity micro-transitions |
@@ -761,21 +725,12 @@ Exit reverses: panel slides back `translateX(100%)` and backdrop fades to `opaci
 
 ### 7.7 Navigation scroll behavior
 
-```js
-function onScroll() {
-  const y = window.scrollY
-  isScrolled = y > 20              // Adds deeper box-shadow
-  isNavVisible = y < lastScrollY || y < 50  // Hides on scroll down, shows on scroll up
-  lastScrollY = y
-}
-```
-The nav hides via `translateY(-80px)` + `opacity: 0` on the pill wrapper, not the pill itself.
+Navigation does not react to scroll. The top bar is sticky and always visible, the tab bar is fixed, and neither animates on scroll. Opening the drawer locks document scroll (`.nav-scroll-lock` on `html` and `body`); route changes close the drawer and reset the app content pane to the top.
 
 ### 7.8 Hover lift pattern
 
 | Element | Hover transform |
 |---|---|
-| Pill nav CTA | `translateY(-1px)` |
 | Scroll-top button | `translateY(-2px)` |
 | 404 return CTA | `scale(1.05)` |
 | Dashboard shorten button | `scale(1.05)` |
@@ -797,7 +752,7 @@ The icon switches between Moon (light mode) and Sun (dark mode) with a `v-if`/`v
 
 ### 7.11 Chevron rotation
 
-The dropdown chevron in the user button rotates on open:
+The `OrgSwitcher` chevron rotates on open:
 ```css
 transition-duration: 200ms;   /* Tailwind: duration-200 */
 transform: rotate(180deg);    /* When open: .rotate-180 */
@@ -824,7 +779,6 @@ A **Skip to content** link is the first focusable element (`href="#app-content"`
 
 `@media (prefers-reduced-motion: reduce)` in `main.css` disables or shortens:
 - Scroll reveal animations (`.reveal` shown immediately)
-- Pill nav hide/show transitions
 - Slide-over panel transitions
 - Custom cursor (native pointer on touch only)
 - Page transition wipe (instant)
@@ -838,10 +792,14 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 
 | Element | Attribute | Value |
 |---|---|---|
-| Pill nav `<nav>` | `aria-label` | `"Main navigation"` |
-| Pill nav separator | `aria-hidden` | `"true"` |
+| Top bar public `<nav>` | `aria-label` | `"Main navigation"` |
+| Bottom tab bar `<nav>` | `aria-label` | `"Primary"` |
+| Side rail and drawer app `<nav>` | `aria-label` | `"App modules"` |
+| Drawer public `<nav>` | `aria-label` | `"Public navigation"` |
+| Active nav item | `aria-current` | `"page"` |
+| Drawer | `role`, `aria-modal`, `aria-label` | `"dialog"`, `"true"`, `"Site navigation"` |
+| Menu button and More | `aria-controls`, `aria-expanded`, `aria-haspopup` | `"site-nav-sidebar"`, open state, `"dialog"` |
 | Backdrop overlays | `aria-hidden` | `"true"` |
-| Loader | `aria-hidden` | `"true"` |
 | Page transition | `aria-hidden` | `"true"` |
 | Icon buttons (table) | `aria-label` | `"Copy link"`, `"Analytics"`, `"Edit"`, `"Delete"` |
 | Close buttons | `aria-label` | `"Close"` |
@@ -853,16 +811,27 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 
 ```
 <body>
-  <AppLoader aria-hidden>       ← z:99998, auto-dismisses
+  <a.skip-link href="#app-content">
   <AppTransition aria-hidden>   ← z:99997, page wipe overlay
-  <AppCursor>                   ← z:99999, decorative
-  <ScrollTop>                   ← z:9998, fixed utility
   <div id="base-layer">         ← z:-10, dot grid background
-  <TheHeader>                   ← z:9990, fixed pill nav
-  <main id="app-content">       ← z:10, page content
-    <router-view />
-  </main>
-  <TheFooter>                   ← z:1, always-dark
+  <AppShell>
+    app shell (signed in):
+      <div data-app-shell class="flex h-dvh flex-col">
+        <LocalDevBanner>        ← in flow, dev only
+        <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <SideRail>            ← hidden lg:flex w-56
+          <div class="flex min-h-0 flex-1 flex-col">
+            <TheHeader>         ← z:9990, sticky h-14, lg:hidden
+            <main id="app-content">  ← z:10, the only scrolling pane
+              <router-view /> <TheFooter>
+            </main>
+            <BottomTabBar>      ← z:9990, fixed bottom, lg:hidden
+    public chrome:
+      <div class="flex min-h-dvh flex-col">
+        <LocalDevBanner> <TheHeader> <main id="app-content"> <TheFooter>
+    <NavSidebar>                ← z:99991, teleported drawer
+    <ScrollTop>                 ← z:9998, fixed utility
+  </AppShell>
   <ToastContainer>              ← z:9999, Signal strip
   <DialogHost>                  ← z:10000, mica Info/Confirm
 </body>
@@ -896,22 +865,21 @@ Normal text needs 4.5:1. Large text needs 3:1. Focus rings and other non-text in
 
 ## 9. Z-index architecture
 
-Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
+Z-index hierarchy (matches [src/App.vue](src/App.vue), [src/components/AppShell.vue](src/components/AppShell.vue) and teleported overlays):
 
 | Layer | Z-Index | Element |
 |---|---|---|
 | Background dot grid | `-10` | `#base-layer` (fixed) |
 | Page content | `10` | `<main>` (relative) |
 | Footer | `1` | `<footer>` (relative) |
-| Fixed nav | `9990` | Pill nav wrapper |
+| Top bar and bottom tab bar | `9990` | Sticky `TheHeader`, fixed `BottomTabBar` |
+| Local dev banner | `9991` | In flow, relative |
 | Scroll-top button | `9998` | Fixed bottom-right |
 | Toast container | `9999` | Signal strip (above the scroll-top button) |
 | DialogHost | `10000` | Mica Info / Confirm |
-| Slide panel backdrop | `99990` | Teleported overlay |
-| Slide panel | `99991` | Teleported panel |
+| Slide panel and nav drawer backdrop | `99990` | Teleported overlay |
+| Slide panel and nav drawer | `99991` | Teleported panel |
 | Page transition wipe | `99997` | Full-screen clip-path |
-| Page load splash | `99998` | Full-screen loader |
-| Custom cursor | `99999` | Fixed, pointer-events:none |
 
 ---
 
@@ -967,17 +935,21 @@ transform: translateY(0);
 background-color: var(--color-bg);
 background-image: radial-gradient(circle, var(--color-dot) 1.5px, transparent 1.5px);
 background-size: 120px 120px;
-background-attachment: fixed;
+
+/* Pointer devices only; iOS Safari janks on fixed attachment. */
+@media (hover: hover) {
+  background-attachment: fixed;
+}
 ```
 
 ---
 
 ## 10. Mobile-first layout
 
-wantap.cc (`C:UsersgeloDocumentsGitHubwantap.cc`) is the UX reference for layout, control sizing, and overlays. The brand (APC Blue and Gold, Geist) and the copy rules in §2 stay eypi's own.
+wantap.cc (`C:\Users\gelo\Documents\GitHub\wantap.cc`) is the UX reference for layout, control sizing, and overlays. The brand (APC Blue and Gold, Geist) and the copy rules in §2 stay eypi's own.
 
-- **Shell**: `h-dvh flex-col lg:flex-row`; the content pane scrolls (`min-h-0 flex-1 overflow-y-auto`). Below `lg` there is a sticky top bar (`h-14`, never hides on scroll) and a fixed bottom tab bar; at `lg` and up a sticky side rail (`w-56`) replaces the tab bar.
-- **Tab bar**: `aria-label="Primary"`, four tabs, icon over an 11px label, active tab marked with `aria-current="page"`. Content gets bottom padding equal to the bar height plus the safe-area inset below `lg`.
+- **Shell**: `h-dvh flex-col lg:flex-row`; the content pane scrolls (`min-h-0 flex-1 overflow-y-auto`). Below `lg` there is a sticky top bar (`h-14`, never hides on scroll) and a fixed bottom tab bar; at `lg` and up a side rail (`w-56`) replaces both. Public pages keep the top bar and normal document scroll. Anatomy in §6.1.
+- **Tab bar**: `aria-label="Primary"`, four tabs plus More (opens the navigation drawer), icon over an 11px label, active tab marked with `aria-current="page"`. Content gets bottom padding equal to the bar height plus the safe-area inset below `lg`.
 - **Control sizes**: default 44px (`.control`, `.btn-primary`, `.btn-secondary`, `.btn-ghost`, `.btn-danger`); `.btn-lg` 48px; `.btn-sm` 36px for dense secondary actions only. Icon-only buttons have a 44px hit area and an `sr-only` label. Inputs, selects, and textareas use 16px text so iOS does not zoom. Invalid fields set `aria-invalid="true"`. Primary buttons are APC Blue with white text (light) or `#8FA0E8` with `#0A0A0A` text (dark); gold controls keep `#1a1a2e` text via `.btn-gold`.
 - **Section cards**: `rounded-3xl border p-6 sm:p-7` (`.section-card` or `AppSection`). Pages use `AppPage`: `px-4 sm:px-6 py-6 sm:py-8 max-w-6xl`, an `h1` title and one short description line.
 - **Bottom sheets**: dialogs and slide panels dock to the bottom edge below `sm` and become centered dialogs or side panels from `sm`. Footers stack with `flex-col-reverse` so the primary action sits at the bottom.

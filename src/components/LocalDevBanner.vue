@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="IS_LOCAL_DEV"
-    class="fixed inset-x-0 top-0 z-[9991] border-b border-amber-500/40 bg-amber-500/95 px-3 py-1.5 text-center text-xs font-semibold text-amber-950 shadow-sm backdrop-blur-sm dark:bg-amber-600/90 dark:text-amber-50"
+    class="relative z-[9991] shrink-0 border-b border-amber-500/40 bg-amber-500 px-3 py-1.5 text-center text-xs font-semibold text-amber-950 dark:bg-amber-600 dark:text-amber-50"
     role="status"
     aria-live="polite"
   >
@@ -26,8 +26,8 @@ const statusDetail = ref('')
 const statusLabel = computed(() => {
   if (status.value === 'checking') return 'Checking API…'
   if (status.value === 'online') return 'API online'
-  if (status.value === 'misconfigured') return statusDetail.value || 'API misconfigured — check backend/.dev.vars'
-  return 'API unreachable — run npm run dev:local'
+  if (status.value === 'misconfigured') return statusDetail.value || 'API misconfigured. Check backend/.dev.vars.'
+  return 'API unreachable. Run npm run dev:local.'
 })
 
 const statusClass = computed(() =>

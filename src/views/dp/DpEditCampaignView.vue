@@ -1,5 +1,5 @@
 <template>
-  <section class="relative flex min-h-screen w-full flex-col items-center px-4 py-24">
+  <section class="relative flex w-full flex-1 flex-col items-center px-4 py-24">
     <div class="w-full max-w-xl">
       <!-- Loading -->
       <div v-if="loading" class="space-y-4">

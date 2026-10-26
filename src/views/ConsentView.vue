@@ -1,5 +1,5 @@
 <template>
-  <section class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-24">
+  <section class="relative flex w-full flex-1 flex-col items-center justify-center px-4 py-24">
     <div class="mica-card w-full max-w-md rounded-3xl border border-g-border p-8">
       <h1 class="text-section-title text-g-text">
         Accept the privacy policy and terms

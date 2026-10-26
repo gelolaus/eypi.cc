@@ -1,5 +1,5 @@
 <template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col min-h-[calc(100vh-5rem)]">
+  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col flex-1">
     <div class="w-full flex-1">
       <div
         class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"

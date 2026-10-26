@@ -5,7 +5,7 @@
     </div>
   </div>
 
-  <div v-else-if="isLocked" class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col min-h-[calc(100vh-5rem)] flex-1 items-center justify-center">
+  <div v-else-if="isLocked" class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col flex-1 items-center justify-center">
     <OrgLockout />
   </div>
 

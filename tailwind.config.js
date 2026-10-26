@@ -32,6 +32,8 @@ export default {
         'g-muted':   'var(--color-text-muted)',
         'g-accent':  'var(--color-accent)',
         'g-primary': 'var(--color-primary)',
+        // Theme-aware APC blue that supports opacity modifiers (`bg-primary/15`).
+        primary: 'color-mix(in srgb, var(--color-primary) calc(<alpha-value> * 100%), transparent)',
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],

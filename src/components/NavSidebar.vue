@@ -10,21 +10,20 @@
       />
     </Transition>
 
-    <Transition name="slide-over-panel" @after-enter="onPanelEnter">
+    <Transition name="slide-over-panel">
       <aside
         v-if="isOpen"
         id="site-nav-sidebar"
         ref="panelRef"
-        class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-g-border bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:bg-slate-900/95 sm:max-w-md sm:p-8"
+        class="nav-sidebar fixed right-0 top-0 flex h-dvh max-h-dvh w-full flex-col overflow-y-auto overscroll-contain border-l border-g-border bg-white/90 px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-16 shadow-2xl backdrop-blur-xl dark:bg-slate-900/95 sm:max-w-md sm:px-8"
         style="z-index: 99991"
         role="dialog"
         aria-modal="true"
         aria-label="Site navigation"
-        :class="itemsVisible ? 'nav-sidebar--visible' : ''"
       >
         <button
           type="button"
-          class="tap-scale absolute right-6 top-6 font-mono text-2xl text-g-muted transition-colors hover:text-g-text"
+          class="tap-scale absolute right-3 top-3 flex size-11 items-center justify-center rounded-xl font-mono text-2xl text-g-muted transition-colors hover:text-g-text sm:right-5"
           aria-label="Close navigation"
           data-cursor="nav"
           @click="$emit('close')"
@@ -34,7 +33,7 @@
 
         <!-- Authenticated -->
         <template v-if="isAuthenticated">
-          <div class="nav-sidebar-item mb-8 rounded-2xl border border-g-border bg-g-bg/80 px-4 py-4 dark:bg-slate-950/50">
+          <div class="mb-6 rounded-2xl border border-g-border bg-g-bg/80 px-4 py-4 dark:bg-slate-950/50">
             <p class="text-base font-semibold text-g-primary dark:text-[#DEAC4B]">
               {{ userName }}
             </p>
@@ -43,13 +42,12 @@
             </p>
           </div>
 
-          <nav class="flex flex-col gap-1" aria-label="App modules">
+          <nav class="flex flex-col" aria-label="App modules">
             <router-link
-              v-for="(link, index) in appLinks"
+              v-for="link in appLinks"
               :key="link.to"
               :to="link.to"
-              class="nav-sidebar-item nav-sidebar-link tap-scale group"
-              :style="{ transitionDelay: `${0.05 + index * 0.04}s` }"
+              class="nav-sidebar-link tap-scale group"
               data-cursor="nav"
               @click="$emit('close')"
             >
@@ -67,7 +65,7 @@
             </router-link>
           </nav>
 
-          <div v-if="orgs.length > 0" class="nav-sidebar-item mt-10 pt-2">
+          <div v-if="orgs.length > 0" class="mt-8 pt-2">
             <p class="mb-3 text-sm font-medium text-g-muted">
               Active organization
             </p>
@@ -76,7 +74,7 @@
                 v-for="org in orgs"
                 :key="org.org_id"
                 type="button"
-                class="tap-scale flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm transition-colors"
+                class="tap-scale flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm transition-colors"
                 :class="
                   activeOrg?.org_id === org.org_id
                     ? 'border-[#DEAC4B]/50 bg-[#DEAC4B]/10 text-[#DEAC4B]'
@@ -91,7 +89,7 @@
             </div>
           </div>
 
-          <div class="nav-sidebar-item mt-auto pt-6">
+          <div class="mt-auto pt-6">
             <button
               type="button"
               class="nav-sidebar-link nav-sidebar-link--danger tap-scale w-full"
@@ -106,19 +104,18 @@
 
         <!-- Public -->
         <template v-else>
-          <nav class="flex flex-col gap-1" aria-label="Public navigation">
+          <nav class="flex flex-col" aria-label="Public navigation">
             <router-link
-              v-for="(link, index) in publicLinks"
+              v-for="link in publicLinks"
               :key="link.to"
               :to="link.to"
-              class="nav-sidebar-item nav-sidebar-link tap-scale group"
-              :class="link.variant === 'cta' ? 'nav-sidebar-link--cta' : ''"
-              :style="{ transitionDelay: `${0.05 + index * 0.04}s` }"
-              :data-cursor="link.variant === 'cta' ? 'cta' : 'nav'"
+              class="nav-sidebar-link tap-scale group"
+              :class="link.cta ? 'nav-sidebar-link--cta' : ''"
+              :data-cursor="link.cta ? 'cta' : 'nav'"
               @click="$emit('close')"
             >
               <span>{{ link.label }}</span>
-              <span v-if="link.variant !== 'cta'" class="nav-sidebar-link__arrow" aria-hidden="true">↗</span>
+              <span v-if="!link.cta" class="nav-sidebar-link__arrow" aria-hidden="true">↗</span>
             </router-link>
           </nav>
         </template>
@@ -131,6 +128,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import OrgLogo from '@/components/OrgLogo.vue'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { navItems } from '@/config/nav'
 import { useSession } from '@/stores/session'
 import type { OrgListItem } from '@/types/orgs'
 
@@ -149,49 +147,27 @@ defineEmits<{
   logout: []
 }>()
 
-const appLinks = computed(() => {
-  const links = [
-    { to: '/dashboard', label: 'Dashboard' },
-    { to: '/links', label: 'Links' },
-    { to: '/forms', label: 'Forms' },
-    { to: '/manage/tix', label: 'Tix' },
-    { to: '/manage/frames', label: 'Frames' },
-    { to: '/orgs', label: 'Orgs' },
-    { to: '/invites', label: 'Invites' },
-    { to: '/account', label: 'Account' },
-  ]
-  if (useSession().user.value?.role === 'admin') {
-    links.push({ to: '/admin/users', label: 'Admin' })
-  }
-  return links
-})
+const session = useSession()
 
-const pendingInviteCount = computed(() => useSession().pendingInviteCount.value)
+const appLinks = computed(() =>
+  navItems({ authenticated: true, admin: session.user.value?.role === 'admin' }),
+)
+const publicLinks = navItems({ authenticated: false, admin: false })
+
+const pendingInviteCount = computed(() => session.pendingInviteCount.value)
 const pendingInviteLabel = computed(() => {
   const count = pendingInviteCount.value
   const noun = count === 1 ? 'invite' : 'invites'
   return `${count} pending ${noun}`
 })
 
-const publicLinks = [
-  { to: '/orgs', label: 'Orgs' },
-  { to: '/login', label: 'Log in' },
-  { to: '/login?tab=register', label: 'Sign up', variant: 'cta' as const },
-]
-
-const itemsVisible = ref(false)
 const panelRef = ref<HTMLElement | null>(null)
 const { activate, release } = useFocusTrap(panelRef)
-
-function onPanelEnter() {
-  itemsVisible.value = true
-}
 
 watch(
   () => props.isOpen,
   async (open) => {
     if (!open) {
-      itemsVisible.value = false
       release()
       return
     }
@@ -202,47 +178,25 @@ watch(
 </script>
 
 <style scoped>
-.nav-sidebar-item {
-  opacity: 0;
-  transform: translateX(18px);
-  transition:
-    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.nav-sidebar--visible .nav-sidebar-item {
-  opacity: 1;
-  transform: translateX(0);
-}
-
 .nav-sidebar-link {
   display: flex;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem 0.25rem;
+  padding: 0.75rem 0.25rem;
   border-bottom: 1px solid var(--color-border);
   font-family: 'Geist', system-ui, sans-serif;
-  font-size: clamp(1.1rem, 2.5vw, 1.45rem);
+  font-size: 1.125rem;
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--color-text);
   text-decoration: none;
-  transition:
-    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.22s ease;
+  transition: color 0.22s ease;
 }
 
 .nav-sidebar-link:last-of-type {
   border-bottom: none;
-}
-
-.nav-sidebar-link:hover {
-  color: var(--color-accent);
 }
 
 .nav-sidebar-link__arrow {
@@ -251,21 +205,27 @@ watch(
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
 }
 
-.nav-sidebar-link:hover .nav-sidebar-link__arrow {
-  opacity: 1;
-  transform: translate(3px, -3px);
+@media (hover: hover) and (pointer: fine) {
+  .nav-sidebar-link:hover {
+    color: var(--color-accent);
+  }
+
+  .nav-sidebar-link:hover .nav-sidebar-link__arrow {
+    opacity: 1;
+    transform: translate(3px, -3px);
+  }
 }
 
 .nav-sidebar-link--cta {
   margin-top: 0.75rem;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 9999px;
+  border-radius: 0.75rem;
   background: var(--color-accent);
   color: #1a1a2e;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   text-transform: none;
 }
 
