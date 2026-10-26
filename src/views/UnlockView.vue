@@ -70,7 +70,7 @@ async function onSubmit() {
   error.value = ''
   pending.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/links/${encodeURIComponent(slug.value)}/unlock`, {
+    const res = await fetch(`${API_BASE_URL}/api/links/${encodeURIComponent(slug.value)}/unlock${route.query.src === 'qr' ? '?src=qr' : ''}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

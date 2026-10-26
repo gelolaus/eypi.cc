@@ -215,30 +215,50 @@ describe('edge short-link redirect', () => {
     expect(fetchAsset).not.toHaveBeenCalled()
   })
 
-  it('strips src=qr from the destination and records source qr', async () => {
+  it('records source qr from the request src and keeps the destination intact', async () => {
+    const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}?src=qr`, {
+        headers: { 'Sec-Fetch-Mode': 'navigate', 'User-Agent': 'Mozilla/5.0 Chrome/121.0.0.0' },
+      }),
+      makeEnv({ [SLUG]: slugEntry() }, fetchAsset),
+      ctx(),
+    )
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe(DESTINATION)
+    expect(logLinkClick).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ linkId: 'link-1', source: 'qr' }),
+    )
+  })
+
+  it('ignores src=qr on the stored destination and keeps it', async () => {
     const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
     const response = await worker.fetch(
       new Request(`https://eypi.cc/${SLUG}`, {
         headers: { 'Sec-Fetch-Mode': 'navigate', 'User-Agent': 'Mozilla/5.0 Chrome/121.0.0.0' },
       }),
       makeEnv({
-        [SLUG]: JSON.stringify({
-          v: 2,
-          id: 'link-1',
-          url: 'https://example.com/dest?src=qr',
-        }),
+        [SLUG]: JSON.stringify({ v: 2, id: 'link-1', url: 'https://example.com/dest?src=qr' }),
       }, fetchAsset),
       ctx(),
     )
 
-    expect(response.status).toBe(302)
-    expect(response.headers.get('Location')).toBe('https://example.com/dest')
-    expect(response.headers.get('Cache-Control')).toBe('private, max-age=0')
-    expect(logLinkClick).toHaveBeenCalledOnce()
+    expect(response.headers.get('Location')).toBe('https://example.com/dest?src=qr')
     expect(logLinkClick).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ linkId: 'link-1', source: 'qr' }),
+      expect.objectContaining({ linkId: 'link-1', source: 'direct' }),
     )
+  })
+
+  it('carries src=qr to the unlock page for protected links', async () => {
+    const response = await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}?src=qr`, { headers: { 'Sec-Fetch-Mode': 'navigate' } }),
+      makeEnv({ [SLUG]: JSON.stringify({ v: 2, id: 'link-1', url: DESTINATION, pw: 1 }) }, vi.fn(async () => new Response('asset'))),
+      ctx(),
+    )
+    expect(response.headers.get('Location')).toBe('/unlock/abc?src=qr')
   })
 
   it('does not log a click from a bot user agent', async () => {

@@ -26,7 +26,7 @@ onMounted(async () => {
   const slug = currentSlug.value
   const animationPromise = appTransition?.value?.trigger() ?? Promise.resolve()
   const referrer = encodeURIComponent(document.referrer || '')
-  const fetchPromise = api.raw(`/api/links/resolve/${encodeURIComponent(slug)}?r=${referrer}`)
+  const fetchPromise = api.raw(`/api/links/resolve/${encodeURIComponent(slug)}?r=${referrer}${route.query.src === 'qr' ? '&src=qr' : ''}`)
     .then(async (res) => {
       const data = await res.json().catch(() => null) as { url?: string; protected?: boolean } | null
       return { status: res.status, data }
@@ -40,7 +40,7 @@ onMounted(async () => {
     return
   }
   if (result?.data?.protected) {
-    await router.replace(`/unlock/${slug}`)
+    await router.replace(route.query.src === 'qr' ? `/unlock/${slug}?src=qr` : `/unlock/${slug}`)
     return
   }
   if (result?.data?.url && isSafeRedirect(result.data.url)) {

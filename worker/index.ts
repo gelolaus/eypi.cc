@@ -564,7 +564,11 @@ export default {
       return redirect('/expired')
     }
 
-    if (entry.pw) return redirect(`/unlock/${slug}`)
+    const source: 'qr' | 'direct' = new URL(request.url).searchParams.get('src') === 'qr' ? 'qr' : 'direct'
+
+    if (entry.pw) {
+      return redirect(source === 'qr' ? `/unlock/${slug}?src=qr` : `/unlock/${slug}`)
+    }
 
     let destination: URL
     try {
@@ -574,12 +578,6 @@ export default {
       }
     } catch {
       return env.ASSETS.fetch(request)
-    }
-
-    let source: 'qr' | 'direct' = 'direct'
-    if (destination.searchParams.get('src') === 'qr') {
-      source = 'qr'
-      destination.searchParams.delete('src')
     }
 
     if (request.method === 'GET') {

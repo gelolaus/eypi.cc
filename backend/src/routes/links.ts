@@ -277,17 +277,8 @@ function kvValue(row: Pick<LinkRow, 'id' | 'original_url' | 'expires_at' | 'pass
   return encodeLinkKv(entry)
 }
 
-function clickTarget(url: string): { url: string; source: 'qr' | 'direct' } {
-  try {
-    const parsed = new URL(url)
-    if (parsed.searchParams.get('src') === 'qr') {
-      parsed.searchParams.delete('src')
-      return { url: parsed.toString(), source: 'qr' }
-    }
-  } catch {
-    // Stored destinations are validated. A bad value still should not throw.
-  }
-  return { url, source: 'direct' }
+function requestSource(src: string | undefined): 'qr' | 'direct' {
+  return src === 'qr' ? 'qr' : 'direct'
 }
 
 function isSlugConflict(err: unknown): boolean {
@@ -527,9 +518,8 @@ app.get('/api/links/resolve/:slug', async (c) => {
   }
   if (row.password_hash) return c.json({ protected: true })
 
-  const target = clickTarget(row.original_url)
-  await recordClick(c, row.id, c.req.query('r'), target.source)
-  return c.json({ url: target.url })
+  await recordClick(c, row.id, c.req.query('r'), requestSource(c.req.query('src')))
+  return c.json({ url: row.original_url })
 })
 
 app.get('/api/links/export.csv', requireAuth, async (c) => {
@@ -881,9 +871,8 @@ app.post('/api/links/:slug/unlock', async (c) => {
     && await verifyLinkPassword(password, row.password_hash)
   if (!matches) return fail(c, 401, 'wrong_password', 'That password is wrong.')
 
-  const target = clickTarget(row.original_url)
-  await recordClick(c, row.id, undefined, target.source)
-  return c.json({ url: target.url })
+  await recordClick(c, row.id, undefined, requestSource(c.req.query('src')))
+  return c.json({ url: row.original_url })
 })
 
 app.put('/api/links/:id/qr-logo', requireAuth, requireConsent, async (c) => {

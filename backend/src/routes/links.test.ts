@@ -343,6 +343,22 @@ describe('links API', () => {
     expect(count(rows.rows[0].n)).toBe(1)
   })
 
+  it('counts a qr unlock from the request src', async () => {
+    const { request, client } = await withOwner()
+    const created = await request('/api/links', post({
+      url: 'https://example.com/secret',
+      password: 'correct-horse',
+      slug: 'secretqr',
+    }))
+    const { slug } = await created.json() as { slug: string }
+
+    const res = await request(`/api/links/${slug}/unlock?src=qr`, post({ password: 'correct-horse' }, '203.0.113.42'))
+
+    expect(res.status).toBe(200)
+    const rows = await client.execute('SELECT source FROM analytics')
+    expect(rows.rows[0].source).toBe('qr')
+  })
+
   it('returns 410 link_expired for an expired resolve and does not log a click', async () => {
     const { request, client } = await createTestApp({
       seed: async (db) => {
@@ -366,7 +382,7 @@ describe('links API', () => {
     expect(count(rows.rows[0].n)).toBe(0)
   })
 
-  it('resolves an open link, strips src=qr, and logs the referrer once', async () => {
+  it('resolves an open link, counts qr from the request src, and logs the referrer once', async () => {
     const { request, client } = await createTestApp({
       seed: async (db) => {
         await db.execute({
@@ -375,14 +391,14 @@ describe('links API', () => {
         })
         await db.execute({
           sql: `INSERT INTO links (id, user_id, original_url, slug)
-            VALUES ('open-link', ?, 'https://example.com/dest?src=qr', 'open-link')`,
+            VALUES ('open-link', ?, 'https://example.com/dest', 'open-link')`,
           args: [owner.id],
         })
       },
     })
 
     const res = await request(
-      `/api/links/resolve/open-link?r=${encodeURIComponent('https://facebook.com/post')}`,
+      `/api/links/resolve/open-link?src=qr&r=${encodeURIComponent('https://facebook.com/post')}`,
       { headers: { 'User-Agent': 'Mozilla/5.0 Chrome' } },
     )
     const rows = await client.execute('SELECT referrer, source FROM analytics')
@@ -392,6 +408,28 @@ describe('links API', () => {
     expect(rows.rows).toHaveLength(1)
     expect(rows.rows[0].referrer).toBe('Facebook')
     expect(rows.rows[0].source).toBe('qr')
+  })
+
+  it('keeps a destination src=qr and counts direct without a request src', async () => {
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute({
+          sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)',
+          args: [owner.id, owner.email, owner.name, owner.role],
+        })
+        await db.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug)
+            VALUES ('own-src', ?, 'https://example.com/dest?src=qr', 'own-src')`,
+          args: [owner.id],
+        })
+      },
+    })
+
+    const res = await request('/api/links/resolve/own-src?r=', { headers: { 'User-Agent': 'Mozilla/5.0 Chrome' } })
+    const rows = await client.execute('SELECT source FROM analytics')
+
+    expect(await res.json()).toEqual({ url: 'https://example.com/dest?src=qr' })
+    expect(rows.rows[0].source).toBe('direct')
   })
 
   it('does not log a bot resolve', async () => {
