@@ -52,6 +52,7 @@
       <div
         v-if="isOpen"
         :id="menuId"
+        ref="menuRef"
         data-org-switcher-menu
         :role="isMobile ? 'dialog' : undefined"
         :aria-modal="isMobile ? 'true' : undefined"
@@ -68,7 +69,7 @@
             type="button"
             class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-g-bg sm:rounded-none"
             :class="activeOrg?.org_id === org.org_id ? 'bg-g-bg/80' : ''"
-           
+            :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
             @click="handleSelect(org)"
           >
             <OrgLogo :logo-url="org.logo_url" :name="org.org_name" size="sm" />
@@ -89,6 +90,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, useId, onMounted, onBeforeUnmount } from 'vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 import OrgLogo from '@/components/OrgLogo.vue'
 import type { OrgListItem } from '@/types/orgs'
 
@@ -109,6 +111,8 @@ const props = withDefaults(
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 const isOpen = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
+const trap = useFocusTrap(menuRef)
 const menuId = useId()
 const isMobile = ref(false)
 let mql: MediaQueryList | null = null
@@ -124,8 +128,11 @@ function onKeydown(event: KeyboardEvent) {
 watch(isOpen, (open) => {
   if (open) {
     window.addEventListener('keydown', onKeydown)
+    // The mobile sheet is modal: move focus in and keep Tab inside it.
+    if (isMobile.value) void nextTick(() => trap.activate())
   } else {
     window.removeEventListener('keydown', onKeydown)
+    trap.release()
     void nextTick(() => triggerRef.value?.focus())
   }
 })
