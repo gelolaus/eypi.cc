@@ -29,8 +29,6 @@
         </router-link>
       </nav>
 
-      <ThemeToggle />
-
       <button
         v-if="!appShell"
         type="button"
@@ -59,7 +57,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
-import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { navItems, type NavItem } from '@/config/nav'
 import { useSession } from '@/stores/session'

@@ -58,8 +58,8 @@ describe('SideRail', () => {
     expect(wrapper.emitted('logout')).toHaveLength(1)
   })
 
-  it('carries the theme toggle', async () => {
+  it('has no theme toggle', async () => {
     const wrapper = await mountAt('/dashboard')
-    expect(wrapper.find('[aria-label="Toggle dark mode"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Toggle dark mode"]').exists()).toBe(false)
   })
 })

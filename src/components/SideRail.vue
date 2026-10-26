@@ -4,7 +4,6 @@
       <router-link to="/dashboard" class="text-[0.9375rem] font-bold tracking-tight text-g-primary dark:text-g-text">
         eypi.cc
       </router-link>
-      <ThemeToggle />
     </div>
 
     <nav class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2" aria-label="App modules">
@@ -46,7 +45,6 @@
 import { useRoute } from 'vue-router'
 import NavIcon from '@/components/NavIcon.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
-import ThemeToggle from '@/components/ThemeToggle.vue'
 import { isNavActive, type NavItem } from '@/config/nav'
 
 defineProps<{

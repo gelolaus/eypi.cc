@@ -6,7 +6,6 @@ import ContactView from '@/views/ContactView.vue'
 import FeaturesCarousel from './FeaturesCarousel.vue'
 import NavSidebar from './NavSidebar.vue'
 import TheFooter from './TheFooter.vue'
-import TheHeader from './TheHeader.vue'
 import router from '@/router'
 import { useSession } from '@/stores/session'
 
@@ -70,18 +69,6 @@ describe('accessibility surfaces', () => {
       expect(arrow.attributes('aria-hidden')).toBe('true')
       expect(arrow.text()).toBe('↗')
     }
-  })
-
-  it('exposes the theme toggle pressed state', async () => {
-    const wrapper = mount(TheHeader, {
-      attachTo: document.body,
-      global: { plugins: [router] },
-    })
-    const toggle = wrapper.get('[aria-label="Toggle dark mode"]')
-    expect(toggle.attributes('aria-pressed')).toBe('false')
-    await toggle.trigger('click')
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-    wrapper.unmount()
   })
 
   it('does not skip heading levels on the contact page', () => {

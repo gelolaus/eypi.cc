@@ -226,7 +226,6 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { api } from '@/lib/api'
-import { useDarkMode } from '@/composables/useDarkMode'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
@@ -253,7 +252,6 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { isDark } = useDarkMode()
 const panel = ref<HTMLElement | null>(null)
 const trap = useFocusTrap(panel)
 const range = ref<7 | 30 | 90>(30)
@@ -291,8 +289,8 @@ const chartData = computed(() => {
 })
 
 const chartOptions = computed(() => {
-  const textColor = isDark.value ? '#cbd5e1' : '#64748b'
-  const gridColor = isDark.value ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+  const textColor = '#cbd5e1'
+  const gridColor = 'rgba(255,255,255,0.05)'
   return {
     responsive: true,
     maintainAspectRatio: false,

@@ -199,9 +199,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Interfaces:** `BrandLogo` props `{ to?: string; size?: 'sm' | 'md' | 'lg'; markOnly?: boolean }`. Sizes copy wantap `WantapLogo` (`sm` mark `size-5`, `md` mark `size-8 text-xl font-semibold tracking-tight gap-2.5`, `lg` mark `size-14 sm:size-16`, wordmark `font-display text-5xl sm:text-6xl`). Renders a router-link with `aria-label="eypi.cc"` when `to` is set; the mark image has `alt=""`.
 
-- [ ] **Step 1:** Tests: `BrandLogo` renders the wordmark by default, hides it with `markOnly`, and exposes `aria-label` on the link; a repo test asserts `public/theme-init.js` does not exist and `index.html` has `class="dark"` and no inline script.
-- [ ] **Step 2:** Implement; remove the toggle from every consumer (`grep -rn useDarkMode src`); update `manifest.webmanifest` `theme_color`/`background_color` to the Task 1 hex.
-- [ ] **Step 3:** `npm run typecheck && npm test && npm run build`; PASS. Commit `feat(brand): add the logo lockup and drop the light theme`.
+- [x] **Step 1:** Tests: `BrandLogo` renders the wordmark by default, hides it with `markOnly`, and exposes `aria-label` on the link; a repo test asserts `public/theme-init.js` does not exist and `index.html` has `class="dark"` and no inline script.
+- [x] **Step 2:** Implement; remove the toggle from every consumer (`grep -rn useDarkMode src`); update `manifest.webmanifest` `theme_color`/`background_color` to the Task 1 hex.
+- [x] **Step 3:** `npm run typecheck && npm test && npm run build`; PASS. Commit `feat(brand): add the logo lockup and drop the light theme`.
 
 ### Task 7: App shell and page chrome
 
