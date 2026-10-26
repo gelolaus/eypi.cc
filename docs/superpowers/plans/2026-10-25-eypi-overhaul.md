@@ -155,7 +155,7 @@ fix(forms): stop serving templates around the org gate
 - [x] **Step 2: Run** `npx vitest run backend/scripts/migrate.test.mjs`. Expected: FAIL.
 - [x] **Step 3: Implement `migrate.mjs`.** Reads `backend/.dev.vars` for `TURSO_*`; prints DB host + pending list; without `--yes` it only prints; each file runs in one `client.batch(stmts, 'write')` plus its ledger insert; refuses destructive statements unless `--allow-destructive`; `--baseline` records `0001` without executing.
 - [x] **Step 4: Write `0002_hygiene.sql`.** `DROP TABLE IF EXISTS` for the 9 `board_*` tables; `CREATE INDEX IF NOT EXISTS` for: `links(user_id, created_at DESC)`, `analytics(link_id, created_at)`, `org_members(user_id)`, `org_members(email)`, `events(org_id)`, `dp_campaigns(org_id)`, `dp_frames(campaign_id, position)`, `check_ins(attendee_id, actioned_at)`.
-- [ ] **Step 5: Run** `npm test`. Expected: PASS. Then (owner-approved, read-write token) `npm run migrate --prefix backend -- --baseline --yes` and `npm run migrate --prefix backend -- --yes --allow-destructive` (0002 drops empty tables). Expected `--status`: 0001, 0002 applied.
+- [x] **Step 5: Run** `npm test`. Expected: PASS. Then (owner-approved, read-write token) `npm run migrate --prefix backend -- --baseline --yes` and `npm run migrate --prefix backend -- --yes --allow-destructive` (0002 drops empty tables). Expected `--status`: 0001, 0002 applied.
 - [x] **Step 6: Commit**
 
 ```
@@ -336,7 +336,7 @@ feat(db): add versioned migrations with a ledger and baseline
 **Files:** Modify `docs/RELEASE.md` (cutover section), `README.md` (env table)
 
 - [ ] **Step 1:** Owner creates a branch DB: `turso db create eypi-rehearsal --from-db <prod>`; point `.dev.vars` at it; run `npm run migrate --prefix backend -- --yes` (0003) and, with `--allow-destructive`, 0004; run `npm run dev:local` and sign in with Microsoft; confirm links and orgs are intact.
-- [ ] **Step 2: Production (single window, §12.4):** apply 0003 → deploy backend + frontend → owner signs in and sees the Admin nav → apply 0004 → `wrangler secret delete JWT_SECRET`.
+- [x] **Step 2: Production (single window, §12.4):** apply 0003 → deploy backend + frontend → owner signs in and sees the Admin nav → apply 0004 → `wrangler secret delete JWT_SECRET`.
 - [ ] **Step 3: Verify:** `curl -s https://api.eypi.cc/api/me -o /dev/null -w "%{http_code}"` → `401`; signing in works for an `@apc.edu.ph` professor account and a student account.
 - [x] **Step 4: Commit** `docs(auth): add the Microsoft cutover runbook`.
 

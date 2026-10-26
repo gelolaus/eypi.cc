@@ -95,9 +95,9 @@ Record the expiry here every time the secret changes:
 
 | Field | Value |
 |---|---|
-| Secret created | _owner to fill_ |
-| Secret expires | _owner to fill_ |
-| Rotate by (30 days before expiry) | _owner to fill_ |
+| Secret created | 2026-10-26 |
+| Secret expires | 2028-10-25 |
+| Rotate by (30 days before expiry) | 2028-09-25 |
 
 Rotation:
 
