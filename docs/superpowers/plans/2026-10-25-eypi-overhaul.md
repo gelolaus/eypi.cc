@@ -676,7 +676,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 
 **Files:** Modify `backend/wrangler.jsonc` (`triggers.crons: ["0 19 * * *"]`, i.e. 03:00 Manila), `backend/src/index.ts` (`export default { fetch: app.fetch, scheduled }`). Create `backend/src/jobs/retention.ts` (+ test). Remove email logging in `onboarding.ts`.
 
-- [ ] Failing tests: expired sessions deleted; `event_csv_rows` of events whose date is more than 30 days ago are deleted, newer ones kept; resolved reports older than 180 days are deleted. Commit `feat(platform): add daily retention cleanup`.
+- [x] Failing tests: expired sessions deleted; `event_csv_rows` of events whose date is more than 30 days ago are deleted, newer ones kept; resolved reports older than 180 days are deleted. Commit `feat(platform): add daily retention cleanup`.
 
 ---
 
