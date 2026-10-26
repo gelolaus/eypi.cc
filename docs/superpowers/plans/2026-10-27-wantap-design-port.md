@@ -153,9 +153,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Interfaces:** Produces `cn(...inputs: ClassValue[]): string`.
 
-- [ ] **Step 1:** Test: `cn('px-2', false && 'x', 'px-4')` returns `'px-4'`; `cn('p-2', ['m-1'])` returns `'p-2 m-1'`. Run; expect FAIL.
-- [ ] **Step 2:** Install `clsx tailwind-merge class-variance-authority reka-ui vue-sonner lucide-vue-next`. Implement `cn`.
-- [ ] **Step 3:** Run the test, `npm run typecheck`; expect PASS. Commit `chore(ui): add the component toolkit and cn helper`.
+- [x] **Step 1:** Test: `cn('px-2', false && 'x', 'px-4')` returns `'px-4'`; `cn('p-2', ['m-1'])` returns `'p-2 m-1'`. Run; expect FAIL.
+- [x] **Step 2:** Install `clsx tailwind-merge class-variance-authority reka-ui vue-sonner lucide-vue-next`. Implement `cn`.
+- [x] **Step 3:** Run the test, `npm run typecheck`; expect PASS. Commit `chore(ui): add the component toolkit and cn helper`.
 
 ### Task 3: Primitives A (Button, Input, Textarea, Label, Card, Badge, Separator, Avatar)
 
