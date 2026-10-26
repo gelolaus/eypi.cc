@@ -19,6 +19,7 @@ Rules:
 - Always run `--status` and `--dry-run` first, against a branch database (see [Turso restore and branch rehearsal](#turso-restore-and-branch-rehearsal)).
 - A changed checksum on an already-applied file stops the run. Never edit an applied migration; add a new one.
 - Never `DROP TABLE users` or rebuild it. Foreign keys are on and `links` cascades, so every link and its analytics would be deleted.
+- Before `0007`, run the duplicate-attendee query from [RELEASE.md section 10.2, step 8](RELEASE.md#102-prerequisites-before-the-window) (`SELECT event_id, lower(email), COUNT(*) FROM attendees GROUP BY 1, 2 HAVING COUNT(*) > 1`). It must return no rows; resolve any duplicates by hand first. The runner runs the same check and refuses `0007` with `Preflight failed` if duplicates exist.
 - Migrations `0005` to `0009` are additive. The new code needs them, so they are applied in the same pass as `0003`.
 
 ### Applying 0003 and 0004 together (cutover)

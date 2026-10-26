@@ -81,6 +81,32 @@ export function isDestructive(stmt) {
   return false
 }
 
+// Read-only checks that run before a version is applied. A failing check stops the
+// runner with a message that names what to fix by hand. Emails are never printed.
+const PREFLIGHTS = {
+  '0007': {
+    sql: `SELECT event_id, COUNT(*) AS n FROM attendees
+          GROUP BY event_id, lower(email) HAVING COUNT(*) > 1`,
+    message: (rows) => {
+      const events = [...new Set(rows.map((row) => String(row.event_id)))]
+      return `${rows.length} duplicate (event_id, lower(email)) group(s) in attendees, in event(s): ${events.join(', ')}. ` +
+        'The unique index in 0007 would fail. Resolve the duplicates by hand, then re-run. ' +
+        'See docs/RELEASE.md section 10.2 for the read-only query.'
+    },
+  },
+}
+
+export async function preflightProblems(client, files) {
+  const problems = []
+  for (const file of files) {
+    const check = PREFLIGHTS[versionOf(file.name)]
+    if (!check) continue
+    const result = await client.execute(check.sql)
+    if (result.rows.length > 0) problems.push(`Preflight failed for ${file.name}: ${check.message(result.rows)}`)
+  }
+  return problems
+}
+
 export function splitStatements(sql) {
   const statements = []
   let current = ''
@@ -261,6 +287,14 @@ async function main() {
         const detail = `Refusing destructive statement in ${file.name} without --allow-destructive:\n${hits[0]}`
         if (write) throw new Error(detail)
         console.log(detail)
+      }
+    }
+
+    if (!args.baseline) {
+      const problems = await preflightProblems(client, plan.pending)
+      if (problems.length > 0) {
+        if (write) throw new Error(problems.join('\n'))
+        for (const problem of problems) console.log(problem)
       }
     }
 

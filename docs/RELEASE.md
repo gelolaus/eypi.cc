@@ -135,6 +135,13 @@ All steps in this section are **owner** steps. In `docs/superpowers/plans/2026-1
 5. **Frontend secrets**: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, and `IP_HASH_SECRET` (same value as the backend) on the frontend Worker.
 6. **Resend**: the `eypi.cc` domain is verified and can send as `eypi.cc <invites@eypi.cc>` ([operations.md](operations.md#resend-domain-and-sender)). Invites still save if sending fails, but the response says `emailSent: false`.
 7. Record the current UTC time and the production counts (`SELECT COUNT(*) FROM links`, `users`, `org_members`, `analytics`) in your release notes. They are your restore point and your comparison baseline.
+8. **Duplicate-attendee preflight** (read-only, owner). Migration `0007` creates a unique index on `attendees(event_id, lower(email))`. A leftover duplicate makes it fail part-way. Run this against production; it must return no rows:
+
+   ```sql
+   SELECT event_id, lower(email) AS email, COUNT(*) FROM attendees GROUP BY 1, 2 HAVING COUNT(*) > 1;
+   ```
+
+   If it returns rows, resolve them by hand (for example remove or correct the extra attendee in the Tix UI) before migrating. Do not bulk-delete. The runner repeats this check before applying `0007` and refuses with `Preflight failed for 0007_tix.sql` (it prints event ids only, never emails), also during `--dry-run`.
 
 ### 10.3 Rehearsal on a Turso branch (Task 2.6 Step 1)
 
