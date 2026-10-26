@@ -636,7 +636,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 
 **Files:** Create `backend/migrations/0008_admin_legal.sql` (`audit_events`, `legal_consents` per §9.2/§9.3, indexes on `audit_events(created_at)`, `legal_consents(user_id)`), `shared/legalVersions.ts` (`LEGAL_VERSIONS = { privacy: '2026-11-01', terms: '2026-11-01', 'acceptable-use': '2026-11-01' }`), `backend/src/middleware/requireConsent.ts` (+ test), `backend/src/routes/legal.ts` (`POST /api/legal/consent { documents: string[] }`), `backend/src/lib/audit.ts` (`recordAudit(db, { actorUserId, action, targetType, targetId, meta })`). Modify `backend/src/routes/me.ts` (`needsConsent`).
 
-- [ ] Failing tests: a user with no consents → `/api/me.needsConsent` lists privacy and terms; link create → 403 `consent_required`; after consent → 201; bumping a version re-requires consent. Commit `feat(legal): record versioned consent and gate the API until accepted`.
+- [x] Failing tests: a user with no consents → `/api/me.needsConsent` lists privacy and terms; link create → 403 `consent_required`; after consent → 201; bumping a version re-requires consent. Commit `feat(legal): record versioned consent and gate the API until accepted`.
 
 ### Task 8.2: Legal documents and consent screen (F-LEGAL-1)
 
