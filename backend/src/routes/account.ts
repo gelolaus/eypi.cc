@@ -109,8 +109,16 @@ function qrLogoKey(raw: unknown): string | null {
 }
 
 function replaceAccountEmail(meta: string, email: string): string {
+  if (!email) return meta
   const escaped = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return meta.replace(new RegExp(escaped, 'gi'), 'deleted-user')
+  // Match whole addresses only: `ana.santos@…` must never rewrite
+  // `joana.santos@…` in a third party's audit row. A trailing dot is allowed
+  // when it ends a sentence, but not when it continues a domain.
+  const pattern = new RegExp(
+    `(^|[^A-Za-z0-9._%+-])${escaped}(?![A-Za-z0-9_%+-])(?!\\.[A-Za-z0-9])`,
+    'gi',
+  )
+  return meta.replace(pattern, (_match: string, prefix: string) => `${prefix}deleted-user`)
 }
 
 async function confirmEmail(c: { req: { json(): Promise<unknown> } }): Promise<string> {

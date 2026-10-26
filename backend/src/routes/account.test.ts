@@ -521,6 +521,50 @@ describe('account routes', () => {
     expect(await column(client, 'SELECT id FROM audit_events')).toHaveLength(3)
   })
 
+  it('scrubs only whole audit email matches and leaves a neighbour address alone', async () => {
+    const currentId = await sha256Hex(TOKEN)
+    const deletedEmail = 'ana.santos@apc.edu.ph'
+    const neighbourEmail = 'joana.santos@apc.edu.ph'
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await insertUser(db, 'ana-id', deletedEmail, 'Ana Santos')
+        await insertUser(db, 'joana-id', neighbourEmail, 'Joana Santos')
+        await insertSession(db, currentId, 'ana-id', null)
+        await db.execute({
+          sql: `INSERT INTO audit_events (id, actor_user_id, action, meta)
+                VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)`,
+          args: [
+            'audit-ana-plain', 'ana-id', 'login', deletedEmail,
+            'audit-ana-json', 'ana-id', 'role.update', JSON.stringify({ email: deletedEmail, note: 'Ana Santos' }),
+            'audit-ana-case', 'ana-id', 'login', JSON.stringify({ email: 'ANA.SANTOS@apc.edu.ph' }),
+            'audit-ana-prose', 'ana-id', 'report.create', JSON.stringify({ note: `reported by ${deletedEmail}.` }),
+            'audit-joana-json', 'joana-id', 'role.update', JSON.stringify({ email: neighbourEmail }),
+            'audit-joana-prose', 'joana-id', 'login', `signed in as ${neighbourEmail}`,
+          ],
+        })
+      },
+    })
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: deletedEmail }))
+    expect(res.status).toBe(204)
+
+    async function auditMeta(id: string): Promise<string> {
+      const result = await client.execute({
+        sql: 'SELECT meta FROM audit_events WHERE id = ?',
+        args: [id],
+      })
+      return String(result.rows[0]?.meta)
+    }
+
+    expect(await auditMeta('audit-ana-plain')).toBe('deleted-user')
+    expect(await auditMeta('audit-ana-json')).toBe('{"email":"deleted-user","note":"Ana Santos"}')
+    expect(await auditMeta('audit-ana-case')).toBe('{"email":"deleted-user"}')
+    expect(await auditMeta('audit-ana-prose')).toBe('{"note":"reported by deleted-user."}')
+    expect(await auditMeta('audit-joana-json')).toBe(JSON.stringify({ email: neighbourEmail }))
+    expect(await auditMeta('audit-joana-prose')).toBe(`signed in as ${neighbourEmail}`)
+    expect(await column(client, 'SELECT id FROM users')).toEqual(['joana-id'])
+  })
+
   it('still returns 204 when a QR logo cannot be deleted, without logging the email or user id', async () => {
     const currentId = await sha256Hex(TOKEN)
     const media = {
