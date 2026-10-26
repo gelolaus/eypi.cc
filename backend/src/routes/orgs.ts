@@ -410,9 +410,17 @@ app.get('/public/:slug', async (c) => {
 
 // Session required except the public catalog, which is registered above this middleware.
 // requireAuth does not return its next() result, so a consent 403 is returned from here.
+const PUBLIC_ROUTES: ReadonlyArray<{ method: string; pattern: RegExp }> = [
+  { method: 'GET', pattern: /^\/api\/orgs\/public\/?$/ },
+  { method: 'GET', pattern: /^\/api\/orgs\/public\/[^/]+\/?$/ },
+]
+
+function isPublicRoute(method: string, path: string): boolean {
+  return PUBLIC_ROUTES.some((route) => route.method === method && route.pattern.test(path))
+}
+
 app.use('*', async (c, next) => {
-  const path = c.req.path
-  if (path.endsWith('/public') || path.includes('/public/')) {
+  if (isPublicRoute(c.req.method, c.req.path)) {
     await next()
     return
   }
