@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { sign } from 'hono/jwt'
 import type { Client } from '@libsql/client'
 import { createSession } from '../lib/auth/session'
-import { createTestApp } from '../test/createTestApp'
+import { createTestApp, grantCurrentConsent } from '../test/createTestApp'
 
 const ORIGIN = 'https://eypi.cc'
 const LEGACY_BEARER_SECRET = 'test-jwt-secret'
@@ -63,6 +63,7 @@ async function sessionRequest(
   })
   const headers = new Headers()
   if (user) {
+    await grantCurrentConsent(harness.client, user.id)
     const { token } = await createSession(
       harness.client,
       {},

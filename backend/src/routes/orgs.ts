@@ -9,6 +9,7 @@ import { ApiError } from '../lib/errors'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
 import { deleteObject, mediaUrl, putImage } from '../lib/media'
 import { requireAdmin } from '../middleware/requireAdmin'
+import { enforceConsent } from '../middleware/requireConsent'
 import { requireAuth } from '../middleware/requireAuth'
 
 type Variables = {
@@ -407,13 +408,20 @@ app.get('/public/:slug', async (c) => {
 })
 
 // Session required except the public catalog, which is registered above this middleware.
+// requireAuth does not return its next() result, so a consent 403 is returned from here.
 app.use('*', async (c, next) => {
   const path = c.req.path
   if (path.endsWith('/public') || path.includes('/public/')) {
     await next()
     return
   }
-  return requireAuth(c, next)
+  let denied: Response | null = null
+  const authed = await requireAuth(c, async () => {
+    denied = await enforceConsent(c)
+    if (!denied) await next()
+  })
+  if (denied) return denied
+  return authed
 })
 
 // ==========================================

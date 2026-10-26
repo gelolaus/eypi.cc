@@ -8,6 +8,7 @@ import {
 import { db, type Bindings } from '../lib/db'
 import { reportError } from '../lib/reportError'
 import { requireAuth } from '../middleware/requireAuth'
+import { needsConsentList } from '../middleware/requireConsent'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -27,7 +28,7 @@ app.get('/api/me', requireAuth, async (c) => {
 
   const client = db(c)
   const email = sessionUser?.email ?? c.var.userEmail ?? ''
-  const [invites, orgs] = await Promise.all([
+  const [invites, orgs, needsConsent] = await Promise.all([
     client.execute({
       sql: `SELECT COUNT(*) AS n
             FROM org_members
@@ -49,6 +50,7 @@ app.get('/api/me', requireAuth, async (c) => {
             ORDER BY o.name`,
       args: [userId, userId, userId],
     }),
+    needsConsentList(client, userId),
   ])
 
   return c.json({
@@ -59,7 +61,7 @@ app.get('/api/me', requireAuth, async (c) => {
       role: sessionUser?.role === 'admin' ? 'admin' : 'user',
     },
     pendingInviteCount: Number(invites.rows[0]?.n ?? 0),
-    needsConsent: [],
+    needsConsent,
     orgs: orgs.rows.map((row) => ({
       org_id: String(row.org_id),
       org_name: String(row.org_name),

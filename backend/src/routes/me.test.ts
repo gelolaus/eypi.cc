@@ -10,7 +10,11 @@ async function sha256Hex(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-async function seedSession(opts: { disabled?: boolean; expiresAt?: string } = {}) {
+async function seedSession(opts: {
+  disabled?: boolean
+  expiresAt?: string
+  consent?: 'current' | 'acceptable-use'
+} = {}) {
   const token = `token-${opts.disabled ? 'disabled' : opts.expiresAt ? 'expired' : 'live'}`
   const expiresAt = opts.expiresAt ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const harness = await createTestApp({
@@ -57,6 +61,19 @@ async function seedSession(opts: { disabled?: boolean; expiresAt?: string } = {}
         sql: `INSERT INTO sessions (id, user_id, expires_at, last_seen_at) VALUES (?, ?, ?, ?)`,
         args: [await sha256Hex(token), 'ada-id', expiresAt, new Date().toISOString()],
       })
+      if (opts.consent === 'current') {
+        await db.execute({
+          sql: `INSERT INTO legal_consents (id, user_id, document, version) VALUES
+            ('consent-privacy', 'ada-id', 'privacy', '2026-11-01'),
+            ('consent-terms', 'ada-id', 'terms', '2026-11-01')`,
+        })
+      }
+      if (opts.consent === 'acceptable-use') {
+        await db.execute({
+          sql: `INSERT INTO legal_consents (id, user_id, document, version)
+            VALUES ('consent-aup', 'ada-id', 'acceptable-use', '2026-11-01')`,
+        })
+      }
     },
   })
   return { ...harness, token }
@@ -75,7 +92,7 @@ describe('GET /api/me', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns the user, pending invites, empty needsConsent, and orgs, ignoring a declined row', async () => {
+  it('returns the user, pending invites, privacy and terms in needsConsent, and orgs, ignoring a declined row', async () => {
     const { request, token } = await seedSession()
 
     const res = await request('/api/me', {
@@ -96,9 +113,39 @@ describe('GET /api/me', () => {
       role: 'user',
     })
     expect(body.pendingInviteCount).toBe(1)
-    expect(body.needsConsent).toEqual([])
+    expect(body.needsConsent).toEqual([
+      { document: 'privacy', version: '2026-11-01' },
+      { document: 'terms', version: '2026-11-01' },
+    ])
     expect(body.orgs.map((org) => org.org_id)).toEqual(['org-alpha'])
     expect(body.orgs[0]).toMatchObject({ org_name: 'Alpha', is_owner: 1 })
+  })
+
+  it('returns an empty needsConsent after the current privacy and terms are accepted', async () => {
+    const { request, token } = await seedSession({ consent: 'current' })
+
+    const res = await request('/api/me', {
+      headers: { Cookie: `eypi_session=${token}` },
+    })
+
+    expect(res.status).toBe(200)
+    const body = await res.json() as { needsConsent: unknown[] }
+    expect(body.needsConsent).toEqual([])
+  })
+
+  it('still lists privacy and terms when only acceptable use is accepted', async () => {
+    const { request, token } = await seedSession({ consent: 'acceptable-use' })
+
+    const res = await request('/api/me', {
+      headers: { Cookie: `eypi_session=${token}` },
+    })
+
+    expect(res.status).toBe(200)
+    const body = await res.json() as { needsConsent: unknown[] }
+    expect(body.needsConsent).toEqual([
+      { document: 'privacy', version: '2026-11-01' },
+      { document: 'terms', version: '2026-11-01' },
+    ])
   })
 
   it('returns 401 for a disabled user session', async () => {

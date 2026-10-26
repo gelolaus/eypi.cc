@@ -5,8 +5,10 @@ import { Hono } from 'hono'
 import { createClient, type Client } from '@libsql/client/node'
 import { createSession, sessionCookieName } from '../lib/auth/session'
 import type { Client as RequestClient } from '@libsql/client/web'
+import { LEGAL_VERSIONS } from '../../../shared/legalVersions'
 import api from '../index'
 import type { Bindings } from '../lib/db'
+import { CONSENT_DOCUMENTS } from '../middleware/requireConsent'
 
 export const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'migrations')
 
@@ -105,6 +107,17 @@ function memoryR2() {
   }
 }
 
+/** Current privacy and terms, so opts.user requests are not stopped by the consent gate. */
+export async function grantCurrentConsent(client: Client, userId: string): Promise<void> {
+  for (const document of CONSENT_DOCUMENTS) {
+    await client.execute({
+      sql: `INSERT OR IGNORE INTO legal_consents (id, user_id, document, version)
+            VALUES (?, ?, ?, ?)`,
+      args: [`consent-${userId}-${document}`, userId, document, LEGAL_VERSIONS[document]],
+    })
+  }
+}
+
 export async function applyMigrations(client: Client, names?: readonly string[]): Promise<void> {
   assertMigrationsDir(migrationsDir)
   let files: string[]
@@ -177,6 +190,7 @@ export async function createTestApp(opts: CreateTestAppOptions = {}) {
         args: [opts.user.id, opts.user.email, opts.user.name, opts.user.role || 'user'],
       })
     }
+    await grantCurrentConsent(client, opts.user.id)
     const { token } = await createSession(
       client as unknown as Parameters<typeof createSession>[0],
       env,

@@ -7,6 +7,7 @@ import { reportError } from './lib/reportError'
 import { allowedOrigins, csrf } from './middleware/csrf'
 import adminMigrationRoutes from './routes/adminMigrations'
 import authMicrosoft from './routes/authMicrosoft'
+import legalRoutes from './routes/legal'
 import linkRoutes from './routes/links'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
@@ -67,6 +68,7 @@ app.use('/api/*', csrf)
 // Mount feature routers. Each declares its own full /api/... paths.
 app.route('/', authMicrosoft)
 app.route('/', meRoutes)
+app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)
 app.route('/', eventRoutes)

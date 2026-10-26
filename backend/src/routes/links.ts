@@ -5,6 +5,7 @@ import { db, type Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
 import { deleteObject, mediaUrl, putImage } from '../lib/media'
 import { requireAuth } from '../middleware/requireAuth'
+import { requireConsent } from '../middleware/requireConsent'
 import { checkRateLimit } from '../lib/rateLimit'
 import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
@@ -676,7 +677,7 @@ app.get('/api/links/:id', requireAuth, async (c) => {
   return c.json(toDetail(row))
 })
 
-app.post('/api/links', requireAuth, async (c) => {
+app.post('/api/links', requireAuth, requireConsent, async (c) => {
   const body = await readBody(c)
   if (body instanceof Response) return body
 
@@ -805,7 +806,7 @@ app.post('/api/links', requireAuth, async (c) => {
   throw new Error('Could not allocate a slug')
 })
 
-app.post('/api/links/bulk', requireAuth, async (c) => {
+app.post('/api/links/bulk', requireAuth, requireConsent, async (c) => {
   const limited = await enforceEditLimit(c)
   if (limited) return limited
   const body = await readBody(c)
@@ -885,7 +886,7 @@ app.post('/api/links/:slug/unlock', async (c) => {
   return c.json({ url: target.url })
 })
 
-app.put('/api/links/:id/qr-logo', requireAuth, async (c) => {
+app.put('/api/links/:id/qr-logo', requireAuth, requireConsent, async (c) => {
   const limited = await enforceEditLimit(c)
   if (limited) return limited
   const current = await loadOwned(c, c.req.param('id'))
@@ -938,7 +939,7 @@ app.put('/api/links/:id/qr-logo', requireAuth, async (c) => {
   return c.json({ url: mediaUrl(key), logo: { key } })
 })
 
-app.patch('/api/links/:id', requireAuth, async (c) => {
+app.patch('/api/links/:id', requireAuth, requireConsent, async (c) => {
   const limited = await enforceEditLimit(c)
   if (limited) return limited
   const body = await readBody(c)
@@ -1068,7 +1069,7 @@ app.patch('/api/links/:id', requireAuth, async (c) => {
   return c.json(toDetail(saved ?? next))
 })
 
-app.delete('/api/links/:id', requireAuth, async (c) => {
+app.delete('/api/links/:id', requireAuth, requireConsent, async (c) => {
   const limited = await enforceEditLimit(c)
   if (limited) return limited
   const row = await loadOwned(c, c.req.param('id'))
