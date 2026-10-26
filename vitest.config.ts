@@ -19,6 +19,9 @@ export default defineConfig({
       'scripts/**/*.test.mjs',
       'backend/scripts/**/*.test.mjs',
     ],
+    // Cold dynamic imports (exceljs) can exceed 5s on a loaded Windows machine.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
     environment: 'node',
     // Vitest 4 no longer reads this key. src/**/*.test.ts also declares
     // @vitest-environment happy-dom, which is what Vitest 4 applies.

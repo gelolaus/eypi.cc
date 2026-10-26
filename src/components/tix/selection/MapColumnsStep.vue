@@ -20,7 +20,7 @@
         <select
           :value="getColRole(col)"
           :aria-label="`Role for ${col}`"
-          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 font-mono text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
+          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 font-mono text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&>option]:bg-popover [&>option]:text-popover-foreground"
           @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
         >
           <option value="criteria">

@@ -36,7 +36,11 @@ function matches(pattern: string, pathname: string): boolean {
 function headersFor(rules: HeaderRule[], pathname: string): Record<string, string> {
   const headers: Record<string, string> = {}
   for (const rule of rules) {
-    if (matches(rule.path, pathname)) Object.assign(headers, rule.headers)
+    if (!matches(rule.path, pathname)) continue
+    // Cloudflare joins repeated header names from overlapping rules with ", " instead of overriding.
+    for (const [name, value] of Object.entries(rule.headers)) {
+      headers[name] = headers[name] ? `${headers[name]}, ${value}` : value
+    }
   }
   return headers
 }
@@ -57,9 +61,11 @@ describe('asset caching and content security policy', () => {
     expect(headersFor(rules, '/assets/plus-jakarta-sans-latin-wght-normal-AbCd1234.woff2')['cache-control']).toBe(
       'public, max-age=31536000, immutable',
     )
-    for (const path of ['/', '/index.html', '/links']) {
+    for (const path of ['/', '/index.html']) {
       expect(headersFor(rules, path)['cache-control']).toBe('no-cache')
     }
+    // Other SPA routes get the platform default (revalidate); they must never be immutable.
+    expect(headersFor(rules, '/links')['cache-control'] ?? '').not.toContain('immutable')
   })
 
   it('keeps the existing document policy and drops remote fonts and inline scripts', () => {

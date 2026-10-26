@@ -68,7 +68,7 @@
             <!-- Slug -->
             <div class="space-y-1.5">
               <Label for="new-campaign-slug">Link <span class="text-muted-foreground">(optional, auto from title)</span></Label>
-              <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
+              <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
                 <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
                 <input
                   id="new-campaign-slug"

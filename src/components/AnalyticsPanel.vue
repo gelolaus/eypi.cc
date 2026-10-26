@@ -280,9 +280,9 @@ const peakLabel = computed(() => {
 
 /** Fallbacks used only when the design tokens cannot be read (tests, SSR). */
 const CHART_FALLBACKS = {
-  line: 'oklch(0.78 0.09 55)',
-  tick: 'oklch(0.72 0.02 65)',
-  grid: 'oklch(1 0 0 / 10%)',
+  line:'oklch(0.38 0.12 270)',
+  tick:'oklch(0.48 0 0)',
+  grid:'oklch(0.91 0 0)',
 }
 
 function readToken(name: string, fallback: string): string {

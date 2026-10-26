@@ -4,7 +4,7 @@
       to="/"
       class="mb-8"
     />
-    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+    <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(53,67,140,0.3)] sm:p-8">
       <div class="space-y-3">
         <h1 class="font-display text-3xl font-semibold tracking-tight">
           Sign in to eypi.cc

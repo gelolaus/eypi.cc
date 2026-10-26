@@ -6,46 +6,46 @@ const tokens = readFileSync('src/styles/tokens.css', 'utf8')
 const mainCss = readFileSync('src/styles/main.css', 'utf8')
 
 const expected: Record<string, string> = {
-  background: 'oklch(0.14 0.01 55)',
-  foreground: 'oklch(0.96 0.01 75)',
-  card: 'oklch(0.18 0.012 55 / 75%)',
-  'card-foreground': 'oklch(0.96 0.01 75)',
-  popover: 'oklch(0.17 0.012 55)',
-  'popover-foreground': 'oklch(0.96 0.01 75)',
-  primary: '#e8a87c',
-  'primary-foreground': 'oklch(0.18 0.02 55)',
-  secondary: 'oklch(0.22 0.012 55)',
-  'secondary-foreground': 'oklch(0.96 0.01 75)',
-  muted: 'oklch(0.2 0.01 55)',
-  'muted-foreground': 'oklch(0.72 0.02 65)',
-  accent: 'color-mix(in oklch, #e8a87c 18%, transparent)',
-  'accent-foreground': 'oklch(0.9 0.04 65)',
-  destructive: 'oklch(0.704 0.191 22.216)',
-  border: 'oklch(1 0 0 / 10%)',
-  input: 'oklch(1 0 0 / 12%)',
-  ring: 'color-mix(in oklch, #e8a87c 55%, transparent)',
-  'chart-1': '#e8a87c',
-  'chart-2': 'oklch(0.556 0 0)',
-  'chart-3': 'oklch(0.439 0 0)',
-  'chart-4': 'oklch(0.371 0 0)',
-  'chart-5': 'oklch(0.269 0 0)',
-  sidebar: 'oklch(0.15 0.01 55)',
-  'sidebar-foreground': 'oklch(0.96 0.01 75)',
-  'sidebar-primary': '#e8a87c',
-  'sidebar-primary-foreground': 'oklch(0.18 0.02 55)',
-  'sidebar-accent': 'oklch(0.22 0.012 55)',
-  'sidebar-accent-foreground': 'oklch(0.96 0.01 75)',
-  'sidebar-border': 'oklch(1 0 0 / 10%)',
-  'sidebar-ring': 'color-mix(in oklch, #e8a87c 55%, transparent)',
+  background: '#f5f5f5',
+  foreground: '#0a0a0a',
+  card: '#ffffff',
+  'card-foreground': '#0a0a0a',
+  popover: '#ffffff',
+  'popover-foreground': '#0a0a0a',
+  primary: '#35438c',
+  'primary-foreground': '#ffffff',
+  secondary: '#ebebeb',
+  'secondary-foreground': '#0a0a0a',
+  muted: '#ebebeb',
+  'muted-foreground': '#5c5c5c',
+  accent: 'color-mix(in srgb, #deac4b 25%, transparent)',
+  'accent-foreground': '#0a0a0a',
+  destructive: '#c62828',
+  border: '#e2e2e2',
+  input: '#8c8c8c',
+  ring: '#35438c',
+  'chart-1': '#35438c',
+  'chart-2': '#deac4b',
+  'chart-3': '#7783c4',
+  'chart-4': '#a87a1c',
+  'chart-5': '#9aa0b8',
+  sidebar: '#ffffff',
+  'sidebar-foreground': '#0a0a0a',
+  'sidebar-primary': '#35438c',
+  'sidebar-primary-foreground': '#ffffff',
+  'sidebar-accent': '#ebebf2',
+  'sidebar-accent-foreground': '#0a0a0a',
+  'sidebar-border': '#e2e2e2',
+  'sidebar-ring': '#35438c',
   radius: '0.875rem',
 }
 
-function darkBlock(): string {
-  return tokens.match(/\.dark\s*\{([^}]*)\}/)?.[1] ?? ''
+function paletteBlock(): string {
+  return tokens.match(/:root\s*\{([^}]*)\}/)?.[1] ?? ''
 }
 
 function token(name: string): string {
-  const match = darkBlock().match(new RegExp(`--${name}:\\s*([^;]+);`))
+  const match = paletteBlock().match(new RegExp(`--${name}:\\s*([^;]+);`))
   return match ? match[1].trim() : ''
 }
 
@@ -108,7 +108,7 @@ function ratio(a: number, b: number): number {
 }
 
 describe('wantap design tokens', () => {
-  it('defines every wantap token in the dark block', () => {
+  it('defines every token in the :root palette', () => {
     for (const [name, value] of Object.entries(expected)) {
       expect(token(name), `--${name}`).toBe(value)
     }
@@ -117,16 +117,38 @@ describe('wantap design tokens', () => {
   it('meets WCAG AA for text pairs', () => {
     const bg = token('background')
     const bgLum = oklchToLuminance(bg)
-    expect(ratio(oklchToLuminance(token('foreground')), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(oklchToLuminance(token('muted-foreground')), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(
-      ratio(oklchToLuminance(token('primary-foreground')), oklchToLuminance(token('primary'))),
-    ).toBeGreaterThanOrEqual(4.5)
-    const cardOverBg = luminanceOf(over(token('card'), bg))
-    expect(ratio(oklchToLuminance(token('card-foreground')), cardOverBg)).toBeGreaterThanOrEqual(4.5)
-    // --ring is the primary at 55% over the background.
-    const ring = luminanceOf(over(token('primary'), bg, 0.55))
-    expect(ratio(ring, bgLum)).toBeGreaterThanOrEqual(3)
+    const lum = (name: string) => oklchToLuminance(token(name))
+    expect(ratio(lum('foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('muted-foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('muted-foreground'), lum('muted'))).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('primary-foreground'), lum('primary'))).toBeGreaterThanOrEqual(4.5)
+    // Links and active nav use --primary as text on the page and on cards.
+    expect(ratio(lum('primary'), bgLum)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('primary'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+    // Error text sits on the page and on cards.
+    expect(ratio(lum('destructive'), bgLum)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('destructive'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('card-foreground'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+    // Text on the gold wash (menu hover) and on the sidebar hover fill.
+    const goldWash = luminanceOf(over('#deac4b', bg, 0.25))
+    expect(ratio(lum('accent-foreground'), goldWash)).toBeGreaterThanOrEqual(4.5)
+    expect(ratio(lum('sidebar-accent-foreground'), lum('sidebar-accent'))).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('meets 3:1 for control boundaries and the focus ring', () => {
+    const bgLum = oklchToLuminance(token('background'))
+    // Focused controls switch their border to the solid --ring (the halo is ring/50 on top of it).
+    expect(ratio(oklchToLuminance(token('ring')), bgLum)).toBeGreaterThanOrEqual(3)
+    expect(ratio(oklchToLuminance(token('ring')), oklchToLuminance(token('card')))).toBeGreaterThanOrEqual(3)
+    // Input borders must be visible on a white card and on the page.
+    expect(ratio(oklchToLuminance(token('input')), oklchToLuminance(token('card')))).toBeGreaterThanOrEqual(3)
+    expect(ratio(oklchToLuminance(token('input')), bgLum)).toBeGreaterThanOrEqual(3)
+  })
+
+  it('is light only', () => {
+    expect(mainCss).toMatch(/color-scheme:\s*light/)
+    expect(mainCss).not.toContain('@custom-variant dark')
+    expect(tokens).not.toMatch(/\.dark\s*\{/)
   })
 
   it('disables decorative animation under reduced motion', () => {
@@ -166,12 +188,11 @@ const LEGACY: Array<[string, RegExp]> = [
   ['pill-nav', /pill-nav/],
   ['g-* colour utilities', /(?<![a-z0-9])g-(bg|surface|border|text|muted|accent|primary)(?![a-z0-9-])/],
   ['eypi-gold', /eypi-gold/],
-  ['apc-blue', /apc-blue/],
-  ['apc-gold', /apc-gold/],
   ['#34418F', /#34418F/i],
-  ['#DEAC4B', /#DEAC4B/i],
   ['Geist', /Geist/],
   ['useDarkMode', /useDarkMode/],
+  ['dark: variant', /(?<![a-z0-9-])dark:[a-z\[]/],
+  ['dark class', /class="dark"|classList\.add\('dark'\)|theme="dark"/],
   ['tap-scale', /tap-scale/],
   ['data-cursor', /data-cursor/],
   ['legacy-dot-grid', /legacy-dot-grid/],
@@ -195,6 +216,14 @@ describe('legacy design cleanup', () => {
       const text = readFileSync(file, 'utf8')
       for (const [name, re] of LEGACY) if (re.test(text)) offenders.push(`${file}: ${name}`)
     }
+    expect(offenders).toEqual([])
+  })
+
+  it('keeps the brand hex values inside tokens.css', () => {
+    const files = [...sources(['.vue', '.ts', '.css']), 'index.html', 'public/manifest.webmanifest']
+    const offenders = files.filter(
+      (f) => f !== 'src/styles/tokens.css' && /#35438c|#deac4b/i.test(readFileSync(f, 'utf8')),
+    )
     expect(offenders).toEqual([])
   })
 
@@ -223,13 +252,13 @@ describe('DESIGN_SYSTEM.md', () => {
 
   it('names only tokens that exist in tokens.css, and names every one', () => {
     const named = new Set([...doc.matchAll(/`--([a-z0-9-]+)`/g)].map((m) => m[1]))
-    const defined = new Set([...darkBlock().matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]))
+    const defined = new Set([...paletteBlock().matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]))
     expect([...named].filter((n) => !defined.has(n))).toEqual([])
     expect([...defined].filter((n) => !named.has(n))).toEqual([])
   })
 
   it('carries no legacy design vocabulary or em dashes', () => {
     expect(doc).not.toContain(String.fromCharCode(0x2014))
-    for (const re of [/mica/i, /Geist/, /#34418F/i, /#DEAC4B/i]) expect(re.test(doc), String(re)).toBe(false)
+    for (const re of [/mica/i, /Geist/, /#34418F/i]) expect(re.test(doc), String(re)).toBe(false)
   })
 })

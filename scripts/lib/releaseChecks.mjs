@@ -1,5 +1,12 @@
-export function checkGitState({ branch, porcelain, allowDirty, allowBranch }) {
+export function isCiEnvironment(env) {
+  return env.WORKERS_CI === '1' || (env.CI !== undefined && env.CI !== '' && env.CI !== 'false')
+}
+
+export function checkGitState({ branch, porcelain, allowDirty, allowBranch, isCi = false }) {
   const problems = []
+  // A CI checkout is a detached HEAD at a fixed commit, so the branch and
+  // working-tree checks only make sense on a developer machine.
+  if (isCi) return problems
   if (branch !== 'main' && !allowBranch) {
     problems.push(`branch is '${branch}', expected main (pass --allow-branch to override)`)
   }

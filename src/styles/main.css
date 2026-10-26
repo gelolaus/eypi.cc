@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "./tokens.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @font-face {
   font-family: "Plus Jakarta Sans";
   src: url("../assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2") format("woff2");
@@ -81,6 +79,10 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  body {
+    accent-color: var(--primary);
   }
   h1,
   h2,
