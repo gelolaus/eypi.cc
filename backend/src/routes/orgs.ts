@@ -7,6 +7,7 @@ import { recordAudit } from '../lib/audit'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
+import { reportError } from '../lib/reportError'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
 import { deleteObject, mediaUrl, putImage } from '../lib/media'
 import { requireAdmin } from '../middleware/requireAdmin'
@@ -342,7 +343,7 @@ app.get('/public', async (c) => {
       })),
     })
   } catch (error) {
-    console.error('Error fetching public org catalog:', error)
+    reportError(c, error, { message: 'Error fetching public org catalog.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -403,7 +404,7 @@ app.get('/public/:slug', async (c) => {
       },
     })
   } catch (error) {
-    console.error('Error fetching public org profile:', error)
+    reportError(c, error, { message: 'Error fetching public org profile.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -476,7 +477,7 @@ app.get('/', async (c) => {
       })),
     }, 200)
   } catch (error) {
-    console.error('Error fetching organizations:', error)
+    reportError(c, error, { message: 'Error fetching organizations.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -558,7 +559,7 @@ app.post('/', requireAdmin, async (c) => {
 
     return c.json({ success: true, message: `Organization '${name}' successfully registered.` }, 201)
   } catch (error) {
-    console.error('Error creating organization:', error)
+    reportError(c, error, { message: 'Error creating organization.' })
     return c.json({ error: 'Internal server error while creating the organization.' }, 500)
   }
 })
@@ -667,7 +668,7 @@ app.get('/admin', requireAdmin, async (c) => {
     })
     return c.json({ orgs: rows })
   } catch (error) {
-    console.error('Error fetching admin org list:', error)
+    reportError(c, error, { message: 'Error fetching admin org list.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -693,7 +694,7 @@ app.get('/admin/:org_id', requireAdmin, async (c) => {
     if (rows.length === 0) return c.json({ error: 'Organization not found.' }, 404)
     return c.json({ org: rows[0] })
   } catch (error) {
-    console.error('Error fetching admin org:', error)
+    reportError(c, error, { message: 'Error fetching admin org.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -884,7 +885,7 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
 
     return c.json({ success: true, org: rows[0] })
   } catch (error) {
-    console.error('Error updating admin org:', error)
+    reportError(c, error, { message: 'Error updating admin org.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -933,7 +934,7 @@ app.delete('/admin/:org_id', requireAdmin, async (c) => {
 
     return c.json({ success: true, message: 'Organization deleted.' })
   } catch (error) {
-    console.error('Error deleting org:', error)
+    reportError(c, error, { message: 'Error deleting org.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -969,7 +970,7 @@ app.get('/:org_id/profile', async (c) => {
 
     return c.json({ profile: mapOrgProfileRow(rows[0]) })
   } catch (error) {
-    console.error('Error fetching org profile:', error)
+    reportError(c, error, { message: 'Error fetching org profile.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -1094,7 +1095,7 @@ app.patch('/:org_id/profile', async (c) => {
     if (error instanceof ApiError) {
       return c.json(imageError(error), error.status as ContentfulStatusCode)
     }
-    console.error('Error updating org profile:', error)
+    reportError(c, error, { message: 'Error updating org profile.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -1131,7 +1132,7 @@ app.post('/:org_id/leave', async (c) => {
 
     return c.json({ success: true, message: 'You have left the organization.' })
   } catch (error) {
-    console.error('Error leaving org:', error)
+    reportError(c, error, { message: 'Error leaving org.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -1172,7 +1173,7 @@ app.get('/:org_id/members', async (c) => {
 
     return c.json({ members: rows }, 200)
   } catch (error) {
-    console.error('Error fetching members:', error)
+    reportError(c, error, { message: 'Error fetching members.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
@@ -1360,7 +1361,7 @@ app.delete('/:org_id/members', async (c) => {
 
     return c.json({ success: true, message: 'Member successfully removed.' }, 200)
   } catch (error) {
-    console.error('Error removing member:', error)
+    reportError(c, error, { message: 'Error removing member.' })
     return c.json({ error: 'Internal server error while removing the member.' }, 500)
   }
 })
@@ -1458,7 +1459,7 @@ app.post('/:org_id/transfer', async (c) => {
       message: 'Organization ownership has been successfully transferred.',
     }, 200)
   } catch (error) {
-    console.error('Error transferring ownership:', error)
+    reportError(c, error, { message: 'Error transferring ownership.' })
     return c.json({ error: 'Internal server error while transferring ownership.' }, 500)
   }
 })
