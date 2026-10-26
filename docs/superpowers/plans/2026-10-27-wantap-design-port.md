@@ -285,10 +285,10 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 ### Task 17: Whole-app verification
 
-- [ ] **Step 1:** `npm run typecheck && npm test && npm run build && npm run lint`; all green.
-- [ ] **Step 2:** Run `npm run dev:local` and, with the preview tools, screenshot these routes at 375, 768 and 1280 px: `/`, `/login`, `/dashboard`, a links editor, QR designer, tix event, org page, DP campaign, admin, a legal page, a 404. Save to `docs/superpowers/screenshots/wantap-port/` (do not commit if larger than 5 MB total; otherwise keep them out of git and list them in the PR). Confirm in each: no horizontal scroll, visible focus ring on Tab, toasts appear top-center, QR still dark-on-light.
-- [ ] **Step 3:** Open a PR description (title `feat(design): port the wantap.cc design language`) summarising tokens, primitives, shell, pages; no AI trailer. Do not deploy.
-- [ ] **Step 4:** Report to the owner: what changed, test counts, screenshots location, the owner actions above.
+- [x] **Step 1:** `npm run typecheck && npm test && npm run build && npm run lint`; all green.
+- [x] **Step 2:** Run `npm run dev:local` and, with the preview tools, screenshot these routes at 375, 768 and 1280 px: `/`, `/login`, `/dashboard`, a links editor, QR designer, tix event, org page, DP campaign, admin, a legal page, a 404. Save to `docs/superpowers/screenshots/wantap-port/` (do not commit if larger than 5 MB total; otherwise keep them out of git and list them in the PR). Confirm in each: no horizontal scroll, visible focus ring on Tab, toasts appear top-center, QR still dark-on-light.
+- [x] **Step 3:** Open a PR description (title `feat(design): port the wantap.cc design language`) summarising tokens, primitives, shell, pages; no AI trailer. Do not deploy.
+- [x] **Step 4:** Report to the owner: what changed, test counts, screenshots location, the owner actions above.
 
 ## Self-review
 
