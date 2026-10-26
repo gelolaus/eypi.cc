@@ -1,12 +1,6 @@
 <template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col flex-1">
-    <div class="w-full flex-1">
-      <div
-        class="mica-card w-full flex-1 rounded-2xl border border-g-border p-8 shadow-xl"
-      >
-        <h1 class="text-section-title mb-6">
-          Visitors Pass Generator
-        </h1>
+  <AppPage title="Visitors Pass Generator">
+    <AppSection>
         <form
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
           novalidate
@@ -278,7 +272,7 @@
             <button
               type="submit"
               :disabled="isGenerating"
-              class="btn-gold flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+              class="btn-gold flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               <svg
                 v-if="isGenerating"
@@ -306,12 +300,13 @@
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  </main>
+    </AppSection>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
+import AppPage from '@/components/AppPage.vue'
+import AppSection from '@/components/AppSection.vue'
 import { useDialog } from '@/composables/useDialog'
 import {
   docxBlob,
@@ -328,7 +323,7 @@ import { useToast } from '@/composables/useToast'
 import { VISITORS_PASS_OUTPUT, VISITORS_PASS_TEMPLATE } from '@shared/formsCatalog'
 import { computed, reactive, ref } from 'vue'
 
-const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
+const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base transition-colors sm:text-sm focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
 
 const toast = useToast()
 const dialog = useDialog()

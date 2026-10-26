@@ -1,50 +1,36 @@
 <template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col flex-1">
-    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div v-for="i in 2" :key="i" class="h-32 animate-pulse rounded-2xl bg-gray-200 dark:bg-slate-800/60" />
+  <PageSkeleton v-if="loading" />
+  <AppPage v-else title="Forms" description="Generate organization documents.">
+    <input
+      v-model="searchQuery"
+      type="search"
+      placeholder="Search forms..."
+      aria-label="Search forms"
+      class="control mb-6 w-full"
+    />
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
+      <button
+        v-for="form in filteredForms"
+        :key="form.id"
+        type="button"
+        class="mica-card min-h-11 rounded-2xl border border-g-border p-5 text-left transition-all duration-200 hover:border-g-accent/50 sm:p-6"
+        @click="router.push(form.route)"
+      >
+        <h2 class="text-card-title mb-2 text-g-primary dark:text-white">
+          {{ form.title }}
+        </h2>
+        <p class="text-sm text-g-muted">
+          {{ form.description }}
+        </p>
+      </button>
     </div>
-
-    <template v-else>
-      <header class="mb-8 flex flex-col gap-4 border-b border-g-border pb-8 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 class="text-page-title">
-            Forms
-          </h1>
-          <p class="mt-3 max-w-2xl text-base leading-relaxed text-g-muted">
-            Generate organization documents.
-          </p>
-        </div>
-      </header>
-
-      <input
-        v-model="searchQuery"
-        type="search"
-        placeholder="Search forms..."
-        aria-label="Search forms"
-        class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
-      />
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <button
-          v-for="form in filteredForms"
-          :key="form.id"
-          type="button"
-          @click="router.push(form.route)"
-          class="mica-card rounded-2xl border border-g-border p-6 text-left transition-all duration-200 focus:outline-none hover:-translate-y-0.5 hover:border-g-accent/50"
-        >
-          <h2 class="text-card-title mb-2 text-g-primary dark:text-white">
-            {{ form.title }}
-          </h2>
-          <p class="text-sm text-g-muted">
-            {{ form.description }}
-          </p>
-        </button>
-      </div>
-    </template>
-  </main>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
+import AppPage from '@/components/AppPage.vue'
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { api } from '@/lib/api'
 import { FORM_CATALOG, type FormCatalogItem } from '@shared/formsCatalog'
 import { ref, computed, onMounted } from 'vue'
