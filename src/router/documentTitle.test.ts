@@ -42,6 +42,8 @@ const pages: Record<string, string> = {
   'settings-org-management-edit': 'Edit organization',
   privacy: 'Privacy',
   terms: 'Terms',
+  'acceptable-use': 'Acceptable use',
+  consent: 'Consent',
   contact: 'Contact',
   unlock: 'Unlock',
   expired: 'Expired',

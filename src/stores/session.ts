@@ -8,6 +8,11 @@ export type SessionUser = {
   role: 'user' | 'admin'
 }
 
+export type ConsentRequirement = {
+  document: string
+  version: string
+}
+
 type MeResponse = {
   user?: {
     id?: unknown
@@ -16,17 +21,33 @@ type MeResponse = {
     role?: unknown
   }
   pendingInviteCount?: unknown
+  needsConsent?: unknown
 }
 
 const user = ref<SessionUser | null>(null)
 const status = ref<'idle' | 'loading' | 'ready'>('idle')
 const pendingInviteCount = ref(0)
+const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
 
 function asCount(value: unknown): number {
   const count = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(count) || count <= 0) return 0
   return Math.floor(count)
+}
+
+function asConsentList(value: unknown): ConsentRequirement[] {
+  if (!Array.isArray(value)) return []
+  const list: ConsentRequirement[] = []
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue
+    const document = (entry as { document?: unknown }).document
+    const version = (entry as { version?: unknown }).version
+    if (typeof document !== 'string' || document.length === 0) continue
+    if (typeof version !== 'string' || version.length === 0) continue
+    list.push({ document, version })
+  }
+  return list
 }
 
 function asUser(raw: MeResponse['user']): SessionUser | null {
@@ -42,6 +63,7 @@ function asUser(raw: MeResponse['user']): SessionUser | null {
 function reset(): void {
   user.value = null
   pendingInviteCount.value = 0
+  needsConsent.value = []
   status.value = 'idle'
   inflight = null
 }
@@ -56,16 +78,20 @@ async function pull(): Promise<void> {
     const data = await api.get<MeResponse>('/api/me')
     user.value = asUser(data.user)
     pendingInviteCount.value = asCount(data.pendingInviteCount)
+    needsConsent.value = asConsentList(data.needsConsent)
     status.value = 'ready'
   } catch (error) {
     if (isUnauthorized(error)) {
       user.value = null
       pendingInviteCount.value = 0
+      needsConsent.value = []
       status.value = 'ready'
       return
     }
     // A 500 or a dropped connection is not a sign-out. Leave the loaded
     // user in place. With no user yet, idle lets the next load() retry.
+    // The consent list came from a response we no longer have, so clear it.
+    needsConsent.value = []
     status.value = hadUser ? 'ready' : 'idle'
   }
 }
@@ -110,11 +136,12 @@ const session: {
   user: Ref<SessionUser | null>
   status: Ref<'idle' | 'loading' | 'ready'>
   pendingInviteCount: Ref<number>
+  needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, pendingInviteCount, load, reload, reset, logout }
+} = { user, status, pendingInviteCount, needsConsent, load, reload, reset, logout }
 
 export function useSession() {
   return session

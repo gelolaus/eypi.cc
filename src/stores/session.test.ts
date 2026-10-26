@@ -94,6 +94,7 @@ describe('useSession', () => {
       role: 'admin',
     })
     expect(session.pendingInviteCount.value).toBe(0)
+    expect(session.needsConsent.value).toEqual([])
     expect(session.status.value).toBe('ready')
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(`${API_BASE_URL}/api/me`)
@@ -124,6 +125,7 @@ describe('useSession', () => {
 
     expect(session.user.value).toBeNull()
     expect(session.pendingInviteCount.value).toBe(0)
+    expect(session.needsConsent.value).toEqual([])
   })
 
   it('treats a 401 from /api/me as signed out', async () => {
@@ -135,6 +137,7 @@ describe('useSession', () => {
     await session.load()
 
     expect(session.user.value).toBeNull()
+    expect(session.needsConsent.value).toEqual([])
     expect(session.status.value).toBe('ready')
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain('/api/me')
   })
@@ -179,6 +182,7 @@ describe('useSession', () => {
 
     expect(session.user.value).toBeNull()
     expect(session.pendingInviteCount.value).toBe(0)
+    expect(session.needsConsent.value).toEqual([])
     expect(session.status.value).toBe('ready')
   })
 
@@ -288,10 +292,112 @@ describe('useSession', () => {
     }
     session.status.value = 'ready'
 
+    session.needsConsent.value = [{ document: 'privacy', version: '2026-11-01' }]
+
     session.reset()
 
     expect(session.user.value).toBeNull()
+    expect(session.needsConsent.value).toEqual([])
     expect(session.status.value).toBe('idle')
+  })
+
+  it('stores needsConsent and drops malformed entries', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {
+      user: ada,
+      pendingInviteCount: 0,
+      needsConsent: [
+        { document: 'privacy', version: '2026-11-01' },
+        { document: 'terms', version: '2026-11-01' },
+        { document: '', version: '2026-11-01' },
+        { version: '2026-11-01' },
+        { document: 'privacy' },
+        { document: 'terms', version: 1 },
+        null,
+        'privacy',
+      ],
+    }))
+
+    const session = useSession()
+    await session.load()
+
+    expect(session.needsConsent.value).toEqual([
+      { document: 'privacy', version: '2026-11-01' },
+      { document: 'terms', version: '2026-11-01' },
+    ])
+  })
+
+  it('replaces needsConsent from the latest successful /api/me', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      ...meBody(0),
+      needsConsent: [{ document: 'privacy', version: '2026-11-01' }],
+    }))
+    const session = useSession()
+    await session.load()
+    expect(session.needsConsent.value).toEqual([
+      { document: 'privacy', version: '2026-11-01' },
+    ])
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      ...meBody(0),
+      needsConsent: [],
+    }))
+    await session.reload()
+
+    expect(session.user.value).toEqual(ada)
+    expect(session.needsConsent.value).toEqual([])
+  })
+
+  it('clears needsConsent when a later /api/me fails but keeps the user', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      ...meBody(2),
+      needsConsent: [{ document: 'privacy', version: '2026-11-01' }],
+    }))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, {
+      error: { code: 'server_error', message: 'Something went wrong.' },
+    }))
+    await session.reload()
+
+    expect(session.user.value).toEqual(ada)
+    expect(session.pendingInviteCount.value).toBe(2)
+    expect(session.needsConsent.value).toEqual([])
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('clears needsConsent when a later /api/me drops the connection', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      ...meBody(1),
+      needsConsent: [{ document: 'terms', version: '2026-11-01' }],
+    }))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await session.reload()
+
+    expect(session.user.value).toEqual(ada)
+    expect(session.needsConsent.value).toEqual([])
+    expect(session.status.value).toBe('ready')
+  })
+
+  it('clears needsConsent when a signed-in session becomes anonymous', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      ...meBody(1),
+      needsConsent: [{ document: 'privacy', version: '2026-11-01' }],
+    }))
+    const session = useSession()
+    await session.load()
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, {
+      error: { code: 'unauthorized', message: 'Sign in to continue.' },
+    }))
+    await session.reload()
+
+    expect(session.user.value).toBeNull()
+    expect(session.needsConsent.value).toEqual([])
+    expect(session.status.value).toBe('ready')
   })
 
   it('never reads the legacy local token key', () => {

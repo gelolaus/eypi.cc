@@ -3,7 +3,7 @@ export const RESERVED_SLUGS = [
   // Suite modules (from src/router/index.ts)
   'dashboard', 'links', 'forms', 'manage', 'frames', 'tix', 'orgs',
   // Account & legal
-  'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
+  'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact',
   // Defensive / legacy
   'home', 'api', 'dp', 'event', 'events',
   // Planned suite routes and static prefixes

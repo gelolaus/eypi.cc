@@ -19,6 +19,10 @@
           <span>Terms</span>
           <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
+        <router-link to="/acceptable-use" class="footer-link-row" data-cursor="nav">
+          <span>Acceptable use</span>
+          <span class="footer-arrow" aria-hidden="true">↗</span>
+        </router-link>
         <a
           href="https://gelolaus.com"
           target="_blank"

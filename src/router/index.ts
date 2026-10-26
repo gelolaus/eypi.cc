@@ -248,14 +248,26 @@ const router = createRouter({
     {
       path: '/privacy',
       name: 'privacy',
-      component: () => import('@/views/PrivacyView.vue'),
+      component: () => import('@/views/LegalView.vue'),
       meta: { title: 'Privacy' },
     },
     {
       path: '/terms',
       name: 'terms',
-      component: () => import('@/views/TermsView.vue'),
+      component: () => import('@/views/LegalView.vue'),
       meta: { title: 'Terms' },
+    },
+    {
+      path: '/acceptable-use',
+      name: 'acceptable-use',
+      component: () => import('@/views/LegalView.vue'),
+      meta: { title: 'Acceptable use' },
+    },
+    {
+      path: '/consent',
+      name: 'consent',
+      component: () => import('@/views/ConsentView.vue'),
+      meta: { requiresAuth: true, title: 'Consent' },
     },
     {
       path: '/contact',
@@ -309,6 +321,19 @@ router.beforeEach(async (to, _from, next) => {
 
   if (to.meta.requiresAuth && !signedIn) {
     next({ name: 'login', query: { returnTo: to.fullPath } })
+    return
+  }
+
+  const skipsConsent = to.matched.some((record) => (
+    record.name === 'consent'
+    || record.name === 'privacy'
+    || record.name === 'terms'
+    || record.name === 'acceptable-use'
+    || record.name === 'contact'
+    || record.name === 'login'
+  ))
+  if (signedIn && session.needsConsent.value.length > 0 && !skipsConsent) {
+    next({ name: 'consent', query: { returnTo: to.fullPath } })
     return
   }
 
