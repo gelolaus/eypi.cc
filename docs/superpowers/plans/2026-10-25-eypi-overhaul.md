@@ -670,7 +670,7 @@ Sitemap: https://eypi.cc/sitemap.xml
 - `POST /api/admin/reports/:id/resolve { action: 'disable_link'|'dismiss' }`
 - `GET /api/admin/audit?cursor&action`
 
-- [ ] Failing tests: non-admin → 403 on every endpoint; last-admin demotion → 409; resolving a report with `disable_link` sets `disabled_reason='abuse'`, removes KV, and writes an audit row; the owner can't re-enable an abuse-disabled link (403 `moderator_disabled`). Commit `feat(admin): add users, links, reports, and audit log admin panel`.
+- [x] Failing tests: non-admin → 403 on every endpoint; last-admin demotion → 409; resolving a report with `disable_link` sets `disabled_reason='abuse'`, removes KV, and writes an audit row; the owner can't re-enable an abuse-disabled link (403 `moderator_disabled`). Commit `feat(admin): add users, links, reports, and audit log admin panel`.
 
 ### Task 8.5: Retention cron (§9.4, F-DB-12)
 
