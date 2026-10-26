@@ -1,26 +1,15 @@
 <template>
-  <div class="relative flex min-h-dvh min-w-0 flex-1 flex-col">
-    <section
-      id="hero"
-      class="relative flex min-h-[85dvh] min-w-0 flex-col items-center justify-center"
-    >
-      <HeroSection />
-    </section>
-
-    <StatsStrip />
-    <FeaturesCarousel />
-    <WhyEypi />
-    <ClosingCta />
+  <div class="relative flex min-w-0 flex-1 flex-col">
+    <Hero />
+    <FeatureStrip />
+    <ProofSection />
+    <CtaSection />
   </div>
 </template>
 
 <script setup lang="ts">
-import HeroSection from '@/components/HeroSection.vue'
-import StatsStrip from '@/components/StatsStrip.vue'
-import FeaturesCarousel from '@/components/FeaturesCarousel.vue'
-import WhyEypi from '@/components/WhyEypi.vue'
-import ClosingCta from '@/components/ClosingCta.vue'
-import { useReveal } from '@/composables/useReveal'
-
-useReveal()
+import CtaSection from '@/components/marketing/CtaSection.vue'
+import FeatureStrip from '@/components/marketing/FeatureStrip.vue'
+import Hero from '@/components/marketing/Hero.vue'
+import ProofSection from '@/components/marketing/ProofSection.vue'
 </script>

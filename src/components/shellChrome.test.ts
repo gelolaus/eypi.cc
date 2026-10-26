@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import SiteNavSheet from './layout/SiteNavSheet.vue'
 import ScrollTop from './ScrollTop.vue'
-import TheHeader from './TheHeader.vue'
+import MarketingHeader from './marketing/MarketingHeader.vue'
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { useScrollContainer } from '@/composables/useScrollContainer'
 import { useSession } from '@/stores/session'
@@ -47,11 +47,11 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('TheHeader top bar', () => {
+describe('MarketingHeader top bar', () => {
   it('is a sticky h-14 bar that does not hide on scroll', async () => {
-    const wrapper = mount(TheHeader, { global: { plugins: [router] } })
+    const wrapper = mount(MarketingHeader, { global: { plugins: [router] } })
     const header = wrapper.get('header')
-    for (const cls of ['sticky', 'top-0', 'h-14']) expect(header.classes()).toContain(cls)
+    for (const cls of ['sticky', 'top-0', 'h-14', 'backdrop-blur-md']) expect(header.classes()).toContain(cls)
 
     window.scrollY = 400
     window.dispatchEvent(new Event('scroll'))
@@ -61,7 +61,7 @@ describe('TheHeader top bar', () => {
   })
 
   it('offers the menu button and no org switcher on public pages', async () => {
-    const wrapper = mount(TheHeader, { global: { plugins: [router] } })
+    const wrapper = mount(MarketingHeader, { global: { plugins: [router] } })
     expect(wrapper.find('[data-header-orgs]').exists()).toBe(false)
     expect(wrapper.find('[aria-label^="Open navigation menu"]').exists()).toBe(true)
     expect(wrapper.get('header').classes()).not.toContain('lg:hidden')

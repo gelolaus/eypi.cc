@@ -3,10 +3,9 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ContactView from '@/views/ContactView.vue'
-import FeaturesCarousel from './FeaturesCarousel.vue'
 import SiteNavSheet from './layout/SiteNavSheet.vue'
 import { useNavDrawer } from '@/composables/useNavDrawer'
-import TheFooter from './TheFooter.vue'
+import MarketingFooter from './marketing/MarketingFooter.vue'
 import router from '@/router'
 import { useSession } from '@/stores/session'
 
@@ -55,10 +54,10 @@ describe('accessibility surfaces', () => {
   })
 
   it('hides footer arrows from assistive tech', () => {
-    const wrapper = mount(TheFooter, {
+    const wrapper = mount(MarketingFooter, {
       global: { plugins: [router] },
     })
-    const arrows = wrapper.findAll('.footer-arrow')
+    const arrows = wrapper.findAll('[data-footer-arrow]')
     expect(arrows.length).toBeGreaterThan(0)
     for (const arrow of arrows) {
       expect(arrow.attributes('aria-hidden')).toBe('true')
@@ -72,31 +71,4 @@ describe('accessibility surfaces', () => {
     expect(tags).toEqual(['H1', 'H2', 'H2', 'H2'])
   })
 
-  it('inerts hidden slides and offers a pause button', async () => {
-    const wrapper = mount(FeaturesCarousel, {
-      attachTo: document.body,
-      global: {
-        stubs: { RouterLink: { template: '<a><slot /></a>' } },
-      },
-    })
-    await nextTick()
-
-    const slides = wrapper.findAll('article')
-    const hidden = slides.filter((slide) => slide.attributes('aria-hidden') === 'true')
-    expect(hidden.length).toBeGreaterThan(0)
-    for (const slide of hidden) {
-      expect(slide.attributes()).toHaveProperty('inert')
-    }
-    const visible = slides.filter((slide) => slide.attributes('aria-hidden') !== 'true')
-    expect(visible.length).toBeGreaterThan(0)
-    for (const slide of visible) {
-      expect(slide.attributes('inert')).toBeUndefined()
-    }
-
-    const pause = wrapper.get('[aria-label="Pause features"]')
-    expect(pause.attributes('aria-pressed')).toBe('false')
-    await pause.trigger('click')
-    expect(wrapper.get('[aria-label="Play features"]').attributes('aria-pressed')).toBe('true')
-    wrapper.unmount()
-  })
 })

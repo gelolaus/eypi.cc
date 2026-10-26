@@ -219,9 +219,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Create `src/components/marketing/{MarketingHeader,MarketingFooter,Hero,FeatureStrip,ProofSection,CtaSection}.vue`; modify `src/views/HomeView.vue`, `ContactView.vue`; delete the replaced components and their tests, porting `HeroSection.test.ts` and `TheFooter.test.ts` intent (CTA links and footer links keep working) to the new files.
 
-- [ ] **Step 1:** Tests: Hero has one `h1`, a primary `Get started` link to the sign-in route, and the large brand; header shows logo and one primary button, collapsing to a menu on mobile; footer keeps every link the old test asserted.
-- [ ] **Step 2:** Implement per the hero spec in the layout table: dark ink background, `bg-dot-grid` at low opacity behind the hero, `float-slow` accents (decorative, `aria-hidden`), at most one proof section and one closing CTA (wantap's landing plan removed feature grids and comparison tables, so do not add them; condense `FeaturesCarousel`, `StatsStrip` and `WhyEypi` into one `FeatureStrip`). Header primary button is `Button` default; it is sticky with `backdrop-blur-md`.
-- [ ] **Step 3:** Run tests. Commit `feat(marketing): rebuild the home page in the wantap landing style`.
+- [x] **Step 1:** Tests: Hero has one `h1`, a primary `Get started` link to the sign-in route, and the large brand; header shows logo and one primary button, collapsing to a menu on mobile; footer keeps every link the old test asserted.
+- [x] **Step 2:** Implement per the hero spec in the layout table: dark ink background, `bg-dot-grid` at low opacity behind the hero, `float-slow` accents (decorative, `aria-hidden`), at most one proof section and one closing CTA (wantap's landing plan removed feature grids and comparison tables, so do not add them; condense `FeaturesCarousel`, `StatsStrip` and `WhyEypi` into one `FeatureStrip`). Header primary button is `Button` default; it is sticky with `backdrop-blur-md`.
+- [x] **Step 3:** Run tests. Commit `feat(marketing): rebuild the home page in the wantap landing style`.
 
 ### Task 9: Auth and status pages
 

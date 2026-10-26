@@ -84,11 +84,11 @@
   <!-- Public pages: top bar only, normal document scroll. -->
   <div v-else class="flex min-h-dvh flex-col">
     <LocalDevBanner />
-    <TheHeader />
+    <MarketingHeader />
     <main id="app-content" class="relative z-10 flex min-h-0 flex-1 flex-col">
       <slot />
     </main>
-    <TheFooter />
+    <MarketingFooter />
   </div>
 
   <SiteNavSheet />
@@ -102,8 +102,8 @@ import BrandLogo from '@/components/brand/BrandLogo.vue'
 import LocalDevBanner from '@/components/LocalDevBanner.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
-import TheFooter from '@/components/TheFooter.vue'
-import TheHeader from '@/components/TheHeader.vue'
+import MarketingFooter from '@/components/marketing/MarketingFooter.vue'
+import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
 import { Badge } from '@/components/ui/badge'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { installPaneScroll } from '@/composables/paneScroll'

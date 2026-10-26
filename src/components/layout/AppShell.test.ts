@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import AppShell from './AppShell.vue'
-import TheHeader from '@/components/TheHeader.vue'
+import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
 import { useSession } from '@/stores/session'
 
 const stub = { template: '<div />' }
@@ -56,7 +56,7 @@ async function mountAt(path: string) {
     slots: { default: '<p id="page">Page</p>' },
     global: {
       plugins: [router],
-      stubs: { TheFooter: { template: '<footer id="footer" />' } },
+      stubs: { MarketingFooter: { template: '<footer id="footer" />' } },
     },
   })
   await flushPromises()
@@ -253,7 +253,7 @@ describe('AppShell (public)', () => {
     expect(wrapper.find('[data-app-shell]').exists()).toBe(false)
     expect(wrapper.find('nav[aria-label="Primary"]').exists()).toBe(false)
     expect(wrapper.find('aside').exists()).toBe(false)
-    expect(wrapper.findComponent(TheHeader).exists()).toBe(true)
+    expect(wrapper.findComponent(MarketingHeader).exists()).toBe(true)
     const main = wrapper.get('main#app-content')
     expect(main.classes()).not.toContain('overflow-y-auto')
     expect(main.classes().some((cls) => /^pt-/.test(cls))).toBe(false)

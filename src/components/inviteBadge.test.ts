@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import SiteNavSheet from './layout/SiteNavSheet.vue'
 import { useNavDrawer } from '@/composables/useNavDrawer'
-import TheHeader from './TheHeader.vue'
+import MarketingHeader from './marketing/MarketingHeader.vue'
 import { useSession } from '@/stores/session'
 
 const router = createRouter({
@@ -49,7 +49,7 @@ beforeEach(async () => {
 describe('invite badge', () => {
   it('shows pendingInviteCount on the header menu', async () => {
     signIn(2)
-    const wrapper = mount(TheHeader, {
+    const wrapper = mount(MarketingHeader, {
       attachTo: document.body,
       global: { plugins: [router] },
     })
@@ -77,7 +77,7 @@ describe('invite badge', () => {
 
   it('omits the badge when pendingInviteCount is zero', async () => {
     signIn(0)
-    const wrapper = mount(TheHeader, {
+    const wrapper = mount(MarketingHeader, {
       attachTo: document.body,
       global: { plugins: [router] },
     })
