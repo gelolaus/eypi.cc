@@ -563,7 +563,7 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `backend/src/routes/orgs.ts` (logo/banner upload via `putImage`, return URLs), `backend/src/routes/links.ts` (QR logo upload endpoint `PUT /api/links/:id/qr-logo`; `qr_config.logo = { key }`), `src/views/orgs/OrgModifyView.vue`, `src/components/links/QrDesigner.vue`, `src/utils/renderLinkQr.ts` (load the logo by URL).
 
-- [ ] Failing tests: `GET /api/orgs/public` payload has no `data:` strings; QR logo replace deletes the old object. Implement → PASS. Commit `feat(orgs): store org images and QR logos in R2`.
+- [x] Failing tests: `GET /api/orgs/public` payload has no `data:` strings; QR logo replace deletes the old object. Implement → PASS. Commit `feat(orgs): store org images and QR logos in R2`.
 
 ### Task 6.4: One-off media migration
 
