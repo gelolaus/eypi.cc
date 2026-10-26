@@ -338,7 +338,7 @@ feat(db): add versioned migrations with a ledger and baseline
 - [ ] **Step 1:** Owner creates a branch DB: `turso db create eypi-rehearsal --from-db <prod>`; point `.dev.vars` at it; run `npm run migrate --prefix backend -- --yes` (0003) and, with `--allow-destructive`, 0004; run `npm run dev:local` and sign in with Microsoft; confirm links and orgs are intact.
 - [ ] **Step 2: Production (single window, §12.4):** apply 0003 → deploy backend + frontend → owner signs in and sees the Admin nav → apply 0004 → `wrangler secret delete JWT_SECRET`.
 - [ ] **Step 3: Verify:** `curl -s https://api.eypi.cc/api/me -o /dev/null -w "%{http_code}"` → `401`; signing in works for an `@apc.edu.ph` professor account and a student account.
-- [ ] **Step 4: Commit** `docs(auth): add the Microsoft cutover runbook`.
+- [x] **Step 4: Commit** `docs(auth): add the Microsoft cutover runbook`.
 
 ---
 
