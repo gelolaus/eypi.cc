@@ -1,5 +1,5 @@
 <template>
-  <div class="mica-card relative rounded-3xl border border-gray-200 p-8 dark:border-slate-600">
+  <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
     <PageShell />
 
     <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Manual Guarantees</h2>
@@ -11,7 +11,7 @@
         type="text"
         placeholder="Search by name or email…"
         aria-label="Search guarantees"
-        class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:placeholder-slate-400"
+        class="control"
       />
     </div>
 
@@ -24,7 +24,7 @@
         <div>
           <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(row) }}</p>
           <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(row) }}
-            <span v-if="columnMapping?.clusterCol" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
+            <span v-if="columnMapping?.clusterCol" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-xs font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
               {{ row.rawData[columnMapping.clusterCol] ?? '—' }}
             </span>
           </p>
@@ -32,7 +32,7 @@
         <button
           v-if="!guaranteedRowIds.has(row.id)"
           type="button"
-          class="rounded-lg bg-[#34418F] px-3 py-1 font-mono text-xs text-white transition-colors hover:brightness-110 dark:bg-slate-600"
+          class="btn-primary"
           @click="addGuarantee(row.id)"
         >
           Add
@@ -53,14 +53,15 @@
           <div>
             <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(rowById(rowId)) }}</p>
             <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(rowById(rowId)) }}
-              <span v-if="columnMapping?.clusterCol && rowById(rowId)" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
+              <span v-if="columnMapping?.clusterCol && rowById(rowId)" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-xs font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
                 {{ rowById(rowId)!.rawData[columnMapping!.clusterCol!] ?? '—' }}
               </span>
             </p>
           </div>
           <button
             type="button"
-            class="rounded-lg border border-red-200 px-2 py-1 font-mono text-xs text-red-500 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/10"
+            class="min-h-11 min-w-11 rounded-lg border border-red-200 px-2 font-mono text-sm text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/10"
+            aria-label="Remove from guaranteed"
             @click="removeGuarantee(rowId)"
           >✕</button>
         </div>
@@ -69,10 +70,10 @@
     <p v-else class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">No guaranteed attendees yet.</p>
 
     <div class="mt-2 flex gap-3">
-      <button type="button" class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="emit('back')">← Back</button>
+      <button type="button" class="btn-secondary" @click="emit('back')">← Back</button>
       <button
         type="button"
-        class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 dark:bg-slate-700"
+        class="min-h-11 flex-1 rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 dark:bg-slate-700"
         @click="emit('continue')"
       >
         Continue →

@@ -1,5 +1,5 @@
 <template>
-  <section class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-28">
+  <section class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-20">
     <div class="w-full max-w-md">
       <!-- Event header (after successful lookup) -->
       <div v-if="ticket?.event" class="mb-6 text-center">
@@ -17,7 +17,7 @@
       <!-- QR ticket (after successful lookup) -->
       <div
         v-if="ticket"
-        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
+        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 text-center sm:p-8"
       >
         <PageShell />
 
@@ -35,7 +35,7 @@
             type="button"
             :disabled="savingGoogleWallet"
             :class="[
-              'w-full rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-600',
+              'min-h-11 w-full rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 dark:bg-slate-600',
               savingGoogleWallet ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             @click="saveToGoogleWallet"
@@ -52,7 +52,7 @@
 
         <button
           type="button"
-          class="mt-4 text-sm font-medium text-gray-400 underline hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
+          class="mt-4 min-h-11 px-3 text-sm font-medium text-g-muted underline hover:text-g-accent"
           @click="reset"
         >
           Look up a different ticket
@@ -62,7 +62,7 @@
       <!-- Lookup form -->
       <div
         v-else
-        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
+        class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-5 sm:p-8"
       >
         <PageShell />
 
@@ -77,7 +77,7 @@
             placeholder="First Name"
             aria-label="First Name"
             required
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control mb-4"
           />
           <input
             v-model="form.lastName"
@@ -85,7 +85,7 @@
             placeholder="Last Name"
             aria-label="Last Name"
             required
-            class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control mb-4"
           />
           <input
             v-model="form.email"
@@ -93,7 +93,7 @@
             placeholder="Email"
             aria-label="Email"
             required
-            class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+            class="control mb-6 font-mono"
           />
 
           <!-- Lookup error -->
@@ -108,7 +108,7 @@
             type="submit"
             :disabled="lookingUp"
             :class="[
-              'btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
+              'btn-gold min-h-11 w-full rounded-xl px-4 text-base font-semibold transition-all duration-200',
               lookingUp ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"

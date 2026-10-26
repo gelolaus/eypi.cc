@@ -13,7 +13,7 @@
             v-if="hasCsvRows"
             type="button"
             :class="[
-              'flex-1 py-3 text-sm font-semibold transition-colors',
+              'min-h-11 flex-1 text-sm font-semibold transition-colors',
               guestMode === 'search' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
             ]"
             @click="guestMode = 'search'"
@@ -23,7 +23,7 @@
           <button
             type="button"
             :class="[
-              'flex-1 py-3 text-sm font-semibold transition-colors',
+              'min-h-11 flex-1 text-sm font-semibold transition-colors',
               guestMode === 'freeform' ? 'border-b-2 border-[#34418F] text-[#34418F] dark:border-slate-400 dark:text-slate-200' : 'text-gray-400 hover:text-gray-600 dark:text-slate-500',
             ]"
             @click="guestMode = 'freeform'"
@@ -45,7 +45,7 @@
               <div
                 v-for="row in guestSearchResults"
                 :key="row.id"
-                class="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 dark:border-slate-600"
+                class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-slate-600"
               >
                 <div>
                   <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ guestRowName(row) }}</p>
@@ -58,7 +58,7 @@
                   v-if="!row.isSelected"
                   type="button"
                   :disabled="addingGuest"
-                  class="rounded-lg bg-[#34418F] px-3 py-1 font-mono text-xs text-white transition-colors hover:brightness-110 disabled:opacity-40 dark:bg-slate-600"
+                  class="btn-primary"
                   @click="addGuestFromCsv(row.id)"
                 >
                   Add

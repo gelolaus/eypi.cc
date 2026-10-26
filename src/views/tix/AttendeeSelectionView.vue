@@ -1,17 +1,10 @@
 <template>
-  <section class="relative mx-auto w-full max-w-4xl px-4 py-16">
-
-    <!-- Header -->
-    <div class="mb-8">
-      <router-link to="/manage/tix" class="mb-4 inline-block text-sm font-medium text-gray-400 hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300">← My events</router-link>
-      <h1
-        class="font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
-        style="font-size: clamp(1.6rem, 4vw, 2.5rem); letter-spacing: -0.03em;"
-      >
-        Attendee Selection
-      </h1>
-      <p v-if="eventName" class="mt-1 text-sm text-gray-500 dark:text-slate-400">{{ eventName }}</p>
-    </div>
+  <div class="relative w-full">
+    <AppPage title="Attendee Selection">
+      <template #description>
+        <router-link to="/manage/tix" class="-ml-1 inline-flex min-h-11 items-center px-1 text-sm font-medium text-g-muted hover:text-g-accent">← My events</router-link>
+        <span v-if="eventName" class="block text-sm text-g-muted">{{ eventName }}</span>
+      </template>
 
     <!-- Step progress bar -->
     <div class="mb-8 flex items-center gap-1">
@@ -24,7 +17,7 @@
         />
       </template>
     </div>
-    <p class="mb-6 text-xs font-medium text-gray-400 dark:text-slate-500">
+    <p class="mb-6 text-sm font-medium text-g-muted">
       Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
     </p>
 
@@ -119,6 +112,7 @@
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
+import AppPage from '@/components/AppPage.vue'
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'

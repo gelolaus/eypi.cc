@@ -1,20 +1,11 @@
 <template>
-  <section class="relative flex w-full flex-1 flex-col items-center px-4 py-24">
-    <div class="w-full max-w-xl">
-      <h1
-        class="reveal mb-2 text-center font-mono font-black tracking-tight text-[#34418F] dark:text-slate-200"
-        style="font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em;"
-      >
-        New Event
-      </h1>
-      <p class="reveal delay-1 mb-8 text-center text-sm text-gray-500 dark:text-slate-400">
-        Details &amp; attendee CSV
-      </p>
-
+  <div class="relative w-full">
+    <AppPage title="New Event" description="Details & attendee CSV">
+    <div class="mx-auto w-full max-w-xl">
       <!-- Success state -->
       <div
         v-if="done"
-        class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
+        class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-5 text-center sm:p-8"
       >
         <PageShell />
         <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
@@ -24,7 +15,7 @@
         </p>
         <router-link
           :to="`/manage/tix/${form.slug}`"
- class="btn-gold inline-block rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
+ class="btn-gold inline-flex min-h-11 items-center rounded-xl px-6 text-base font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           data-cursor="cta"
         >
           Go to Event →
@@ -34,7 +25,7 @@
       <!-- Form -->
       <div
         v-else
-        class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-10"
+        class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-5 sm:p-8"
       >
         <PageShell />
 
@@ -43,7 +34,7 @@
           <button
             type="button"
             :class="[
-              'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
+              'min-h-11 flex-1 px-4 text-sm font-semibold transition-colors',
               !useSelectionMode
                 ? 'bg-[#34418F] text-white dark:bg-slate-700'
                 : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -53,7 +44,7 @@
           <button
             type="button"
             :class="[
-              'flex-1 px-4 py-2.5 text-sm font-semibold transition-colors',
+              'min-h-11 flex-1 px-4 text-sm font-semibold transition-colors',
               useSelectionMode
                 ? 'bg-[#34418F] text-white dark:bg-slate-700'
                 : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
@@ -72,14 +63,14 @@
               type="text"
               placeholder="e.g. JPCS General Assembly"
               required
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+              class="control font-mono"
             />
           </div>
 
           <!-- Slug -->
           <div>
             <label for="event-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
-            <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
+            <div class="control flex items-center focus-within:outline focus-within:outline-[3px] focus-within:outline-offset-2 focus-within:outline-[var(--color-focus)]">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
               <input
                 id="event-slug"
@@ -87,7 +78,7 @@
                 type="text"
                 placeholder="bwai2026"
                 required
-                class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 placeholder-gray-400 dark:text-slate-200 dark:placeholder-slate-500"
+                class="min-w-0 flex-1 bg-transparent font-mono text-base text-g-text outline-none placeholder:text-g-muted"
                 @input="sanitizeSlug"
               />
             </div>
@@ -105,7 +96,7 @@
                 v-model="form.date"
                 type="date"
                 required
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
+                class="control font-mono"
               />
             </div>
             <div class="flex-1">
@@ -115,7 +106,7 @@
                 v-model="form.time"
                 type="time"
                 required
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500"
+                class="control font-mono"
               />
             </div>
           </div>
@@ -129,7 +120,7 @@
               type="text"
               placeholder="e.g. APC Auditorium"
               required
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
+              class="control font-mono"
             />
           </div>
 
@@ -153,18 +144,18 @@
               </p>
               <template v-else>
                 <p class="text-sm text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
-                <p class="mt-2 font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
+                <p class="mt-2 font-mono text-xs text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
               </template>
               <input ref="fileInput" type="file" accept=".csv" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
               <button
                 type="button"
-                class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
+                class="btn-secondary mt-3"
                 @click="fileInput?.click()"
               >
                 {{ csvFile ? 'Change file' : 'Browse' }}
               </button>
             </div>
-            <p v-if="csvError" id="csv-error" class="mt-1 font-mono text-[0.65rem] text-red-500 uppercase tracking-wide">{{ csvError }}</p>
+            <p v-if="csvError" id="csv-error" class="mt-1 font-mono text-xs text-red-500 uppercase tracking-wide">{{ csvError }}</p>
           </div>
 
           <!-- Selection mode info + max attendees -->
@@ -179,9 +170,9 @@
               type="number"
               min="1"
               placeholder="Leave blank for no limit"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
+              class="control font-mono"
             />
-            <p class="mt-1 font-mono text-[0.65rem] text-gray-400 dark:text-slate-500 uppercase tracking-wide">This can be overridden when you configure clusters.</p>
+            <p class="mt-1 font-mono text-xs text-gray-400 dark:text-slate-500 uppercase tracking-wide">This can be overridden when you configure clusters.</p>
           </div>
 
           <!-- Submit -->
@@ -189,7 +180,7 @@
             type="submit"
             :disabled="loading"
             :class="[
-              'btn-gold mt-2 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
+              'btn-gold mt-2 min-h-11 w-full rounded-xl px-4 text-base font-semibold transition-all duration-200',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"
@@ -199,11 +190,13 @@
         </form>
       </div>
     </div>
-  </section>
+    </AppPage>
+  </div>
 </template>
 
 <script setup lang="ts">
 import PageShell from '@/components/PageShell.vue'
+import AppPage from '@/components/AppPage.vue'
 import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
 import { useReveal } from '@/composables/useReveal'

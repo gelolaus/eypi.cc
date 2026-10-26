@@ -1,150 +1,161 @@
 <template>
   <div>
-    <div class="mb-3 flex flex-wrap gap-2">
+    <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
       <input
         v-model="searchQuery"
-        type="text"
+        type="search"
         placeholder="Search by name, email, or group…"
         aria-label="Search attendees"
-        class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:border-slate-400"
+        class="control min-w-0 flex-1"
       />
-      <button
-        type="button"
-        :disabled="!attendees.length || downloadingZip"
-        class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
-        @click="emit('downloadZip')"
-      >
-        {{ downloadingZip ? 'Preparing ZIP…' : 'Download all (ZIP)' }}
-      </button>
-      <button
-        type="button"
-        :disabled="!attendees.length || exporting"
-        class="flex-shrink-0 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-40 dark:border-slate-600 dark:text-slate-400 dark:hover:border-slate-400"
-        @click="emit('export')"
-      >
-        {{ exporting ? '…' : 'Export .xlsx' }}
-      </button>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          :disabled="!attendees.length || downloadingZip"
+          class="btn-secondary flex-1 sm:flex-none"
+          @click="emit('downloadZip')"
+        >
+          {{ downloadingZip ? 'Preparing ZIP…' : 'Download all (ZIP)' }}
+        </button>
+        <button
+          type="button"
+          :disabled="!attendees.length || exporting"
+          class="btn-secondary flex-1 sm:flex-none"
+          @click="emit('export')"
+        >
+          {{ exporting ? '…' : 'Export .xlsx' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-3 md:hidden">
+      <label for="attendee-sort" class="sr-only">Sort attendees</label>
+      <select id="attendee-sort" v-model="sortField" class="control" @change="currentPage = 1">
+        <option value="name">Sort by name</option>
+        <option value="email">Sort by email</option>
+        <option value="status">Sort by status</option>
+      </select>
     </div>
 
     <div v-if="loading" class="space-y-2">
-      <div v-for="i in 5" :key="i" class="h-14 animate-pulse rounded-xl bg-gray-200 dark:bg-slate-800/60" />
+      <div v-for="i in 5" :key="i" class="h-14 animate-pulse rounded-xl bg-g-border" />
     </div>
 
     <div v-else>
-      <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-600">
-        <div>
-          <div class="grid grid-cols-12 border-b border-gray-100 bg-gray-50/60 text-data text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-300">
-            <button type="button" class="col-span-5 flex items-center gap-1 px-4 py-3 text-left transition-colors hover:text-[#2a3578] dark:hover:text-slate-100 sm:col-span-4" @click="toggleSort('name')">
-              Attendee <span class="opacity-40">{{ sortMark('name') }}</span>
-            </button>
-            <button type="button" class="col-span-3 hidden items-center gap-1 px-4 py-3 text-left transition-colors hover:text-[#2a3578] dark:hover:text-slate-100 sm:flex" @click="toggleSort('email')">
-              Email <span class="opacity-40">{{ sortMark('email') }}</span>
-            </button>
-            <button type="button" class="col-span-3 flex items-center gap-1 px-4 py-3 text-left transition-colors hover:text-[#2a3578] dark:hover:text-slate-100" @click="toggleSort('status')">
-              Status <span class="opacity-40">{{ sortMark('status') }}</span>
-            </button>
-            <div class="col-span-4 px-4 py-3 text-right sm:col-span-2">Actions</div>
-          </div>
+      <div data-attendee-list class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+        <div class="hidden grid-cols-12 border-b border-g-border bg-g-surface text-data text-xs font-semibold text-g-primary md:grid">
+          <button type="button" class="col-span-4 flex min-h-11 items-center gap-1 px-4 text-left transition-colors hover:text-g-accent" @click="toggleSort('name')">
+            Attendee <span class="opacity-40">{{ sortMark('name') }}</span>
+          </button>
+          <button type="button" class="col-span-3 flex min-h-11 items-center gap-1 px-4 text-left transition-colors hover:text-g-accent" @click="toggleSort('email')">
+            Email <span class="opacity-40">{{ sortMark('email') }}</span>
+          </button>
+          <button type="button" class="col-span-2 flex min-h-11 items-center gap-1 px-4 text-left transition-colors hover:text-g-accent" @click="toggleSort('status')">
+            Status <span class="opacity-40">{{ sortMark('status') }}</span>
+          </button>
+          <div class="col-span-3 flex min-h-11 items-center justify-end px-4">Actions</div>
+        </div>
 
-          <div
-            v-if="!filteredAttendees.length"
-            class="px-4 py-12 text-center text-sm font-medium text-gray-400 dark:text-slate-500"
-          >
-            {{ searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : `No ${tabLabel.toLowerCase()} attendees` }}
-          </div>
+        <div
+          v-if="!filteredAttendees.length"
+          class="rounded-2xl border border-g-border px-4 py-12 text-center text-sm font-medium text-g-muted md:rounded-none md:border-0"
+        >
+          {{ searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : `No ${tabLabel.toLowerCase()} attendees` }}
+        </div>
 
-          <div
-            v-for="attendee in paginatedAttendees"
-            :key="attendee.id"
-            class="grid grid-cols-12 items-center border-b border-gray-100 px-4 py-3 transition-colors last:border-0 hover:bg-gray-50/60 dark:border-slate-700/60 dark:hover:bg-mica-navy-row-hover"
-          >
-            <div class="col-span-5 sm:col-span-4">
-              <p class="font-mono text-sm font-bold text-gray-900 dark:text-slate-100">{{ attendee.first_name }} {{ attendee.last_name }}</p>
-              <template v-if="editingClusterAttendee === attendee.id">
-                <input
-                  v-model="attendeeClusterEditValue"
-                  type="text"
-                  aria-label="Cluster"
-                  list="attendee-cluster-suggestions"
-                  placeholder="Cluster…"
-                  class="mt-0.5 w-full rounded border border-[#34418F] px-1.5 py-0.5 font-mono text-[0.6rem] outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
-                  @keydown.enter="saveAttendeeCluster(attendee.id)"
-                  @keydown.escape="editingClusterAttendee = ''"
-                  @blur="saveAttendeeCluster(attendee.id)"
-                />
-              </template>
-              <button
-                v-else
-                type="button"
-                class="mt-0.5 cursor-pointer border-0 bg-transparent p-0 text-left font-mono text-[0.6rem] text-gray-400 transition-colors hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
-                :title="attendee.cluster_value ? 'Edit cluster' : 'Assign cluster'"
-                @click="startEditAttendeeCluster(attendee.id, attendee.cluster_value)"
-              >
-                {{ attendee.cluster_value || '+ cluster' }}
-              </button>
-            </div>
-            <div class="col-span-3 hidden sm:block">
-              <p class="truncate font-mono text-xs text-gray-500 dark:text-slate-400">{{ attendee.email }}</p>
-            </div>
-            <div class="col-span-3">
-              <span
-                :class="statusClass(attendee.status)"
-                class="rounded px-2 py-0.5 font-mono text-[0.65rem] font-bold tracking-wide"
-              >
-                {{ statusLabel(attendee.status) }}
-              </span>
-              <p v-if="attendee.actioned_at" class="mt-0.5 font-mono text-[0.6rem] text-gray-400 dark:text-slate-500">
-                {{ formatStoredDateTime(attendee.actioned_at) }}
-              </p>
-            </div>
-            <div class="col-span-4 flex flex-wrap justify-end gap-1 sm:col-span-2">
-              <button
-                v-if="attendee.status !== 'checked_in' && attendee.status !== 'removed'"
-                type="button"
-                :disabled="!!actionPending"
-                class="rounded-lg bg-emerald-500 px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-wide text-white transition-colors hover:bg-emerald-600 disabled:opacity-40"
-                title="Check in"
-                @click="emit('checkIn', attendee.id)"
-              >
-                In
-              </button>
-              <button
-                v-if="attendee.status === 'checked_in'"
-                type="button"
-                :disabled="!!actionPending"
-                class="rounded-lg bg-gray-500 px-2 py-1 font-mono text-[0.6rem] font-bold uppercase tracking-wide text-white transition-colors hover:bg-gray-600 disabled:opacity-40"
-                title="Check out"
-                @click="emit('checkOut', attendee.id)"
-              >
-                Out
-              </button>
-              <button
-                v-if="attendee.status === 'removed'"
-                type="button"
-                :disabled="!!actionPending"
-                class="rounded-lg bg-[#34418F] px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:brightness-110 disabled:opacity-40 dark:bg-slate-600"
-                @click="emit('restore', attendee.id)"
-              >
-                Restore
-              </button>
-              <button
-                type="button"
-                class="rounded-lg border border-gray-200 px-2 py-1 text-[0.65rem] font-semibold text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-300"
-                @click="emit('downloadQr', attendee)"
-              >
-                Download QR
-              </button>
-              <button
-                v-if="attendee.status !== 'removed'"
-                type="button"
-                :disabled="!!actionPending"
-                class="rounded-lg bg-red-500 px-2 py-1 text-[0.65rem] font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-40"
-                title="Remove"
-                @click="confirmRemove(attendee)"
-              >
-                Remove
-              </button>
-            </div>
+        <div
+          v-for="attendee in paginatedAttendees"
+          :key="attendee.id"
+          data-attendee-row
+          class="flex flex-col gap-3 rounded-2xl border border-g-border bg-g-surface p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:px-0 md:py-3 md:last:border-0"
+        >
+          <div class="min-w-0 md:col-span-4 md:px-4">
+            <p class="break-words font-mono text-sm font-bold text-g-text">{{ attendee.first_name }} {{ attendee.last_name }}</p>
+            <p class="truncate font-mono text-xs text-g-muted md:hidden">{{ attendee.email }}</p>
+            <template v-if="editingClusterAttendee === attendee.id">
+              <input
+                v-model="attendeeClusterEditValue"
+                type="text"
+                aria-label="Cluster"
+                list="attendee-cluster-suggestions"
+                placeholder="Cluster…"
+                class="control mt-1"
+                @keydown.enter="saveAttendeeCluster(attendee.id)"
+                @keydown.escape="editingClusterAttendee = ''"
+                @blur="saveAttendeeCluster(attendee.id)"
+              />
+            </template>
+            <button
+              v-else
+              type="button"
+              class="-ml-2 mt-0.5 min-h-11 cursor-pointer rounded-lg border-0 bg-transparent px-2 text-left font-mono text-xs text-g-muted transition-colors hover:text-g-accent"
+              :title="attendee.cluster_value ? 'Edit cluster' : 'Assign cluster'"
+              @click="startEditAttendeeCluster(attendee.id, attendee.cluster_value)"
+            >
+              {{ attendee.cluster_value || '+ cluster' }}
+            </button>
+          </div>
+          <div class="hidden min-w-0 md:col-span-3 md:block md:px-4">
+            <p class="truncate font-mono text-xs text-g-muted">{{ attendee.email }}</p>
+          </div>
+          <div class="md:col-span-2 md:px-4">
+            <span
+              :class="statusClass(attendee.status)"
+              class="rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wide"
+            >
+              {{ statusLabel(attendee.status) }}
+            </span>
+            <p v-if="attendee.actioned_at" class="mt-1 font-mono text-xs text-g-muted">
+              {{ formatStoredDateTime(attendee.actioned_at) }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2 md:col-span-3 md:justify-end md:px-4">
+            <button
+              v-if="attendee.status !== 'checked_in' && attendee.status !== 'removed'"
+              type="button"
+              :disabled="!!actionPending"
+              class="min-h-11 min-w-11 rounded-xl bg-emerald-700 px-4 font-mono text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-emerald-800 disabled:opacity-40"
+              title="Check in"
+              @click="emit('checkIn', attendee.id)"
+            >
+              In
+            </button>
+            <button
+              v-if="attendee.status === 'checked_in'"
+              type="button"
+              :disabled="!!actionPending"
+              class="min-h-11 min-w-11 rounded-xl bg-gray-600 px-4 font-mono text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-gray-700 disabled:opacity-40"
+              title="Check out"
+              @click="emit('checkOut', attendee.id)"
+            >
+              Out
+            </button>
+            <button
+              v-if="attendee.status === 'removed'"
+              type="button"
+              :disabled="!!actionPending"
+              class="btn-primary"
+              @click="emit('restore', attendee.id)"
+            >
+              Restore
+            </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              @click="emit('downloadQr', attendee)"
+            >
+              Download QR
+            </button>
+            <button
+              v-if="attendee.status !== 'removed'"
+              type="button"
+              :disabled="!!actionPending"
+              class="btn-danger"
+              title="Remove"
+              @click="confirmRemove(attendee)"
+            >
+              Remove
+            </button>
           </div>
         </div>
       </div>
@@ -155,14 +166,14 @@
 
       <div
         v-if="totalPages > 1 || filteredAttendees.length > 0"
-        class="mt-4 flex items-center justify-between font-mono text-xs text-gray-400 dark:text-slate-500"
+        class="mt-4 flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-g-muted"
       >
         <span>{{ filteredAttendees.length }} result{{ filteredAttendees.length === 1 ? '' : 's' }} · page {{ currentPage }} of {{ totalPages }}</span>
-        <div class="flex gap-1">
+        <div class="flex gap-2">
           <button
             type="button"
             :disabled="currentPage === 1"
-            class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
+            class="btn-secondary"
             @click="currentPage--"
           >
             ← Prev
@@ -170,7 +181,7 @@
           <button
             type="button"
             :disabled="currentPage === totalPages"
-            class="rounded-lg border border-gray-200 px-3 py-1.5 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:opacity-30 dark:border-slate-600 dark:hover:border-slate-400"
+            class="btn-secondary"
             @click="currentPage++"
           >
             Next →

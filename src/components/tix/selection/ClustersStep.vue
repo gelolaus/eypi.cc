@@ -1,5 +1,5 @@
 <template>
-  <div class="mica-card relative rounded-3xl border border-gray-200 p-8 dark:border-slate-600">
+  <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
     <PageShell />
 
     <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
@@ -16,7 +16,7 @@
       >
         <div class="flex-1">
           <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
-          <p class="font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ clusterRawCount(cl.value) }} respondents</p>
+          <p class="font-mono text-xs uppercase tracking-wide text-gray-400 dark:text-slate-500">{{ clusterRawCount(cl.value) }} respondents</p>
         </div>
         <div class="flex items-center gap-2">
           <label :for="`cluster-max-${cl.value}`" class="font-mono text-xs text-gray-500 dark:text-slate-400">Max:</label>
@@ -25,7 +25,7 @@
             :value="cl.maxCount"
             type="number"
             min="0"
-            class="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center font-mono text-sm font-bold outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+            class="control w-24 text-center font-mono font-bold"
             @input="setClusterMax(cl.value, Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0))"
           />
         </div>
@@ -41,12 +41,12 @@
     <p v-if="clusterError" class="mt-3 text-xs font-medium text-red-500">{{ clusterError }}</p>
 
     <div class="mt-6 flex gap-3">
-      <button type="button" class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="emit('back')">← Back</button>
+      <button type="button" class="btn-secondary" @click="emit('back')">← Back</button>
       <button
         type="button"
         :disabled="savingClusters"
         :class="[
-          'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
+          'min-h-11 flex-1 rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 dark:bg-slate-700',
           savingClusters ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5 hover:brightness-110',
         ]"
         @click="emit('continue')"

@@ -2,7 +2,7 @@
   <div class="mb-6">
     <button
       type="button"
-      class="mb-2 flex items-center gap-1 text-sm font-medium text-gray-400 transition-colors hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
+      class="mb-2 flex min-h-11 items-center gap-1 text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
       @click="showClusters = !showClusters"
     >
       <span>{{ showClusters ? '▼' : '▶' }}</span> Clusters
@@ -26,7 +26,7 @@
                   :aria-label="`Max for ${cluster.value}`"
                   min="1"
                   placeholder="∞"
-                  class="w-14 rounded border border-[#34418F] px-1 py-0 font-mono text-xs outline-none dark:border-slate-500 dark:bg-slate-800 dark:text-slate-200"
+                  class="control w-20"
                   @keydown.enter="saveClusterMax(cluster.value)"
                   @keydown.escape="editingMaxCluster = ''"
                   @blur="saveClusterMax(cluster.value)"
@@ -36,7 +36,7 @@
                 <span>{{ cluster.maxCount ?? '∞' }}</span>
                 <button
                   type="button"
-                  class="font-mono text-[0.6rem] text-gray-400 transition-colors hover:text-[#34418F] dark:text-slate-500 dark:hover:text-slate-300"
+                  class="flex min-h-11 min-w-11 items-center justify-center font-mono text-xs text-g-muted transition-colors hover:text-g-accent"
                   title="Edit max"
                   @click="startEditClusterMax(cluster.value, cluster.maxCount)"
                 >
@@ -50,7 +50,7 @@
             v-if="cluster.id && (cluster.remainingSlots ?? 0) > 0"
             type="button"
             :disabled="rafflingCluster === cluster.value"
-            class="flex-shrink-0 rounded-lg px-2.5 py-1 font-mono text-[0.65rem] font-bold uppercase tracking-wide transition-colors"
+            class="min-h-11 min-w-11 flex-shrink-0 rounded-xl px-3 font-mono text-xs font-bold uppercase tracking-wide transition-colors"
             :class="rafflingCluster === cluster.value
               ? 'cursor-not-allowed bg-gray-100 text-gray-400 opacity-50 dark:bg-slate-700 dark:text-slate-500'
               : 'bg-[#34418F]/10 text-[#34418F] hover:bg-[#34418F] hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'"

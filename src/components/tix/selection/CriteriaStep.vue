@@ -1,5 +1,5 @@
 <template>
-  <div class="mica-card relative rounded-3xl border border-gray-200 p-8 dark:border-slate-600">
+  <div class="mica-card relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
     <PageShell />
 
     <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
@@ -31,7 +31,7 @@
               <label
                 v-for="val in uniqueValuesForCluster(col, cl.value)"
                 :key="val"
-                class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
+                class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 transition-colors"
                 :class="isChecked(cl.value, col, val)
                   ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
                   : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
@@ -39,11 +39,11 @@
                 <input
                   type="checkbox"
                   :checked="isChecked(cl.value, col, val)"
-                  class="h-3.5 w-3.5 accent-[#34418F]"
+                  class="size-5 accent-[#34418F]"
                   @change="toggleFilter(cl.value, col, val)"
                 />
                 <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
-                <span class="font-mono text-[0.6rem] text-gray-400 dark:text-slate-500">({{ countInCluster(col, val, cl.value) }})</span>
+                <span class="font-mono text-xs text-gray-400 dark:text-slate-500">({{ countInCluster(col, val, cl.value) }})</span>
               </label>
             </div>
           </div>
@@ -58,7 +58,7 @@
           <label
             v-for="val in uniqueValues(col)"
             :key="val"
-            class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
+            class="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 transition-colors"
             :class="isChecked(null, col, val)
               ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
               : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
@@ -66,11 +66,11 @@
             <input
               type="checkbox"
               :checked="isChecked(null, col, val)"
-              class="h-3.5 w-3.5 accent-[#34418F]"
+              class="size-5 accent-[#34418F]"
               @change="toggleFilter(null, col, val)"
             />
             <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
-            <span class="font-mono text-[0.6rem] text-gray-400 dark:text-slate-500">({{ countInAll(col, val) }})</span>
+            <span class="font-mono text-xs text-gray-400 dark:text-slate-500">({{ countInAll(col, val) }})</span>
           </label>
         </div>
       </div>
@@ -87,14 +87,14 @@
       <button
         type="button"
         :disabled="savingCriteria"
-        class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400"
+        class="btn-secondary"
         @click="emit('leave', 'back')"
       >← Back</button>
       <button
         type="button"
         :disabled="savingCriteria"
         :class="[
-          'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
+          'min-h-11 flex-1 rounded-xl bg-[#34418F] px-4 text-base font-semibold text-white transition-all duration-200 dark:bg-slate-700',
           savingCriteria ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5 hover:brightness-110',
         ]"
         @click="emit('leave', 'forward')"
