@@ -1,15 +1,21 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
+import type { Client, InStatement, InValue } from '@libsql/client/web'
+import { isApcEmail, normalizeEmail } from '../../../shared/apcIdentity'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
-import type { Client, InStatement, InValue } from '@libsql/client/web'
+import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
 import { requireAdmin } from '../middleware/requireAdmin'
 import { requireAuth } from '../middleware/requireAuth'
 
 type Variables = {
   userId: string
   userEmail: string
+  user?: { id: string; email?: string; name?: string; role?: string }
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const WEEK_MS = 7 * DAY_MS
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
@@ -109,6 +115,43 @@ function parseSocialLinks(raw: unknown): Record<string, string> {
   } catch {
     return { ...DEFAULT_SOCIAL_LINKS }
   }
+}
+
+function errorBody(code: string, message: string) {
+  return { error: { code, message } }
+}
+
+function timestampMs(value: unknown): number | null {
+  if (value == null) return null
+  const raw = String(value).trim()
+  if (!raw) return null
+  const direct = Date.parse(raw)
+  if (Number.isFinite(direct)) return direct
+  const sqlite = Date.parse(`${raw.replace(' ', 'T')}Z`)
+  return Number.isFinite(sqlite) ? sqlite : null
+}
+
+function signedInUser(c: { var: Variables }): { id: string; email: string; name: string } | null {
+  const user = c.var.user
+  if (!user?.id || !user.email) return null
+  return { id: user.id, email: user.email, name: user.name ?? '' }
+}
+
+async function findMembership(database: Client, orgId: string, email: string) {
+  const { rows } = await database.execute({
+    sql: `
+      SELECT email, user_id, activated_at, declined_at, invited_at
+      FROM org_members
+      WHERE org_id = ? AND lower(email) = lower(?)
+      LIMIT 1
+    `,
+    args: [orgId, email],
+  })
+  return rows[0] ?? null
+}
+
+function isSet(value: unknown): boolean {
+  return value != null && String(value).length > 0
 }
 
 function mapPublicEvent(row: Record<string, unknown>) {
@@ -392,77 +435,81 @@ app.post('/', requireAdmin, async (c) => {
 // ==========================================
 
 app.get('/invites', async (c) => {
-  const database = db(c)
-  const userEmail = c.var.userEmail
+  const user = signedInUser(c)
+  if (!user) return c.json(errorBody('unauthorized', 'Sign in to continue.'), 401)
 
-  try {
-    const { rows } = await database.execute({
-      sql: `
-        SELECT o.id as org_id, o.name as org_name, m.invited_at
-        FROM org_members m
-        JOIN organizations o ON m.org_id = o.id
-        WHERE m.email = ? AND m.activated_at IS NULL
-      `,
-      args: [userEmail],
-    })
+  const { rows } = await db(c).execute({
+    sql: `
+      SELECT
+        o.id AS org_id,
+        o.name AS org_name,
+        o.logo_url AS logo_url,
+        u.name AS invited_by_name,
+        m.invited_at AS invited_at
+      FROM org_members m
+      JOIN organizations o ON o.id = m.org_id
+      LEFT JOIN users u ON u.id = m.invited_by
+      WHERE lower(m.email) = lower(?)
+        AND m.activated_at IS NULL
+        AND m.declined_at IS NULL
+      ORDER BY m.invited_at DESC
+    `,
+    args: [user.email],
+  })
 
-    return c.json({ invites: rows }, 200)
-  } catch (error) {
-    console.error('Error fetching invites:', error)
-    return c.json({ error: 'Internal server error' }, 500)
-  }
+  return c.json(rows.map((row) => ({
+    orgId: String(row.org_id),
+    orgName: String(row.org_name),
+    logoUrl: row.logo_url == null ? null : String(row.logo_url),
+    invitedByName: row.invited_by_name == null ? null : String(row.invited_by_name),
+    invitedAt: row.invited_at == null ? null : String(row.invited_at),
+  })))
 })
 
 app.post('/invites/:org_id/accept', async (c) => {
-  const database = db(c)
-  const userEmail = c.var.userEmail
-  const userId = c.var.userId
+  const user = signedInUser(c)
+  if (!user) return c.json(errorBody('unauthorized', 'Sign in to continue.'), 401)
+
   const orgId = c.req.param('org_id')
+  const result = await db(c).execute({
+    sql: `
+      UPDATE org_members
+      SET activated_at = ?, user_id = ?, declined_at = NULL
+      WHERE org_id = ?
+        AND lower(email) = lower(?)
+        AND activated_at IS NULL
+        AND declined_at IS NULL
+    `,
+    args: [new Date().toISOString(), user.id, orgId, user.email],
+  })
 
-  try {
-    const result = await database.execute({
-      sql: `
-        UPDATE org_members
-        SET activated_at = CURRENT_TIMESTAMP, user_id = ?
-        WHERE email = ? AND org_id = ? AND activated_at IS NULL
-      `,
-      args: [userId, userEmail, orgId],
-    })
-
-    if (result.rowsAffected === 0) {
-      return c.json({ error: 'Invitation not found or already processed.' }, 404)
-    }
-
-    return c.json({ success: true, message: 'Invitation accepted.' }, 200)
-  } catch (error) {
-    console.error('Error accepting invite:', error)
-    return c.json({ error: 'Internal server error' }, 500)
+  if (result.rowsAffected === 0) {
+    return c.json(errorBody('not_found', 'Invitation not found.'), 404)
   }
+  return c.json({ orgId })
 })
 
 app.post('/invites/:org_id/decline', async (c) => {
-  const database = db(c)
-  const userEmail = c.var.userEmail
+  const user = signedInUser(c)
+  if (!user) return c.json(errorBody('unauthorized', 'Sign in to continue.'), 401)
+
   const orgId = c.req.param('org_id')
+  const result = await db(c).execute({
+    sql: `
+      UPDATE org_members
+      SET declined_at = ?
+      WHERE org_id = ?
+        AND lower(email) = lower(?)
+        AND activated_at IS NULL
+        AND declined_at IS NULL
+    `,
+    args: [new Date().toISOString(), orgId, user.email],
+  })
 
-  try {
-    const result = await database.execute({
-      sql: `
-        DELETE FROM org_members
-        WHERE email = ? AND org_id = ? AND activated_at IS NULL
-      `,
-      args: [userEmail, orgId],
-    })
-
-    if (result.rowsAffected === 0) {
-      return c.json({ error: 'Invitation not found or already processed.' }, 404)
-    }
-
-    return c.json({ success: true, message: 'Invitation declined.' }, 200)
-  } catch (error) {
-    console.error('Error declining invite:', error)
-    return c.json({ error: 'Internal server error' }, 500)
+  if (result.rowsAffected === 0) {
+    return c.json(errorBody('not_found', 'Invitation not found.'), 404)
   }
+  return c.json({ orgId })
 })
 
 // ==========================================
@@ -892,61 +939,123 @@ app.get('/:org_id/members', async (c) => {
  * POST /api/orgs/:org_id/members
  */
 app.post('/:org_id/members', async (c) => {
-  const database = db(c)
-  const requesterId = c.var.userId
-  const orgId = c.req.param('org_id')
+  const user = signedInUser(c)
+  if (!user) return c.json(errorBody('unauthorized', 'Sign in to continue.'), 401)
 
-  let body
+  const database = db(c)
+  const orgId = c.req.param('org_id')
+  let body: unknown
   try {
     body = await c.req.json()
   } catch {
-    return c.json({ error: 'Invalid JSON body' }, 400)
+    return c.json(errorBody('invalid_email', 'Enter an email address.'), 400)
   }
 
   const validation = inviteSchema.safeParse(body)
   if (!validation.success) {
-    return c.json({ error: 'Missing or invalid required fields: email' }, 400)
+    return c.json(errorBody('invalid_email', 'Enter an email address.'), 400)
   }
 
-  const targetEmail = validation.data.email.toLowerCase().trim()
-  const apcEmailRegex = /^[a-zA-Z0-9._%+-]+@(?:student\.)?apc\.edu\.ph$/
-  if (!apcEmailRegex.test(targetEmail)) {
-    return c.json({ error: 'Invalid domain. Invitations are strictly restricted to @apc.edu.ph or @student.apc.edu.ph domain emails.' }, 400)
+  const targetEmail = normalizeEmail(validation.data.email)
+  if (!isApcEmail(targetEmail)) {
+    return c.json(errorBody('invalid_email', 'Use an @apc.edu.ph or @student.apc.edu.ph address.'), 400)
   }
 
-  try {
-    const { rows: ownerCheck } = await database.execute({
-      sql: `
-        SELECT 1
-        FROM organizations
-        WHERE id = ? AND owner_id = ?
-        LIMIT 1
-      `,
-      args: [orgId, requesterId],
-    })
+  const { rows: ownerRows } = await database.execute({
+    sql: 'SELECT name FROM organizations WHERE id = ? AND owner_id = ? LIMIT 1',
+    args: [orgId, user.id],
+  })
+  if (ownerRows.length === 0) {
+    return c.json(errorBody('forbidden', 'Only the organization owner can invite members.'), 403)
+  }
 
-    if (ownerCheck.length === 0) {
-      return c.json({ error: 'Forbidden. Only the organization owner can invite new members.' }, 403)
+  const existing = await findMembership(database, orgId, targetEmail)
+  if (existing && isSet(existing.activated_at)) {
+    return c.json(errorBody('already_member', 'That person is already a member.'), 409)
+  }
+  if (existing && isSet(existing.declined_at)) {
+    const declinedMs = timestampMs(existing.declined_at)
+    if (declinedMs == null || Date.now() - declinedMs < WEEK_MS) {
+      return c.json(errorBody('recently_declined', 'That person declined recently. Try again in 7 days.'), 429)
     }
-
-    const result = await database.execute({
-      sql: `
-        INSERT INTO org_members (org_id, email, user_id, invited_at, activated_at)
-        VALUES (?, ?, NULL, CURRENT_TIMESTAMP, NULL)
-        ON CONFLICT(org_id, email) DO NOTHING
-      `,
-      args: [orgId, targetEmail],
-    })
-
-    return c.json({
-      success: true,
-      message: 'Invitation sent. If the user does not possess an account, they have been silently pre-provisioned.',
-      changes: result.rowsAffected,
-    }, 200)
-  } catch (error) {
-    console.error('Error during invitation:', error)
-    return c.json({ error: 'Internal server error while processing the invitation.' }, 500)
+  } else if (existing) {
+    return c.json(errorBody('already_invited', 'That person already has a pending invite.'), 409)
   }
+
+  const invitedAt = new Date().toISOString()
+  if (existing) {
+    await database.execute({
+      sql: `
+        UPDATE org_members
+        SET email = ?, invited_by = ?, invited_at = ?, declined_at = NULL
+        WHERE org_id = ? AND lower(email) = lower(?)
+      `,
+      args: [targetEmail, user.id, invitedAt, orgId, targetEmail],
+    })
+  } else {
+    await database.execute({
+      sql: `
+        INSERT INTO org_members (org_id, email, user_id, invited_at, activated_at, invited_by, declined_at)
+        VALUES (?, ?, NULL, ?, NULL, ?, NULL)
+      `,
+      args: [orgId, targetEmail, invitedAt, user.id],
+    })
+  }
+
+  const emailSent = await deliverOrgInviteEmail({
+    apiKey: c.env.RESEND_API_KEY,
+    to: targetEmail,
+    orgName: String(ownerRows[0].name),
+    inviterName: user.name,
+  })
+  return c.json({ emailSent }, 201)
+})
+
+/**
+ * POST /api/orgs/:org_id/members/:email/resend
+ * At most one send per 24 hours, counted from invited_at.
+ */
+app.post('/:org_id/members/:email/resend', async (c) => {
+  const user = signedInUser(c)
+  if (!user) return c.json(errorBody('unauthorized', 'Sign in to continue.'), 401)
+
+  const database = db(c)
+  const orgId = c.req.param('org_id')
+  const targetEmail = normalizeEmail(c.req.param('email'))
+  const { rows: ownerRows } = await database.execute({
+    sql: 'SELECT name FROM organizations WHERE id = ? AND owner_id = ? LIMIT 1',
+    args: [orgId, user.id],
+  })
+  if (ownerRows.length === 0) {
+    return c.json(errorBody('forbidden', 'Only the organization owner can invite members.'), 403)
+  }
+
+  const existing = await findMembership(database, orgId, targetEmail)
+  if (!existing || isSet(existing.activated_at) || isSet(existing.declined_at)) {
+    return c.json(errorBody('not_found', 'Invitation not found.'), 404)
+  }
+
+  const invitedMs = timestampMs(existing.invited_at)
+  if (invitedMs != null && Date.now() - invitedMs < DAY_MS) {
+    return c.json(errorBody('recently_sent', 'You can resend this invite once every 24 hours.'), 429)
+  }
+
+  await database.execute({
+    sql: `
+      UPDATE org_members
+      SET invited_at = ?, invited_by = ?
+      WHERE org_id = ? AND lower(email) = lower(?)
+    `,
+    args: [new Date().toISOString(), user.id, orgId, targetEmail],
+  })
+
+  const emailSent = await deliverOrgInviteEmail({
+    apiKey: c.env.RESEND_API_KEY,
+    to: targetEmail,
+    orgName: String(ownerRows[0].name),
+    inviterName: user.name,
+  })
+  return c.json({ emailSent }, 200)
 })
 
 /**
