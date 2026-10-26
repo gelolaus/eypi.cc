@@ -65,6 +65,7 @@ function json(body: unknown, status = 200): Response {
 type FetchOptions = {
   asOwner?: boolean
   members?: unknown[]
+  membersStatus?: number
 }
 
 function installFetch(options: FetchOptions = {}) {
@@ -90,6 +91,9 @@ function installFetch(options: FetchOptions = {}) {
       return json({ profile })
     }
     if (path === '/api/orgs/jpcs/members' && method === 'GET') {
+      if (options.membersStatus && options.membersStatus !== 200) {
+        return json({ error: { code: 'server' } }, options.membersStatus)
+      }
       return json({ members: options.members ?? [] })
     }
     if (path === '/api/orgs' && method === 'GET') {
@@ -198,6 +202,19 @@ describe('OrgModifyView members', () => {
     expect(row!.text()).not.toContain('Pending')
     expect(row!.text()).not.toContain('Resend')
     expect(row!.text()).not.toContain('Cancel invite')
+    wrapper.unmount()
+  })
+
+  it('does not treat a failed member load as an empty transfer list', async () => {
+    installFetch({ asOwner: true, membersStatus: 500 })
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Could not load members. Try again.')
+    expect(wrapper.text()).not.toContain('Invite an active member before transferring ownership.')
     wrapper.unmount()
   })
 })

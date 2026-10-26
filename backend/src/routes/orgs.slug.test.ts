@@ -162,6 +162,44 @@ describe('POST /api/orgs/:id/transfer', () => {
   })
 })
 
+describe('DELETE /api/orgs/:id/members', () => {
+  it('removes a member stored with mixed-case email when that email is sent', async () => {
+    const { client, request } = await createTestApp({
+      user: owner,
+      seed: async (db) => {
+        await enableForeignKeys(db)
+        await insertUser(db, owner)
+        await insertUser(db, member)
+        await db.execute({
+          sql: 'INSERT INTO organizations (id, name, owner_id) VALUES (?, ?, ?)',
+          args: ['jpcs', 'JPCS', owner.id],
+        })
+        await db.execute({
+          sql: `INSERT INTO org_members (org_id, email, user_id, activated_at)
+                VALUES (?, ?, ?, ?)`,
+          args: ['jpcs', member.email, member.id, '2026-01-03T00:00:00.000Z'],
+        })
+      },
+    })
+
+    const res = await request('/api/orgs/jpcs/members', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: ORIGIN,
+      },
+      body: JSON.stringify({ email: member.email }),
+    })
+
+    expect(res.status).toBe(200)
+    const remaining = await client.execute({
+      sql: 'SELECT email FROM org_members WHERE org_id = ? AND lower(email) = lower(?)',
+      args: ['jpcs', member.email],
+    })
+    expect(remaining.rows).toEqual([])
+  })
+})
+
 describe('POST /api/orgs/:id/leave', () => {
   it('matches the session email with lower()', async () => {
     const { client, request } = await createTestApp({

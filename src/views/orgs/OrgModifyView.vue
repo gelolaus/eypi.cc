@@ -282,7 +282,7 @@
               </option>
             </select>
           </div>
-          <p v-if="activeMembers.length === 0" class="text-sm text-g-muted">
+          <p v-if="!loadingMembers && !membersError && activeMembers.length === 0" class="text-sm text-g-muted">
             Invite an active member before transferring ownership.
           </p>
           <button

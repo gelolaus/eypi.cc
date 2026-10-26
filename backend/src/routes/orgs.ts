@@ -1132,12 +1132,15 @@ app.delete('/:org_id/members', async (c) => {
       args: [requesterId],
     })
 
-    if (ownerEmailCheck.length > 0 && ownerEmailCheck[0].email === targetEmail) {
+    if (
+      ownerEmailCheck.length > 0 &&
+      String(ownerEmailCheck[0].email).toLowerCase() === targetEmail
+    ) {
       return c.json({ error: 'You cannot remove yourself from the organization. Transfer ownership first.' }, 400)
     }
 
     const result = await database.execute({
-      sql: `DELETE FROM org_members WHERE org_id = ? AND email = ?`,
+      sql: `DELETE FROM org_members WHERE org_id = ? AND lower(email) = lower(?)`,
       args: [orgId, targetEmail],
     })
 
