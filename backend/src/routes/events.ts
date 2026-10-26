@@ -1203,7 +1203,9 @@ app.get('/api/events/:slug/passes/google', async (c) => {
     return c.json({ status: 'ok', url })
   } catch (err) {
     console.error('GET /passes/google error:', err instanceof Error ? err.message : err)
-    const message = err instanceof Error && err.message.includes('not configured')
+    const detail = err instanceof Error ? err.message : ''
+    const walletDown = detail.includes('not configured') || detail.startsWith('Google Wallet')
+    const message = walletDown
       ? 'Wallet passes are not available right now.'
       : LOOKUP_FAIL_MSG
     return c.json({ status: 'error', message }, 503)

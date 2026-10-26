@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Client } from '@libsql/client'
+import { exportPKCS8, generateKeyPair } from 'jose'
 import { signPassToken } from '../lib/passes/context'
 import { createTestApp, type TestUser } from '../test/createTestApp'
 
@@ -197,6 +198,43 @@ describe('pass field allowlist', () => {
     expect(got.status).toBe(200)
     const body = await got.json() as { event: { passFields?: string[] } }
     expect(body.event.passFields).toEqual(['section', 'phone'])
+  })
+})
+
+describe('google wallet outage', () => {
+  it('returns the wallet-unavailable sentence when the class update fails', async () => {
+    const ada = { ...person(0), id: 'att-a', email: 'ada@x.com' }
+    const { privateKey } = await generateKeyPair('RS256', { extractable: true })
+    const { request, env } = await createTestApp({
+      seed: (db) => seedEvent(db, { id: 'event-wallet', slug: 'launch' }, [ada]),
+      env: {
+        GOOGLE_WALLET_ISSUER_ID: 'issuer',
+        GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL: 'wallet@example.com',
+        GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY: await exportPKCS8(privateKey),
+      },
+    })
+    const token = await signPassToken(env, { attendeeId: ada.id, eventId: 'event-wallet', slug: 'launch' })
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (url === 'https://oauth2.googleapis.com/token') {
+        return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 })
+      }
+      if (method === 'GET') return new Response('{}', { status: 200 })
+      return new Response('nope', { status: 500 })
+    })
+
+    try {
+      const res = await passDownload(request, 'launch', 'google', token)
+      expect(res.status).toBe(503)
+      const body = await res.json() as { message?: string }
+      expect(body.message).toBe('Wallet passes are not available right now.')
+      expect(body.message).not.toContain('No ticket found')
+    } finally {
+      errorLog.mockRestore()
+      vi.unstubAllGlobals()
+    }
   })
 })
 
