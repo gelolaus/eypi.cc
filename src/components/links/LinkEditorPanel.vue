@@ -16,14 +16,14 @@
       ref="panel"
       aria-labelledby="link-editor-title"
       aria-modal="true"
-      class="absolute right-0 top-0 flex h-full max-h-screen w-full max-w-md flex-col overflow-y-auto border-l border-gray-200 bg-white p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900"
+      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-gray-200 bg-white p-5 shadow-2xl sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none sm:border-l sm:border-t-0 sm:p-8 dark:border-slate-700/50 dark:bg-slate-900"
       role="dialog"
       tabindex="-1"
       @keydown.esc.stop="emit('close')"
     >
       <button
         aria-label="Close"
-        class="absolute right-6 top-6 text-2xl text-gray-500 hover:text-gray-700 dark:text-slate-400"
+        class="absolute right-2 top-2 flex size-11 items-center justify-center text-2xl text-gray-500 sm:right-5 sm:top-5 hover:text-gray-700 dark:text-slate-400"
         type="button"
         @click="emit('close')"
       >
@@ -146,14 +146,16 @@
       >
         {{ formError }}
       </p>
-      <button
-        class="btn-gold mt-6 w-full rounded-xl px-8 py-4 font-semibold disabled:cursor-not-allowed disabled:opacity-70"
-        type="button"
-        :disabled="saving || qrImageBusy"
-        @click="submit"
-      >
-        {{ linkId ? 'Save changes' : 'Create link' }}
-      </button>
+      <div class="sticky bottom-0 -mx-5 mt-6 border-t border-gray-100 bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:-mx-8 sm:-mb-8 sm:px-8 dark:border-slate-700/50 dark:bg-slate-900">
+        <button
+          class="btn-gold min-h-12 w-full rounded-xl px-8 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+          type="button"
+          :disabled="saving || qrImageBusy"
+          @click="submit"
+        >
+          {{ linkId ? 'Save changes' : 'Create link' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>

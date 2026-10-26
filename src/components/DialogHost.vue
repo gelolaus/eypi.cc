@@ -3,14 +3,14 @@
     <Transition name="dialog-fade">
       <div
         v-if="current"
-        class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/20 p-4 backdrop-blur-sm dark:bg-slate-900/80"
+        class="fixed inset-0 z-[10000] flex items-end justify-center bg-slate-900/20 backdrop-blur-sm sm:items-center sm:p-4 dark:bg-slate-900/80"
         role="presentation"
         @mousedown.self="onBackdrop"
       >
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
         <div
           ref="panelRef"
-          class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left shadow-2xl"
+          class="mica-card max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border border-g-border bg-g-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-left shadow-2xl sm:rounded-3xl sm:p-8"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
@@ -35,20 +35,20 @@
               v-model="typed"
               type="text"
               autocomplete="off"
-              class="w-full rounded-xl border border-g-border bg-white/70 px-3 py-2.5 font-mono text-sm text-g-text outline-none focus:border-g-primary dark:bg-mica-navy-input"
+              class="w-full h-11 rounded-xl border border-g-border bg-white/70 px-3 font-mono text-base text-g-text outline-none focus:border-g-primary dark:bg-mica-navy-input"
               @keydown.enter.prevent="tryConfirm"
             />
           </div>
 
           <div
-            class="mt-6 flex gap-2"
-            :class="current.kind === 'info' ? 'flex-col' : ''"
+            data-dialog-footer
+            class="mt-6 flex flex-col-reverse gap-2 sm:flex-row"
           >
             <template v-if="current.kind === 'info'">
               <button
                 ref="primaryRef"
                 type="button"
- class="btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110"
+ class="btn-gold min-h-11 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110"
                 @click="confirmAction"
               >
                 {{ current.confirmLabel }}
@@ -57,7 +57,7 @@
             <template v-else>
               <button
                 type="button"
-                class="flex-1 rounded-xl border border-g-border bg-white/60 px-4 py-3 text-sm font-semibold text-g-text transition-colors hover:bg-white dark:bg-mica-navy-input"
+                class="min-h-11 flex-1 rounded-xl border border-g-border bg-white/60 px-4 py-3 text-sm font-semibold text-g-text transition-colors hover:bg-white dark:bg-mica-navy-input"
                 @click="abort"
               >
                 {{ current.abortLabel }}
@@ -65,7 +65,7 @@
               <button
                 ref="primaryRef"
                 type="button"
-                class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-55"
+                class="min-h-11 flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-55"
                 :disabled="!canConfirm"
                 @click="tryConfirm"
               >
@@ -146,10 +146,22 @@ watch(
 .dialog-fade-leave-to {
   opacity: 0;
 }
+.dialog-fade-enter-active [role='dialog'],
+.dialog-fade-leave-active [role='dialog'] {
+  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+}
+@media (max-width: 639px) {
+  .dialog-fade-enter-from [role='dialog'],
+  .dialog-fade-leave-to [role='dialog'] {
+    transform: translateY(100%);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .dialog-fade-enter-active,
-  .dialog-fade-leave-active {
+  .dialog-fade-leave-active,
+  .dialog-fade-enter-active [role='dialog'],
+  .dialog-fade-leave-active [role='dialog'] {
     transition-duration: 0.01ms;
   }
 }

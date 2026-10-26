@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none fixed bottom-24 right-6 z-[9999] flex w-[min(100vw-2rem,20rem)] flex-col gap-3"
+    class="pointer-events-none fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[9999] flex flex-col gap-3 lg:inset-x-auto lg:right-6 lg:bottom-6 lg:w-80"
     :aria-live="hasError ? 'assertive' : 'polite'"
     aria-relevant="additions text"
   >
@@ -11,13 +11,16 @@
         :key="toast.id"
         role="status"
         tabindex="0"
-        class="pointer-events-auto relative flex cursor-pointer items-center gap-3 border border-g-border bg-white p-3 shadow-xl dark:border-slate-600 dark:bg-mica-navy-modal dark:backdrop-blur-xl"
+        class="pointer-events-auto relative flex cursor-pointer items-center gap-3 border border-g-border bg-white py-3 pl-3 pr-1 shadow-xl dark:border-slate-600 dark:bg-mica-navy-modal dark:backdrop-blur-xl"
         @click="dismiss(toast.id)"
         @keydown.enter="dismiss(toast.id)"
         @keydown.space.prevent="dismiss(toast.id)"
         @mouseenter="pause(toast.id)"
         @focus="pause(toast.id)"
         @mouseleave="resume(toast.id)"
+        @touchstart.passive="pause(toast.id)"
+        @touchend="resume(toast.id)"
+        @touchcancel="resume(toast.id)"
         @blur="resume(toast.id)"
       >
         <div class="flex h-[18px] shrink-0 items-end gap-[3px]" aria-hidden="true">
@@ -51,7 +54,7 @@
 
         <button
           type="button"
-          class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center text-g-muted transition-colors hover:text-g-text"
+          class="-my-2 flex size-11 shrink-0 items-center justify-center text-lg text-g-muted transition-colors hover:text-g-text"
           aria-label="Dismiss"
           @click.stop="dismiss(toast.id)"
         >

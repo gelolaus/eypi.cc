@@ -71,9 +71,9 @@
 
 **Files:** `ToastContainer.vue`, `DialogHost.vue`, `LinkEditorPanel.vue`, `AnalyticsPanel.vue`, `src/components/dp/*` panels, slide-over CSS in `main.css`, `DESIGN_SYSTEM.md` §6.
 
-- [ ] Tests first: DialogHost renders as bottom sheet below `sm` (`items-end sm:items-center`, `rounded-t-3xl sm:rounded-3xl`, `max-h-[90dvh] overflow-y-auto`, safe-area padding, footer `flex-col-reverse sm:flex-row`, inputs `h-11 text-base`); Esc/backdrop/focus-trap behavior unchanged (`dialogEsc.test.ts`, `useFocusTrap.test.ts`); Toast container sits `inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:inset-x-auto lg:right-6 lg:bottom-6`, dismiss button 44px, pause on touch/focus as well as mouse.
-- [ ] Slide panels: full-width bottom/side sheets using `dvh`, `p-5 sm:p-8`, sticky action footer with safe-area padding; keep `LinkEditorPanel` tests green.
-- [ ] Commit `feat(ui): turn dialogs and panels into bottom sheets and fix toast placement`.
+- [x] Tests first: DialogHost renders as bottom sheet below `sm` (`items-end sm:items-center`, `rounded-t-3xl sm:rounded-3xl`, `max-h-[90dvh] overflow-y-auto`, safe-area padding, footer `flex-col-reverse sm:flex-row`, inputs `h-11 text-base`); Esc/backdrop/focus-trap behavior unchanged (`dialogEsc.test.ts`, `useFocusTrap.test.ts`); Toast container sits `inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:inset-x-auto lg:right-6 lg:bottom-6`, dismiss button 44px, pause on touch/focus as well as mouse.
+- [x] Slide panels: full-width bottom/side sheets using `dvh`, `p-5 sm:p-8`, sticky action footer with safe-area padding; keep `LinkEditorPanel` tests green.
+- [x] Commit `feat(ui): turn dialogs and panels into bottom sheets and fix toast placement`.
 
 ### Task 4: Links module
 

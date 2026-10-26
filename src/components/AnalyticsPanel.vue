@@ -15,14 +15,14 @@
       ref="panel"
       aria-labelledby="analytics-panel-title"
       aria-modal="true"
-      class="absolute right-0 top-0 flex h-full max-h-screen w-[95vw] flex-col overflow-y-auto border-l border-gray-200 bg-white/95 p-8 shadow-2xl dark:border-slate-700/50 dark:bg-slate-900/95 md:max-w-2xl"
+      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-gray-200 bg-white/95 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl dark:border-slate-700/50 dark:bg-slate-900/95 sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-2xl sm:rounded-none sm:border-l sm:border-t-0 sm:p-8"
       role="dialog"
       tabindex="-1"
       @keydown.esc.stop="emit('close')"
     >
       <button
         aria-label="Close"
-        class="absolute right-6 top-6 text-2xl text-slate-600 hover:text-slate-900 dark:text-slate-400"
+        class="absolute right-2 top-2 flex size-11 items-center justify-center text-2xl text-slate-600 sm:right-5 sm:top-5 hover:text-slate-900 dark:text-slate-400"
         type="button"
         @click="emit('close')"
       >
@@ -45,7 +45,7 @@
         <button
           v-for="option in ranges"
           :key="option.days"
-          class="rounded-full border border-g-border px-3 py-1.5 text-sm"
+          class="min-h-11 rounded-full border border-g-border px-4 py-1.5 text-sm"
           type="button"
           :aria-label="option.label"
           :aria-pressed="range === option.days"
@@ -186,7 +186,7 @@
           </div>
         </div>
         <button
-          class="mt-8 rounded-lg border-2 border-g-primary px-4 py-2 text-sm font-semibold text-g-primary dark:border-slate-400 dark:text-slate-200"
+          class="mt-8 min-h-11 rounded-lg border-2 border-g-primary px-4 py-2 text-sm font-semibold text-g-primary dark:border-slate-400 dark:text-slate-200"
           type="button"
           @click="downloadCsv"
         >

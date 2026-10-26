@@ -1,11 +1,11 @@
 <template>
   <Transition name="panel">
-    <div v-if="open" class="fixed inset-x-0 bottom-0 top-20 z-50 flex justify-end">
+    <div v-if="open" class="fixed inset-0 z-50 flex items-end justify-center sm:items-stretch sm:justify-end">
       <button type="button" class="absolute inset-0 cursor-default border-0 bg-black/30 p-0 backdrop-blur-sm" aria-label="Close add guest" @click="emit('close')" />
-      <div class="relative z-10 flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl dark:bg-slate-900">
-        <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700">
+      <div class="relative z-10 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none dark:bg-slate-900">
+        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-2 sm:px-8 dark:border-slate-700">
           <h2 class="text-sm font-semibold text-[#34418F] dark:text-slate-300">Add guest</h2>
-          <button type="button" class="font-mono text-lg text-gray-400 transition-colors hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="Close" @click="emit('close')">×</button>
+          <button type="button" class="flex size-11 items-center justify-center font-mono text-lg text-gray-400 transition-colors hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300" aria-label="Close" @click="emit('close')">×</button>
         </div>
 
         <div class="flex border-b border-gray-100 dark:border-slate-700">
@@ -32,14 +32,14 @@
           </button>
         </div>
 
-        <div class="flex-1 p-6">
+        <div class="flex-1 p-5 sm:p-8">
           <div v-if="guestMode === 'search' && hasCsvRows">
             <input
               v-model="guestSearch"
               type="text"
               placeholder="Search by name or email…"
               aria-label="Search CSV rows"
-              class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-400"
+              class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:placeholder-slate-400"
             />
             <div v-if="guestSearchResults.length" class="space-y-1">
               <div
@@ -71,15 +71,15 @@
           <div v-if="guestMode === 'freeform'" class="flex flex-col gap-4">
             <div>
               <label for="guest-first-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">First name *</label>
-              <input id="guest-first-name" v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+              <input id="guest-first-name" v-model="guestForm.firstName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
             </div>
             <div>
               <label for="guest-last-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Last name</label>
-              <input id="guest-last-name" v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+              <input id="guest-last-name" v-model="guestForm.lastName" type="text" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
             </div>
             <div>
               <label for="guest-email" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Email *</label>
-              <input id="guest-email" v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
+              <input id="guest-email" v-model="guestForm.email" type="email" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200" />
             </div>
             <div>
               <label for="guest-cluster" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Cluster <span class="font-normal text-gray-400">(optional)</span></label>
@@ -89,7 +89,7 @@
                 type="text"
                 list="guest-cluster-suggestions"
                 placeholder="Type or pick a cluster…"
-                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                class="w-full rounded-lg border-2 border-gray-200 bg-white/50 h-11 px-4 text-base outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
               />
               <datalist id="guest-cluster-suggestions">
                 <option v-for="cluster in clusters" :key="cluster.value" :value="cluster.value" />
@@ -246,5 +246,8 @@ async function addGuestFreeform() {
 .panel-enter-active, .panel-leave-active { transition: opacity 0.2s; }
 .panel-enter-active .relative, .panel-leave-active .relative { transition: transform 0.25s ease; }
 .panel-enter-from, .panel-leave-to { opacity: 0; }
-.panel-enter-from .relative, .panel-leave-to .relative { transform: translateX(100%); }
+.panel-enter-from .relative, .panel-leave-to .relative { transform: translateY(100%); }
+@media (min-width: 640px) {
+  .panel-enter-from .relative, .panel-leave-to .relative { transform: translateX(100%); }
+}
 </style>

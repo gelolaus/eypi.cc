@@ -494,16 +494,16 @@ backdrop-filter: blur(4px)   /* Tailwind: backdrop-blur-sm */
 ```
 Transition: `opacity 0.3s ease` (fade in/out)
 
-**Slide-out Panel** (Edit Sidebar, Analytics Panel):
+**Bottom sheet below `sm`, side panel from `sm`** (DialogHost, LinkEditorPanel, AnalyticsPanel, AddGuestPanel):
 ```
-position: fixed; top: 0; right: 0;
-height: 100%; overflow-y: auto;
-border-left: 1px solid [border-color];
-box-shadow: 0 25px 50px rgba(0,0,0,0.25) (shadow-2xl)
+below sm: inset-x-0 bottom-0 max-h-[90dvh] (dialog) or max-h-[92dvh] (panels) overflow-y-auto rounded-t-3xl p-5
+          padding-bottom includes env(safe-area-inset-bottom)
+sm+:      dialog centered (rounded-3xl p-8); panels fixed top-0 right-0 h-full, border-left, p-8
 ```
-Panel widths: `max-w-md` (448px) for edit; `max-w-2xl` (672px) / `95vw` for analytics.
-Slide direction: enters from `translateX(100%)`, exits to `translateX(100%)`.
-Transition: `transform 0.4s cubic-bezier(0.2, 1, 0.3, 1)`.
+- Panel widths from `sm`: `max-w-md` (448px) for edit; `max-w-2xl` (672px) for analytics. Heights use `dvh`, never `100vh`/`max-h-screen`.
+- Close buttons and action buttons are at least 44px. The primary action of the link editor sits in a sticky footer with safe-area padding.
+- Dialog footer is `flex-col-reverse sm:flex-row` (primary on top on mobile); dialog inputs are `h-11 text-base`.
+- Sheets enter from `translateY(100%)`, side panels from `translateX(100%)`. Transition: `transform 0.3-0.4s cubic-bezier(0.2, 1, 0.3, 1)`.
 
 **Feedback channels** (see also §6.6):
 
@@ -532,8 +532,7 @@ Do not use `window.confirm()` or `alert()` for product feedback.
 
 ### 6.6 Signal strip toast
 
-Position: `fixed; bottom: 6rem; right: 1.5rem; z-index: 9999`
-The `6rem` bottom offset clears the scroll-top button (`44px` tall, `2rem` from the bottom).
+Position: `fixed; z-index: 9999`. Below `lg`: `inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))]` (clears the 72px tab bar). From `lg`: `right-6 bottom-6 w-80`.
 Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
 
 **Strip**:
@@ -550,7 +549,7 @@ Row: equalizer bars (4px-scale, type color) + Geist sentence-case message (+ opt
 - Error: `#ef4444`
 - Info: `#34418F`
 
-Durations: success/info **4s**, error **7s**. Click or × dismisses; hover pauses; Esc dismisses topmost.
+Durations: success/info **4s**, error **7s**. Click or × (44px target) dismisses; hover, touch and focus pause; Esc dismisses topmost.
 
 API: `useToast().success|error|info(message, durationOrOpts?)` where opts may include `{ detail?, duration? }`.
 
