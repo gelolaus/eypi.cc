@@ -254,7 +254,7 @@ app.delete('/api/account', requireAuth, async (c) => {
     }, 409)
   }
 
-  const logoKeys = await deleteAccount(client, userId, email)
+  const logoKeys = await deleteAccount(client, c.env, userId, email)
   for (const key of logoKeys) {
     try {
       await deleteObject(c.env, key)

@@ -479,6 +479,9 @@ describe('account routes', () => {
     await env.MEDIA.put(qrKey, new Uint8Array([1]))
     await env.MEDIA.put(beaKey, new Uint8Array([2]))
     await env.MEDIA.put(otherKey, new Uint8Array([3]))
+    await env.LINKS_KV.put('ada-link', '{"url":"https://example.com/ada"}')
+    await env.LINKS_KV.put('ada-org-link', '{"url":"https://example.com/org"}')
+    await env.LINKS_KV.put('bea-link', '{"url":"https://example.com/bea"}')
 
     const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: '  Ada@apc.edu.ph  ' }))
     expect(res.status).toBe(204)
@@ -505,6 +508,9 @@ describe('account routes', () => {
     expect(await env.MEDIA.head(qrKey)).toBeNull()
     expect(await env.MEDIA.head(beaKey)).not.toBeNull()
     expect(await env.MEDIA.head(otherKey)).not.toBeNull()
+    expect(await env.LINKS_KV.get('ada-link')).toBeNull()
+    expect(await env.LINKS_KV.get('ada-org-link')).toBeNull()
+    expect(await env.LINKS_KV.get('bea-link')).toBe('{"url":"https://example.com/bea"}')
 
     const adaAudit = await client.execute({
       sql: 'SELECT actor_user_id, meta FROM audit_events WHERE id = ?',
@@ -599,5 +605,34 @@ describe('account routes', () => {
     expect(logged).not.toContain('ada@apc.edu.ph')
     expect(logged).not.toContain('ada-id')
     expect(logged.length).toBeGreaterThan(0)
+  })
+
+  it('still deletes the account when its edge keys cannot be removed, and logs it', async () => {
+    const currentId = await sha256Hex(TOKEN)
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { request, client, env } = await createTestApp({
+      seed: async (db) => {
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertSession(db, currentId, 'ada-id', null)
+        await db.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)`,
+          args: ['link-ada', 'ada-id', 'https://example.com/ada', 'ada-link'],
+        })
+      },
+    })
+    await env.LINKS_KV.put('ada-link', '{"url":"https://example.com/ada"}')
+    const edgeDelete = vi.spyOn(env.LINKS_KV, 'delete').mockRejectedValue(new Error('kv down'))
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: 'ada@apc.edu.ph' }))
+    expect(res.status).toBe(204)
+    expect(edgeDelete).toHaveBeenCalled()
+    expect(await column(client, 'SELECT id FROM users WHERE id = ?', ['ada-id'])).toEqual([])
+    expect(await column(client, 'SELECT id FROM links WHERE user_id = ?', ['ada-id'])).toEqual([])
+    expect(await env.LINKS_KV.get('ada-link')).toBe('{"url":"https://example.com/ada"}')
+
+    const logged = errors.mock.calls.map((call) => call.map(String).join(' ')).join('\n')
+    expect(logged).toContain('edge_delete_failed')
+    expect(logged).not.toContain('ada@apc.edu.ph')
+    expect(logged).not.toContain('ada-id')
   })
 })

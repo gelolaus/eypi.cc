@@ -126,6 +126,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
+import { formatManilaDate } from '@/lib/manilaTime'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
 import { useSession } from '@/stores/session'
@@ -168,10 +169,7 @@ function isSelf(user: AdminUser): boolean {
 
 function formatDate(value: string): string {
   if (!value) return 'Unknown'
-  const normalized = value.includes('T') ? value : `${value.replace(' ', 'T')}Z`
-  const date = new Date(normalized)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatManilaDate(value)
 }
 
 function replaceUser(next: AdminUser) {

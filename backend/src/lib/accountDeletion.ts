@@ -1,4 +1,5 @@
 import type { Client } from '@libsql/client/web'
+import type { Bindings } from './db'
 
 export const OWNS_ORG_MESSAGE = 'Transfer ownership before deleting your account.'
 
@@ -59,12 +60,13 @@ export async function organizationsOwnedBy(
  */
 export async function deleteAccount(
   client: Client,
+  env: Pick<Bindings, 'LINKS_KV'>,
   userId: string,
   email: string,
 ): Promise<string[]> {
   const [logos, audits] = await Promise.all([
     client.execute({
-      sql: 'SELECT qr_config FROM links WHERE user_id = ?',
+      sql: 'SELECT slug, qr_config FROM links WHERE user_id = ?',
       args: [userId],
     }),
     client.execute({
@@ -75,7 +77,9 @@ export async function deleteAccount(
   ])
   const logoKeys = [...new Set(logos.rows.map((row) => qrLogoKey(row.qr_config)).filter((key): key is string => key != null))]
 
-  const ledByUser = 'lead_user_id = ?'
+  const slugs = [...new Set(logos.rows.map((row) => text(row.slug)).filter((slug) => slug.length > 0))]
+
+  const ledByUser ='lead_user_id = ?'
   const eventIds = `SELECT id FROM events WHERE ${ledByUser}`
   const createdByUser = 'creator_id = ?'
   const campaignIds = `SELECT id FROM dp_campaigns WHERE ${createdByUser}`
@@ -128,5 +132,22 @@ export async function deleteAccount(
   }
   statements.push({ sql: 'DELETE FROM users WHERE id = ?', args: [userId] })
   await client.batch(statements, 'write')
+  await deleteEdgeKeys(env.LINKS_KV, slugs)
   return logoKeys
+}
+
+/** Best-effort: a KV failure is logged without identifiers and never aborts deletion. */
+async function deleteEdgeKeys(kv: KVNamespace, slugs: string[]): Promise<void> {
+  for (const slug of slugs) {
+    try {
+      await kv.delete(slug)
+    } catch {
+      console.error(JSON.stringify({
+        level: 'error',
+        route: 'account-deletion',
+        code: 'edge_delete_failed',
+        message: 'Could not remove an edge key for a deleted account.',
+      }))
+    }
+  }
 }

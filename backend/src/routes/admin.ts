@@ -6,6 +6,7 @@ import {
   OWNS_ORG_MESSAGE,
 } from '../lib/accountDeletion'
 import { db, type Bindings } from '../lib/db'
+import { ApiError } from '../lib/errors'
 import { deleteObject } from '../lib/media'
 import { reportError } from '../lib/reportError'
 import { requireAdmin } from '../middleware/requireAdmin'
@@ -104,11 +105,19 @@ async function deleteEdgeKey(kv: KVNamespace, key: string): Promise<void> {
   throw last instanceof Error ? last : new Error('Could not delete the edge key')
 }
 
-async function deleteEdgeKeyQuietly(kv: KVNamespace, key: string, c: { req: { path: string; header(name: string): string | undefined } }): Promise<void> {
+/**
+ * The DB change stays applied, but the caller must not see success while the
+ * edge can still resolve the slug. Retrying is safe: the disable is idempotent.
+ */
+async function deleteEdgeKeyOrFail(kv: KVNamespace, key: string): Promise<void> {
   try {
     await deleteEdgeKey(kv, key)
-  } catch (err) {
-    reportError(c, err, { code: 'edge_delete_failed', message: 'Could not remove the edge key.' })
+  } catch {
+    throw new ApiError(
+      502,
+      'edge_delete_failed',
+      'The link is disabled but the edge cache could not be cleared. Try again.',
+    )
   }
 }
 
@@ -359,7 +368,7 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (c) => {
   }
 
   const email = text(target.email)
-  const logoKeys = await deleteAccount(client, id, email)
+  const logoKeys = await deleteAccount(client, c.env, id, email)
   for (const key of logoKeys) {
     try {
       await deleteObject(c.env, key)
@@ -438,7 +447,7 @@ app.post('/api/admin/links/:id/disable', requireAuth, requireAdmin, async (c) =>
           WHERE id = ?`,
     args: [now, reason, now, id],
   })
-  await deleteEdgeKeyQuietly(c.env.LINKS_KV, slug, c)
+  await deleteEdgeKeyOrFail(c.env.LINKS_KV, slug)
   await recordAudit(client, {
     actorUserId: c.var.userId,
     action: 'link.disable',
@@ -515,7 +524,7 @@ app.post('/api/admin/reports/:id/resolve', requireAuth, requireAdmin, async (c) 
                 WHERE id = ?`,
           args: [now, now, linkId],
         })
-        await deleteEdgeKeyQuietly(c.env.LINKS_KV, slug, c)
+        await deleteEdgeKeyOrFail(c.env.LINKS_KV, slug)
         await recordAudit(client, {
           actorUserId: c.var.userId,
           action: 'link.disable',

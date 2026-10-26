@@ -320,6 +320,7 @@ describe('admin routes', () => {
         })
       },
     })
+    await env.LINKS_KV.put('one', '{"url":"https://example.com/one"}')
     await cookieFor(client, env, member.id)
 
     const res = await request('/api/admin/users/user-1', json('DELETE'))
@@ -327,10 +328,37 @@ describe('admin routes', () => {
     expect(await column(client, 'SELECT id FROM users WHERE id = ?', ['user-1'])).toEqual([])
     expect(await column(client, 'SELECT id FROM links WHERE user_id = ?', ['user-1'])).toEqual([])
     expect(await count(client, 'SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?', ['user-1'])).toBe(0)
+    expect(await env.LINKS_KV.get('one')).toBeNull()
     const deletes = await auditRows(client, 'user.delete')
     expect(deletes).toHaveLength(1)
     // The deleted address never survives in the audit trail.
     expect(deletes[0].meta).toBeNull()
+  })
+
+  it('deletes the account but logs when its edge keys cannot be removed', async () => {
+    const { request, client, env } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, member)
+        await client.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)`,
+          args: ['link-1', member.id, 'https://example.com/one', 'one'],
+        })
+      },
+    })
+    await env.LINKS_KV.put('one', '{"url":"https://example.com/one"}')
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(env.LINKS_KV, 'delete').mockRejectedValue(new Error('kv down'))
+
+    const res = await request('/api/admin/users/user-1', json('DELETE'))
+    expect(res.status).toBe(204)
+    expect(await column(client, 'SELECT id FROM users WHERE id = ?', ['user-1'])).toEqual([])
+    expect(await column(client, 'SELECT id FROM links WHERE user_id = ?', ['user-1'])).toEqual([])
+    expect(await env.LINKS_KV.get('one')).toBe('{"url":"https://example.com/one"}')
+
+    const logged = errors.mock.calls.map((call) => call.map(String).join(' ')).join('\n')
+    expect(logged).toContain('edge_delete_failed')
+    expect(logged).not.toContain(member.email)
   })
 
   it('refuses to delete a user who owns an organization', async () => {
@@ -426,6 +454,38 @@ describe('admin routes', () => {
     expect(JSON.parse(audits[0].meta ?? '{}')).toMatchObject({ slug: 'one', reason: 'abuse' })
   })
 
+  it('reports a retryable failure and keeps the edge key when the KV delete fails', async () => {
+    const payload = '{"url":"https://example.com/one"}'
+    const { request, client, env } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, member)
+        await client.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)`,
+          args: ['link-1', member.id, 'https://example.com/one', 'one'],
+        })
+      },
+    })
+    await env.LINKS_KV.put('one', payload)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const edgeDelete = vi.spyOn(env.LINKS_KV, 'delete').mockRejectedValue(new Error('kv down'))
+
+    const res = await request('/api/admin/links/link-1/disable', json('POST', { reason: 'abuse' }))
+    expect(res.status).toBe(502)
+    expect(await res.json()).toMatchObject({ error: { code: 'edge_delete_failed' } })
+    expect(edgeDelete).toHaveBeenCalled()
+    expect(await column(client, 'SELECT disabled_reason FROM links WHERE id = ?', ['link-1'])).toEqual(['abuse'])
+    // The edge still resolves the link, so the caller must retry rather than see success.
+    expect(await env.LINKS_KV.get('one')).toBe(payload)
+    expect(await auditRows(client, 'link.disable')).toHaveLength(0)
+
+    edgeDelete.mockRestore()
+    const retry = await request('/api/admin/links/link-1/disable', json('POST', { reason: 'abuse' }))
+    expect(retry.status).toBe(200)
+    expect(await env.LINKS_KV.get('one')).toBeNull()
+    expect(await auditRows(client, 'link.disable')).toHaveLength(1)
+  })
+
   it('rejects an unknown disable reason and a missing link', async () => {
     const { request } = await createTestApp({ user: admin })
 
@@ -478,6 +538,42 @@ describe('admin routes', () => {
     })
     expect(enable.status).toBe(403)
     expect(await enable.json()).toMatchObject({ error: { code: 'moderator_disabled' } })
+  })
+
+  it('keeps a report open when the edge key cannot be cleared, then resolves on retry', async () => {
+    const payload = '{"url":"https://example.com/phish"}'
+    const { request, client, env } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, member)
+        await client.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)`,
+          args: ['link-1', member.id, 'https://example.com/phish', 'phish'],
+        })
+        await client.execute({
+          sql: `INSERT INTO link_reports (id, link_id, slug, reason) VALUES (?, ?, ?, ?)`,
+          args: ['report-1', 'link-1', 'phish', 'phishing'],
+        })
+      },
+    })
+    await env.LINKS_KV.put('phish', payload)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const edgeDelete = vi.spyOn(env.LINKS_KV, 'delete').mockRejectedValue(new Error('kv down'))
+
+    const res = await request('/api/admin/reports/report-1/resolve', json('POST', { action: 'disable_link' }))
+    expect(res.status).toBe(502)
+    expect(await res.json()).toMatchObject({ error: { code: 'edge_delete_failed' } })
+    expect(await column(client, 'SELECT disabled_reason FROM links WHERE id = ?', ['link-1'])).toEqual(['abuse'])
+    expect(await env.LINKS_KV.get('phish')).toBe(payload)
+    // The report stays open so the moderator can retry.
+    expect(await count(client, 'SELECT COUNT(*) AS n FROM link_reports WHERE id = ? AND resolved_at IS NOT NULL', ['report-1'])).toBe(0)
+
+    edgeDelete.mockRestore()
+    const retry = await request('/api/admin/reports/report-1/resolve', json('POST', { action: 'disable_link' }))
+    expect(retry.status).toBe(200)
+    expect(await env.LINKS_KV.get('phish')).toBeNull()
+    expect(await count(client, 'SELECT COUNT(*) AS n FROM link_reports WHERE id = ? AND resolved_at IS NOT NULL', ['report-1'])).toBe(1)
+    expect(await auditRows(client, 'report.resolve')).toHaveLength(1)
   })
 
   it('dismissing a report resolves it without touching the link', async () => {

@@ -3,6 +3,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { z } from 'zod'
 import type { Client, InStatement, InValue } from '@libsql/client/web'
 import { isApcEmail, normalizeEmail } from '../../../shared/apcIdentity'
+import { recordAudit } from '../lib/audit'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
@@ -539,6 +540,14 @@ app.post('/', requireAdmin, async (c) => {
       },
     ])
 
+    await recordAudit(database, {
+      actorUserId: c.var.userId,
+      action: 'org.create',
+      targetType: 'organization',
+      targetId: orgId,
+      meta: { name, ownerId },
+    })
+
     return c.json({ success: true, message: `Organization '${name}' successfully registered.` }, 201)
   } catch (error) {
     console.error('Error creating organization:', error)
@@ -831,6 +840,29 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
       await database.batch(statements)
     }
 
+    const previousName = String(current.name)
+    if (nextName !== previousName || newOrgId !== orgId) {
+      const meta: Record<string, { from: string; to: string }> = {}
+      if (nextName !== previousName) meta.name = { from: previousName, to: nextName }
+      if (newOrgId !== orgId) meta.slug = { from: orgId, to: newOrgId }
+      await recordAudit(database, {
+        actorUserId: c.var.userId,
+        action: 'org.update',
+        targetType: 'organization',
+        targetId: newOrgId,
+        meta,
+      })
+    }
+    if (newOwnerId !== (current.owner_id as string)) {
+      await recordAudit(database, {
+        actorUserId: c.var.userId,
+        action: 'org.transfer',
+        targetType: 'organization',
+        targetId: newOrgId,
+        meta: { from: current.owner_id as string, to: newOwnerId },
+      })
+    }
+
     const { rows } = await database.execute({
       sql: `
         SELECT o.id as org_id, o.name as org_name, o.is_public_catalog, o.created_at, u.email as owner_email
@@ -871,10 +903,25 @@ app.delete('/admin/:org_id', requireAdmin, async (c) => {
       }, 409)
     }
 
+    const named = await database.execute({
+      sql: 'SELECT name FROM organizations WHERE id = ?',
+      args: [orgId],
+    })
+
     await database.batch([
       { sql: 'DELETE FROM org_members WHERE org_id = ?', args: [orgId] },
       { sql: 'DELETE FROM organizations WHERE id = ?', args: [orgId] },
     ])
+
+    if (named.rows.length > 0) {
+      await recordAudit(database, {
+        actorUserId: c.var.userId,
+        action: 'org.delete',
+        targetType: 'organization',
+        targetId: orgId,
+        meta: { name: String(named.rows[0].name) },
+      })
+    }
 
     return c.json({ success: true, message: 'Organization deleted.' })
   } catch (error) {
@@ -1388,6 +1435,14 @@ app.post('/:org_id/transfer', async (c) => {
         WHERE id = ?
       `,
       args: [newOwnerId, orgId],
+    })
+
+    await recordAudit(database, {
+      actorUserId: requesterId,
+      action: 'org.transfer',
+      targetType: 'organization',
+      targetId: orgId,
+      meta: { from: requesterId, to: newOwnerId },
     })
 
     return c.json({

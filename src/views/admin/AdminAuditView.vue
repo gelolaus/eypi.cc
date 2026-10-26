@@ -94,6 +94,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
+import { formatManilaDateTime } from '@/lib/manilaTime'
 import { useToast } from '@/composables/useToast'
 
 interface AuditEvent {
@@ -120,6 +121,10 @@ const actions = [
   'user.delete',
   'link.disable',
   'report.resolve',
+  'org.create',
+  'org.update',
+  'org.transfer',
+  'org.delete',
 ]
 
 const actionLabels: Record<string, string> = {
@@ -130,6 +135,10 @@ const actionLabels: Record<string, string> = {
   'user.delete': 'User deleted',
   'link.disable': 'Link disabled',
   'report.resolve': 'Report resolved',
+  'org.create': 'Organization created',
+  'org.update': 'Organization updated',
+  'org.transfer': 'Ownership transferred',
+  'org.delete': 'Organization deleted',
 }
 
 const toast = useToast()
@@ -152,16 +161,7 @@ function messageOf(err: unknown, fallback: string): string {
 
 function formatDate(value: string): string {
   if (!value) return 'unknown'
-  const normalized = value.includes('T') ? value : `${value.replace(' ', 'T')}Z`
-  const date = new Date(normalized)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatManilaDateTime(value)
 }
 
 function formatMeta(meta: unknown): string {

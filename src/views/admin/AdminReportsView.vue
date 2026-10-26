@@ -101,6 +101,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
+import { formatManilaDate } from '@/lib/manilaTime'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
 
@@ -159,10 +160,7 @@ function messageOf(err: unknown, fallback: string): string {
 
 function formatDate(value: string): string {
   if (!value) return 'unknown'
-  const normalized = value.includes('T') ? value : `${value.replace(' ', 'T')}Z`
-  const date = new Date(normalized)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatManilaDate(value)
 }
 
 async function load() {
