@@ -168,7 +168,9 @@ function eventRouteUsesOrg(path: string): boolean {
   return true
 }
 
-app.use('*', async (c, next) => {
+// Scoped: this router is mounted at '/', so a bare '*' would run session and
+// org lookups for every public route in the API.
+app.use('/api/events/*', async (c, next) => {
   const unavailable = await attachSession(c)
   if (unavailable) return unavailable
   if (!eventRouteUsesOrg(c.req.path)) {
