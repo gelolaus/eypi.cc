@@ -194,12 +194,18 @@
       <section v-if="isOwner" class="mica-card mb-6 rounded-3xl p-6 sm:p-8">
         <h3 class="text-section-title mb-6 border-b border-g-border pb-4">Members</h3>
 
-        <div v-if="loadingMembers" class="h-20 animate-pulse rounded-xl bg-white/50 dark:bg-slate-800/40" />
-
+        <div v-if="loadingMembers" class="mb-6 h-20 animate-pulse rounded-xl bg-white/50 dark:bg-slate-800/40" />
+        <p v-else-if="membersError" role="alert" class="mb-6 text-sm text-red-500">
+          {{ membersError }}
+        </p>
+        <p v-else-if="members.length === 0" class="mb-6 text-sm text-g-muted">
+          No members yet.
+        </p>
         <div v-else class="mb-6 overflow-x-auto rounded-2xl border border-g-border">
           <table class="text-data w-full min-w-[480px] border-collapse text-left text-xs">
             <thead>
               <tr class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
+                <th class="px-4 py-3">Name</th>
                 <th class="px-4 py-3">Email</th>
                 <th class="px-4 py-3 text-center">Status</th>
                 <th class="px-4 py-3 text-right">Actions</th>
@@ -207,11 +213,29 @@
             </thead>
             <tbody>
               <tr v-for="member in members" :key="member.email" class="border-b border-g-border/70 last:border-0">
+                <td class="px-4 py-3">{{ member.name?.trim() || 'No account yet' }}</td>
                 <td class="px-4 py-3">{{ member.email }}</td>
                 <td class="px-4 py-3 text-center">{{ member.activated_at ? 'Active' : 'Pending' }}</td>
                 <td class="px-4 py-3 text-right">
+                  <div v-if="!member.activated_at" class="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      class="font-semibold text-g-text disabled:opacity-50"
+                      :disabled="resendingEmail === member.email"
+                      @click="resendInvite(member.email)"
+                    >
+                      {{ resendingEmail === member.email ? 'Resending...' : 'Resend' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="font-semibold text-red-500"
+                      @click="cancelInvite(member.email)"
+                    >
+                      Cancel invite
+                    </button>
+                  </div>
                   <button
-                    v-if="currentUser?.email !== member.email"
+                    v-else-if="!isOwnerMember(member)"
                     type="button"
                     class="font-semibold text-red-500"
                     @click="removeMember(member.email)"
@@ -224,17 +248,48 @@
             </tbody>
           </table>
         </div>
+        <p v-if="membersActionError" role="alert" class="mb-6 text-sm text-red-500">
+          {{ membersActionError }}
+        </p>
 
-        <form class="mb-6 flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
-          <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-[#34418F] px-4 py-3 text-sm font-semibold text-white">
-            {{ sendingInvite ? 'Inviting...' : 'Invite' }}
-          </button>
-        </form>
+        <div class="mb-6">
+          <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
+            <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
+            <button type="submit" :disabled="sendingInvite" class="rounded-lg bg-[#34418F] px-4 py-3 text-sm font-semibold text-white">
+              {{ sendingInvite ? 'Inviting...' : 'Invite' }}
+            </button>
+          </form>
+          <p v-if="inviteError" role="alert" class="mt-2 text-sm text-red-500">
+            {{ inviteError }}
+          </p>
+        </div>
 
-        <form class="flex flex-col gap-2 border-t border-g-border pt-6 sm:flex-row" @submit.prevent="confirmTransfer">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" aria-label="New owner email" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
+        <form class="flex flex-col gap-3 border-t border-g-border pt-6" @submit.prevent="confirmTransfer">
+          <div class="flex flex-col gap-2">
+            <label for="new-owner" class="text-sm font-medium text-g-muted">New owner</label>
+            <select
+              id="new-owner"
+              v-model="transferEmail"
+              required
+              :disabled="activeMembers.length === 0"
+              class="field-input"
+            >
+              <option value="" disabled>
+                Select a member
+              </option>
+              <option v-for="member in activeMembers" :key="member.email" :value="member.email">
+                {{ memberLabel(member) }}
+              </option>
+            </select>
+          </div>
+          <p v-if="activeMembers.length === 0" class="text-sm text-g-muted">
+            Invite an active member before transferring ownership.
+          </p>
+          <button
+            type="submit"
+            :disabled="transferring || activeMembers.length === 0"
+            class="w-fit rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
             {{ transferring ? 'Transferring...' : 'Transfer ownership' }}
           </button>
         </form>
@@ -264,6 +319,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
+import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
@@ -287,7 +343,9 @@ import {
 
 interface OrgMember {
   email: string
+  user_id?: string | null
   activated_at: string | null
+  name?: string | null
 }
 
 interface ProfileFormState {
@@ -303,7 +361,7 @@ interface ProfileFormState {
 const route = useRoute()
 const router = useRouter()
 const session = useSession()
-const { setActiveOrg } = useActiveOrg()
+const { setActiveOrg, fetchOrgs } = useActiveOrg()
 const toast = useToast()
 const dialog = useDialog()
 const currentUser = computed(() => session.user.value)
@@ -317,6 +375,9 @@ const userOrgs = ref<OrgListItem[]>([])
 const loading = ref(true)
 const error = ref('')
 const loadingMembers = ref(false)
+const membersError = ref('')
+const membersActionError = ref('')
+const inviteError = ref('')
 const savingProfile = ref(false)
 const togglingCatalog = ref(false)
 const uploadingBanner = ref(false)
@@ -327,9 +388,33 @@ const transferring = ref(false)
 
 const inviteEmail = ref('')
 const transferEmail = ref('')
+const resendingEmail = ref('')
 
 const isLocked = computed(() => !loading.value && userOrgs.value.length === 0)
 const isOwner = computed(() => org.value?.is_owner === 1)
+const activeMembers = computed(() => members.value.filter((member) => member.activated_at && !isOwnerMember(member)))
+
+function isOwnerMember(member: OrgMember): boolean {
+  if (org.value?.owner_id && member.user_id && member.user_id === org.value.owner_id) return true
+  const mine = currentUser.value?.email
+  return !!mine && mine.toLowerCase() === member.email.toLowerCase()
+}
+
+function memberLabel(member: OrgMember): string {
+  const name = member.name?.trim()
+  return name ? `${name} (${member.email})` : member.email
+}
+
+function messageFrom(data: unknown, fallback: string): string {
+  if (!data || typeof data !== 'object') return fallback
+  const error = (data as { error?: unknown }).error
+  if (typeof error === 'string' && error.trim()) return error
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.trim()) return message
+  }
+  return fallback
+}
 
 function mapProfileToForm(profile: OrgProfileSettings): ProfileFormState {
   return {
@@ -386,12 +471,19 @@ async function loadOrgContext() {
 
 async function fetchMembers() {
   loadingMembers.value = true
+  membersError.value = ''
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/members`)
     const data = await res.json() as { members?: OrgMember[] }
-    if (res.ok) members.value = data.members ?? []
+    if (!res.ok) {
+      members.value = []
+      membersError.value = messageFrom(data, 'Could not load members. Try again.')
+      return
+    }
+    members.value = data.members ?? []
   } catch {
-    toast.error('Failed to load members.')
+    members.value = []
+    membersError.value = 'Could not load members. Try again.'
   } finally {
     loadingMembers.value = false
   }
@@ -491,22 +583,41 @@ async function saveProfile() {
 
 async function sendInvite() {
   sendingInvite.value = true
+  inviteError.value = ''
   try {
     const res = await api.raw(`/api/orgs/${slug.value}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: inviteEmail.value.toLowerCase().trim() }),
     })
-    const data = await res.json() as { error?: string }
-    if (!res.ok) throw new Error(data.error || 'Invite failed.')
+    const data = await res.json() as unknown
+    if (!res.ok) {
+      inviteError.value = messageFrom(data, 'Could not send invite.')
+      return
+    }
     toast.success('Invitation sent.')
     inviteEmail.value = ''
     await fetchMembers()
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Invite failed.')
+  } catch {
+    inviteError.value = 'Could not send invite.'
   } finally {
     sendingInvite.value = false
   }
+}
+
+async function deleteMember(email: string, fallback: string) {
+  membersActionError.value = ''
+  const res = await api.raw(`/api/orgs/${slug.value}/members`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  const data = await res.json() as unknown
+  if (!res.ok) {
+    membersActionError.value = messageFrom(data, fallback)
+    return
+  }
+  await fetchMembers()
 }
 
 async function removeMember(email: string) {
@@ -517,21 +628,50 @@ async function removeMember(email: string) {
   })
   if (!ok) return
   try {
-    const res = await api.raw(`/api/orgs/${slug.value}/members`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+    await deleteMember(email, 'Could not remove member.')
+  } catch {
+    membersActionError.value = 'Could not remove member.'
+  }
+}
+
+async function cancelInvite(email: string) {
+  const ok = await dialog.confirm({
+    title: 'Cancel this invite?',
+    body: `Cancels the invite for ${email}.`,
+    confirmLabel: 'Cancel invite',
+  })
+  if (!ok) return
+  try {
+    await deleteMember(email, 'Could not cancel invite.')
+  } catch {
+    membersActionError.value = 'Could not cancel invite.'
+  }
+}
+
+async function resendInvite(email: string) {
+  resendingEmail.value = email
+  membersActionError.value = ''
+  try {
+    const res = await api.raw(`/api/orgs/${slug.value}/members/${encodeURIComponent(email)}/resend`, {
+      method: 'POST',
     })
-    const data = await res.json() as { error?: string }
-    if (!res.ok) throw new Error(data.error || 'Remove failed.')
+    const data = await res.json() as unknown
+    if (!res.ok) {
+      membersActionError.value = messageFrom(data, 'Could not resend invite.')
+      return
+    }
+    toast.success('Invite resent.')
     await fetchMembers()
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Remove failed.')
+  } catch {
+    membersActionError.value = 'Could not resend invite.'
+  } finally {
+    resendingEmail.value = ''
   }
 }
 
 async function confirmTransfer() {
   const targetEmail = transferEmail.value.toLowerCase().trim()
+  if (!targetEmail) return
   const orgName = org.value?.org_name ?? slug.value
   const ok = await dialog.confirm({
     title: 'Transfer ownership?',
@@ -578,8 +718,11 @@ async function leaveOrg() {
       })
     const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Could not leave org.')
+    localStorage.removeItem('active_org_id')
+    useOrgMembership().clearOrgMembershipCache()
+    await fetchOrgs()
     toast.success('You left the org.')
-    router.push('/orgs/modify')
+    await router.push('/orgs/modify')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Could not leave org.')
   } finally {

@@ -62,16 +62,6 @@
           </button>
         </div>
       </form>
-
-      <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="confirmTransfer">
-        <h3 class="text-card-title text-red-500">Transfer ownership</h3>
-        <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" aria-label="New owner email" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
-            {{ transferring ? 'Transferring...' : 'Transfer' }}
-          </button>
-        </div>
-      </form>
     </section>
   </div>
 </template>
@@ -111,8 +101,6 @@ const form = ref({
 
 const saving = ref(false)
 const deleting = ref(false)
-const transferring = ref(false)
-const transferEmail = ref('')
 
 async function loadOrg() {
   if (isCreate.value) return
@@ -199,38 +187,6 @@ async function deleteOrg() {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
   } finally {
     deleting.value = false
-  }
-}
-
-async function confirmTransfer() {
-  const targetEmail = transferEmail.value.toLowerCase().trim()
-  const orgName = form.value.name || form.value.id
-  const ok = await dialog.confirm({
-    title: 'Transfer ownership?',
-    body: `Transfers "${orgName}" to ${targetEmail}. The current owner will lose ownership.`,
-    confirmLabel: 'Transfer ownership',
-    requireText: orgName,
-  })
-  if (!ok) return
-  await executeTransfer()
-}
-
-async function executeTransfer() {
-  transferring.value = true
-  try {
-    const res = await api.raw(`/api/orgs/${route.params.orgId}/transfer`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
-    })
-    const data = await res.json() as { error?: string }
-    if (!res.ok) throw new Error(data.error || 'Transfer failed.')
-    toast.success('Ownership transferred.')
-    await loadOrg()
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Transfer failed.')
-  } finally {
-    transferring.value = false
   }
 }
 

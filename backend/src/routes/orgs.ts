@@ -589,15 +589,22 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
 
   try {
     const existing = await database.execute({
-      sql: 'SELECT id, owner_id FROM organizations WHERE id = ? LIMIT 1',
+      sql: `
+        SELECT id, name, owner_id, created_at, is_public_catalog, tagline,
+               about_markdown, banner_url, logo_url, social_links, org_type
+        FROM organizations
+        WHERE id = ?
+        LIMIT 1
+      `,
       args: [orgId],
     })
     if (existing.rows.length === 0) {
       return c.json({ error: 'Organization not found.' }, 404)
     }
 
+    const current = existing.rows[0]
     let newOrgId = orgId
-    let newOwnerId = existing.rows[0].owner_id as string
+    let newOwnerId = current.owner_id as string
 
     if (data.ownerEmail) {
       const normalized = data.ownerEmail.toLowerCase().trim()
@@ -631,41 +638,65 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
     }
 
     const statements: InStatement[] = []
+    const nextName = data.name !== undefined ? data.name.trim() : String(current.name)
+    const nextCatalog = data.isPublicCatalog !== undefined
+      ? (data.isPublicCatalog ? 1 : 0)
+      : Number(current.is_public_catalog ?? 0)
 
     if (newOrgId !== orgId) {
+      // The new organizations row must exist before child org_id values change.
+      // org_members.org_id references organizations(id).
       statements.push(
+        {
+          sql: `
+            INSERT INTO organizations (
+              id, name, owner_id, created_at, is_public_catalog, tagline,
+              about_markdown, banner_url, logo_url, social_links, org_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          args: [
+            newOrgId,
+            nextName,
+            newOwnerId,
+            current.created_at,
+            nextCatalog,
+            current.tagline,
+            current.about_markdown,
+            current.banner_url,
+            current.logo_url,
+            current.social_links,
+            current.org_type,
+          ],
+        },
         { sql: 'UPDATE events SET org_id = ? WHERE org_id = ?', args: [newOrgId, orgId] },
         { sql: 'UPDATE dp_campaigns SET org_id = ? WHERE org_id = ?', args: [newOrgId, orgId] },
         { sql: 'UPDATE org_members SET org_id = ? WHERE org_id = ?', args: [newOrgId, orgId] },
+        { sql: 'DELETE FROM organizations WHERE id = ?', args: [orgId] },
       )
-    }
+    } else {
+      const updates: string[] = []
+      const updateArgs: InValue[] = []
 
-    const updates: string[] = []
-    const updateArgs: InValue[] = []
+      if (data.name !== undefined) {
+        updates.push('name = ?')
+        updateArgs.push(nextName)
+      }
+      if (data.ownerEmail !== undefined) {
+        updates.push('owner_id = ?')
+        updateArgs.push(newOwnerId)
+      }
+      if (data.isPublicCatalog !== undefined) {
+        updates.push('is_public_catalog = ?')
+        updateArgs.push(nextCatalog)
+      }
 
-    if (newOrgId !== orgId) {
-      updates.push('id = ?')
-      updateArgs.push(newOrgId)
-    }
-    if (data.name !== undefined) {
-      updates.push('name = ?')
-      updateArgs.push(data.name.trim())
-    }
-    if (data.ownerEmail !== undefined) {
-      updates.push('owner_id = ?')
-      updateArgs.push(newOwnerId)
-    }
-    if (data.isPublicCatalog !== undefined) {
-      updates.push('is_public_catalog = ?')
-      updateArgs.push(data.isPublicCatalog ? 1 : 0)
-    }
-
-    if (updates.length > 0) {
-      updateArgs.push(orgId)
-      statements.push({
-        sql: `UPDATE organizations SET ${updates.join(', ')} WHERE id = ?`,
-        args: updateArgs,
-      })
+      if (updates.length > 0) {
+        updateArgs.push(orgId)
+        statements.push({
+          sql: `UPDATE organizations SET ${updates.join(', ')} WHERE id = ?`,
+          args: updateArgs,
+        })
+      }
     }
 
     if (data.ownerEmail && newOwnerId) {
@@ -881,8 +912,8 @@ app.post('/:org_id/leave', async (c) => {
     }
 
     const result = await database.execute({
-      sql: 'DELETE FROM org_members WHERE org_id = ? AND email = ?',
-      args: [orgId, userEmail.toLowerCase()],
+      sql: 'DELETE FROM org_members WHERE org_id = ? AND lower(email) = lower(?)',
+      args: [orgId, userEmail],
     })
     if (result.rowsAffected === 0) {
       return c.json({ error: 'You are not a member of this organization.' }, 404)
@@ -920,10 +951,11 @@ app.get('/:org_id/members', async (c) => {
 
     const { rows } = await database.execute({
       sql: `
-        SELECT email, user_id, invited_at, activated_at
-        FROM org_members
-        WHERE org_id = ?
-        ORDER BY invited_at DESC
+        SELECT m.email, m.user_id, m.invited_at, m.activated_at, u.name AS name
+        FROM org_members m
+        LEFT JOIN users u ON lower(u.email) = lower(m.email)
+        WHERE m.org_id = ?
+        ORDER BY m.invited_at DESC
       `,
       args: [orgId],
     })
