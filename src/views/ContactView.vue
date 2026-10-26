@@ -22,8 +22,7 @@
           </p>
           <a
             href="mailto:hello@gelolaus.com"
-            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
-            data-cursor="cta"
+            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
           >
             hello@gelolaus.com
           </a>
@@ -39,8 +38,7 @@
           </p>
           <a
             href="mailto:hello@gelolaus.com?subject=Build%20with%20Eypi"
-            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
-            data-cursor="cta"
+            class="font-bold text-[#34418F] dark:text-slate-200 hover:text-[#DEAC4B] dark:hover:text-[#DEAC4B] underline underline-offset-4 transition-colors"
           >
             hello@gelolaus.com
           </a>

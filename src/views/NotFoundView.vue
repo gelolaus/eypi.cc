@@ -1,6 +1,6 @@
 <template>
   <section
-    class="relative flex min-h-screen w-full flex-col items-center justify-center px-6 py-20"
+    class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-20"
   >
     <!-- Error Hardware Card -->
     <div
@@ -32,7 +32,7 @@
       <!-- CTA -->
       <router-link
         to="/"
- class="btn-gold rounded-xl px-6 py-3 font-mono font-semibold shadow-md transition-all hover:scale-105 sm:px-8 sm:py-4"
+        class="btn-primary btn-lg w-full sm:w-auto"
       >
         Back to home
       </router-link>

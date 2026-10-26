@@ -109,8 +109,8 @@
 
 **Files:** `LoginView`, `UnlockView`, `ExpiredView`, `ReportView`, `ConsentView`, `ContactView`, `LegalView`, `LegalLayout`, `NotFoundView`, `RedirectView`, `DashboardView`, `AccountView`, `InvitesView`, `OrgLockout`.
 
-- [ ] Tests first (existing `*View.test.ts` stay green; `ContactView` heading levels stay `H1,H2,H2,H2`): single-column forms with `h-11 text-base` fields and full-width `h-12` primary buttons, inline errors with `aria-invalid`; dashboard module cards form a 1-col/2-col/3-col grid with 44px+ tap area; account sections use `AppSection` with stacked fields; auth pages avoid `min-h-screen` (use `min-h-dvh`).
-- [ ] Commit `feat(auth): rebuild sign-in and account pages for mobile` and `feat(dashboard): rebuild dashboard and static pages for mobile`.
+- [x] Tests first (existing `*View.test.ts` stay green; `ContactView` heading levels stay `H1,H2,H2,H2`): single-column forms with `h-11 text-base` fields and full-width `h-12` primary buttons, inline errors with `aria-invalid`; dashboard module cards form a 1-col/2-col/3-col grid with 44px+ tap area; account sections use `AppSection` with stacked fields; auth pages avoid `min-h-screen` (use `min-h-dvh`).
+- [x] Commit `feat(auth): rebuild sign-in and account pages for mobile` and `feat(dashboard): rebuild dashboard and static pages for mobile`.
 
 ### Task 9: Hygiene and verification
 

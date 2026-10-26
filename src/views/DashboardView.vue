@@ -1,64 +1,45 @@
-﻿<template>
-  <main class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col flex-1">
-    <header class="mb-10 border-b border-g-border pb-8">
-      <h1 class="text-page-title">
-        {{ userName ? `Hi, ${userName}` : 'Hi' }}.
-      </h1>
-    </header>
-
+<template>
+  <AppPage :title="userName ? `Hi, ${userName}.` : 'Hi.'">
     <div
       v-if="pendingInviteCount > 0"
-      class="mb-8 rounded-2xl border border-[#DEAC4B]/50 bg-[#DEAC4B]/10 px-5 py-4 text-sm text-g-text"
+      class="mb-6 rounded-2xl border border-[#DEAC4B]/50 bg-[#DEAC4B]/10 px-5 py-4 text-sm text-g-text"
       role="status"
     >
       <p>
         {{ inviteBanner }}
         <router-link
           to="/invites"
-          class="font-semibold text-g-primary underline decoration-[#DEAC4B] underline-offset-4 dark:text-[#8FA0E8]"
+          class="inline-flex min-h-11 items-center font-semibold text-g-primary underline decoration-[#DEAC4B] underline-offset-4 dark:text-[#8FA0E8]"
         >
           Review invites
         </router-link>
       </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <button
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+      <router-link
         v-for="mod in modules"
         :key="mod.id"
-        type="button"
-        @click="router.push(mod.route)"
-        class="mica-card rounded-2xl p-7 text-left transition-all duration-200 focus:outline-none hover:-translate-y-1 flex flex-col gap-4"
-        data-cursor="card"
-        :style="{ border: '1px solid var(--color-border)' }"
-        @mouseenter="paintCardBorder($event, 'rgba(222,172,75,0.5)')"
-        @focus="paintCardBorder($event, 'rgba(222,172,75,0.5)')"
-        @mouseleave="paintCardBorder($event, 'var(--color-border)')"
-        @blur="paintCardBorder($event, 'var(--color-border)')"
+        :to="mod.route"
+        class="section-card flex min-h-11 flex-col gap-2 p-6 text-left transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] active:translate-y-px [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#DEAC4B]/60"
       >
-        <h2 class="text-card-title text-g-primary dark:text-white">
+        <h2 class="text-xl font-semibold tracking-tight text-g-primary dark:text-white">
           {{ mod.title }}
         </h2>
         <p class="text-sm text-g-muted">
           {{ mod.description }}
         </p>
-      </button>
+      </router-link>
     </div>
-  </main>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import AppPage from '@/components/AppPage.vue'
 import { useSession } from '@/stores/session'
 
-const router = useRouter()
 const session = useSession()
-
-function paintCardBorder(event: Event, color: string) {
-  const el = event.currentTarget
-  if (el instanceof HTMLElement) el.style.borderColor = color
-}
 
 const userName = computed(() => session.user.value?.name ?? '')
 const pendingInviteCount = computed(() => session.pendingInviteCount.value)
