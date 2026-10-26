@@ -183,7 +183,7 @@ Order follows [spec section 12, step 4](superpowers/specs/2026-10-25-eypi-overha
 
 4. Deploy the backend, then the frontend, back to back (sections 4 and 5). Between them, the old frontend shows a password form that no longer has an endpoint.
 5. Sign in with Microsoft as `arlaus@student.apc.edu.ph`. `0003` seeded that account as `admin`. Accept the privacy and terms screen. Confirm the Admin entry appears in the navigation and `/admin` loads.
-6. Apply `0004`:
+6. Apply `0004`. Until it runs, `users.password_hash` still exists; first sign-ins in the window store a fixed non-matchable placeholder there (never a real hash). `0004` deletes unverified legacy users but keeps any user who already has a `user_identities` row, so accounts created during the window survive:
 
    ```bash
    npm run migrate --prefix backend -- --status

@@ -1,5 +1,6 @@
+import { createClient } from '@libsql/client/node'
 import { describe, expect, it } from 'vitest'
-import { createTestApp } from '../../test/createTestApp'
+import { applyMigrations, createTestApp } from '../../test/createTestApp'
 import { resolveUser } from './identity'
 
 const APC_TENANT = 'aeb745e6-8166-4f8f-9233-179e8109c49e'
@@ -112,5 +113,32 @@ describe('resolveUser', () => {
       role: 'user',
     })
     expect(users.rows[0]?.last_login_at).toBeTruthy()
+  })
+
+  it('creates a brand-new user while users.password_hash still exists (through 0003)', async () => {
+    const client = createClient({ url: ':memory:' })
+    await client.execute('PRAGMA foreign_keys = ON')
+    await applyMigrations(client, ['0001_baseline.sql', '0002_hygiene.sql', '0003_auth_additive.sql'])
+
+    const result = await resolveUser(client, {
+      tid: APC_TENANT,
+      oid: 'oid-window',
+      email: 'window@student.apc.edu.ph',
+      name: 'Window',
+    })
+
+    expect(result.created).toBe(true)
+    const row = await client.execute({
+      sql: 'SELECT password_hash FROM users WHERE id = ?',
+      args: [result.userId],
+    })
+    const stored = String(row.rows[0].password_hash)
+    expect(stored.length).toBeGreaterThanOrEqual(60)
+    expect(stored).toMatch(/^disabled:/)
+    const identities = await client.execute({
+      sql: 'SELECT user_id FROM user_identities WHERE subject = ?',
+      args: ['oid-window'],
+    })
+    expect(identities.rows).toHaveLength(1)
   })
 })

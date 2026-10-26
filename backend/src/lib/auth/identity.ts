@@ -8,6 +8,34 @@ export type IdentityClaims = {
   name: string
 }
 
+// Until migration 0004 drops users.password_hash it is NOT NULL with a length
+// check, so a first sign-in must supply a value. This is a fixed placeholder,
+// never a real hash: it is not a pbkdf2 string and no code verifies it.
+const LEGACY_PASSWORD_SENTINEL = `disabled:microsoft-sign-in-only:${'0'.repeat(40)}`
+
+async function insertUser(
+  database: Client,
+  userId: string,
+  email: string,
+  name: string,
+  now: string,
+): Promise<void> {
+  try {
+    await database.execute({
+      sql: `INSERT INTO users (id, email, name, role, last_login_at)
+            VALUES (?, ?, ?, 'user', ?)`,
+      args: [userId, email, name, now],
+    })
+  } catch (err) {
+    if (!(err instanceof Error) || !/password_hash/i.test(err.message)) throw err
+    await database.execute({
+      sql: `INSERT INTO users (id, email, name, role, last_login_at, password_hash)
+            VALUES (?, ?, ?, 'user', ?, ?)`,
+      args: [userId, email, name, now, LEGACY_PASSWORD_SENTINEL],
+    })
+  }
+}
+
 export async function resolveUser(
   database: Client,
   claims: IdentityClaims,
@@ -44,11 +72,7 @@ export async function resolveUser(
   }
 
   const userId = crypto.randomUUID()
-  await database.execute({
-    sql: `INSERT INTO users (id, email, name, role, last_login_at)
-          VALUES (?, ?, ?, 'user', ?)`,
-    args: [userId, email, name, now],
-  })
+  await insertUser(database, userId, email, name, now)
   await database.execute({
     sql: `INSERT INTO user_identities (provider, tenant_id, subject, user_id, email_at_link)
           VALUES ('microsoft', ?, ?, ?, ?)`,

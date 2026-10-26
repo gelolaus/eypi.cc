@@ -81,6 +81,29 @@ describe('auth migrations', () => {
     expect(columns).toContain('role')
   })
 
+  it('keeps an unverified user who already has an identity when 0004 runs', async () => {
+    const client = createClient({ url: ':memory:' })
+    await client.execute('PRAGMA foreign_keys = ON')
+    await applyMigrations(client, THROUGH_ADDITIVE)
+    await client.execute({
+      sql: `INSERT INTO users (id, email, password_hash, is_verified, name) VALUES
+            ('user-ms', 'ms@student.apc.edu.ph', ?, 0, 'Ms'),
+            ('user-stale', 'stale@student.apc.edu.ph', ?, 0, 'Stale')`,
+      args: [PASSWORD_HASH, PASSWORD_HASH],
+    })
+    await client.execute(
+      `INSERT INTO user_identities (provider, tenant_id, subject, user_id, email_at_link)
+       VALUES ('microsoft', 't', 'oid-ms', 'user-ms', 'ms@student.apc.edu.ph')`,
+    )
+
+    await applyMigrations(client, ['0004_auth_cleanup.sql'])
+
+    const users = await client.execute('SELECT id FROM users ORDER BY id')
+    expect(users.rows.map((r) => r.id)).toEqual(['user-ms'])
+    const identities = await client.execute('SELECT user_id FROM user_identities')
+    expect(identities.rows).toHaveLength(1)
+  })
+
   it('seeds the admin role for the APC admin email', async () => {
     const client = createClient({ url: ':memory:' })
     await applyMigrations(client, ['0001_baseline.sql', '0002_hygiene.sql'])
