@@ -91,19 +91,24 @@ export function useLinks() {
     items.value = next
   }
 
+  let listGeneration = 0
+
   async function load(cursor?: string | null) {
+    const generation = ++listGeneration
     loading.value = true
     error.value = ''
     try {
       const data = await api.get<Page>(listPath(cursor))
+      if (generation !== listGeneration) return
       const page = data.items ?? []
       items.value = cursor ? [...items.value, ...page] : page
       nextCursor.value = data.nextCursor ?? null
     } catch (err) {
+      if (generation !== listGeneration) return
       if (err instanceof ApiError && err.status === 401) return
       error.value = err instanceof Error ? err.message : 'Could not load links.'
     } finally {
-      loading.value = false
+      if (generation === listGeneration) loading.value = false
     }
   }
 

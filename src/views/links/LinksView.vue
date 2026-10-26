@@ -91,14 +91,14 @@
         :open="editorOpen"
         @close="closeEditor"
       />
+      <AnalyticsPanel
+        v-if="analyticsOpen"
+        :is-open="true"
+        :link-id="analyticsId"
+        :short-url="analyticsShort"
+        @close="analyticsOpen = false"
+      />
     </Teleport>
-    <AnalyticsPanel
-      v-if="analyticsOpen"
-      :is-open="true"
-      :link-id="analyticsId"
-      :short-url="analyticsShort"
-      @close="analyticsOpen = false"
-    />
   </div>
 </template>
 

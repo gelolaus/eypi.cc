@@ -208,6 +208,7 @@ const slugDescribedBy = computed(() => {
 
 let timer: ReturnType<typeof setTimeout> | undefined
 let requestId = 0
+let detailRequest = 0
 
 function destinationError(code: DestinationCode): string {
   if (code === 'userinfo') return 'Remove the username from that URL.'
@@ -264,9 +265,11 @@ function expiresToIso(value: string): string | null {
 }
 
 async function loadLink(id: string) {
+  const request = ++detailRequest
   resetCreate()
   try {
     const detail = await api.get<LinkDetail>(`/api/links/${id}`)
+    if (request !== detailRequest || !props.open || props.linkId !== id) return
     url.value = detail.url
     slug.value = detail.slug
     originalSlug.value = detail.slug
@@ -274,6 +277,7 @@ async function loadLink(id: string) {
     protectedLink.value = detail.protected
     qrConfig.value = parseLinkQrConfig(detail.qrConfig)
   } catch (err) {
+    if (request !== detailRequest || !props.open || props.linkId !== id) return
     if (err instanceof ApiError && err.status === 401) return
     formError.value = err instanceof Error ? err.message : 'Could not load this link.'
   }
@@ -364,12 +368,16 @@ async function submit() {
 
 watch(() => [props.open, props.linkId] as const, ([open, id]) => {
   if (!open) {
+    detailRequest += 1
     trap.release()
     clearTimer()
     return
   }
   if (id) void loadLink(id)
-  else resetCreate(props.destination ?? '')
+  else {
+    detailRequest += 1
+    resetCreate(props.destination ?? '')
+  }
   void nextTick(() => trap.activate())
 }, { immediate: true })
 

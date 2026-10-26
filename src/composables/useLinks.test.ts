@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { linkBadges, useLinks } from './useLinks'
 
@@ -132,5 +133,71 @@ describe('useLinks', () => {
       code: 'quota_exceeded',
     })
     expect(links.quotaMessage.value).toBe("You've reached 500 links. Delete some to add more.")
+  })
+
+  it('ignores an older list page after a newer sort or status load', async () => {
+    const queue: Array<{ href: string; resolve: (response: Response) => void }> = []
+    fetchMock.mockImplementation((input: RequestInfo | URL) => new Promise<Response>((resolve) => {
+      queue.push({ href: requestUrl(input), resolve })
+    }))
+
+    function item(id: string) {
+      return {
+        id,
+        slug: id,
+        url: `https://example.com/${id}`,
+        clicks: 0,
+        createdAt: null,
+        expiresAt: null,
+        disabledAt: null,
+        disabledReason: null,
+        protected: false,
+        hasLogo: false,
+      }
+    }
+
+    const links = useLinks()
+    const byNewest = links.load()
+    links.sort.value = 'clicks'
+    const byClicks = links.load()
+
+    queue[0]?.resolve(json(200, { items: [item('old-sort')], nextCursor: 'cursor-old' }))
+    await byNewest
+    await flushPromises()
+
+    expect(links.items.value).toEqual([])
+    expect(links.nextCursor.value).toBeNull()
+    expect(links.loading.value).toBe(true)
+    await links.loadMore()
+    expect(queue).toHaveLength(2)
+
+    queue[1]?.resolve(json(200, { items: [item('by-clicks')], nextCursor: 'cursor-clicks' }))
+    await byClicks
+    await flushPromises()
+
+    expect(links.items.value.map((entry) => entry.id)).toEqual(['by-clicks'])
+    expect(links.nextCursor.value).toBe('cursor-clicks')
+    expect(links.loading.value).toBe(false)
+
+    const olderPage = links.loadMore()
+    links.status.value = 'expired'
+    const byExpired = links.load()
+    const more = queue.find((entry) => entry.href.includes('cursor=cursor-clicks'))
+    const expired = queue.find((entry) => entry.href.includes('status=expired') && !entry.href.includes('cursor='))
+    expect(more).toBeTruthy()
+    expect(expired).toBeTruthy()
+
+    more?.resolve(json(200, { items: [item('stale-page')], nextCursor: 'cursor-stale' }))
+    await olderPage
+    await flushPromises()
+    expect(links.items.value.map((entry) => entry.id)).toEqual(['by-clicks'])
+    expect(links.nextCursor.value).toBe('cursor-clicks')
+
+    expired?.resolve(json(200, { items: [item('expired-link')], nextCursor: 'cursor-expired' }))
+    await byExpired
+    await flushPromises()
+    expect(links.items.value.map((entry) => entry.id)).toEqual(['expired-link'])
+    expect(links.nextCursor.value).toBe('cursor-expired')
+    expect(links.loading.value).toBe(false)
   })
 })

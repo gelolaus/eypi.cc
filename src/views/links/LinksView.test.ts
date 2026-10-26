@@ -137,13 +137,13 @@ describe('LinksView create and analytics', () => {
     await flushPromises()
 
     expect(analytics.loaded).toBe(false)
-    expect(wrapper.find('[data-testid="analytics-panel"]').exists()).toBe(false)
+    expect(document.querySelector('[data-testid="analytics-panel"]')).toBeNull()
 
     await wrapper.get('[aria-label="Analytics"]').trigger('click')
     await flushPromises()
 
     expect(analytics.loaded).toBe(true)
-    expect(wrapper.find('[data-testid="analytics-panel"]').exists()).toBe(true)
+    expect(document.querySelector('[data-testid="analytics-panel"]')).toBeTruthy()
     wrapper.unmount()
   })
 
@@ -166,6 +166,24 @@ describe('LinksView create and analytics', () => {
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Delete 2 links?',
     }))
+    wrapper.unmount()
+  })
+
+  it('renders the open analytics dialog on document.body', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(200, {
+      items: [sampleLink],
+      nextCursor: null,
+    })))
+
+    const wrapper = mount(LinksView, { attachTo: document.body })
+    await flushPromises()
+    await wrapper.get('[aria-label="Analytics"]').trigger('click')
+    await flushPromises()
+
+    const dialog = document.querySelector('[data-testid="analytics-panel"]')
+    expect(dialog).toBeTruthy()
+    expect(dialog?.parentElement).toBe(document.body)
+    expect(wrapper.element.contains(dialog)).toBe(false)
     wrapper.unmount()
   })
 })

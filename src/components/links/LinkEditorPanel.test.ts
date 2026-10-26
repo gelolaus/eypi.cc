@@ -133,4 +133,59 @@ describe('LinkEditorPanel slug availability', () => {
     expect(posts).toHaveLength(0)
     wrapper.unmount()
   })
+
+  it('ignores a late link load after opening another link or closing the panel', async () => {
+    const pending = new Map<string, (response: Response) => void>()
+    fetchMock.mockImplementation((input: RequestInfo | URL) => new Promise<Response>((resolve) => {
+      const id = new URL(requestUrl(input)).pathname.split('/').pop() ?? ''
+      pending.set(id, resolve)
+    }))
+
+    function detail(id: string, slug: string): Response {
+      return json({
+        id,
+        slug,
+        url: `https://example.com/${slug}`,
+        clicks: 0,
+        createdAt: null,
+        expiresAt: null,
+        disabledAt: null,
+        disabledReason: null,
+        protected: id === 'link-a',
+        hasLogo: false,
+        qrConfig: null,
+      })
+    }
+
+    function destination(): string {
+      const input = editorRoot().querySelector('[aria-label="Destination"]')
+      if (!(input instanceof HTMLInputElement)) throw new Error('missing destination')
+      return input.value
+    }
+
+    const wrapper = mount(LinkEditorPanel, {
+      props: { open: true, linkId: 'link-a' },
+      attachTo: document.body,
+      global: { stubs: { QrDesigner: { template: '<div />' } } },
+    })
+
+    await wrapper.setProps({ linkId: 'link-b' })
+    pending.get('link-b')?.(detail('link-b', 'beta'))
+    await flushPromises()
+    expect(destination()).toBe('https://example.com/beta')
+
+    pending.get('link-a')?.(detail('link-a', 'alpha'))
+    await flushPromises()
+    expect(destination()).toBe('https://example.com/beta')
+    expect(editorRoot().textContent).not.toContain('Remove password')
+
+    await wrapper.setProps({ linkId: 'link-a' })
+    await wrapper.setProps({ open: false })
+    await wrapper.setProps({ open: true, linkId: null })
+    pending.get('link-a')?.(detail('link-a', 'alpha'))
+    await flushPromises()
+    expect(destination()).toBe('')
+
+    wrapper.unmount()
+  })
 })
