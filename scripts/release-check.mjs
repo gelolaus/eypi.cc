@@ -3,13 +3,14 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { checkFrontendBundle, checkGitState } from './lib/releaseChecks.mjs'
+import { checkFrontendBundle, checkGitState, isCiEnvironment } from './lib/releaseChecks.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const backendDir = path.join(root, 'backend')
 const args = new Set(process.argv.slice(2))
 const allowDirty = args.has('--allow-dirty')
 const allowBranch = args.has('--allow-branch')
+const isCi = isCiEnvironment(process.env)
 
 function run(command, commandArgs, cwd = root) {
   return spawnSync(command, commandArgs, {
@@ -29,6 +30,23 @@ function ok(step, label) {
   console.log(`[release:check] ${step}/7 ${label} ... ok`)
 }
 
+function runBackendDryRun() {
+  const backendOutdir = path.join(tmpdir(), `eypi-release-backend-${process.pid}`)
+  const backendDryRun = run('npx', [
+    'wrangler',
+    'deploy',
+    '--dry-run',
+    '--config',
+    'wrangler.jsonc',
+    '--outdir',
+    backendOutdir,
+  ], backendDir)
+  if (backendDryRun.status !== 0) {
+    fail(7, 'backend wrangler dry-run', `${backendDryRun.stdout}${backendDryRun.stderr}`)
+  }
+  ok(7, 'backend wrangler dry-run')
+}
+
 const gitBranch = run('git', ['rev-parse', '--abbrev-ref', 'HEAD'])
 const gitPorcelain = run('git', ['status', '--porcelain'])
 if (gitBranch.status !== 0) {
@@ -39,11 +57,23 @@ const gitProblems = checkGitState({
   porcelain: gitPorcelain.stdout || '',
   allowDirty,
   allowBranch,
+  isCi,
 })
 if (gitProblems.length > 0) {
   fail(1, 'git state', gitProblems.join('\n'))
 }
 ok(1, 'git state')
+
+if (!existsSync(path.join(root, 'node_modules', 'vitest'))) {
+  if (!isCi) {
+    fail(2, 'root dependencies', 'run npm install in the repo root first')
+  }
+  // A backend-only build installs just backend/, so the root test, build and
+  // frontend checks cannot run. The backend dry-run below still does.
+  console.log('[release:check] 2-6/7 root checks ... skipped (root dependencies not installed)')
+  runBackendDryRun()
+  process.exit(0)
+}
 
 const testResult = run('npm', ['test'])
 if (testResult.status !== 0) {
@@ -94,17 +124,4 @@ if (frontendDryRun.status !== 0) {
 }
 ok(6, 'frontend wrangler dry-run')
 
-const backendOutdir = path.join(tmpdir(), `eypi-release-backend-${process.pid}`)
-const backendDryRun = run('npx', [
-  'wrangler',
-  'deploy',
-  '--dry-run',
-  '--config',
-  'wrangler.jsonc',
-  '--outdir',
-  backendOutdir,
-], backendDir)
-if (backendDryRun.status !== 0) {
-  fail(7, 'backend wrangler dry-run', `${backendDryRun.stdout}${backendDryRun.stderr}`)
-}
-ok(7, 'backend wrangler dry-run')
+runBackendDryRun()

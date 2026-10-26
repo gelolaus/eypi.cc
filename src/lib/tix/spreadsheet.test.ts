@@ -1,5 +1,5 @@
 import JSZip from 'jszip'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { acceptsSpreadsheetFile, parseAttendeeCsv, parseSpreadsheet } from './spreadsheet'
 
 async function xlsxBuffer(sheetXml: string): Promise<ArrayBuffer> {
@@ -46,6 +46,11 @@ describe('parseAttendeeCsv', () => {
 })
 
 describe('parseSpreadsheet', () => {
+  // exceljs is imported lazily; load it once up front so no single test pays the cold start.
+  beforeAll(async () => {
+    await import('exceljs')
+  })
+
   it('a blank header column keeps later columns aligned', async () => {
     const buffer = await xlsxBuffer(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">

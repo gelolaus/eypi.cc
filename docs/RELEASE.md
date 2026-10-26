@@ -73,6 +73,12 @@ npm run deploy
 
 This runs `predeploy` (`release:check`), then `vite build`, then `wrangler deploy`.
 
+### Deploying from Cloudflare Git builds
+
+`release:check` detects CI (`WORKERS_CI=1` or `CI`) and skips the git-state step, because a CI checkout is a detached HEAD, not `main`. It still runs tests, typecheck, build, the bundle check and both wrangler dry-runs. If a project installs only `backend/` (root directory `backend`), the root-dependent steps are skipped with a message and the backend dry-run still runs.
+
+Use `npm run build` as the build command and `npx wrangler deploy` as the deploy command. `npm run deploy` also works but repeats the build.
+
 ## 6. Redirects only if `redirects/` changed
 
 ```bash
