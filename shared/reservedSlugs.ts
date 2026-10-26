@@ -3,9 +3,12 @@ export const RESERVED_SLUGS = [
   // Suite modules (from src/router/index.ts)
   'dashboard', 'links', 'forms', 'manage', 'frames', 'tix', 'orgs',
   // Account & legal
-  'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'contact',
+  'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact',
   // Defensive / legacy
   'home', 'api', 'dp', 'event', 'events',
+  // Planned suite routes and static prefixes
+  'admin', 'account', 'assets', 'auth', 'logout', 'signup', 'help', 'about',
+  'qr', 'static', 'invites', 'report', 'unlock', 'expired', 'media', 'p',
 ] as const
 
 export const RESERVED_SLUG_SET = new Set(RESERVED_SLUGS.map((s) => s.toLowerCase()))

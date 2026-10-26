@@ -1,14 +1,14 @@
-import type { Bindings } from './db'
-import { db } from './db'
+import type { Client } from '@libsql/client/web'
 
 /**
- * Registration Auto-Claim Hook
- * Executes asynchronously upon a user's first login or verification.
+ * Maps pending org memberships onto a user after Microsoft sign-in.
  */
-export async function handleUserOnboarding(userEmail: string, userId: string, env: Bindings): Promise<void> {
-  const normalizedEmail = userEmail.toLowerCase().trim()
-  const database = db(env)
-  
+export async function handleUserOnboarding(
+  user: { id: string; email: string },
+  database: Client,
+): Promise<void> {
+  const normalizedEmail = user.email.toLowerCase().trim()
+
   try {
     // 1. Check for pending pre-provisioned memberships
     // This read operation is cheap and prevents unnecessary writes
@@ -27,19 +27,15 @@ export async function handleUserOnboarding(userEmail: string, userId: string, en
     }
     
     // 2. Atomic Batch Update: Map the user ID to the pre-provisioned org memberships, but keep them pending (activated_at IS NULL).
-    const result = await database.execute({
+    await database.execute({
       sql: `
         UPDATE org_members 
         SET user_id = ? 
         WHERE email = ? AND user_id IS NULL
       `,
-      args: [userId, normalizedEmail]
+      args: [user.id, normalizedEmail]
     })
-    
-    console.log(`[Auto-Claim] Successfully mapped ${result.rowsAffected} pre-provisioned org memberships for: ${normalizedEmail}`)
-    
-  } catch (error) {
-    // We catch and log to prevent throwing errors into the critical authentication path
-    console.error(`[Auto-Claim] Critical failure during auto-claim hook for ${normalizedEmail}:`, error)
+  } catch {
+    // A failed claim must not throw into Microsoft sign-in.
   }
 }

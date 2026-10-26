@@ -39,7 +39,7 @@ defineExpose({ trigger })
   position: fixed;
   inset: 0;
   z-index: 99997;
-  background-color: var(--color-primary);
+  background-color: #34418F;
   clip-path: circle(0% at 50% 50%);
   pointer-events: none;
 }

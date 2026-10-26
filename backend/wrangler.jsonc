@@ -13,13 +13,21 @@
       "id": "4634074c1831474fbb18209665da5165"
     }
   ],
-  "assets": {
-    "directory": "./assets",
-    "binding": "ASSETS"
-  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "eypi-media"
+    }
+  ],
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "observability": {
+    "enabled": true
+  },
+  "triggers": {
+    "crons": ["0 19 * * *"]
+  },
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },
@@ -45,8 +53,4 @@
   // "ai": {
   //   "binding": "AI"
   // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
 }

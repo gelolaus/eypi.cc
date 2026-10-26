@@ -1,68 +1,77 @@
-import { describe, it, expect, vi } from 'vitest'
+import type { Client as WebClient } from '@libsql/client/web'
+import { Hono } from 'hono'
+import { describe, expect, it } from 'vitest'
 import { sign } from 'hono/jwt'
+import { createSession } from '../lib/auth/session'
+import type { Bindings } from '../lib/db'
+import { createTestApp } from '../test/createTestApp'
 import { requireAuth } from './requireAuth'
 
-const JWT_SECRET = 'test-secret'
+const UNAUTHORIZED = {
+  error: { code: 'unauthorized', message: 'Sign in to continue.' },
+}
 
-function makeContext(headers: Record<string, string>) {
-  const vars: Record<string, unknown> = {}
-  return {
-    req: { header: (k: string) => headers[k] },
-    env: { JWT_SECRET },
-    set: (key: string, value: unknown) => { vars[key] = value },
-    var: vars,
-    json: (body: unknown, status: number) => ({ body, status }),
-  }
+async function pingApp() {
+  const { client } = await createTestApp({
+    seed: async (db) => {
+      await db.execute({
+        sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)',
+        args: ['user-1', 'user@student.apc.edu.ph', 'Ada', 'user'],
+      })
+    },
+  })
+  const { token } = await createSession(client, {}, 'user-1', new Request('http://localhost/ping'))
+  const app = new Hono<{ Bindings: Bindings; Variables: { userId: string; userEmail: string } }>()
+  app.use('*', async (c, next) => {
+    c.set('db', client as unknown as WebClient)
+    await next()
+  })
+  app.use('*', requireAuth)
+  app.get('/ping', (c) => c.json({
+    id: c.var.user?.id,
+    email: c.var.user?.email,
+    role: c.var.user?.role,
+  }))
+  return { app, token }
 }
 
 describe('requireAuth', () => {
-  it('calls next and sets userId/userEmail for a valid token', async () => {
-    const token = await sign(
-      { sub: 'user-1', email: 'user@student.apc.edu.ph', exp: Math.floor(Date.now() / 1000) + 3600 },
-      JWT_SECRET,
-    )
-    const c = makeContext({ Authorization: `Bearer ${token}` })
-    const next = vi.fn(async () => {})
+  it('calls next and sets the session user from the cookie', async () => {
+    const { app, token } = await pingApp()
 
-    await requireAuth(c as never, next)
+    const res = await app.request('/ping', {
+      headers: { Cookie: `eypi_session=${token}` },
+    }, {} as Bindings)
 
-    expect(next).toHaveBeenCalledOnce()
-    expect(c.var.userId).toBe('user-1')
-    expect(c.var.userEmail).toBe('user@student.apc.edu.ph')
-  })
-
-  it('returns 401 without calling next when the Authorization header is missing', async () => {
-    const c = makeContext({})
-    const next = vi.fn(async () => {})
-
-    const result = await requireAuth(c as never, next)
-
-    expect(next).not.toHaveBeenCalled()
-    expect(result).toEqual({
-      body: { error: 'Unauthorized', message: 'Missing or invalid token' },
-      status: 401,
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({
+      id: 'user-1',
+      email: 'user@student.apc.edu.ph',
+      role: 'user',
     })
   })
 
-  it('returns 401 for a malformed token', async () => {
-    const c = makeContext({ Authorization: 'Bearer not-a-real-jwt' })
-    const next = vi.fn(async () => {})
+  it('returns 401 when the session cookie is missing', async () => {
+    const { app } = await pingApp()
 
-    await requireAuth(c as never, next)
+    const res = await app.request('/ping', {}, {} as Bindings)
 
-    expect(next).not.toHaveBeenCalled()
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual(UNAUTHORIZED)
   })
 
-  it('returns 401 for an expired token', async () => {
+  it('returns 401 for a bearer token when the session cookie is absent', async () => {
+    const { app } = await pingApp()
     const token = await sign(
-      { sub: 'user-1', email: 'user@student.apc.edu.ph', exp: Math.floor(Date.now() / 1000) - 10 },
-      JWT_SECRET,
+      { sub: 'user-1', email: 'user@student.apc.edu.ph', exp: Math.floor(Date.now() / 1000) + 3600 },
+      'test-jwt-secret',
     )
-    const c = makeContext({ Authorization: `Bearer ${token}` })
-    const next = vi.fn(async () => {})
 
-    await requireAuth(c as never, next)
+    const res = await app.request('/ping', {
+      headers: { Authorization: `Bearer ${token}` },
+    }, {} as Bindings)
 
-    expect(next).not.toHaveBeenCalled()
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual(UNAUTHORIZED)
   })
 })

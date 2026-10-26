@@ -12,6 +12,14 @@ The maintainer runs the stack locally against the **production Turso database** 
 - Assume `npm run dev:local` (frontend + API) or `.env.local` with `VITE_API_BASE_URL=http://localhost:8787` is the normal workflow.
 - Production API default (`https://api.eypi.cc`) applies only when `VITE_API_BASE_URL` is unset at build time — do not change that default.
 
+## Schema migrations
+
+Versioned SQL lives in `backend/migrations`. Inspect or apply it with `npm run migrate --prefix backend` (`--status`, `--dry-run`, `--yes`, `--baseline`, `--allow-destructive`). The runner prints the database host and the pending list and does not write unless `--yes` is passed. Production migrations still need the owner's approval.
+
+## Auth
+
+Sign-in is Microsoft only (APC tenant) with an HttpOnly cookie session: `/login` starts `/api/auth/microsoft/start`, the callback sets the session cookie, and `/api/me` reads it. There are no password, register, verify, or reset routes; do not add them. See `CONTEXT.md` and `AGENTS.md`.
+
 ## Safety (still required)
 
 Even with production DB access, **do not** add or run destructive changes unless the user explicitly requests them:
@@ -24,4 +32,4 @@ Schema additions and non-destructive reads/writes for feature work are fine.
 
 ## Secrets
 
-Never commit or log `TURSO_AUTH_TOKEN`, `JWT_SECRET`, `RESEND_API_KEY`, or wallet keys. Example templates (`.env.example`, `.dev.vars.example`) only.
+Never commit or log `TURSO_AUTH_TOKEN`, `MS_CLIENT_SECRET`, `AUTH_COOKIE_SECRET`, `PASS_TOKEN_SECRET`, `IP_HASH_SECRET`, `RESEND_API_KEY`, or wallet keys. Example templates (`.env.example`, `.dev.vars.example`) only.

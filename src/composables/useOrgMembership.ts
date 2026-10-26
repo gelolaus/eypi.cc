@@ -1,21 +1,18 @@
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
+import { api } from '@/lib/api'
 
 const CACHE_TTL_MS = 60_000
 
 let cachedResult: boolean | null = null
 let cachedAt = 0
 
-async function hasOrgViaOrgsList(authHeaders: () => Record<string, string>): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/orgs`, { headers: authHeaders() })
+async function hasOrgViaOrgsList(): Promise<boolean> {
+  const res = await api.raw('/api/orgs')
   if (!res.ok) return false
   const data = await res.json() as { orgs?: unknown[] }
   return (data.orgs?.length ?? 0) > 0
 }
 
 export function useOrgMembership() {
-  const { authHeaders } = useAuth()
-
   async function checkOrgMembership(): Promise<boolean> {
     const now = Date.now()
     if (cachedResult !== null && now - cachedAt < CACHE_TTL_MS) {
@@ -23,7 +20,7 @@ export function useOrgMembership() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/forms`, { headers: authHeaders() })
+      const res = await api.raw('/api/forms')
       if (res.status === 403) {
         cachedResult = false
         cachedAt = now
@@ -35,13 +32,12 @@ export function useOrgMembership() {
         return true
       }
 
-      // /api/forms missing (404) or other error — fall back to org list endpoint
-      cachedResult = await hasOrgViaOrgsList(authHeaders)
+      cachedResult = await hasOrgViaOrgsList()
       cachedAt = now
       return cachedResult
     } catch {
       try {
-        cachedResult = await hasOrgViaOrgsList(authHeaders)
+        cachedResult = await hasOrgViaOrgsList()
       } catch {
         cachedResult = false
       }

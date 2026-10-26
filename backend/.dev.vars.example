@@ -1,10 +1,8 @@
 # Copy this file to backend/.dev.vars and fill in your values.
-# Used by: wrangler dev, npm run backfill-kv, node run-migration.mjs
+# Used by: wrangler dev, npm run backfill-kv, node scripts/migrate.mjs
 #
 # SECURITY — keep backend/.dev.vars gitignored and never commit real secrets.
 # This project intentionally uses the production Turso database for local dev.
-# Use a JWT_SECRET that matches production if you need tokens to interoperate,
-# or a local-only secret if you only test against a fresh local login session.
 #
 # Turso dashboard → your database → Connect:
 #   TURSO_DATABASE_URL = the libsql://... URL shown there
@@ -15,20 +13,32 @@
 TURSO_DATABASE_URL=libsql://your-database-name-your-org.turso.io
 TURSO_AUTH_TOKEN=your-turso-database-token
 
-# REQUIRED — login and auth routes fail without this (use the same value as the Cloudflare Worker secret)
-JWT_SECRET=your-local-only-jwt-secret-min-32-chars
+# REQUIRED — wallet pass tokens.
+# setup fills a fresh value when it creates backend/.dev.vars.
+PASS_TOKEN_SECRET=your-local-only-pass-token-secret-min-32-chars
+
+# REQUIRED — HMAC for the short-lived Microsoft sign-in cookie.
+# setup fills a fresh value when it creates backend/.dev.vars.
+AUTH_COOKIE_SECRET=your-local-only-auth-cookie-secret-min-32-chars
+
+# REQUIRED — HMAC for IP hashing (sessions, analytics, reports).
+# setup fills a fresh value when it creates backend/.dev.vars.
+IP_HASH_SECRET=your-local-only-ip-hash-secret-min-32-chars
+
+# Microsoft Entra sign-in. Empty values do not make /api/health return 503.
+MS_CLIENT_ID=
+MS_CLIENT_SECRET=
+MS_ALLOWED_TENANT_IDS=
+
+# SPA origin for sign-in redirects (local Vite, or https://eypi.cc).
+FRONTEND_ORIGIN=http://localhost:5173
+ENVIRONMENT=development
 
 RESEND_API_KEY=your-resend-api-key
 
-# Verification email links (defaults to https://eypi.cc when unset in production)
-FRONTEND_URL=http://localhost:5173
-
-# Apple Wallet — Pass Type ID certificate + WWDR intermediate (PEM, single line or multiline)
-APPLE_PASS_TYPE_ID=pass.cc.eypi.event
-APPLE_TEAM_ID=XXXXXXXXXX
-APPLE_PASS_CERT_PEM=
-APPLE_PASS_KEY_PEM=
-APPLE_WWDR_CERT_PEM=
+# Optional. When set, link create and edit check Google Safe Browsing v4.
+# An empty value skips the lookup. It does not make /api/health return 503.
+SAFE_BROWSING_API_KEY=
 
 # Google Wallet — service account with Wallet Object Issuer role
 GOOGLE_WALLET_ISSUER_ID=1234567890123456789

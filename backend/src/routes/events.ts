@@ -1,11 +1,46 @@
 import { Hono } from 'hono'
-import { sign } from 'hono/jwt'
-import { db, getUser, getUserOrgId, type Bindings } from '../lib/db'
+import { db, type Bindings } from '../lib/db'
+import { noOrgBody, orgContext } from '../middleware/orgContext'
+import { enforceConsent } from '../middleware/requireConsent'
+import { attachSession } from '../middleware/requireAuth'
+import { missingRequiredEnv, requiredEnvError } from '../lib/env'
 import { checkRateLimit } from '../lib/rateLimit'
-import { buildApplePass } from '../lib/passes/applePass'
-import { PASS_TOKEN_TTL_SEC, loadPassContext, verifyPassToken } from '../lib/passes/context'
+import { loadPassContext, parsePassFields, signPassToken, verifyPassToken } from '../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../lib/passes/googleWallet'
+import { selectAttendees } from '../../../src/lib/tix/selection'
 import type { Client } from '@libsql/client/web'
+
+const SQL_IN_CHUNK = 200
+const MAX_UPLOAD_ROWS = 5000
+
+const ALREADY_FINALIZED = {
+  status: 'error' as const,
+  message: 'Event is already finalized.',
+  error: { code: 'already_finalized', message: 'Event is already finalized.' },
+}
+
+function inChunks<T>(items: readonly T[], size = SQL_IN_CHUNK): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size))
+  return chunks
+}
+
+// Latest check-in wins, including ties at the same second (higher rowid).
+// A removed attendee does not occupy a cluster slot.
+const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
+    FROM attendees a
+    WHERE a.event_id = ? AND a.cluster_value = ?
+      AND NOT EXISTS (
+        SELECT 1 FROM check_ins ci
+        WHERE ci.attendee_id = a.id
+          AND ci.action = 'removed'
+          AND ci.rowid = (
+            SELECT c2.rowid FROM check_ins c2
+            WHERE c2.attendee_id = a.id
+            ORDER BY c2.actioned_at DESC, c2.rowid DESC
+            LIMIT 1
+          )
+      )`
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
@@ -13,16 +48,156 @@ import type { Client } from '@libsql/client/web'
 const app = new Hono<{ Bindings: Bindings }>()
 
 const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
-const LOOKUP_RL_KEY = (ip: string) => `rl:tix-lookup:${ip}`
+const LOOKUP_LIMIT_MSG = 'Too many attempts. Wait a few minutes and try again.'
 const LOOKUP_RL_LIMIT = 10
 const LOOKUP_RL_WINDOW = 900
-async function requireEventLead(client: Client, slug: string, userId: string, requestedOrgId?: string): Promise<{ ok: true, event: any } | { ok: false, status: 403 | 404, message: string }> {
+const LOOKUP_EMAIL_LIMIT = 10
+const LOOKUP_EMAIL_WINDOW = 900
+const LOOKUP_IP_LIMIT = 60
+const LOOKUP_IP_WINDOW = 900
+const PASS_LIMIT = 20
+const PASS_WINDOW = 3600
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+function passFieldsFromBody(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+  const names: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string') return null
+    const name = item.trim()
+    if (!name || names.includes(name)) continue
+    names.push(name)
+  }
+  return names
+}
+
+async function latestCheckInAction(client: Client, attendeeId: string): Promise<string | null> {
+  const res = await client.execute({
+    sql: `SELECT action FROM check_ins
+          WHERE attendee_id = ?
+          ORDER BY actioned_at DESC, rowid DESC
+          LIMIT 1`,
+    args: [attendeeId],
+  })
+  const action = res.rows[0]?.action
+  return typeof action === 'string' ? action : null
+}
+
+const LATEST_ACTION_IS = `(
+            SELECT action FROM check_ins
+            WHERE attendee_id = ?
+            ORDER BY actioned_at DESC, rowid DESC
+            LIMIT 1
+          )`
+
+function actionError(code: string, message: string) {
+  return { status: 'error' as const, message, error: { code, message } }
+}
+
+function attendeeHasFirstName(attendee: { firstName?: unknown }): boolean {
+  return typeof attendee?.firstName === 'string' && attendee.firstName.trim().length > 0
+}
+
+function attendeeLabel(first: unknown, last: unknown): string {
+  return `${String(first ?? '')} ${String(last ?? '')}`.replace(/\s+/g, ' ').trim()
+}
+
+async function writeCheckInAction(
+  client: Client,
+  attendeeId: string,
+  eventId: string,
+  action: 'checked_in' | 'checked_out' | 'removed' | 'not_checked_in',
+  whenSql: string,
+  whenArgs: string[] = [],
+): Promise<boolean> {
+  const result = await client.execute({
+    sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
+          SELECT ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%f', 'now')
+          WHERE ${whenSql}`,
+    args: [crypto.randomUUID(), attendeeId, eventId, action, ...whenArgs],
+  })
+  return Number(result.rowsAffected) === 1
+}
+
+type CheckInResult =
+  | { ok: true; message: string; attendee: { id: string; firstName: string; lastName: string } }
+  | { ok: false; status: 403 | 409; body: ReturnType<typeof actionError> }
+
+async function performCheckIn(
+  client: Client,
+  eventId: string,
+  attendee: { id: unknown; first_name: unknown; last_name: unknown },
+): Promise<CheckInResult> {
+  const attendeeId = String(attendee.id)
+  const name = attendeeLabel(attendee.first_name, attendee.last_name)
+  const latest = await latestCheckInAction(client, attendeeId)
+  if (latest === 'checked_in') {
+    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  }
+  if (latest === 'removed') {
+    return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    attendeeId,
+    eventId,
+    'checked_in',
+    `COALESCE(${LATEST_ACTION_IS}, 'not_checked_in') NOT IN ('checked_in', 'removed')`,
+    [attendeeId],
+  )
+  if (!wrote) {
+    const again = await latestCheckInAction(client, attendeeId)
+    if (again === 'removed') {
+      return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
+    }
+    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  }
+  return {
+    ok: true,
+    message: `${name} checked in.`,
+    attendee: { id: attendeeId, firstName: String(attendee.first_name ?? ''), lastName: String(attendee.last_name ?? '') },
+  }
+}
+function eventRouteUsesOrg(path: string): boolean {
+  if (path === '/api/events') return true
+  if (!path.startsWith('/api/events/')) return false
+  if (path.endsWith('/lookup') || path.endsWith('/passes/google')) return false
+  return true
+}
+
+// Scoped: this router is mounted at '/', so a bare '*' would run session and
+// org lookups for every public route in the API.
+app.use('/api/events/*', async (c, next) => {
+  const unavailable = await attachSession(c)
+  if (unavailable) return unavailable
+  if (!eventRouteUsesOrg(c.req.path)) {
+    await next()
+    return
+  }
+  if (c.var.userId) {
+    const denied = await enforceConsent(c)
+    if (denied) return denied
+  }
+  return orgContext(c, next)
+})
+
+type EventLeadRow = {
+  id: string
+  org_id: string
+  selection_locked: number | bigint | null
+  max_attendees: number | bigint | null
+}
+
+async function requireEventLead(client: Client, slug: string, orgId: string | undefined): Promise<{ ok: true, event: EventLeadRow } | { ok: false, status: 403 | 404, message: string }> {
   const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees FROM events WHERE slug = ?', args: [slug] })
   if (evRes.rows.length === 0) return { ok: false, status: 404, message: 'Event not found.' }
-  const event = evRes.rows[0]
+  const event = evRes.rows[0] as unknown as EventLeadRow
 
-  const userOrgId = await getUserOrgId(client, userId, requestedOrgId)
-  if (!userOrgId || event.org_id !== userOrgId) {
+  if (!orgId || event.org_id !== orgId) {
     return { ok: false, status: 403, message: 'Forbidden.' }
   }
   return { ok: true, event }
@@ -33,7 +208,7 @@ async function requireEventLead(client: Client, slug: string, userId: string, re
 // Create event. When attendees is absent/empty, creates in selection mode
 // (selection_locked=0) and returns selectionLocked:false for frontend redirect.
 app.post('/api/events', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const body = await c.req.json() as {
@@ -61,9 +236,9 @@ app.post('/api/events', async (c) => {
     // Non-empty validation only for legacy (when attendees key is present and non-null)
   }
 
-  const client = db(c.env)
-  const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
-  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+  const client = db(c)
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
 
   const existing = await client.execute({ sql: 'SELECT id FROM events WHERE slug = ?', args: [body.slug] })
   if (existing.rows.length > 0) {
@@ -74,9 +249,13 @@ app.post('/api/events', async (c) => {
   const selectionLocked = hasAttendees ? 1 : 0
   const maxAttendees = body.maxAttendees ?? null
 
+  if (hasAttendees && body.attendees!.some((attendee) => !attendeeHasFirstName(attendee))) {
+    return c.json(actionError('missing_first_name', 'Every attendee needs a first name.'), 422)
+  }
+
   await client.execute({
     sql: 'INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [eventId, body.slug, user.sub, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
+    args: [eventId, body.slug, user.id, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
   })
 
   if (!hasAttendees) {
@@ -127,12 +306,12 @@ app.post('/api/events', async (c) => {
 
 // ── GET /api/events ───────────────────────────────────────────────────────────
 app.get('/api/events', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const client = db(c.env)
-  const orgId = await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))
-  if (!orgId) return c.json({ status: 'error', message: 'No organization found.' }, 403)
+  const client = db(c)
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
 
   const result = await client.execute({
     sql: 'SELECT id, slug, name, event_date, event_time, location, created_at FROM events WHERE org_id = ? ORDER BY created_at DESC',
@@ -145,26 +324,26 @@ app.get('/api/events', async (c) => {
 // ── GET /api/events/:slug ─────────────────────────────────────────────────────
 app.get('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
-  const user = await getUser(c)
+  const user = c.var.user
 
   if (!user) {
     const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-    const allowed = await checkRateLimit(
-      c.env.RATE_LIMIT_KV,
-      LOOKUP_RL_KEY(ip),
-      LOOKUP_RL_LIMIT,
-      LOOKUP_RL_WINDOW,
-    )
-    if (!allowed) {
+    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+      bucket: 'tix-lookup',
+      subject: ip,
+      limit: LOOKUP_RL_LIMIT,
+      windowSec: LOOKUP_RL_WINDOW,
+    })
+    if (!allowed.ok) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
     }
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
 
-  const client = db(c.env)
+  const client = db(c)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked FROM events WHERE slug = ?',
+    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields FROM events WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
@@ -186,34 +365,35 @@ app.get('/api/events/:slug', async (c) => {
       eventDate: event.event_date,
       eventTime: event.event_time,
       location: event.location,
-      isLead: (await getUserOrgId(client, user.sub, c.req.header('X-Active-Org-Id'))) === event.org_id,
+      isLead: c.var.orgId === event.org_id,
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,
       attendeeCount,
+      passFields: parsePassFields(event.pass_fields),
     },
   })
 })
 
 // ── GET /api/events/:slug/attendees ───────────────────────────────────────────
 app.get('/api/events/:slug/attendees', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
   const result = await client.execute({
     sql: `
-      SELECT a.id, a.first_name, a.last_name, a.email, a.cluster_value,
+      SELECT a.id, a.first_name, a.last_name, a.email, a.qr_token, a.cluster_value,
              ci.action AS status, ci.actioned_at
       FROM attendees a
       LEFT JOIN (
         SELECT attendee_id, action, actioned_at,
-               ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC) AS rn
+               ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
         FROM check_ins
       ) ci ON ci.attendee_id = a.id AND ci.rn = 1
       WHERE a.event_id = ?
@@ -225,18 +405,18 @@ app.get('/api/events/:slug/attendees', async (c) => {
 })
 
 // ── POST /api/events/:slug/upload-csv ─────────────────────────────────────────
-// Store parsed CSV rows. Pre-finalization: replaces all unselected rows.
-// Post-finalization: appends (only deletes unselected rows, keeps selected).
+// Replace unselected rows before finalization. A locked event does not append.
 app.post('/api/events/:slug/upload-csv', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {
     rows: Record<string, string>[]
@@ -250,48 +430,43 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
     }
   }
 
-  if (!body.rows?.length) return c.json({ status: 'error', message: 'No rows provided.' }, 400)
+  if (!Array.isArray(body.rows) || body.rows.length === 0) return c.json({ status: 'error', message: 'No rows provided.' }, 400)
+  if (body.rows.length > MAX_UPLOAD_ROWS) {
+    return c.json(actionError('too_many_rows', 'Spreadsheets are limited to 5,000 rows.'), 422)
+  }
   if (!body.columnMapping?.emailCol) return c.json({ status: 'error', message: 'columnMapping.emailCol is required.' }, 400)
 
-  // Delete unselected rows (safe for both pre- and post-finalization)
-  await client.execute({ sql: 'DELETE FROM event_csv_rows WHERE event_id = ? AND is_selected = 0', args: [event.id] })
-
-  // Upsert column mapping
-  const mappingId = crypto.randomUUID()
-  await client.execute({
-    sql: `INSERT INTO event_column_mappings (id, event_id, first_name_col, last_name_col, full_name_col, email_col, cluster_col, criteria_cols)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(event_id) DO UPDATE SET
-            first_name_col = excluded.first_name_col,
-            last_name_col  = excluded.last_name_col,
-            full_name_col  = excluded.full_name_col,
-            email_col      = excluded.email_col,
-            cluster_col    = excluded.cluster_col,
-            criteria_cols  = excluded.criteria_cols`,
-    args: [
-      mappingId, event.id as string,
-      body.columnMapping.firstNameCol ?? null,
-      body.columnMapping.lastNameCol ?? null,
-      body.columnMapping.fullNameCol ?? null,
-      body.columnMapping.emailCol,
-      body.columnMapping.clusterCol ?? null,
-      JSON.stringify(body.columnMapping.criteriaColumns ?? []),
-    ],
-  })
-
   // Pre-generate IDs so we can return them to the frontend
+  const mappingId = crypto.randomUUID()
   const rowEntries = body.rows.map((row, i) => ({ id: crypto.randomUUID(), rowIndex: i, row }))
 
-  const chunkSize = 100
-  for (let i = 0; i < rowEntries.length; i += chunkSize) {
-    const chunk = rowEntries.slice(i, i + chunkSize)
-    await client.batch(
-      chunk.map(entry => ({
-        sql: 'INSERT INTO event_csv_rows (id, event_id, row_index, raw_data) VALUES (?, ?, ?, ?)',
-        args: [entry.id, event.id as string, entry.rowIndex, JSON.stringify(entry.row)],
-      }))
-    )
-  }
+  await client.batch([
+    { sql: 'DELETE FROM event_csv_rows WHERE event_id = ? AND is_selected = 0', args: [event.id] },
+    {
+      sql: `INSERT INTO event_column_mappings (id, event_id, first_name_col, last_name_col, full_name_col, email_col, cluster_col, criteria_cols)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(event_id) DO UPDATE SET
+              first_name_col = excluded.first_name_col,
+              last_name_col  = excluded.last_name_col,
+              full_name_col  = excluded.full_name_col,
+              email_col      = excluded.email_col,
+              cluster_col    = excluded.cluster_col,
+              criteria_cols  = excluded.criteria_cols`,
+      args: [
+        mappingId, event.id as string,
+        body.columnMapping.firstNameCol ?? null,
+        body.columnMapping.lastNameCol ?? null,
+        body.columnMapping.fullNameCol ?? null,
+        body.columnMapping.emailCol,
+        body.columnMapping.clusterCol ?? null,
+        JSON.stringify(body.columnMapping.criteriaColumns ?? []),
+      ],
+    },
+    ...rowEntries.map(entry => ({
+      sql: 'INSERT INTO event_csv_rows (id, event_id, row_index, raw_data) VALUES (?, ?, ?, ?)',
+      args: [entry.id, event.id as string, entry.rowIndex, JSON.stringify(entry.row)],
+    })),
+  ], 'write')
 
   return c.json({ status: 'ok', rowCount: body.rows.length, rowIds: rowEntries.map(e => e.id) })
 })
@@ -299,13 +474,13 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
 // ── PATCH /api/events/:slug/column-mapping ───────────────────────────────────
 // Update the confirmed column mapping after the user has reviewed it in the wizard.
 app.patch('/api/events/:slug/column-mapping', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -340,13 +515,13 @@ app.patch('/api/events/:slug/column-mapping', async (c) => {
 // ── GET /api/events/:slug/csv-data ────────────────────────────────────────────
 // Returns stored CSV rows + column mapping + clusters for wizard resume.
 app.get('/api/events/:slug/csv-data', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -384,13 +559,13 @@ app.get('/api/events/:slug/csv-data', async (c) => {
 // ── POST /api/events/:slug/clusters ──────────────────────────────────────────
 // Save cluster configuration. Only before finalization.
 app.post('/api/events/:slug/clusters', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
   if (event.selection_locked === 1) return c.json({ status: 'error', message: 'Event is already finalized.' }, 409)
@@ -403,8 +578,8 @@ app.post('/api/events/:slug/clusters', async (c) => {
 
   const totalMax = body.clusters.reduce((s, c) => s + (c.maxCount || 0), 0)
 
-  await client.execute({ sql: 'DELETE FROM event_clusters WHERE event_id = ?', args: [event.id] })
   await client.batch([
+    { sql: 'DELETE FROM event_clusters WHERE event_id = ?', args: [event.id] },
     ...body.clusters.map(cl => ({
       sql: 'INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count, filters) VALUES (?, ?, ?, ?, ?, ?)',
       args: [crypto.randomUUID(), event.id as string, body.clusterCol, cl.value, cl.maxCount, JSON.stringify(cl.filters ?? {})],
@@ -413,7 +588,7 @@ app.post('/api/events/:slug/clusters', async (c) => {
       sql: 'UPDATE events SET max_attendees = ? WHERE id = ?',
       args: [totalMax, event.id],
     },
-  ])
+  ], 'write')
 
   return c.json({ status: 'ok' })
 })
@@ -421,13 +596,13 @@ app.post('/api/events/:slug/clusters', async (c) => {
 // ── GET /api/events/:slug/clusters ────────────────────────────────────────────
 // Returns cluster configs with live fill status.
 app.get('/api/events/:slug/clusters', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -436,22 +611,10 @@ app.get('/api/events/:slug/clusters', async (c) => {
     args: [event.id],
   })
 
-  const activeCountSql = `SELECT COUNT(*) as cnt
-    FROM attendees a
-    WHERE a.event_id = ? AND a.cluster_value = ?
-      AND NOT EXISTS (
-        SELECT 1 FROM check_ins ci
-        WHERE ci.attendee_id = a.id
-          AND ci.action = 'removed'
-          AND ci.actioned_at = (
-            SELECT MAX(actioned_at) FROM check_ins WHERE attendee_id = a.id
-          )
-      )`
-
   const knownValues = new Set(clustersRes.rows.map(r => r.value as string))
 
   const clusters = await Promise.all(clustersRes.rows.map(async (cl) => {
-    const countRes = await client.execute({ sql: activeCountSql, args: [event.id, cl.value] })
+    const countRes = await client.execute({ sql: ACTIVE_CLUSTER_COUNT_SQL, args: [event.id, cl.value] })
     const currentCount = Number(countRes.rows[0]?.cnt ?? 0)
     const maxCount = cl.max_count !== null ? Number(cl.max_count) : null
     return {
@@ -474,7 +637,7 @@ app.get('/api/events/:slug/clusters', async (c) => {
   for (const row of adHocRes.rows) {
     const val = row.cluster_value as string
     if (knownValues.has(val)) continue
-    const countRes = await client.execute({ sql: activeCountSql, args: [event.id, val] })
+    const countRes = await client.execute({ sql: ACTIVE_CLUSTER_COUNT_SQL, args: [event.id, val] })
     clusters.push({
       id:             null as unknown as string,
       clusterCol:     '',
@@ -492,16 +655,16 @@ app.get('/api/events/:slug/clusters', async (c) => {
 // ── POST /api/events/:slug/finalize ──────────────────────────────────────────
 // Create attendees from selected CSV row IDs. Locks the event.
 app.post('/api/events/:slug/finalize', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
-  if (event.selection_locked === 1) return c.json({ status: 'error', message: 'Event is already finalized.' }, 409)
+  if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {
     selectedRows: { rowId: string; clusterValue: string | null }[]
@@ -534,18 +697,22 @@ app.post('/api/events/:slug/finalize', async (c) => {
     m = mappingRes.rows[0] as unknown as typeof m
   }
 
-  // Validate all row IDs belong to this event
+  // Validate all row IDs belong to this event. Chunk the IN list under SQLite's variable limit.
   const rowIds = body.selectedRows.map(r => r.rowId)
-  const placeholders = rowIds.map(() => '?').join(',')
-  const rowsRes = await client.execute({
-    sql: `SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND id IN (${placeholders})`,
-    args: [event.id, ...rowIds],
-  })
-
-  const rowMap = new Map(rowsRes.rows.map(r => [r.id as string, JSON.parse(r.raw_data as string) as Record<string, string>]))
+  const rowMap = new Map<string, Record<string, string>>()
+  for (const chunk of inChunks(rowIds)) {
+    const placeholders = chunk.map(() => '?').join(',')
+    const rowsRes = await client.execute({
+      sql: `SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND id IN (${placeholders})`,
+      args: [event.id, ...chunk],
+    })
+    for (const row of rowsRes.rows) {
+      rowMap.set(row.id as string, JSON.parse(row.raw_data as string) as Record<string, string>)
+    }
+  }
 
   const seen = new Set<string>()
-  const attendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string; clusterValue: string | null }[] = []
+  const attendees: { id: string; csvRowId: string; qrToken: string; firstName: string; lastName: string; email: string; clusterValue: string | null }[] = []
 
   for (const sel of body.selectedRows) {
     const raw = rowMap.get(sel.rowId)
@@ -568,6 +735,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
 
     attendees.push({
       id:           crypto.randomUUID(),
+      csvRowId:     sel.rowId,
       qrToken:      crypto.randomUUID(),
       firstName,
       lastName,
@@ -578,32 +746,34 @@ app.post('/api/events/:slug/finalize', async (c) => {
 
   if (!attendees.length) return c.json({ status: 'error', message: 'No valid attendees could be derived from selected rows.' }, 400)
 
-  // Batch insert attendees
-  const chunkSize = 100
-  for (let i = 0; i < attendees.length; i += chunkSize) {
-    const chunk = attendees.slice(i, i + chunkSize)
-    await client.batch(
-      chunk.map(a => ({
-        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, a.clusterValue],
-      }))
-    )
-  }
-
-  // Mark rows as selected
-  for (let i = 0; i < rowIds.length; i += chunkSize) {
-    const chunk = rowIds.slice(i, i + chunkSize)
-    const ph = chunk.map(() => '?').join(',')
-    await client.execute({
-      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${ph})`,
-      args: [event.id, ...chunk],
-    })
-  }
-
-  await client.execute({
-    sql: 'UPDATE events SET selection_locked = 1, max_attendees = ? WHERE id = ?',
-    args: [body.maxAttendees ?? null, event.id],
+  const locked = await client.execute({
+    sql: 'UPDATE events SET selection_locked = 1 WHERE id = ? AND selection_locked = 0',
+    args: [event.id],
   })
+  if (Number(locked.rowsAffected) !== 1) return c.json(ALREADY_FINALIZED, 409)
+
+  try {
+    await client.batch([
+      ...attendees.map(a => ({
+        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, a.clusterValue, a.csvRowId],
+      })),
+      ...inChunks(rowIds).map(chunk => ({
+        sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${chunk.map(() => '?').join(',')})`,
+        args: [event.id, ...chunk],
+      })),
+      {
+        sql: 'UPDATE events SET max_attendees = ? WHERE id = ?',
+        args: [body.maxAttendees ?? null, event.id],
+      },
+    ], 'write')
+  } catch (error) {
+    await client.batch([
+      { sql: 'DELETE FROM attendees WHERE event_id = ?', args: [event.id] },
+      { sql: 'UPDATE events SET selection_locked = 0 WHERE id = ?', args: [event.id] },
+    ], 'write')
+    throw error
+  }
 
   return c.json({
     status: 'ok',
@@ -614,14 +784,14 @@ app.post('/api/events/:slug/finalize', async (c) => {
 // ── POST /api/events/:slug/clusters/:value/raffle ─────────────────────────────
 // Re-raffle a cluster to fill remaining slots from unselected eligible rows.
 app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const clusterValue = decodeURIComponent(c.req.param('value'))
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
   if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event is not finalized yet.' }, 409)
@@ -634,7 +804,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   const cluster = clusterRes.rows[0]
 
   const countRes = await client.execute({
-    sql: 'SELECT COUNT(*) as cnt FROM attendees WHERE event_id = ? AND cluster_value = ?',
+    sql: ACTIVE_CLUSTER_COUNT_SQL,
     args: [event.id, clusterValue],
   })
   const currentCount = Number(countRes.rows[0]?.cnt ?? 0)
@@ -648,8 +818,10 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   })
   if (!mappingRes.rows.length) return c.json({ status: 'error', message: 'Column mapping not found.' }, 400)
   const m = mappingRes.rows[0]
+  const emailCol = (m.email_col as string | null) ?? ''
 
-  // Fetch all unselected rows, filter in application code
+  // Fetch all unselected rows. selectAttendees applies the cluster filters,
+  // dedupes by email, then fills only the remaining active slots.
   const allUnselected = await client.execute({
     sql: 'SELECT id, raw_data FROM event_csv_rows WHERE event_id = ? AND is_selected = 0',
     args: [event.id],
@@ -657,40 +829,38 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   const filters: Record<string, string[]> = JSON.parse(cluster.filters as string ?? '{}')
 
-  const eligible = allUnselected.rows.filter(r => {
-    const raw: Record<string, string> = JSON.parse(r.raw_data as string)
-    // Must match cluster column value
-    if (m.cluster_col && raw[m.cluster_col as string] !== clusterValue) return false
-    // Must pass all cluster filters (AND across columns, OR within column values)
-    for (const [col, vals] of Object.entries(filters)) {
-      if (vals.length > 0 && !vals.includes(raw[col] ?? '')) return false
-    }
-    return true
-  })
-
-  if (!eligible.length) return c.json({ status: 'error', message: 'No eligible unselected respondents remain for this cluster.' }, 404)
-
-  // Fisher-Yates shuffle and slice
-  const shuffled = [...eligible]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  const winners = shuffled.slice(0, remaining)
-
-  // Get existing emails to avoid duplicates
   const existingEmailRes = await client.execute({
     sql: 'SELECT email FROM attendees WHERE event_id = ?',
     args: [event.id],
   })
   const existingEmails = new Set(existingEmailRes.rows.map(r => (r.email as string).toLowerCase()))
 
-  const newAttendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string }[] = []
+  const available = allUnselected.rows.flatMap((row) => {
+    const raw = JSON.parse(row.raw_data as string) as Record<string, string>
+    const email = (emailCol ? raw[emailCol] ?? '' : '').trim().toLowerCase()
+    if (!email || existingEmails.has(email)) return []
+    return [{ id: row.id as string, rawData: raw }]
+  })
+
+  const { selected } = selectAttendees(available, {
+    mapping: {
+      emailCol,
+      clusterCol: (m.cluster_col as string | null) ?? null,
+    },
+    clusters: [{ value: clusterValue, maxCount: remaining, filters }],
+    globalFilters: {},
+    guaranteed: [],
+    seed: crypto.randomUUID(),
+  })
+
+  if (!selected.length) return c.json({ status: 'error', message: 'No eligible unselected respondents remain for this cluster.' }, 404)
+
+  const newAttendees: { id: string; qrToken: string; firstName: string; lastName: string; email: string; csvRowId: string }[] = []
   const winnerIds: string[] = []
 
-  for (const w of winners) {
-    const raw: Record<string, string> = JSON.parse(w.raw_data as string)
-    const emailRaw = (m.email_col ? raw[m.email_col as string] ?? '' : '').trim().toLowerCase()
+  for (const winner of selected) {
+    const raw = winner.rawData
+    const emailRaw = (emailCol ? raw[emailCol] ?? '' : '').trim().toLowerCase()
     if (!emailRaw || existingEmails.has(emailRaw)) continue
     existingEmails.add(emailRaw)
 
@@ -704,26 +874,22 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
       lastName  = parts.slice(1).join(' ')
     }
 
-    newAttendees.push({ id: crypto.randomUUID(), qrToken: crypto.randomUUID(), firstName, lastName, email: emailRaw })
-    winnerIds.push(w.id as string)
+    newAttendees.push({ id: crypto.randomUUID(), qrToken: crypto.randomUUID(), firstName, lastName, email: emailRaw, csvRowId: winner.id })
+    winnerIds.push(winner.id)
   }
 
   if (!newAttendees.length) return c.json({ status: 'error', message: 'No new eligible attendees could be added.' }, 404)
 
   await client.batch([
     ...newAttendees.map(a => ({
-      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, clusterValue],
+      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, clusterValue, a.csvRowId],
     })),
-  ])
-
-  if (winnerIds.length) {
-    const ph = winnerIds.map(() => '?').join(',')
-    await client.execute({
-      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${ph})`,
-      args: [event.id, ...winnerIds],
-    })
-  }
+    ...inChunks(winnerIds).map(chunk => ({
+      sql: `UPDATE event_csv_rows SET is_selected = 1 WHERE event_id = ? AND id IN (${chunk.map(() => '?').join(',')})`,
+      args: [event.id, ...chunk],
+    })),
+  ], 'write')
 
   return c.json({
     status: 'ok',
@@ -733,13 +899,13 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
 // ── DELETE /api/events/:slug ──────────────────────────────────────────────────
 app.delete('/api/events/:slug', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -758,20 +924,33 @@ app.delete('/api/events/:slug', async (c) => {
 
 // ── PATCH /api/events/:slug ───────────────────────────────────────────────────
 app.patch('/api/events/:slug', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
-  const body = await c.req.json() as { maxAttendees?: number | null; name?: string; date?: string; time?: string; location?: string }
+  const body = await c.req.json() as {
+    maxAttendees?: number | null
+    name?: string
+    date?: string
+    time?: string
+    location?: string
+    passFields?: unknown
+  }
 
   const updates: string[] = []
   const args: unknown[] = []
+  if ('passFields' in body) {
+    const fields = passFieldsFromBody(body.passFields)
+    if (!fields) return c.json({ status: 'error', message: 'Pass fields must be a list of column names.' }, 400)
+    updates.push('pass_fields = ?')
+    args.push(JSON.stringify(fields))
+  }
   if ('maxAttendees' in body) { updates.push('max_attendees = ?'); args.push(body.maxAttendees ?? null) }
   if (body.name?.trim())     { updates.push('name = ?');           args.push(body.name.trim()) }
   if (body.date)             { updates.push('event_date = ?');     args.push(body.date) }
@@ -788,14 +967,14 @@ app.patch('/api/events/:slug', async (c) => {
 
 // ── GET /api/events/:slug/csv-rows/search ─────────────────────────────────────
 app.get('/api/events/:slug/csv-rows/search', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const q = (c.req.query('q') ?? '').trim()
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -817,20 +996,16 @@ app.get('/api/events/:slug/csv-rows/search', async (c) => {
 
 // ── POST /api/events/:slug/add-guest ─────────────────────────────────────────
 app.post('/api/events/:slug/add-guest', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
-  const client = db(c.env)
+  const client = db(c)
 
-  const evRes = await client.execute({
-    sql: 'SELECT id, lead_user_id, selection_locked, max_attendees FROM events WHERE slug = ?',
-    args: [slug],
-  })
-  if (evRes.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
-  const event = evRes.rows[0]
-  if (event.lead_user_id !== user.sub) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
-  if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
+  if (Number(event.selection_locked) !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
 
   // Capacity check (exclude removed attendees)
   if (event.max_attendees !== null) {
@@ -839,7 +1014,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
             FROM attendees a
             LEFT JOIN (
               SELECT attendee_id, action,
-                     ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC) AS rn
+                     ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
               FROM check_ins
             ) ci ON ci.attendee_id = a.id AND ci.rn = 1
             WHERE a.event_id = ? AND (ci.action IS NULL OR ci.action != 'removed')`,
@@ -924,16 +1099,6 @@ app.post('/api/events/:slug/add-guest', async (c) => {
 // ── POST /api/events/:slug/lookup ─────────────────────────────────────────────
 app.post('/api/events/:slug/lookup', async (c) => {
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
   const slug = c.req.param('slug')
   const body = await c.req.json() as { firstName: string; lastName: string; email: string }
 
@@ -941,7 +1106,7 @@ app.post('/api/events/:slug/lookup', async (c) => {
     return c.json({ status: 'error', message: 'First name, last name, and email are required.' }, 400)
   }
 
-  const client = db(c.env)
+  const client = db(c)
   const evRes = await client.execute({
     sql: 'SELECT id, name, event_date, event_time, location FROM events WHERE slug = ?',
     args: [slug],
@@ -950,25 +1115,52 @@ app.post('/api/events/:slug/lookup', async (c) => {
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
   const event = evRes.rows[0]
+  const eventId = event.id as string
+  const email = body.email.trim().toLowerCase()
+
+  const ipAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'lookup',
+    subject: `${eventId}:ip:${ip}`,
+    limit: LOOKUP_IP_LIMIT,
+    windowSec: LOOKUP_IP_WINDOW,
+  })
+  if (!ipAllowed.ok) {
+    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
+  }
+
+  const emailAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'lookup',
+    subject: `${eventId}:${await sha256Hex(email)}`,
+    limit: LOOKUP_EMAIL_LIMIT,
+    windowSec: LOOKUP_EMAIL_WINDOW,
+  })
+  if (!emailAllowed.ok) {
+    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
+  }
 
   const aRes = await client.execute({
     sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value FROM attendees
           WHERE event_id = ? AND LOWER(email) = LOWER(?) AND LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)`,
-    args: [event.id, body.email.trim(), body.firstName.trim(), body.lastName.trim()],
+    args: [eventId, email, body.firstName.trim(), body.lastName.trim()],
   })
   if (aRes.rows.length === 0) {
     return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
   }
 
   const a = aRes.rows[0]
-  const exp = Math.floor(Date.now() / 1000) + PASS_TOKEN_TTL_SEC
-  const passToken = await sign({
-    typ: 'pass',
-    sub: a.id as string,
+  if (await latestCheckInAction(client, a.id as string) === 'removed') {
+    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+  }
+  const missingEnv = missingRequiredEnv(c.env)
+  if (missingEnv.includes('PASS_TOKEN_SECRET')) {
+    console.error(requiredEnvError(missingEnv))
+    return c.json({ status: 'error', message: 'Server misconfigured: add PASS_TOKEN_SECRET to backend/.dev.vars.' }, 503)
+  }
+  const passToken = await signPassToken(c.env, {
+    attendeeId: a.id as string,
     eventId: event.id as string,
     slug,
-    exp,
-  }, c.env.JWT_SECRET)
+  })
 
   return c.json({
     status: 'ok',
@@ -984,66 +1176,8 @@ app.post('/api/events/:slug/lookup', async (c) => {
   })
 })
 
-// ── GET /api/events/:slug/passes/apple ─────────────────────────────────────────
-app.get('/api/events/:slug/passes/apple', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
-  const slug = c.req.param('slug')
-  const token = (c.req.query('token') ?? '').trim()
-  if (!token) {
-    return c.json({ status: 'error', message: 'Pass token is required.' }, 400)
-  }
-
-  try {
-    const claims = await verifyPassToken(c.env, token, slug)
-    if (!claims) {
-      return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
-    }
-
-    const client = db(c.env)
-    const ctx = await loadPassContext(client, slug, claims.sub)
-    if (!ctx || ctx.event.id !== claims.eventId) {
-      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-    }
-
-    const pkpass = await buildApplePass(ctx, c.env)
-    return new Response(pkpass, {
-      headers: {
-        'Content-Type': 'application/vnd.apple.pkpass',
-        'Content-Disposition': 'attachment; filename="ticket.pkpass"',
-      },
-    })
-  } catch (err) {
-    console.error('GET /passes/apple error:', err instanceof Error ? err.message : err)
-    const message = err instanceof Error && err.message.includes('not configured')
-      ? 'Wallet passes are not available right now.'
-      : LOOKUP_FAIL_MSG
-    return c.json({ status: 'error', message }, 503)
-  }
-})
-
 // ── GET /api/events/:slug/passes/google ────────────────────────────────────────
 app.get('/api/events/:slug/passes/google', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const allowed = await checkRateLimit(
-    c.env.RATE_LIMIT_KV,
-    LOOKUP_RL_KEY(ip),
-    LOOKUP_RL_LIMIT,
-    LOOKUP_RL_WINDOW,
-  )
-  if (!allowed) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-  }
-
   const slug = c.req.param('slug')
   const token = (c.req.query('token') ?? '').trim()
   if (!token) {
@@ -1056,17 +1190,29 @@ app.get('/api/events/:slug/passes/google', async (c) => {
       return c.json({ status: 'error', message: 'Invalid or expired pass token.' }, 400)
     }
 
-    const client = db(c.env)
+    const client = db(c)
     const ctx = await loadPassContext(client, slug, claims.sub)
     if (!ctx || ctx.event.id !== claims.eventId) {
       return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
+    }
+
+    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+      bucket: 'pass',
+      subject: claims.sub,
+      limit: PASS_LIMIT,
+      windowSec: PASS_WINDOW,
+    })
+    if (!allowed.ok) {
+      return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
     }
 
     const url = await buildGoogleWalletSaveUrl(ctx, c.env)
     return c.json({ status: 'ok', url })
   } catch (err) {
     console.error('GET /passes/google error:', err instanceof Error ? err.message : err)
-    const message = err instanceof Error && err.message.includes('not configured')
+    const detail = err instanceof Error ? err.message : ''
+    const walletDown = detail.includes('not configured') || detail.startsWith('Google Wallet')
+    const message = walletDown
       ? 'Wallet passes are not available right now.'
       : LOOKUP_FAIL_MSG
     return c.json({ status: 'error', message }, 503)
@@ -1075,15 +1221,15 @@ app.get('/api/events/:slug/passes/google', async (c) => {
 
 // ── POST /api/events/:slug/checkin ────────────────────────────────────────────
 app.post('/api/events/:slug/checkin', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const { qrToken } = await c.req.json() as { qrToken: string }
   if (!qrToken) return c.json({ status: 'error', message: 'qrToken required.' }, 400)
 
-  const client = db(c.env)
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -1093,41 +1239,30 @@ app.post('/api/events/:slug/checkin', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Invalid QR code for this event.' }, 404)
   const a = aRes.rows[0]
-
-  const latest = await client.execute({
-    sql: 'SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC LIMIT 1',
-    args: [a.id],
+  const result = await performCheckIn(client, String(event.id), {
+    id: a.id,
+    first_name: a.first_name,
+    last_name: a.last_name,
   })
-  if (latest.rows[0]?.action === 'checked_in') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} is already checked in.` }, 409)
-  }
-  if (latest.rows[0]?.action === 'removed') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} has been removed from this event.` }, 403)
-  }
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_in'],
-  })
-
+  if (!result.ok) return c.json(result.body, result.status)
   return c.json({
     status: 'ok',
-    message: `${a.first_name} ${a.last_name} checked in.`,
-    attendee: { id: a.id, firstName: a.first_name, lastName: a.last_name },
+    message: result.message,
+    attendee: result.attendee,
   })
 })
 
 // ── POST /api/events/:slug/checkin-manual ─────────────────────────────────────
 app.post('/api/events/:slug/checkin-manual', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -1137,36 +1272,26 @@ app.post('/api/events/:slug/checkin-manual', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
-
-  const latest = await client.execute({
-    sql: 'SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC LIMIT 1',
-    args: [a.id],
+  const result = await performCheckIn(client, String(event.id), {
+    id: a.id,
+    first_name: a.first_name,
+    last_name: a.last_name,
   })
-  if (latest.rows[0]?.action === 'checked_in') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} is already checked in.` }, 409)
-  }
-  if (latest.rows[0]?.action === 'removed') {
-    return c.json({ status: 'error', message: `${a.first_name} ${a.last_name} has been removed.` }, 403)
-  }
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_in'],
-  })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} checked in.` })
+  if (!result.ok) return c.json(result.body, result.status)
+  return c.json({ status: 'ok', message: result.message })
 })
 
 // ── POST /api/events/:slug/checkout ───────────────────────────────────────────
 app.post('/api/events/:slug/checkout', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -1176,25 +1301,34 @@ app.post('/api/events/:slug/checkout', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
-
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'checked_out'],
-  })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} checked out.` })
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const latest = await latestCheckInAction(client, attendeeId)
+  if (latest !== 'checked_in') {
+    return c.json(actionError('not_checked_in', `${name} is not checked in.`), 409)
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    attendeeId,
+    String(event.id),
+    'checked_out',
+    `${LATEST_ACTION_IS} = 'checked_in'`,
+    [attendeeId],
+  )
+  if (!wrote) return c.json(actionError('not_checked_in', `${name} is not checked in.`), 409)
+  return c.json({ status: 'ok', message: `${name} checked out.` })
 })
 
 // ── POST /api/events/:slug/remove ─────────────────────────────────────────────
 app.post('/api/events/:slug/remove', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const { attendeeId } = await c.req.json() as { attendeeId: string }
   if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
 
-  const client = db(c.env)
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -1204,25 +1338,64 @@ app.post('/api/events/:slug/remove', async (c) => {
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const wrote = await writeCheckInAction(client, attendeeId, String(event.id), 'removed', '1 = 1')
+  if (!wrote) return c.json(actionError('not_removed', `${name} could not be removed.`), 409)
+  return c.json({ status: 'ok', message: `${name} removed.` })
+})
 
-  await client.execute({
-    sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
-    args: [crypto.randomUUID(), a.id, event.id as string, 'removed'],
+// ── POST /api/events/:slug/restore ────────────────────────────────────────────
+app.post('/api/events/:slug/restore', async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const slug = c.req.param('slug')
+  const { attendeeId } = await c.req.json() as { attendeeId: string }
+  if (!attendeeId) return c.json({ status: 'error', message: 'attendeeId required.' }, 400)
+
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
+  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  const event = leadCheck.event
+
+  const aRes = await client.execute({
+    sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
+    args: [attendeeId, event.id],
   })
-  return c.json({ status: 'ok', message: `${a.first_name} ${a.last_name} removed.` })
+  if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
+  const a = aRes.rows[0]
+  const name = attendeeLabel(a.first_name, a.last_name)
+  const latest = await latestCheckInAction(client, String(a.id))
+  if (latest !== 'removed') {
+    return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  }
+  const wrote = await writeCheckInAction(
+    client,
+    String(a.id),
+    String(event.id),
+    'not_checked_in',
+    `${LATEST_ACTION_IS} = 'removed'`,
+    [String(a.id)],
+  )
+  if (!wrote) return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  return c.json({
+    status: 'ok',
+    message: `${name} restored.`,
+    attendee: { id: String(a.id), status: 'not_checked_in' },
+  })
 })
 
 // ── PATCH /api/events/:slug/attendees/:id ─────────────────────────────────────
 // Update attendee cluster_value (lead only).
 app.patch('/api/events/:slug/attendees/:id', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const attendeeId = c.req.param('id')
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 
@@ -1240,14 +1413,14 @@ app.patch('/api/events/:slug/attendees/:id', async (c) => {
 // ── PATCH /api/events/:slug/clusters/:value/max-count ─────────────────────────
 // Set (or create) the max_count for a cluster. Creates the cluster row if ad-hoc.
 app.patch('/api/events/:slug/clusters/:value/max-count', async (c) => {
-  const user = await getUser(c)
+  const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
   const slug = c.req.param('slug')
   const value = decodeURIComponent(c.req.param('value'))
-  const client = db(c.env)
+  const client = db(c)
 
-  const leadCheck = await requireEventLead(client, slug, user.sub, c.req.header('X-Active-Org-Id'))
+  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
 

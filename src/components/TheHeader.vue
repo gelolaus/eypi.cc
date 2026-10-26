@@ -18,11 +18,11 @@
       <div class="pill-nav__controls">
         <button
           type="button"
-          class="pill-nav__menu-btn tap-scale"
+          class="pill-nav__menu-btn tap-scale relative"
           :class="isSidebarOpen ? 'pill-nav__menu-btn--open' : ''"
           :aria-expanded="isSidebarOpen"
           aria-controls="site-nav-sidebar"
-          :aria-label="isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'"
+          :aria-label="menuLabel"
           data-cursor="nav"
           @click="toggleSidebar"
         >
@@ -31,11 +31,19 @@
             <span />
             <span />
           </span>
+          <span
+            v-if="pendingInviteCount > 0"
+            class="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#DEAC4B] px-1 text-[10px] font-semibold leading-none text-[#1a1a2e]"
+          >
+            {{ pendingInviteCount }}
+          </span>
         </button>
 
         <button
+          type="button"
           class="pill-nav__toggle tap-scale"
           aria-label="Toggle dark mode"
+          :aria-pressed="isDark ? 'true' : 'false'"
           data-cursor="nav"
           @click="toggleDark"
         >
@@ -69,6 +77,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { useActiveOrg } from '@/composables/useActiveOrg'
+import { useSession } from '@/stores/session'
 import type { OrgListItem } from '@/types/orgs'
 import NavSidebar from '@/components/NavSidebar.vue'
 
@@ -77,11 +86,16 @@ const router = useRouter()
 const toast = useToast()
 const { isDark, toggle: toggleDark } = useDarkMode()
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
+const session = useSession()
 
 const isSidebarOpen = ref(false)
-const userName = ref('Guest User')
-const userEmail = ref('')
-const isAuthenticated = ref(false)
+const isAuthenticated = computed(() => session.user.value !== null)
+const userEmail = computed(() => session.user.value?.email ?? '')
+const userName = computed(() => {
+  const current = session.user.value
+  if (!current) return 'Guest User'
+  return formatDisplayName(current)
+})
 
 function handleSelectOrg(org: OrgListItem) {
   closeSidebar()
@@ -99,7 +113,15 @@ function onScroll() {
   lastScrollY = y
 }
 
-const isAuthPage = computed(() => isAuthenticated.value)
+const isAuthPage = isAuthenticated
+const pendingInviteCount = computed(() => session.pendingInviteCount.value)
+const menuLabel = computed(() => {
+  const action = isSidebarOpen.value ? 'Close navigation menu' : 'Open navigation menu'
+  const count = pendingInviteCount.value
+  if (count < 1) return action
+  const noun = count === 1 ? 'invite' : 'invites'
+  return `${action}, ${count} pending ${noun}`
+})
 
 function formatDisplayName(payload: { name?: string | null; email?: string }): string {
   const emailPrefix = payload.email ? payload.email.split('@')[0] : ''
@@ -110,36 +132,6 @@ function formatDisplayName(payload: { name?: string | null; email?: string }): s
     return trimmedName
   }
   return emailPrefix ? capitalize(emailPrefix) : 'Student'
-}
-
-function loadUserFromToken() {
-  const token = localStorage.getItem('eypi_token')
-  if (!token) {
-    userName.value = 'Guest User'
-    userEmail.value = ''
-    isAuthenticated.value = false
-    return
-  }
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) throw new Error('malformed')
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
-    if (payload.exp && Date.now() / 1000 > payload.exp) {
-      localStorage.removeItem('eypi_token')
-      userName.value = 'Guest User'
-      userEmail.value = ''
-      isAuthenticated.value = false
-      return
-    }
-    userName.value = formatDisplayName(payload)
-    userEmail.value = payload.email || ''
-    isAuthenticated.value = true
-  } catch {
-    localStorage.removeItem('eypi_token')
-    userName.value = 'Guest User'
-    userEmail.value = ''
-    isAuthenticated.value = false
-  }
 }
 
 function toggleSidebar() {
@@ -159,19 +151,16 @@ function setBodyScrollLock(locked: boolean) {
   document.body.classList.toggle('nav-scroll-lock', locked)
 }
 
-const handleLogout = () => {
-  localStorage.removeItem('eypi_token')
-  localStorage.removeItem('active_org_id')
-  loadUserFromToken()
+async function handleLogout() {
+  await session.logout()
   orgs.value = []
   activeOrg.value = null
   closeSidebar()
   toast.success('Signed out.')
-  router.push('/login')
+  await router.push('/login')
 }
 
 onMounted(() => {
-  loadUserFromToken()
   if (isAuthenticated.value) fetchOrgs()
   window.addEventListener('scroll', onScroll, { passive: true })
   window.addEventListener('keydown', onKeydown)
@@ -186,7 +175,6 @@ onUnmounted(() => {
 watch(
   () => route.path,
   () => {
-    loadUserFromToken()
     closeSidebar()
   },
 )
@@ -202,11 +190,5 @@ watch(isAuthenticated, (newVal) => {
 
 watch(isSidebarOpen, (open) => {
   setBodyScrollLock(open)
-  if (open) {
-    requestAnimationFrame(() => {
-      const closeBtn = document.querySelector<HTMLButtonElement>('#site-nav-sidebar button[aria-label="Close navigation"]')
-      closeBtn?.focus()
-    })
-  }
 })
 </script>

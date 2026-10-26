@@ -1,5 +1,33 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import { isReservedSlug } from './reservedSlugs'
+
+/** One-segment `path: '/<seg>'` literals. Params and nested paths stay out. */
+function topLevelRouteSegments(routerSource: string): string[] {
+  return [...routerSource.matchAll(/path:\s*'\/([^/'`:]+)'/g)].map((match) => match[1])
+}
+
+const PLANNED_RESERVED_SLUGS = [
+  'admin',
+  'account',
+  'api',
+  'assets',
+  'auth',
+  'logout',
+  'signup',
+  'help',
+  'about',
+  'qr',
+  'static',
+  'invites',
+  'report',
+  'unlock',
+  'expired',
+  'media',
+  'p',
+] as const
 
 describe('isReservedSlug', () => {
   it('blocks known reserved slugs', () => {
@@ -16,5 +44,34 @@ describe('isReservedSlug', () => {
   it('allows slugs that are not reserved', () => {
     expect(isReservedSlug('my-cool-link')).toBe(false)
     expect(isReservedSlug('abc123')).toBe(false)
+  })
+
+  it('every top-level route in src/router/index.ts is reserved', () => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../src/router/index.ts'),
+      'utf8',
+    )
+    const segments = topLevelRouteSegments(source)
+
+    expect(segments).toEqual(expect.arrayContaining([
+      'login',
+      'dashboard',
+      'links',
+      'forms',
+      'orgs',
+      'settings',
+      'privacy',
+      'terms',
+      'contact',
+    ]))
+    expect(isReservedSlug('verify')).toBe(true)
+    expect(isReservedSlug('reset-password')).toBe(true)
+
+    for (const segment of segments) {
+      expect(isReservedSlug(segment), segment).toBe(true)
+    }
+    for (const slug of PLANNED_RESERVED_SLUGS) {
+      expect(isReservedSlug(slug), slug).toBe(true)
+    }
   })
 })

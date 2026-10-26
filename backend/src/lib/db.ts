@@ -1,6 +1,12 @@
-import { verify } from 'hono/jwt'
+import type { Context } from 'hono'
 import { createClient } from '@libsql/client/web'
 import type { Client } from '@libsql/client/web'
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    db?: Client
+  }
+}
 
 export async function getUserOrgId(
   client: Client,
@@ -10,24 +16,34 @@ export async function getUserOrgId(
   if (requestedOrgId) {
     const r = await client.execute({
       sql: `
-        SELECT id FROM (
-          SELECT id FROM organizations WHERE id = ? AND owner_id = ?
-          UNION
-          SELECT org_id AS id FROM org_members WHERE org_id = ? AND user_id = ? AND activated_at IS NOT NULL
-        ) LIMIT 1
+        SELECT o.id AS id
+        FROM organizations o
+        WHERE o.id = ?
+          AND (
+            o.owner_id = ?
+            OR EXISTS (
+              SELECT 1 FROM org_members m
+              WHERE m.org_id = o.id AND m.user_id = ? AND m.activated_at IS NOT NULL
+            )
+          )
+        LIMIT 1
       `,
-      args: [requestedOrgId, userId, requestedOrgId, userId],
+      args: [requestedOrgId, userId, userId],
     })
-    if (r.rows.length > 0) return r.rows[0].id as string
+    return r.rows.length > 0 ? r.rows[0].id as string : null
   }
 
   const r = await client.execute({
     sql: `
-      SELECT id FROM (
-        SELECT id FROM organizations WHERE owner_id = ?
-        UNION
-        SELECT org_id AS id FROM org_members WHERE user_id = ? AND activated_at IS NOT NULL
-      ) LIMIT 1
+      SELECT o.id AS id
+      FROM organizations o
+      WHERE o.owner_id = ?
+         OR EXISTS (
+           SELECT 1 FROM org_members m
+           WHERE m.org_id = o.id AND m.user_id = ? AND m.activated_at IS NOT NULL
+         )
+      ORDER BY o.name
+      LIMIT 1
     `,
     args: [userId, userId],
   })
@@ -39,48 +55,40 @@ export async function getUserOrgId(
 export type Bindings = {
   TURSO_DATABASE_URL: string
   TURSO_AUTH_TOKEN: string
-  JWT_SECRET: string
+  PASS_TOKEN_SECRET: string
   RESEND_API_KEY: string
   RATE_LIMIT_KV: KVNamespace
   LINKS_KV: KVNamespace
-  ASSETS: Fetcher
-  // Apple Wallet (.pkpass)
-  APPLE_PASS_TYPE_ID?: string
-  APPLE_TEAM_ID?: string
-  APPLE_PASS_CERT_PEM?: string
-  APPLE_PASS_KEY_PEM?: string
-  APPLE_WWDR_CERT_PEM?: string
+  /** HMAC key for IP hashing. Reports store the hash, never the raw IP. */
+  IP_HASH_SECRET?: string
+  /** Optional Google Safe Browsing v4 key. Unset skips the lookup and does not fail health. */
+  SAFE_BROWSING_API_KEY?: string
+  /** `production` drops localhost from the CORS and CSRF allowlists. */
+  ENVIRONMENT?: string
+  MS_CLIENT_ID?: string
+  MS_CLIENT_SECRET?: string
+  /** Comma-separated Entra tenant ids allowed to sign in. */
+  MS_ALLOWED_TENANT_IDS?: string
+  /** HMAC key for the short-lived Microsoft sign-in cookie. */
+  AUTH_COOKIE_SECRET?: string
+  /** SPA origin for Microsoft sign-in redirects. */
+  FRONTEND_ORIGIN?: string
+  /** Public and private objects in the eypi-media bucket. */
+  MEDIA: R2Bucket
   // Google Wallet (JWT save link)
   GOOGLE_WALLET_ISSUER_ID?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL?: string
   GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY?: string
-  /** SPA origin for verification emails (defaults to https://eypi.cc). */
-  FRONTEND_URL?: string
 }
 
-export type JWTPayload = {
-  sub: string
-  email: string
-  name?: string
-  exp: number
-}
-
-// Single Turso/libSQL client factory shared across all route modules.
-export function db(env: Bindings) {
-  return createClient({ url: env.TURSO_DATABASE_URL, authToken: env.TURSO_AUTH_TOKEN })
-}
-
-// Verify the shared HS256 JWT (issued by /api/auth/login) and return its payload.
-export async function getUser(
-  c: { req: { header: (k: string) => string | undefined }; env: Bindings },
-): Promise<JWTPayload | null> {
-  const auth = c.req.header('Authorization')
-  if (!auth?.startsWith('Bearer ')) return null
-  try {
-    const payload = await verify(auth.slice(7), c.env.JWT_SECRET, 'HS256') as JWTPayload
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null
-    return payload
-  } catch {
-    return null
-  }
+// One Turso/libSQL client per request, reused from c.var.db.
+export function db<E extends { Bindings: Bindings }>(c: Context<E>): Client {
+  const existing = c.var.db
+  if (existing) return existing
+  const client = createClient({
+    url: c.env.TURSO_DATABASE_URL,
+    authToken: c.env.TURSO_AUTH_TOKEN,
+  })
+  c.set('db', client)
+  return client
 }

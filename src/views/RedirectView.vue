@@ -3,15 +3,15 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { inject, onMounted, ref, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import type AppTransition from '@/components/AppTransition.vue'
 
 const route = useRoute()
 const router = useRouter()
 const currentSlug = ref((route.params.slug as string) ?? '')
-const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null>>('appTransition')
+const appTransition = inject<Ref<InstanceType<typeof AppTransition> | null> | null>('appTransition', null)
 
 function isSafeRedirect(url: string): boolean {
   try {
@@ -23,25 +23,33 @@ function isSafeRedirect(url: string): boolean {
 }
 
 onMounted(async () => {
-  const clientReferrer = document.referrer
-
+  const slug = currentSlug.value
   const animationPromise = appTransition?.value?.trigger() ?? Promise.resolve()
-
-  const fetchPromise = fetch(`${API_BASE_URL}/api/links/${currentSlug.value}`, {
-    headers: clientReferrer ? { 'X-Client-Referrer': clientReferrer } : {},
-  })
-    .then((r) => r.json() as Promise<{ original_url?: string }>)
+  const referrer = encodeURIComponent(document.referrer || '')
+  const fetchPromise = api.raw(`/api/links/resolve/${encodeURIComponent(slug)}?r=${referrer}${route.query.src === 'qr' ? '&src=qr' : ''}`)
+    .then(async (res) => {
+      const data = await res.json().catch(() => null) as { url?: string; protected?: boolean } | null
+      return { status: res.status, data }
+    })
     .catch(() => null)
 
-  const [, data] = await Promise.all([animationPromise, fetchPromise])
+  const [, result] = await Promise.all([animationPromise, fetchPromise])
 
-  if (data?.original_url && isSafeRedirect(data.original_url)) {
-    window.location.replace(data.original_url)
-  } else {
-    router.replace({
-      name: 'not-found',
-      params: { pathMatch: [currentSlug.value] },
-    })
+  if (result?.status === 410) {
+    await router.replace('/expired')
+    return
   }
+  if (result?.data?.protected) {
+    await router.replace(route.query.src === 'qr' ? `/unlock/${slug}?src=qr` : `/unlock/${slug}`)
+    return
+  }
+  if (result?.data?.url && isSafeRedirect(result.data.url)) {
+    window.location.replace(result.data.url)
+    return
+  }
+  await router.replace({
+    name: 'not-found',
+    params: { pathMatch: [slug] },
+  })
 })
 </script>

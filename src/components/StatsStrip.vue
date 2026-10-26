@@ -22,8 +22,8 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
 
 useReveal()
@@ -48,7 +48,7 @@ function formatCount(value: number): string {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/stats`)
+    const res = await api.raw(`/api/stats`)
     if (!res.ok) return
     stats.value = await res.json() as PlatformStats
   } catch {

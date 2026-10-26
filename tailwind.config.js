@@ -8,7 +8,6 @@ export default {
         // Brand colors — kept for untouched dashboard/settings/auth views
         'apc-blue': '#34418F',
         'apc-gold': '#DEAC4B',
-        'apc-bg': '#FAFAF9',
         'mica-navy': {
           DEFAULT: 'rgba(15, 23, 42, 0.25)',
           input: 'rgba(15, 23, 42, 0.2)',

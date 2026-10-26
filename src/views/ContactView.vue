@@ -1,12 +1,5 @@
 <template>
-  <section class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-28">
-    <div class="mica-card relative w-full max-w-3xl rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-14">
-      <!-- Corner screws -->
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
+  <LegalLayout>
       <!-- Header -->
       <div class="mb-10 border-b border-gray-200 dark:border-slate-700 pb-8">
         <h1 class="text-section-title mb-1">
@@ -21,9 +14,9 @@
 
         <!-- General Support -->
         <div>
-          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h2 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             General Support
-          </h3>
+          </h2>
           <p class="text-gray-600 dark:text-slate-400 mb-3">
             For inquiries and bug reports:
           </p>
@@ -38,9 +31,9 @@
 
         <!-- Build with Eypi -->
         <div>
-          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h2 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             Build with Eypi
-          </h3>
+          </h2>
           <p class="text-gray-600 dark:text-slate-400 mb-4">
             APC students, org officers, and faculty — if you have an idea for the college community, send an email <strong class="text-gray-800 dark:text-slate-200">from your APC-provided email address</strong> with the subject line <strong class="text-gray-800 dark:text-slate-200">"Build with Eypi"</strong>.
           </p>
@@ -55,9 +48,9 @@
 
         <!-- What to Include -->
         <div>
-          <h3 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
+          <h2 class="text-card-title border-b border-gray-200 dark:border-slate-700 pb-2 mb-4">
             What to Include
-          </h3>
+          </h2>
           <ul class="list-disc pl-5 space-y-2 text-gray-600 dark:text-slate-400">
             <li>Your organization, school, department, or role</li>
             <li>A brief description of the project or feature idea</li>
@@ -66,9 +59,9 @@
         </div>
 
       </div>
-    </div>
-  </section>
+  </LegalLayout>
 </template>
 
 <script setup lang="ts">
+import LegalLayout from '@/components/LegalLayout.vue'
 </script>

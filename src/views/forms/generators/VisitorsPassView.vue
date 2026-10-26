@@ -8,8 +8,9 @@
           Visitors Pass Generator
         </h1>
         <form
-          @submit.prevent="generateDocument"
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
+          novalidate
+          @submit.prevent="generateDocument"
         >
           <div>
             <label for="submissionDate" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -19,9 +20,19 @@
               id="submissionDate"
               v-model="formData.submissionDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.submissionDate)"
+              :aria-describedby="errors.submissionDate ? 'submissionDate-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., December 31, 2025"
-            />
+            >
+            <p
+              v-if="errors.submissionDate"
+              id="submissionDate-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.submissionDate }}
+            </p>
           </div>
           <div>
             <label for="orgName" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -31,9 +42,19 @@
               id="orgName"
               v-model="formData.orgName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.orgName)"
+              :aria-describedby="errors.orgName ? 'orgName-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Junior Philippine Computer Society"
-            />
+            >
+            <p
+              v-if="errors.orgName"
+              id="orgName-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.orgName }}
+            </p>
           </div>
           <div>
             <label for="eventName" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -43,9 +64,19 @@
               id="eventName"
               v-model="formData.eventName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventName)"
+              :aria-describedby="errors.eventName ? 'eventName-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., SoCIT Fest 2025"
-            />
+            >
+            <p
+              v-if="errors.eventName"
+              id="eventName-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventName }}
+            </p>
           </div>
           <div>
             <label for="eventDate" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -55,9 +86,19 @@
               id="eventDate"
               v-model="formData.eventDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventDate)"
+              :aria-describedby="errors.eventDate ? 'eventDate-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., March 21, 2026 at 10:00 AM - 10:00 PM"
-            />
+            >
+            <p
+              v-if="errors.eventDate"
+              id="eventDate-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventDate }}
+            </p>
           </div>
           <div>
             <label for="eventLocation" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -67,9 +108,19 @@
               id="eventLocation"
               v-model="formData.eventLocation"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventLocation)"
+              :aria-describedby="errors.eventLocation ? 'eventLocation-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., 12/F Auditorium"
-            />
+            >
+            <p
+              v-if="errors.eventLocation"
+              id="eventLocation-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventLocation }}
+            </p>
           </div>
           <div>
             <label for="repName" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -79,9 +130,19 @@
               id="repName"
               v-model="formData.repName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.repName)"
+              :aria-describedby="errors.repName ? 'repName-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Angelo Laus"
-            />
+            >
+            <p
+              v-if="errors.repName"
+              id="repName-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.repName }}
+            </p>
           </div>
           <div>
             <label for="repPosition" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -91,9 +152,19 @@
               id="repPosition"
               v-model="formData.repPosition"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.repPosition)"
+              :aria-describedby="errors.repPosition ? 'repPosition-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Director of External Relations"
-            />
+            >
+            <p
+              v-if="errors.repPosition"
+              id="repPosition-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.repPosition }}
+            </p>
           </div>
           <div>
             <label for="repNumber" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -103,9 +174,19 @@
               id="repNumber"
               v-model="formData.repNumber"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.repNumber)"
+              :aria-describedby="errors.repNumber ? 'repNumber-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., (+63) 912 345 6789"
-            />
+            >
+            <p
+              v-if="errors.repNumber"
+              id="repNumber-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.repNumber }}
+            </p>
           </div>
           <div>
             <label for="walkInCount" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -116,15 +197,25 @@
               v-model="formData.walkInCount"
               type="number"
               min="0"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.walkInCount)"
+              :aria-describedby="errors.walkInCount ? 'walkInCount-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., 10"
-            />
+            >
+            <p
+              v-if="errors.walkInCount"
+              id="walkInCount-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.walkInCount }}
+            </p>
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-1.5 block text-sm font-medium text-g-muted">
+            <p class="mb-1.5 block text-sm font-medium text-g-muted">
               Visitors List (CSV)
-            </label>
+            </p>
             <label
               for="csvFile"
               class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-g-accent"
@@ -141,19 +232,53 @@
               </span>
               <input
                 id="csvFile"
+                ref="csvInput"
                 type="file"
                 accept=".csv"
                 class="hidden"
                 @change="onFileChange"
-              />
+              >
             </label>
+            <div
+              v-if="previewNames.length"
+              class="mt-4 overflow-x-auto"
+            >
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">
+                  Parsed names
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="py-1 font-medium text-g-muted">
+                      Name
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(name, index) in previewNames"
+                    :key="`${index}-${name}`"
+                  >
+                    <td class="py-1 text-g-text">
+                      {{ name }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p
+                v-if="parsedNames.length > previewNames.length"
+                class="mt-1 text-sm text-g-muted"
+              >
+                And {{ parsedNames.length - previewNames.length }} more.
+              </p>
+            </div>
           </div>
 
           <div class="md:col-span-2 flex justify-end pt-2">
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+              class="btn-gold flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <svg
                 v-if="isGenerating"
@@ -187,18 +312,27 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import PizZip from 'pizzip'
-import Docxtemplater from 'docxtemplater'
-import { saveAs } from 'file-saver'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
-import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import {
+  docxBlob,
+  fetchFormTemplate,
+  generatorErrorMessage,
+  parseNameCsv,
+  renderDocx,
+  requiredError,
+  saveBlob,
+  useDocxGenerator,
+  walkInCountError,
+} from '@/composables/useDocxGenerator'
+import { useToast } from '@/composables/useToast'
+import { VISITORS_PASS_OUTPUT, VISITORS_PASS_TEMPLATE } from '@shared/formsCatalog'
+import { computed, reactive, ref } from 'vue'
 
-const { authHeaders } = useAuth()
+const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
+
 const toast = useToast()
 const dialog = useDialog()
+const { isGenerating, run } = useDocxGenerator()
 
 const formData = reactive({
   submissionDate: '',
@@ -209,12 +343,25 @@ const formData = reactive({
   repName: '',
   repPosition: '',
   repNumber: '',
-  walkInCount: 0,
+  walkInCount: 0 as number | string,
 })
 
-const isGenerating = ref(false)
+const errors = reactive({
+  submissionDate: '',
+  orgName: '',
+  eventName: '',
+  eventDate: '',
+  eventLocation: '',
+  repName: '',
+  repPosition: '',
+  repNumber: '',
+  walkInCount: '',
+})
+
+const csvInput = ref<HTMLInputElement | null>(null)
 const csvFileName = ref('')
 const parsedNames = ref<string[]>([])
+const previewNames = computed(() => parsedNames.value.slice(0, 8))
 
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -223,12 +370,8 @@ function onFileChange(event: Event) {
 
   csvFileName.value = file.name
   const reader = new FileReader()
-  reader.onload = (e) => {
-    const text = e.target?.result as string
-    parsedNames.value = text
-      .split(/\r?\n/)
-      .map((line) => line.split(';')[0].trim())
-      .filter((name) => name.length > 0)
+  reader.onload = () => {
+    parsedNames.value = parseNameCsv(String(reader.result ?? ''))
   }
   reader.readAsText(file)
 }
@@ -250,63 +393,66 @@ function chunkIntoPairs(names: string[]) {
   return rows
 }
 
+function validate(): boolean {
+  errors.submissionDate = requiredError(formData.submissionDate, 'Submission date') ?? ''
+  errors.orgName = requiredError(formData.orgName, 'Organization name') ?? ''
+  errors.eventName = requiredError(formData.eventName, 'Event name') ?? ''
+  errors.eventDate = requiredError(formData.eventDate, 'Event date') ?? ''
+  errors.eventLocation = requiredError(formData.eventLocation, 'Event location') ?? ''
+  errors.repName = requiredError(formData.repName, 'Organization representative name') ?? ''
+  errors.repPosition = requiredError(formData.repPosition, 'Organization representative position') ?? ''
+  errors.repNumber = requiredError(formData.repNumber, 'Organization representative number') ?? ''
+  errors.walkInCount = walkInCountError(formData.walkInCount) ?? ''
+  return Object.values(errors).every((message) => message === '')
+}
+
+function reset() {
+  formData.submissionDate = ''
+  formData.orgName = ''
+  formData.eventName = ''
+  formData.eventDate = ''
+  formData.eventLocation = ''
+  formData.repName = ''
+  formData.repPosition = ''
+  formData.repNumber = ''
+  formData.walkInCount = 0
+  csvFileName.value = ''
+  parsedNames.value = []
+  if (csvInput.value) csvInput.value.value = ''
+  for (const key of Object.keys(errors) as (keyof typeof errors)[]) errors[key] = ''
+}
+
 async function generateDocument() {
-  isGenerating.value = true
+  if (!validate()) return
   try {
-    const response = await fetch(`${API_BASE_URL}/api/forms/templates/visitors_pass.docx`, {
-      headers: authHeaders(),
+    await run(async () => {
+      const buffer = await fetchFormTemplate(VISITORS_PASS_TEMPLATE)
+      const finalNames = [...parsedNames.value]
+      const extraSlots = Number(formData.walkInCount) || 0
+      for (let i = 0; i < extraSlots; i++) {
+        finalNames.push('_________________________')
+      }
+      const rendered = renderDocx(buffer, {
+        SUBMISSION_DATE: formData.submissionDate,
+        ORGANIZATION_NAME: formData.orgName,
+        EVENT_NAME: formData.eventName,
+        EVENT_DATE: formData.eventDate,
+        EVENT_LOCATION: formData.eventLocation,
+        ORGANIZATION_REPRESENTATIVE: formData.repName,
+        ORGANIZATION_REPRESENTATIVE_POSITION: formData.repPosition,
+        ORGANIZATION_REPRESENTATIVE_NUMBER: formData.repNumber,
+        visitors: chunkIntoPairs(finalNames),
+      })
+      saveBlob(docxBlob(rendered), VISITORS_PASS_OUTPUT)
+      reset()
+      await dialog.info({
+        title: 'Visitor pass generated',
+        body: 'Your visitor pass is ready in the downloaded document.',
+      })
     })
-    if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)
-    const buffer = await response.arrayBuffer()
-
-    const zip = new PizZip(buffer)
-    const doc = new Docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true,
-    })
-
-    const finalNames = [...parsedNames.value]
-    const extraSlots = Number(formData.walkInCount) || 0
-    for (let i = 0; i < extraSlots; i++) {
-      finalNames.push('_________________________')
-    }
-
-    doc.render({
-      SUBMISSION_DATE: formData.submissionDate,
-      ORGANIZATION_NAME: formData.orgName,
-      EVENT_NAME: formData.eventName,
-      EVENT_DATE: formData.eventDate,
-      EVENT_LOCATION: formData.eventLocation,
-      ORGANIZATION_REPRESENTATIVE: formData.repName,
-      ORGANIZATION_REPRESENTATIVE_POSITION: formData.repPosition,
-      ORGANIZATION_REPRESENTATIVE_NUMBER: formData.repNumber,
-      visitors: chunkIntoPairs(finalNames),
-    })
-
-    const out = doc.getZip().generate({ type: 'blob' })
-    saveAs(out, 'Visitors_Pass.docx')
-
-    formData.submissionDate = ''
-    formData.orgName = ''
-    formData.eventName = ''
-    formData.eventDate = ''
-    formData.eventLocation = ''
-    formData.repName = ''
-    formData.repPosition = ''
-    formData.walkInCount = 0
-    csvFileName.value = ''
-    parsedNames.value = []
-
-    await dialog.info({
-      title: 'Visitor pass generated',
-      body: 'Your visitor pass is ready in the downloaded document.',
-    })
-  } catch (e) {
-    console.error(e)
-    toast.error('Could not generate the visitor pass. Check the form and try again.')
-  } finally {
-    isGenerating.value = false
+  } catch (err) {
+    console.error(err)
+    toast.error(generatorErrorMessage(err, 'Could not generate the visitor pass. Check the form and try again.'))
   }
 }
 </script>
-

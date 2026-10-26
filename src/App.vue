@@ -3,14 +3,8 @@
     <a href="#app-content" class="skip-link">Skip to content</a>
     <LocalDevBanner />
 
-    <!-- Initial page load animation -->
-    <AppLoader />
-
     <!-- Page transition overlay -->
     <AppTransition ref="appTransitionRef" />
-
-    <!-- Custom cursor overlay -->
-    <AppCursor />
 
     <!-- Back to top -->
     <ScrollTop />
@@ -49,16 +43,12 @@ import TheHeader from '@/components/TheHeader.vue'
 import TheFooter from '@/components/TheFooter.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import DialogHost from '@/components/DialogHost.vue'
-import AppCursor from '@/components/AppCursor.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
-import AppLoader from '@/components/AppLoader.vue'
 import AppTransition from '@/components/AppTransition.vue'
 import LocalDevBanner from '@/components/LocalDevBanner.vue'
 import { IS_LOCAL_DEV } from '@/config/api'
-import { useKeyboardNav } from '@/composables/useKeyboardNav'
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)
 
 provide('appTransition', appTransitionRef)
-useKeyboardNav()
 </script>

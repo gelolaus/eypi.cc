@@ -103,7 +103,8 @@ These tokens are defined on `:root` and overridden on `html.dark`. Component-lev
 | `--color-text` | `#0A0A0A` | `#F5F5F5` | Primary body text |
 | `--color-text-muted` | `#6B6B6B` | `#AAAAAA` | Secondary / caption text |
 | `--color-accent` | `#DEAC4B` | `#DEAC4B` | APC Gold accent. Same hex in light and dark. |
-| `--color-primary` | `#34418F` | `#34418F` | APC Blue. Same hex in light and dark. |
+| `--color-primary` | `#34418F` | `#8FA0E8` | APC Blue. Dark mode is lighter so text on `#000000` is 8.36:1 and text on `#161616` is 7.21:1. |
+| `--color-focus` | `#34418F` | `#DEAC4B` | Focus ring. Navy on `#F5F5F5` is 8.38:1. Gold on `#000000` is 10.11:1. |
 | `--color-dot` | `#000000` | `#ffffff` | Dot grid dot fill |
 
 ### Extended brand palette (hard-coded where appropriate)
@@ -114,7 +115,7 @@ These values appear directly in components where the intent is to override the t
 
 | Name | Hex | Usage |
 |---|---|---|
-| APC Blue | `#34418F` | Logo text, h1, headings, border-focus, primary actions |
+| APC Blue | `#34418F` | Logo text, h1, headings, and primary actions in light mode. Dark mode text uses `#8FA0E8` (`--color-primary`). |
 | APC Gold (default) | `#DEAC4B` | CTAs, accent, selection, cursor states |
 | APC Gold (dark hover) | `#c9a84c` | Dark mode button variant, progress bars |
 | APC Gold (hover) | `#d4b55a` | Dark mode button hover |
@@ -167,7 +168,7 @@ box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.20)
 
 ### Dark mode mechanism
 
-Dark mode is toggled by adding or removing the class `dark` on `<html>`. No `prefers-color-scheme` media query is used; the user's preference is stored in `localStorage` under the key `eypi_dark_mode`. Default is light mode.
+Dark mode is the class `dark` on `<html>`. A saved choice in `localStorage` under `eypi_dark_mode` (`true` or `false`) wins. With no saved choice, the page follows `matchMedia('(prefers-color-scheme: dark)')`. `html` sets `color-scheme: light` and `html.dark` sets `color-scheme: dark`, so scrollbars and native controls follow the class rather than the operating system. `public/theme-init.js` and `applyColorScheme()` set that class, `documentElement.style.colorScheme`, and one `theme-color` meta (`#F5F5F5` light, `#000000` dark) with no media query. `index.html` also sets `<meta name="color-scheme" content="light dark">`.
 
 `body` transitions `background-color` and `color` over `0.3s ease` on mode change:
 ```css
@@ -256,7 +257,7 @@ No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` r
 | Card inner padding | `2rem` (p-8, 32px) |
 | Card inner padding (lg) | `3rem` (p-12, 48px) on settings |
 | Footer inner padding | `clamp(4rem, 8vw, 6rem)` top; `clamp(1.5rem, 6vw, 6rem)` sides; `clamp(2.5rem, 5vw, 4rem)` bottom |
-| Toast position | `1.5rem` from bottom and right edges |
+| Toast position | `6rem` from the bottom, `1.5rem` from the right (clears the scroll-top button) |
 | Scroll-top button | `2rem` from bottom and right |
 
 ### Breakpoints
@@ -349,7 +350,7 @@ Dark: box-shadow: 0 4px 28px rgba(0, 0, 0, 0.50);
 - Font: Geist, 13px, weight 600
 - Padding: `0.35rem 0.875rem`
 - Border-radius: `9999px`
-- Background: `var(--color-accent)` (#DEAC4B), white text
+- Background: `var(--color-accent)` (#DEAC4B), text `#1a1a2e`
 - Hover: `opacity: 0.88; transform: translateY(-1px)`
 - Transition: `opacity 0.2s ease, transform 0.15s ease`
 
@@ -564,7 +565,8 @@ Do not use `window.confirm()` or `alert()` for product feedback.
 
 ### 6.6 Signal strip toast
 
-Position: `fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999`
+Position: `fixed; bottom: 6rem; right: 1.5rem; z-index: 9999`
+The `6rem` bottom offset clears the scroll-top button (`44px` tall, `2rem` from the bottom).
 Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
 
 **Strip**:
@@ -804,10 +806,10 @@ transform: rotate(180deg);    /* When open: .rotate-180 */
 
 ### Focus management
 
-Visible focus rings are applied site-wide:
+Visible focus rings are applied site-wide. Light mode uses navy (`--color-focus: #34418F`, 8.38:1 on `#F5F5F5`). Dark mode uses gold (`--color-focus: #DEAC4B`, 10.11:1 on `#000000`). Both clear the 3:1 non-text minimum. Gold on `#F5F5F5` is 1.91:1, so it is not the light-mode ring.
 ```css
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
@@ -865,14 +867,18 @@ Toast notifications use `aria-live="polite"` and `role="status"` on each toast i
 
 ### Color contrast
 
-| Pairing | Ratio (approx.) | Notes |
+Normal text needs 4.5:1. Large text needs 3:1. Focus rings and other non-text indicators need 3:1 against the adjacent color.
+
+| Pairing | Ratio | Rule |
 |---|---|---|
-| `#0A0A0A` on `#F5F5F5` (body text, light) | ~18.5:1 | AAA |
-| `#F5F5F5` on `#000000` (body text, dark) | ~18.5:1 | AAA |
-| `#DEAC4B` on `#34418F` (gold on blue) | ~3.7:1 | Passes AA for large text |
-| `#DEAC4B` on `#000000` (gold CTA text) | ~7.8:1 | AAA |
-| `#ffffff` on `#DEAC4B` (button label) | ~3.2:1 | Passes AA for large/bold |
-| `#6B6B6B` on `#F5F5F5` (muted text) | ~4.8:1 | Passes AA |
+| `#0A0A0A` on `#F5F5F5` (body text, light) | 18.5:1 | AAA |
+| `#F5F5F5` on `#000000` (body text, dark) | 18.5:1 | AAA |
+| `#1a1a2e` on `#DEAC4B` (`.btn-gold` label) | 8.21:1 | Required for gold controls. White on `#DEAC4B` is 2.08:1 and fails. |
+| `#34418F` on `#F5F5F5` (light focus ring) | 8.38:1 | Passes the 3:1 non-text minimum. |
+| `#DEAC4B` on `#000000` (dark focus ring) | 10.11:1 | Passes the 3:1 non-text minimum. Gold on `#F5F5F5` is 1.91:1 and is not used as a light-mode ring. |
+| `#8FA0E8` on `#000000` (dark-mode APC blue) | 8.36:1 | `--color-primary` in dark mode. `#34418F` on `#000000` is 2.30:1 and is not used for dark text. |
+| `#8FA0E8` on `#161616` (dark-mode blue on a surface) | 7.21:1 | AA |
+| `#6B6B6B` on `#F5F5F5` (muted text) | 4.8:1 | AA |
 
 ### Text selection
 
@@ -896,7 +902,7 @@ Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
 | Footer | `1` | `<footer>` (relative) |
 | Fixed nav | `9990` | Pill nav wrapper |
 | Scroll-top button | `9998` | Fixed bottom-right |
-| Toast container | `9999` | Signal strip (bottom-right) |
+| Toast container | `9999` | Signal strip (above the scroll-top button) |
 | DialogHost | `10000` | Mica Info / Confirm |
 | Slide panel backdrop | `99990` | Teleported overlay |
 | Slide panel | `99991` | Teleported panel |
@@ -911,7 +917,7 @@ Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
 ### CTA Button (minimal spec)
 ```css
 background: #DEAC4B;
-color: #ffffff;
+color: #1a1a2e;
 font-family: 'Geist', 'Geist Mono', sans-serif;
 font-weight: 700;
 font-size: 0.8125rem to 1.25rem;

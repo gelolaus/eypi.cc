@@ -1,0 +1,193 @@
+// @vitest-environment happy-dom
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import AdminAuditView from './AdminAuditView.vue'
+import AdminLinksView from './AdminLinksView.vue'
+import AdminReportsView from './AdminReportsView.vue'
+import AdminUsersView from './AdminUsersView.vue'
+
+const confirm = vi.fn(async () => true)
+
+vi.mock('@/composables/useDialog', () => ({
+  useDialog: () => ({
+    confirm,
+    info: vi.fn(),
+  }),
+}))
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+function stubFetch(
+  handler: (url: string, init?: RequestInit) => Response | undefined,
+): ReturnType<typeof vi.fn> {
+  const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    return handler(url, init) ?? json(404, { error: { code: 'not_found', message: 'Not found' } })
+  })
+  vi.stubGlobal('fetch', mock)
+  return mock
+}
+
+const manilaCrossingTimestamp = '2026-06-30 17:30:00'
+
+beforeEach(() => {
+  confirm.mockReset()
+  confirm.mockResolvedValue(true)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+describe('admin views timezone', () => {
+  it('renders the users joined date in Asia/Manila', async () => {
+    stubFetch((url, init) => {
+      if (url.includes('/api/admin/users') && (init?.method ?? 'GET') === 'GET') {
+        return json(200, {
+          items: [{
+            id: 'user-1',
+            email: 'user@example.com',
+            name: 'User',
+            role: 'user',
+            disabled: false,
+            createdAt: manilaCrossingTimestamp,
+          }],
+          nextCursor: null,
+        })
+      }
+    })
+
+    const wrapper = mount(AdminUsersView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Jul 1, 2026')
+    expect(wrapper.text()).not.toContain('Jun 30, 2026')
+  })
+
+  it('renders the report date in Asia/Manila', async () => {
+    stubFetch((url) => {
+      if (url.includes('/api/admin/reports')) {
+        return json(200, {
+          items: [{
+            id: 'report-1',
+            linkId: 'link-1',
+            slug: 'one',
+            reason: 'spam',
+            details: null,
+            status: 'open',
+            resolution: null,
+            createdAt: manilaCrossingTimestamp,
+            resolvedAt: null,
+            resolvedBy: null,
+            ownerEmail: null,
+            linkSlug: 'one',
+            linkDisabled: false,
+          }],
+        })
+      }
+    })
+
+    const wrapper = mount(AdminReportsView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Reported Jul 1, 2026')
+    expect(wrapper.text()).not.toContain('Jun 30, 2026')
+  })
+
+  it('renders the audit timestamp in Asia/Manila', async () => {
+    stubFetch((url) => {
+      if (url.includes('/api/admin/audit')) {
+        return json(200, {
+          items: [{
+            id: 'audit-1',
+            actorUserId: 'admin-1',
+            actorEmail: 'admin@example.com',
+            action: 'user.role',
+            targetType: 'user',
+            targetId: 'user-1',
+            meta: null,
+            createdAt: manilaCrossingTimestamp,
+          }],
+          nextCursor: null,
+        })
+      }
+    })
+
+    const wrapper = mount(AdminAuditView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('2026-07-01 01:30')
+    expect(wrapper.text()).not.toContain('2026-06-30')
+  })
+})
+
+describe('admin audit action filter', () => {
+  it('exposes the organization actions', async () => {
+    stubFetch((url) => {
+      if (url.includes('/api/admin/audit')) {
+        return json(200, { items: [], nextCursor: null })
+      }
+    })
+
+    const wrapper = mount(AdminAuditView)
+    await flushPromises()
+
+    const values = wrapper.findAll('#admin-audit-action option').map((option) => option.attributes('value'))
+    expect(values).toEqual(expect.arrayContaining([
+      'org.create',
+      'org.update',
+      'org.transfer',
+      'org.delete',
+    ]))
+  })
+})
+
+describe('admin links disable retry', () => {
+  it('keeps the disable control when the edge key cannot be removed', async () => {
+    const fetchMock = stubFetch((url, init) => {
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (url.includes('/disable') && method === 'POST') {
+        return json(502, {
+          error: {
+            code: 'edge_delete_failed',
+            message: 'The link is disabled but the edge cache could not be cleared. Try again.',
+          },
+        })
+      }
+      if (url.includes('/api/admin/links') && method === 'GET') {
+        return json(200, {
+          items: [{
+            id: 'link-1',
+            slug: 'one',
+            originalUrl: 'https://example.com/one',
+            ownerEmail: 'owner@example.com',
+            createdAt: '2026-01-01 00:00:00',
+            disabled: false,
+            disabledReason: null,
+          }],
+          nextCursor: null,
+        })
+      }
+    })
+
+    const wrapper = mount(AdminLinksView)
+    await flushPromises()
+
+    const button = wrapper.findAll('button').find((item) => item.text() === 'Disable')
+    expect(button).toBeTruthy()
+    await button?.trigger('click')
+    await flushPromises()
+
+    expect(fetchMock.mock.calls.some((call) => {
+      const init = call[1] as RequestInit | undefined
+      return String(call[0]).includes('/api/admin/links/link-1/disable') && init?.method === 'POST'
+    })).toBe(true)
+    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Disabled')
+  })
+})

@@ -8,8 +8,9 @@
           Concessionaire Document Generator
         </h1>
         <form
-          @submit.prevent="generateDocuments"
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
+          novalidate
+          @submit.prevent="generateDocuments"
         >
           <div>
             <label for="COMPANY_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -19,9 +20,19 @@
               id="COMPANY_NAME"
               v-model="formData.COMPANY_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_NAME)"
+              :aria-describedby="errors.COMPANY_NAME ? 'COMPANY_NAME-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Notion @ APC"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_NAME"
+              id="COMPANY_NAME-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_NAME }}
+            </p>
           </div>
           <div>
             <label for="COMPANY_ADDRESS" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -31,9 +42,19 @@
               id="COMPANY_ADDRESS"
               v-model="formData.COMPANY_ADDRESS"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_ADDRESS)"
+              :aria-describedby="errors.COMPANY_ADDRESS ? 'COMPANY_ADDRESS-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., #3 Humabon Place, Magallanes, Makati City"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_ADDRESS"
+              id="COMPANY_ADDRESS-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_ADDRESS }}
+            </p>
           </div>
           <div>
             <label for="COMPANY_REPRESENTATIVE" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -43,9 +64,19 @@
               id="COMPANY_REPRESENTATIVE"
               v-model="formData.COMPANY_REPRESENTATIVE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_REPRESENTATIVE)"
+              :aria-describedby="errors.COMPANY_REPRESENTATIVE ? 'COMPANY_REPRESENTATIVE-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Angelo Laus"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_REPRESENTATIVE"
+              id="COMPANY_REPRESENTATIVE-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_REPRESENTATIVE }}
+            </p>
           </div>
           <div>
             <label for="COMPANY_REPRESENTATIVE_POSITION" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -55,9 +86,19 @@
               id="COMPANY_REPRESENTATIVE_POSITION"
               v-model="formData.COMPANY_REPRESENTATIVE_POSITION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_REPRESENTATIVE_POSITION)"
+              :aria-describedby="errors.COMPANY_REPRESENTATIVE_POSITION ? 'COMPANY_REPRESENTATIVE_POSITION-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Campus Leader"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_REPRESENTATIVE_POSITION"
+              id="COMPANY_REPRESENTATIVE_POSITION-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_REPRESENTATIVE_POSITION }}
+            </p>
           </div>
           <div>
             <label for="COMPANY_PHONE" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -67,9 +108,19 @@
               id="COMPANY_PHONE"
               v-model="formData.COMPANY_PHONE"
               type="tel"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_PHONE)"
+              :aria-describedby="errors.COMPANY_PHONE ? 'COMPANY_PHONE-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., +63 912 345 6789"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_PHONE"
+              id="COMPANY_PHONE-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_PHONE }}
+            </p>
           </div>
           <div>
             <label for="COMPANY_EMAIL" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -79,9 +130,19 @@
               id="COMPANY_EMAIL"
               v-model="formData.COMPANY_EMAIL"
               type="email"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.COMPANY_EMAIL)"
+              :aria-describedby="errors.COMPANY_EMAIL ? 'COMPANY_EMAIL-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., hello@gelolaus.com"
-            />
+            >
+            <p
+              v-if="errors.COMPANY_EMAIL"
+              id="COMPANY_EMAIL-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.COMPANY_EMAIL }}
+            </p>
           </div>
           <div>
             <label for="EVENT_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -91,9 +152,19 @@
               id="EVENT_NAME"
               v-model="formData.EVENT_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.EVENT_NAME)"
+              :aria-describedby="errors.EVENT_NAME ? 'EVENT_NAME-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., SoCIT Fest 2025"
-            />
+            >
+            <p
+              v-if="errors.EVENT_NAME"
+              id="EVENT_NAME-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.EVENT_NAME }}
+            </p>
           </div>
           <div>
             <label for="EVENT_DATE" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -103,9 +174,19 @@
               id="EVENT_DATE"
               v-model="formData.EVENT_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.EVENT_DATE)"
+              :aria-describedby="errors.EVENT_DATE ? 'EVENT_DATE-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., March 15, 2025"
-            />
+            >
+            <p
+              v-if="errors.EVENT_DATE"
+              id="EVENT_DATE-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.EVENT_DATE }}
+            </p>
           </div>
           <div>
             <label for="EVENT_LOCATION" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -115,9 +196,19 @@
               id="EVENT_LOCATION"
               v-model="formData.EVENT_LOCATION"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.EVENT_LOCATION)"
+              :aria-describedby="errors.EVENT_LOCATION ? 'EVENT_LOCATION-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., 12/F Auditorium, 7/F Library Lobby"
-            />
+            >
+            <p
+              v-if="errors.EVENT_LOCATION"
+              id="EVENT_LOCATION-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.EVENT_LOCATION }}
+            </p>
           </div>
           <div>
             <label for="DEADLINE_DATE" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -127,9 +218,19 @@
               id="DEADLINE_DATE"
               v-model="formData.DEADLINE_DATE"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.DEADLINE_DATE)"
+              :aria-describedby="errors.DEADLINE_DATE ? 'DEADLINE_DATE-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., March 1, 2025"
-            />
+            >
+            <p
+              v-if="errors.DEADLINE_DATE"
+              id="DEADLINE_DATE-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.DEADLINE_DATE }}
+            </p>
           </div>
           <div>
             <label for="ORGANIZATION_NAME" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -139,9 +240,19 @@
               id="ORGANIZATION_NAME"
               v-model="formData.ORGANIZATION_NAME"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.ORGANIZATION_NAME)"
+              :aria-describedby="errors.ORGANIZATION_NAME ? 'ORGANIZATION_NAME-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Junior Philippine Computer Society"
-            />
+            >
+            <p
+              v-if="errors.ORGANIZATION_NAME"
+              id="ORGANIZATION_NAME-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.ORGANIZATION_NAME }}
+            </p>
           </div>
           <div>
             <label for="ORGANIZATION_ADVISER" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -151,15 +262,25 @@
               id="ORGANIZATION_ADVISER"
               v-model="formData.ORGANIZATION_ADVISER"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.ORGANIZATION_ADVISER)"
+              :aria-describedby="errors.ORGANIZATION_ADVISER ? 'ORGANIZATION_ADVISER-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Roselle Wednesday Gardon"
-            />
+            >
+            <p
+              v-if="errors.ORGANIZATION_ADVISER"
+              id="ORGANIZATION_ADVISER-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.ORGANIZATION_ADVISER }}
+            </p>
           </div>
           <div class="md:col-span-2 flex justify-end pt-2">
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+              class="btn-gold flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <svg
                 v-if="isGenerating"
@@ -180,7 +301,7 @@
                 <path
                   class="opacity-75"
                   fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 12 12 12v4a8 8 0 01-8 8z"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
               {{ isGenerating ? 'GENERATING...' : 'GENERATE CONTRACTS' }}
@@ -193,18 +314,26 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import PizZip from 'pizzip'
-import Docxtemplater from 'docxtemplater'
-import { saveAs } from 'file-saver'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
-import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import {
+  concessionaireZipName,
+  fetchFormTemplate,
+  generatorErrorMessage,
+  renderDocx,
+  requiredError,
+  saveBlob,
+  useDocxGenerator,
+  zipBlob,
+} from '@/composables/useDocxGenerator'
+import { useToast } from '@/composables/useToast'
+import { CONCESSIONAIRE_TEMPLATES } from '@shared/formsCatalog'
+import { reactive } from 'vue'
 
-const { authHeaders } = useAuth()
+const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
+
 const toast = useToast()
 const dialog = useDialog()
+const { isGenerating, run } = useDocxGenerator()
 
 const formData = reactive({
   COMPANY_NAME: '',
@@ -221,83 +350,70 @@ const formData = reactive({
   ORGANIZATION_ADVISER: '',
 })
 
-const isGenerating = ref(false)
+const errors = reactive({
+  COMPANY_NAME: '',
+  COMPANY_ADDRESS: '',
+  COMPANY_REPRESENTATIVE: '',
+  COMPANY_PHONE: '',
+  COMPANY_EMAIL: '',
+  COMPANY_REPRESENTATIVE_POSITION: '',
+  EVENT_NAME: '',
+  EVENT_DATE: '',
+  EVENT_LOCATION: '',
+  DEADLINE_DATE: '',
+  ORGANIZATION_NAME: '',
+  ORGANIZATION_ADVISER: '',
+})
 
-const TEMPLATES = [
-  'concessionaire_reply_form.docx',
-  'memorandum_of_agreement.docx',
-  'terms_and_conditions.docx',
-  'waiver_form.docx',
-  'products_and_equipments.docx',
-] as const
+const labels = {
+  COMPANY_NAME: 'Company name',
+  COMPANY_ADDRESS: 'Company address',
+  COMPANY_REPRESENTATIVE: 'Company representative',
+  COMPANY_PHONE: 'Company phone',
+  COMPANY_EMAIL: 'Company email',
+  COMPANY_REPRESENTATIVE_POSITION: 'Representative position',
+  EVENT_NAME: 'Event name',
+  EVENT_DATE: 'Event date',
+  EVENT_LOCATION: 'Event location',
+  DEADLINE_DATE: 'Deadline date',
+  ORGANIZATION_NAME: 'Organization name',
+  ORGANIZATION_ADVISER: 'Organization adviser',
+} as const
 
-const OUTPUT_NAMES = [
-  'Concessionaire_Reply_Form.docx',
-  'Memorandum_of_Agreement.docx',
-  'Terms_and_Conditions.docx',
-  'Waiver_Form.docx',
-  'Products_and_Equipments.docx',
-] as const
+function validate(): boolean {
+  for (const key of Object.keys(labels) as (keyof typeof labels)[]) {
+    errors[key] = requiredError(formData[key], labels[key]) ?? ''
+  }
+  return Object.values(errors).every((message) => message === '')
+}
 
-function sanitizeZipFilename(name: string): string {
-  const sanitized = name
-    .trim()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '')
-  return sanitized ? `${sanitized}_Documents.zip` : 'Concessionaire_Documents.zip'
+function reset() {
+  for (const key of Object.keys(formData) as (keyof typeof formData)[]) formData[key] = ''
+  for (const key of Object.keys(errors) as (keyof typeof errors)[]) errors[key] = ''
 }
 
 async function generateDocuments() {
-  isGenerating.value = true
+  if (!validate()) return
   try {
-    const responses = await Promise.all(
-      TEMPLATES.map((name) =>
-        fetch(`${API_BASE_URL}/api/forms/templates/${name}`, { headers: authHeaders() })
-      )
-    )
-    const buffers = await Promise.all(
-      responses.map((r) => {
-        if (!r.ok) throw new Error(`Failed to fetch: ${r.url}`)
-        return r.arrayBuffer()
+    await run(async () => {
+      const loaded = await Promise.all(CONCESSIONAIRE_TEMPLATES.map(async (template) => ({
+        template,
+        bytes: await fetchFormTemplate(template.file),
+      })))
+      const entries = loaded.map(({ template, bytes }) => ({
+        name: template.output,
+        data: template.fill ? renderDocx(bytes, { ...formData }) : new Uint8Array(bytes),
+      }))
+      saveBlob(zipBlob(entries), concessionaireZipName(formData.COMPANY_NAME))
+      reset()
+      await dialog.info({
+        title: 'Documents generated',
+        body: 'Your concessionaire documents are ready in the downloaded ZIP.',
       })
-    )
-
-    const masterZip = new PizZip()
-
-    for (let i = 0; i < 4; i++) {
-      const zip = new PizZip(buffers[i])
-      const doc = new Docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-      })
-      doc.render(formData)
-      const out = doc.getZip().generate({ type: 'uint8array' })
-      masterZip.file(OUTPUT_NAMES[i], out)
-    }
-
-    const productsBuffer = new Uint8Array(buffers[4])
-    masterZip.file(OUTPUT_NAMES[4], productsBuffer)
-
-    const zipBlob = masterZip.generate({ type: 'blob' })
-    saveAs(zipBlob, sanitizeZipFilename(formData.COMPANY_NAME))
-
-    formData.COMPANY_NAME = ''
-    formData.COMPANY_ADDRESS = ''
-    formData.COMPANY_REPRESENTATIVE = ''
-    formData.COMPANY_REPRESENTATIVE_POSITION = ''
-    formData.COMPANY_PHONE = ''
-    formData.COMPANY_EMAIL = ''
-
-    await dialog.info({
-      title: 'Documents generated',
-      body: 'Your concessionaire documents are ready in the downloaded ZIP.',
     })
-  } catch (e) {
-    console.error(e)
-    toast.error('Could not generate the documents. Check the form and try again.')
-  } finally {
-    isGenerating.value = false
+  } catch (err) {
+    console.error(err)
+    toast.error(generatorErrorMessage(err, 'Could not generate the documents. Check the form and try again.'))
   }
 }
 </script>
-

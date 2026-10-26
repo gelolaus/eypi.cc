@@ -1,18 +1,24 @@
 <template>
   <div
-    class="pointer-events-none fixed bottom-6 right-6 z-[9999] flex w-[min(100vw-2rem,20rem)] flex-col gap-3"
+    class="pointer-events-none fixed bottom-24 right-6 z-[9999] flex w-[min(100vw-2rem,20rem)] flex-col gap-3"
     :aria-live="hasError ? 'assertive' : 'polite'"
     aria-relevant="additions text"
   >
     <TransitionGroup name="toast" tag="div" class="flex flex-col gap-3">
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- status live region; Enter dismisses it and focus pauses the timer -->
       <div
         v-for="toast in toasts"
         :key="toast.id"
         role="status"
+        tabindex="0"
         class="pointer-events-auto relative flex cursor-pointer items-center gap-3 border border-g-border bg-white p-3 shadow-xl dark:border-slate-600 dark:bg-mica-navy-modal dark:backdrop-blur-xl"
         @click="dismiss(toast.id)"
+        @keydown.enter="dismiss(toast.id)"
+        @keydown.space.prevent="dismiss(toast.id)"
         @mouseenter="pause(toast.id)"
+        @focus="pause(toast.id)"
         @mouseleave="resume(toast.id)"
+        @blur="resume(toast.id)"
       >
         <div class="flex h-[18px] shrink-0 items-end gap-[3px]" aria-hidden="true">
           <span
@@ -84,7 +90,8 @@ function tagClass(type: ToastType) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key !== 'Escape') return
+  if (e.key !== 'Escape' || e.defaultPrevented) return
+  if (document.querySelector('[aria-modal="true"]')) return
   const top = toasts.value[toasts.value.length - 1]
   if (top) dismiss(top.id)
 }

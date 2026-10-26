@@ -9,7 +9,8 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
   },
   "compatibility_flags": [
     "nodejs_compat"
@@ -18,6 +19,12 @@
     {
       "binding": "LINKS_KV",
       "id": "4634074c1831474fbb18209665da5165"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "eypi-media"
     }
   ],
   "routes": [

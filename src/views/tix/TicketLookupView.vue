@@ -19,10 +19,7 @@
         v-if="ticket"
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <p class="mb-4 font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">{{ ticket.firstName }} {{ ticket.lastName }}</p>
 
@@ -67,10 +64,7 @@
         v-else
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <h2 class="mb-6 text-center font-mono text-xl font-bold uppercase tracking-widest text-[#34418F] dark:text-slate-200">
           View Your Ticket
@@ -81,6 +75,7 @@
             v-model="form.firstName"
             type="text"
             placeholder="First Name"
+            aria-label="First Name"
             required
             class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
@@ -88,6 +83,7 @@
             v-model="form.lastName"
             type="text"
             placeholder="Last Name"
+            aria-label="Last Name"
             required
             class="mb-4 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
@@ -95,6 +91,7 @@
             v-model="form.email"
             type="email"
             placeholder="Email"
+            aria-label="Email"
             required
             class="mb-6 w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400 dark:focus:border-slate-500"
           />
@@ -111,7 +108,7 @@
             type="submit"
             :disabled="lookingUp"
             :class="[
-              'w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100',
+              'btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
               lookingUp ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"
@@ -129,9 +126,10 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
+import { api } from '@/lib/api'
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 
 const route = useRoute()
@@ -176,7 +174,7 @@ async function lookup() {
   lookupError.value = ''
   lookingUp.value = true
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}/lookup`, {
+    const res = await api.raw(`/api/events/${slug}/lookup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form.value),
@@ -223,8 +221,8 @@ async function saveToGoogleWallet() {
   walletError.value = ''
   savingGoogleWallet.value = true
   try {
-    const res = await fetch(
-      `${TIX_API_URL}/api/events/${slug}/passes/google?token=${encodeURIComponent(passToken.value)}`,
+    const res = await api.raw(
+      `/api/events/${slug}/passes/google?token=${encodeURIComponent(passToken.value)}`,
     )
     const data = await res.json() as { status: string; message?: string; url?: string }
     if (!res.ok || !data.url) {

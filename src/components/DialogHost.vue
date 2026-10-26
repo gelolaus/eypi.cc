@@ -7,6 +7,7 @@
         role="presentation"
         @mousedown.self="onBackdrop"
       >
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- dialog handles focus and Escape -->
         <div
           ref="panelRef"
           class="mica-card w-full max-w-md rounded-2xl border border-g-border bg-g-surface p-8 text-left shadow-2xl"
@@ -47,7 +48,7 @@
               <button
                 ref="primaryRef"
                 type="button"
-                class="w-full rounded-xl bg-g-accent px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110"
                 @click="confirmAction"
               >
                 {{ current.confirmLabel }}
@@ -81,6 +82,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useDialog } from '@/composables/useDialog'
+import { useFocusTrap } from '@/composables/useFocusTrap'
 
 const { current, confirmAction, abort } = useDialog()
 
@@ -111,40 +113,26 @@ function tryConfirm() {
   confirmAction()
 }
 
-function onPanelKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    onBackdrop()
-    return
-  }
-  if (e.key !== 'Tab' || !panelRef.value) return
+const { activate, release } = useFocusTrap(panelRef)
 
-  const focusable = panelRef.value.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  )
-  if (focusable.length === 0) return
-  const first = focusable[0]
-  const last = focusable[focusable.length - 1]
-  if (e.shiftKey && document.activeElement === first) {
-    e.preventDefault()
-    last.focus()
-  } else if (!e.shiftKey && document.activeElement === last) {
-    e.preventDefault()
-    first.focus()
-  }
+function onPanelKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  e.preventDefault()
+  e.stopPropagation()
+  onBackdrop()
 }
 
 watch(
   current,
   async (dialog) => {
     typed.value = ''
-    if (!dialog) return
-    await nextTick()
-    if (dialog.requireText && inputRef.value) {
-      inputRef.value.focus()
+    if (!dialog) {
+      release()
       return
     }
-    primaryRef.value?.focus()
+    await nextTick()
+    const preferred = dialog.requireText && inputRef.value ? inputRef.value : primaryRef.value
+    activate(preferred)
   },
 )
 </script>

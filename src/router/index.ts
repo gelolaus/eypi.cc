@@ -2,27 +2,36 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
-import { useAuth } from '@/composables/useAuth'
-import { SUPER_ADMIN_EMAIL } from '@/config/admin'
+import { useSession } from '@/stores/session'
+import { reloadOnceForChunkError } from '@/lib/chunkReload'
 
 const { checkOrgMembership } = useOrgMembership()
-const { getUser } = useAuth()
+const session = useSession()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior() {
-    return { top: 0, behavior: 'smooth' }
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) return savedPosition
+    const reduce = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    return { top: 0, behavior: reduce ? 'auto' : 'smooth' }
   },
   routes: [
-    { path: '/', name: 'home', component: HomeView },
-    { path: '/login', name: 'login', component: LoginView },
+    { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Sign in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Dashboard' },
+    },
+    {
+      path: '/invites',
+      name: 'invites',
+      component: () => import('@/views/InvitesView.vue'),
+      meta: { requiresAuth: true, title: 'Invites' },
     },
 
     // ── Links module ─────────────────────────────────────────────────────────
@@ -30,7 +39,7 @@ const router = createRouter({
       path: '/links',
       name: 'links',
       component: () => import('@/views/links/LinksView.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, title: 'Links' },
     },
 
     // ── Forms module ─────────────────────────────────────────────────────────
@@ -43,21 +52,25 @@ const router = createRouter({
           path: '',
           name: 'forms',
           component: () => import('@/views/forms/FormsHomeView.vue'),
+          meta: { title: 'Forms' },
         },
         {
           path: 'concessionaire',
           name: 'forms-concessionaire',
           component: () => import('@/views/forms/generators/ConcessionaireView.vue'),
+          meta: { title: 'Concessionaire form' },
         },
         {
           path: 'visitors-pass',
           name: 'forms-visitors-pass',
           component: () => import('@/views/forms/generators/VisitorsPassView.vue'),
+          meta: { title: 'Visitors pass' },
         },
         {
           path: 'letter-of-intent',
           name: 'forms-letter-of-intent',
           component: () => import('@/views/forms/generators/LetterOfIntentView.vue'),
+          meta: { title: 'Letter of intent' },
         },
       ],
     },
@@ -73,16 +86,19 @@ const router = createRouter({
           path: '',
           name: 'dp-campaigns',
           component: () => import('@/views/dp/DpCampaignsView.vue'),
+          meta: { title: 'Frames' },
         },
         {
           path: 'new',
           name: 'dp-new',
           component: () => import('@/views/dp/DpNewCampaignView.vue'),
+          meta: { title: 'New frame' },
         },
         {
           path: ':slug/edit',
           name: 'dp-edit',
           component: () => import('@/views/dp/DpEditCampaignView.vue'),
+          meta: { title: 'Edit frame' },
         },
       ],
     },
@@ -91,6 +107,7 @@ const router = createRouter({
       path: '/frames/:slug',
       name: 'dp-public',
       component: () => import('@/views/dp/DpPublicView.vue'),
+      meta: { title: 'Frame' },
     },
 
     // ── Tix module (ticketing) ───────────────────────────────────────────────
@@ -105,21 +122,25 @@ const router = createRouter({
           path: '',
           name: 'events',
           component: () => import('@/views/tix/EventsView.vue'),
+          meta: { title: 'Tix' },
         },
         {
           path: 'new',
           name: 'event-new',
           component: () => import('@/views/tix/NewEventView.vue'),
+          meta: { title: 'New event' },
         },
         {
           path: ':id/select',
           name: 'event-select',
           component: () => import('@/views/tix/AttendeeSelectionView.vue'),
+          meta: { title: 'Attendee selection' },
         },
         {
           path: ':id',
           name: 'event-manage',
           component: () => import('@/views/tix/EventDetailView.vue'),
+          meta: { title: 'Event' },
         },
       ],
     },
@@ -128,6 +149,7 @@ const router = createRouter({
       path: '/tix/:eventId',
       name: 'ticket-lookup',
       component: () => import('@/views/tix/TicketLookupView.vue'),
+      meta: { title: 'Ticket lookup' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────
@@ -140,6 +162,7 @@ const router = createRouter({
         {
           path: '',
           name: 'orgs-modify-index',
+          meta: { title: 'Org settings' },
           redirect: () => {
             const activeOrgId = localStorage.getItem('active_org_id')
             if (activeOrgId) {
@@ -152,6 +175,7 @@ const router = createRouter({
           path: ':slug',
           name: 'orgs-modify',
           component: () => import('@/views/orgs/OrgModifyView.vue'),
+          meta: { title: 'Org settings' },
         },
       ],
     },
@@ -161,87 +185,157 @@ const router = createRouter({
       path: '/orgs',
       name: 'org-catalog',
       component: () => import('@/views/orgs/OrgCatalogView.vue'),
+      meta: { title: 'Orgs' },
     },
     {
       path: '/orgs/:slug',
       name: 'org-profile',
       component: () => import('@/views/orgs/OrgProfileView.vue'),
+      meta: { title: 'Organization' },
     },
 
     // ── Account & legal ──────────────────────────────────────────────────────
     {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/views/AccountView.vue'),
+      meta: { requiresAuth: true, title: 'Account' },
+    },
+    {
       path: '/settings',
-      component: () => import('@/views/settings/SettingsLayout.vue'),
-      meta: { requiresAuth: true },
+      redirect: { name: 'account' },
+    },
+    {
+      path: '/settings/security',
+      redirect: { name: 'account' },
+    },
+    // Old admin org-management URLs keep working; the pages now live in /admin.
+    {
+      path: '/settings/organizations',
+      redirect: { name: 'orgs-modify-index' },
+    },
+    {
+      path: '/settings/orgs',
+      redirect: { name: 'orgs-modify-index' },
+    },
+    {
+      path: '/settings/orgs/:orgId',
+      redirect: (to) => ({ name: 'orgs-modify', params: { slug: to.params.orgId as string } }),
+    },
+    {
+      path: '/settings/org-management',
+      redirect: { name: 'admin-orgs' },
+    },
+    {
+      path: '/settings/org-management/new',
+      redirect: { name: 'admin-orgs-new' },
+    },
+    {
+      path: '/settings/org-management/:orgId',
+      redirect: (to) => ({ name: 'admin-orgs-edit', params: { orgId: to.params.orgId as string } }),
+    },
+
+    // ── Admin panel ──────────────────────────────────────────────────────────
+    {
+      path: '/admin',
+      component: () => import('@/views/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
       children: [
         {
           path: '',
-          redirect: { name: 'settings-security' },
+          redirect: { name: 'admin-users' },
         },
         {
-          path: 'security',
-          name: 'settings-security',
-          component: () => import('@/views/SettingsView.vue'),
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('@/views/admin/AdminUsersView.vue'),
+          meta: { title: 'Users' },
         },
         {
-          path: 'organizations',
-          redirect: () => ({ name: 'orgs-modify-index' }),
+          path: 'links',
+          name: 'admin-links',
+          component: () => import('@/views/admin/AdminLinksView.vue'),
+          meta: { title: 'Links' },
+        },
+        {
+          path: 'reports',
+          name: 'admin-reports',
+          component: () => import('@/views/admin/AdminReportsView.vue'),
+          meta: { title: 'Reports' },
+        },
+        {
+          path: 'audit',
+          name: 'admin-audit',
+          component: () => import('@/views/admin/AdminAuditView.vue'),
+          meta: { title: 'Audit log' },
         },
         {
           path: 'orgs',
-          redirect: () => ({ name: 'orgs-modify-index' }),
+          name: 'admin-orgs',
+          component: () => import('@/views/settings/OrgManagementView.vue'),
+          meta: { title: 'Org management' },
+        },
+        {
+          path: 'orgs/new',
+          name: 'admin-orgs-new',
+          component: () => import('@/views/settings/OrgManagementEditView.vue'),
+          meta: { title: 'New organization' },
         },
         {
           path: 'orgs/:orgId',
-          redirect: (to) => ({
-            name: 'orgs-modify',
-            params: { slug: to.params.orgId as string },
-          }),
-        },
-        {
-          path: 'org-management',
-          name: 'settings-org-management',
-          component: () => import('@/views/settings/OrgManagementView.vue'),
-          meta: { requiresSuperAdmin: true },
-        },
-        {
-          path: 'org-management/new',
-          name: 'settings-org-management-new',
+          name: 'admin-orgs-edit',
           component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true },
-        },
-        {
-          path: 'org-management/:orgId',
-          name: 'settings-org-management-edit',
-          component: () => import('@/views/settings/OrgManagementEditView.vue'),
-          meta: { requiresSuperAdmin: true },
+          meta: { title: 'Edit organization' },
         },
       ],
     },
     {
       path: '/privacy',
       name: 'privacy',
-      component: () => import('@/views/PrivacyView.vue'),
+      component: () => import('@/views/LegalView.vue'),
+      meta: { title: 'Privacy' },
     },
     {
       path: '/terms',
       name: 'terms',
-      component: () => import('@/views/TermsView.vue'),
+      component: () => import('@/views/LegalView.vue'),
+      meta: { title: 'Terms' },
+    },
+    {
+      path: '/acceptable-use',
+      name: 'acceptable-use',
+      component: () => import('@/views/LegalView.vue'),
+      meta: { title: 'Acceptable use' },
+    },
+    {
+      path: '/consent',
+      name: 'consent',
+      component: () => import('@/views/ConsentView.vue'),
+      meta: { requiresAuth: true, title: 'Consent' },
     },
     {
       path: '/contact',
       name: 'contact',
       component: () => import('@/views/ContactView.vue'),
+      meta: { title: 'Contact' },
     },
     {
-      path: '/reset-password',
-      name: 'reset-password',
-      component: () => import('@/views/ResetPasswordView.vue'),
+      path: '/unlock/:slug',
+      name: 'unlock',
+      component: () => import('@/views/UnlockView.vue'),
+      meta: { title: 'Unlock' },
     },
     {
-      path: '/verify',
-      name: 'verify',
-      component: () => import('@/views/VerifyView.vue'),
+      path: '/expired',
+      name: 'expired',
+      component: () => import('@/views/ExpiredView.vue'),
+      meta: { title: 'Expired' },
+    },
+    {
+      path: '/report',
+      name: 'report',
+      component: () => import('@/views/ReportView.vue'),
+      meta: { title: 'Report' },
     },
 
     // ── Link shortener redirect — MUST stay second-to-last ───────────────────
@@ -249,25 +343,42 @@ const router = createRouter({
       path: '/:slug',
       name: 'redirect',
       component: () => import('@/views/RedirectView.vue'),
+      meta: { title: 'Redirect' },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
+      meta: { title: 'Page not found' },
     },
   ],
 })
 
 router.beforeEach(async (to, _from, next) => {
-  const isAuthenticated = !!localStorage.getItem('eypi_token')
+  await session.load()
+  const signedIn = session.user.value
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next({ name: 'login' })
+  if (to.name === 'login' && signedIn) {
+    next({ name: 'dashboard' })
     return
   }
 
-  if (to.name === 'login' && isAuthenticated) {
-    next({ name: 'dashboard' })
+  if (to.meta.requiresAuth && !signedIn) {
+    next({ name: 'login', query: { returnTo: to.fullPath } })
+    return
+  }
+
+  const skipsConsent = to.matched.some((record) => (
+    record.name === 'consent'
+    || record.name === 'privacy'
+    || record.name === 'terms'
+    || record.name === 'acceptable-use'
+    || record.name === 'contact'
+    || record.name === 'login'
+    || record.name === 'account'
+  ))
+  if (signedIn && session.needsConsent.value.length > 0 && !skipsConsent) {
+    next({ name: 'consent', query: { returnTo: to.fullPath } })
     return
   }
 
@@ -285,20 +396,41 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  const requiresSuperAdmin = to.matched.some((record) => record.meta.requiresSuperAdmin)
-  if (requiresSuperAdmin) {
-    const user = getUser()
-    if (!user) {
-      next({ name: 'login' })
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
+  if (requiresAdmin) {
+    if (!signedIn) {
+      next({ name: 'login', query: { returnTo: to.fullPath } })
       return
     }
-    if (user.email !== SUPER_ADMIN_EMAIL) {
-      next({ name: 'settings-security', replace: true })
+    if (signedIn.role !== 'admin') {
+      next({ name: 'account', replace: true })
       return
     }
   }
 
   next()
+})
+
+router.afterEach((to) => {
+  const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')
+  const page = typeof titled?.meta.title === 'string' ? titled.meta.title : 'Page'
+  const title = `${page} · eypi.cc`
+  document.title = title
+
+  let region = document.getElementById('route-announcer')
+  if (!region && document.body) {
+    region = document.createElement('div')
+    region.id = 'route-announcer'
+    region.setAttribute('role', 'status')
+    region.setAttribute('aria-live', 'polite')
+    region.setAttribute('aria-atomic', 'true')
+    document.body.appendChild(region)
+  }
+  if (region) region.textContent = title
+})
+
+router.onError((error, to) => {
+  reloadOnceForChunkError(error, to.fullPath)
 })
 
 export default router

@@ -20,6 +20,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search forms..."
+        aria-label="Search forms"
         class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors duration-200 placeholder:text-g-muted focus:border-g-accent"
       />
 
@@ -44,44 +45,15 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
+import { FORM_CATALOG, type FormCatalogItem } from '@shared/formsCatalog'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
-
-interface FormCatalogItem {
-  id: string
-  title: string
-  description: string
-  route: string
-}
-
-const FALLBACK_FORMS: FormCatalogItem[] = [
-  {
-    id: 'concessionaire',
-    title: 'Concessionaire Form',
-    description: 'MOA, waiver, reply form, and related docs in one ZIP.',
-    route: '/forms/concessionaire',
-  },
-  {
-    id: 'visitors-pass',
-    title: 'Visitors Pass',
-    description: 'Generate a visitors pass from a CSV list of names.',
-    route: '/forms/visitors-pass',
-  },
-  {
-    id: 'letter-of-intent',
-    title: 'Letter of Intent & Waiver',
-    description: 'Batch generate student waivers into a ZIP file from a CSV list.',
-    route: '/forms/letter-of-intent',
-  },
-]
 
 const router = useRouter()
-const { authHeaders } = useAuth()
 
 const loading = ref(true)
-const availableForms = ref<FormCatalogItem[]>(FALLBACK_FORMS)
+const availableForms = ref<FormCatalogItem[]>(FORM_CATALOG.map((form) => ({ ...form })))
 
 const searchQuery = ref('')
 
@@ -97,7 +69,7 @@ const filteredForms = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/forms`, { headers: authHeaders() })
+    const res = await api.raw(`/api/forms`)
     if (res.ok) {
       const data = await res.json() as { forms?: FormCatalogItem[] }
       if (data.forms?.length) {

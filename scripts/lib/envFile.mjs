@@ -1,12 +1,17 @@
-export const REQUIRED_KEYS = ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'JWT_SECRET']
+export const REQUIRED_KEYS = [
+  'TURSO_DATABASE_URL',
+  'TURSO_AUTH_TOKEN',
+  'PASS_TOKEN_SECRET',
+  'AUTH_COOKIE_SECRET',
+  'IP_HASH_SECRET',
+]
 
 export const OPTIONAL_KEYS = [
-  { key: 'RESEND_API_KEY', feature: 'verification emails' },
-  { key: 'APPLE_PASS_TYPE_ID', feature: 'Apple Wallet' },
-  { key: 'APPLE_TEAM_ID', feature: 'Apple Wallet' },
-  { key: 'APPLE_PASS_CERT_PEM', feature: 'Apple Wallet' },
-  { key: 'APPLE_PASS_KEY_PEM', feature: 'Apple Wallet' },
-  { key: 'APPLE_WWDR_CERT_PEM', feature: 'Apple Wallet' },
+  { key: 'MS_CLIENT_ID', feature: 'Microsoft sign-in' },
+  { key: 'MS_CLIENT_SECRET', feature: 'Microsoft sign-in' },
+  { key: 'MS_ALLOWED_TENANT_IDS', feature: 'Microsoft sign-in' },
+  { key: 'RESEND_API_KEY', feature: 'invite emails' },
+  { key: 'SAFE_BROWSING_API_KEY', feature: 'Safe Browsing' },
   { key: 'GOOGLE_WALLET_ISSUER_ID', feature: 'Google Wallet' },
   { key: 'GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL', feature: 'Google Wallet' },
   { key: 'GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY', feature: 'Google Wallet' },
@@ -51,10 +56,17 @@ export function checkDevVars(values, example) {
   return { requiredUnset, optionalUnset }
 }
 
-export function seedDevVars(exampleText, existingText, newSecret) {
+const GENERATED_SECRET_KEYS = ['PASS_TOKEN_SECRET', 'AUTH_COOKIE_SECRET', 'IP_HASH_SECRET']
+
+export function seedDevVars(exampleText, existingText, secrets) {
   if (existingText !== null) {
     return { text: existingText, changed: false }
   }
-  const text = exampleText.replace(/^[ \t]*JWT_SECRET[ \t]*=.*$/m, `JWT_SECRET=${newSecret}`)
+  let text = exampleText
+  for (const key of GENERATED_SECRET_KEYS) {
+    const value = secrets?.[key]
+    if (value == null) continue
+    text = text.replace(new RegExp(`^[ \\t]*${key}[ \\t]*=.*$`, 'm'), `${key}=${value}`)
+  }
   return { text, changed: true }
 }

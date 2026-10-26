@@ -14,8 +14,11 @@
       <aside
         v-if="isOpen"
         id="site-nav-sidebar"
+        ref="panelRef"
         class="nav-sidebar fixed top-0 right-0 flex h-full max-h-screen w-full flex-col overflow-y-auto border-l border-g-border bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:bg-slate-900/95 sm:max-w-md sm:p-8"
         style="z-index: 99991"
+        role="dialog"
+        aria-modal="true"
         aria-label="Site navigation"
         :class="itemsVisible ? 'nav-sidebar--visible' : ''"
       >
@@ -50,7 +53,16 @@
               data-cursor="nav"
               @click="$emit('close')"
             >
-              <span>{{ link.label }}</span>
+              <span class="flex items-center gap-3">
+                <span>{{ link.label }}</span>
+                <span
+                  v-if="link.to === '/invites' && pendingInviteCount > 0"
+                  class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#DEAC4B] px-1.5 text-xs font-semibold leading-none text-[#1a1a2e]"
+                  :aria-label="pendingInviteLabel"
+                >
+                  {{ pendingInviteCount }}
+                </span>
+              </span>
               <span class="nav-sidebar-link__arrow" aria-hidden="true">↗</span>
             </router-link>
           </nav>
@@ -116,8 +128,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import OrgLogo from '@/components/OrgLogo.vue'
+import { useFocusTrap } from '@/composables/useFocusTrap'
+import { useSession } from '@/stores/session'
 import type { OrgListItem } from '@/types/orgs'
 
 const props = defineProps<{
@@ -135,15 +149,29 @@ defineEmits<{
   logout: []
 }>()
 
-const appLinks = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/links', label: 'Links' },
-  { to: '/forms', label: 'Forms' },
-  { to: '/manage/tix', label: 'Tix' },
-  { to: '/manage/frames', label: 'Frames' },
-  { to: '/orgs', label: 'Orgs' },
-  { to: '/settings', label: 'Settings' },
-]
+const appLinks = computed(() => {
+  const links = [
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/links', label: 'Links' },
+    { to: '/forms', label: 'Forms' },
+    { to: '/manage/tix', label: 'Tix' },
+    { to: '/manage/frames', label: 'Frames' },
+    { to: '/orgs', label: 'Orgs' },
+    { to: '/invites', label: 'Invites' },
+    { to: '/account', label: 'Account' },
+  ]
+  if (useSession().user.value?.role === 'admin') {
+    links.push({ to: '/admin/users', label: 'Admin' })
+  }
+  return links
+})
+
+const pendingInviteCount = computed(() => useSession().pendingInviteCount.value)
+const pendingInviteLabel = computed(() => {
+  const count = pendingInviteCount.value
+  const noun = count === 1 ? 'invite' : 'invites'
+  return `${count} pending ${noun}`
+})
 
 const publicLinks = [
   { to: '/orgs', label: 'Orgs' },
@@ -152,6 +180,8 @@ const publicLinks = [
 ]
 
 const itemsVisible = ref(false)
+const panelRef = ref<HTMLElement | null>(null)
+const { activate, release } = useFocusTrap(panelRef)
 
 function onPanelEnter() {
   itemsVisible.value = true
@@ -159,8 +189,14 @@ function onPanelEnter() {
 
 watch(
   () => props.isOpen,
-  (open) => {
-    if (!open) itemsVisible.value = false
+  async (open) => {
+    if (!open) {
+      itemsVisible.value = false
+      release()
+      return
+    }
+    await nextTick()
+    activate()
   },
 )
 </script>
@@ -226,7 +262,7 @@ watch(
   border: 1px solid transparent;
   border-radius: 9999px;
   background: var(--color-accent);
-  color: #fff;
+  color: #1a1a2e;
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -234,7 +270,7 @@ watch(
 }
 
 .nav-sidebar-link--cta:hover {
-  color: #fff;
+  color: #1a1a2e;
   opacity: 0.92;
 }
 

@@ -10,7 +10,7 @@
         <OrgSwitcher />
         <router-link
           to="/manage/frames/new"
-          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
           data-cursor="cta"
         >New Campaign</router-link>
       </div>
@@ -21,6 +21,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search frames..."
+      aria-label="Search frames"
       class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
@@ -38,10 +39,7 @@
       v-else-if="!filteredCampaigns.length"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
       <p class="text-sm font-medium text-g-muted">{{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}</p>
       <p class="mt-3 text-sm leading-relaxed text-g-muted">{{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}</p>
     </div>
@@ -89,18 +87,17 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useAuth } from '@/composables/useAuth'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
+import PageShell from '@/components/PageShell.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 
 const campaigns = ref<DpCampaignSummary[]>([])
 const loading = ref(true)
@@ -138,7 +135,7 @@ async function remove(id: string, title: string) {
   if (!ok) return
   deletingId.value = id
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${id}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${id}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     campaigns.value = campaigns.value.filter(c => c.id !== id)
@@ -152,7 +149,7 @@ async function remove(id: string, title: string) {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp`, { headers: authHeaders() })
+    const res = await api.raw(`/api/dp`)
     if (res.status === 403) {
       isLocked.value = true
       return

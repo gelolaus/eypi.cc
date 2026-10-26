@@ -88,23 +88,53 @@ export async function canUseNativeBarcodeDetector(): Promise<boolean> {
   }
 }
 
-export function playScanFeedback() {
-  if (navigator.vibrate) {
-    navigator.vibrate(50)
+export type ScanResultKind = 'success' | 'already_checked_in' | 'removed' | 'invalid' | 'error'
+
+const RESULT_TONE: Record<ScanResultKind, number> = {
+  success: 880,
+  already_checked_in: 494,
+  removed: 330,
+  invalid: 247,
+  error: 196,
+}
+
+export function vibrationForResult(kind: ScanResultKind): number | number[] {
+  switch (kind) {
+    case 'success':
+      return 50
+    case 'already_checked_in':
+      return [30, 50, 30]
+    case 'removed':
+      return [80, 40, 80]
+    case 'invalid':
+      return [20, 30, 20]
+    case 'error':
+      return 120
+  }
+}
+
+export function playResultFeedback(kind: ScanResultKind) {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(vibrationForResult(kind))
     return
   }
+  if (typeof AudioContext === 'undefined') return
   try {
     const ctx = new AudioContext()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
-    osc.frequency.value = 880
-    gain.gain.value = 0.08
+    osc.frequency.value = RESULT_TONE[kind]
+    gain.gain.value = kind === 'success' ? 0.08 : 0.05
     osc.start()
-    osc.stop(ctx.currentTime + 0.08)
+    osc.stop(ctx.currentTime + (kind === 'success' ? 0.08 : 0.18))
     osc.onended = () => ctx.close()
   } catch {
     /* no audio permission */
   }
+}
+
+export function playScanFeedback() {
+  playResultFeedback('success')
 }

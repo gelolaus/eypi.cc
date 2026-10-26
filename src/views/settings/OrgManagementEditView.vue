@@ -1,7 +1,7 @@
 <template>
   <div>
     <router-link
-      to="/settings/org-management"
+      to="/admin/orgs"
       class="mb-6 inline-flex text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
       data-cursor="nav"
     >
@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-          <button type="submit" :disabled="saving" class="btn-primary" data-cursor="cta">
+          <button type="submit" :disabled="saving" class="btn-primary btn-gold" data-cursor="cta">
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
           </button>
           <button
@@ -62,25 +62,14 @@
           </button>
         </div>
       </form>
-
-      <form v-if="!isCreate" class="mt-10 space-y-3 border-t border-g-border pt-8" @submit.prevent="confirmTransfer">
-        <h3 class="text-card-title text-red-500">Transfer ownership</h3>
-        <div class="flex flex-col gap-2 sm:flex-row">
-          <input v-model="transferEmail" type="email" required placeholder="active-member@apc.edu.ph" class="field-input min-w-0 flex-1" />
-          <button type="submit" :disabled="transferring" class="rounded-lg bg-red-500 px-4 py-3 text-sm font-semibold text-white">
-            {{ transferring ? 'Transferring...' : 'Transfer' }}
-          </button>
-        </div>
-      </form>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 
@@ -98,11 +87,10 @@ interface AdminOrgResponse {
 
 const route = useRoute()
 const router = useRouter()
-const { authHeaders } = useAuth()
 const toast = useToast()
 const dialog = useDialog()
 
-const isCreate = computed(() => route.name === 'settings-org-management-new')
+const isCreate = computed(() => route.name === 'admin-orgs-new')
 
 const form = ref({
   id: '',
@@ -113,14 +101,12 @@ const form = ref({
 
 const saving = ref(false)
 const deleting = ref(false)
-const transferring = ref(false)
-const transferEmail = ref('')
 
 async function loadOrg() {
   if (isCreate.value) return
   const orgId = route.params.orgId as string
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${orgId}`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin/${orgId}`)
     const data = await res.json() as AdminOrgResponse
     if (!res.ok) throw new Error(data.error || 'Failed to load org.')
     form.value = {
@@ -131,7 +117,7 @@ async function loadOrg() {
     }
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Failed to load org.')
-    router.push('/settings/org-management')
+    router.push('/admin/orgs')
   }
 }
 
@@ -139,9 +125,9 @@ async function save() {
   saving.value = true
   try {
     if (isCreate.value) {
-      const res = await fetch(`${API_BASE_URL}/api/orgs`, {
+      const res = await api.raw(`/api/orgs`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: form.value.id.toLowerCase().trim(),
           name: form.value.name.trim(),
@@ -151,7 +137,7 @@ async function save() {
       const data = await res.json() as AdminOrgResponse
       if (!res.ok) throw new Error(data.error || 'Create failed.')
       toast.success('Org created.')
-      router.push({ name: 'settings-org-management-edit', params: { orgId: form.value.id.toLowerCase().trim() } })
+      router.push({ name: 'admin-orgs-edit', params: { orgId: form.value.id.toLowerCase().trim() } })
     } else {
       const orgId = route.params.orgId as string
       const payload: Record<string, unknown> = {
@@ -162,16 +148,16 @@ async function save() {
       const newId = form.value.id.toLowerCase().trim()
       if (newId !== orgId) payload.id = newId
 
-      const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${orgId}`, {
+      const res = await api.raw(`/api/orgs/admin/${orgId}`, {
         method: 'PATCH',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
       const data = await res.json() as AdminOrgResponse
       if (!res.ok) throw new Error(data.error || 'Save failed.')
       toast.success('Org updated.')
       if (data.org?.org_id && data.org.org_id !== orgId) {
-        router.replace({ name: 'settings-org-management-edit', params: { orgId: data.org.org_id } })
+        router.replace({ name: 'admin-orgs-edit', params: { orgId: data.org.org_id } })
       }
     }
   } catch (err) {
@@ -192,50 +178,15 @@ async function deleteOrg() {
   if (!ok) return
   deleting.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin/${route.params.orgId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
+    const res = await api.raw(`/api/orgs/admin/${route.params.orgId}`, { method: 'DELETE' })
     const data = await res.json() as { error?: string }
     if (!res.ok) throw new Error(data.error || 'Delete failed.')
     toast.success('Org deleted.')
-    router.push('/settings/org-management')
+    router.push('/admin/orgs')
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
   } finally {
     deleting.value = false
-  }
-}
-
-async function confirmTransfer() {
-  const targetEmail = transferEmail.value.toLowerCase().trim()
-  const orgName = form.value.name || form.value.id
-  const ok = await dialog.confirm({
-    title: 'Transfer ownership?',
-    body: `Transfers "${orgName}" to ${targetEmail}. The current owner will lose ownership.`,
-    confirmLabel: 'Transfer ownership',
-    requireText: orgName,
-  })
-  if (!ok) return
-  await executeTransfer()
-}
-
-async function executeTransfer() {
-  transferring.value = true
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/${route.params.orgId}/transfer`, {
-      method: 'POST',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetEmail: transferEmail.value.toLowerCase().trim() }),
-    })
-    const data = await res.json() as { error?: string }
-    if (!res.ok) throw new Error(data.error || 'Transfer failed.')
-    toast.success('Ownership transferred.')
-    await loadOrg()
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : 'Transfer failed.')
-  } finally {
-    transferring.value = false
   }
 }
 
@@ -247,6 +198,6 @@ onMounted(loadOrg)
   @apply rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
 }
 .btn-primary {
-  @apply rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+ @apply rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
 }
 </style>

@@ -15,7 +15,7 @@
         <OrgSwitcher />
         <router-link
           to="/manage/tix/new"
-          class="rounded-xl bg-g-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
           data-cursor="cta"
         >
           New Event
@@ -28,6 +28,7 @@
       v-model="searchQuery"
       type="search"
       placeholder="Search events..."
+      aria-label="Search events"
       class="mb-6 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-sm text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
     />
 
@@ -47,10 +48,7 @@
       v-else-if="!filteredEvents.length"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
       <p class="text-sm font-medium text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
       <p class="mt-3 text-sm leading-relaxed text-g-muted">
         {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
@@ -100,17 +98,16 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
-import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import OrgLockout from '@/components/OrgLockout.vue'
+import PageShell from '@/components/PageShell.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 
 interface Event {
   id: unknown
@@ -158,10 +155,7 @@ async function deleteEvent(slug: string, name: string) {
 
   deletingSlug.value = slug
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events/${slug}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
+    const res = await api.raw(`/api/events/${slug}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     events.value = events.value.filter(e => e.slug !== slug)
@@ -175,7 +169,7 @@ async function deleteEvent(slug: string, name: string) {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${TIX_API_URL}/api/events`, { headers: authHeaders() })
+    const res = await api.raw(`/api/events`)
     if (res.status === 403) {
       isLocked.value = true
       return

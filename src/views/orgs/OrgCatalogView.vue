@@ -12,7 +12,7 @@
       <div v-if="isAuthenticated && activeOrg" class="flex flex-wrap items-center gap-3">
         <router-link
           :to="`/orgs/modify/${activeOrg.org_id}`"
-          class="tap-scale inline-flex items-center gap-2 rounded-xl bg-[#DEAC4B] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:scale-105 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover"
+ class="btn-gold tap-scale inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-md transition-all hover:scale-105"
           data-cursor="cta"
         >
           Modify {{ activeOrg.org_name }}
@@ -25,6 +25,7 @@
         v-model="searchQuery"
         type="search"
         placeholder="Search organizations..."
+        aria-label="Search organizations"
         class="reveal delay-1 mb-4 w-full rounded-2xl border-2 border-g-border bg-g-surface px-6 py-4 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-accent"
       />
 
@@ -36,7 +37,7 @@
           class="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
           :class="
             selectedOrgType === option.value
-              ? 'border-g-accent bg-g-accent text-white dark:bg-eypi-gold-dark dark:text-slate-100'
+              ? 'btn-gold border-g-accent'
               : 'border-g-border bg-g-surface text-g-muted hover:border-g-accent/40 hover:text-g-text'
           "
           data-cursor="nav"
@@ -62,10 +63,7 @@
       v-else-if="orgs.length === 0"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
       <p class="font-mono text-sm uppercase tracking-widest text-g-muted">No organizations in the directory yet</p>
       <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
         Org officers can opt in from Settings → Org Management.
@@ -118,7 +116,7 @@
           </p>
           <span
             v-if="orgTypeLabel(org.orgType)"
-            class="mt-2 inline-flex w-fit items-center rounded-full bg-g-accent px-4 py-1.5 text-xs font-semibold text-white dark:bg-eypi-gold-dark dark:text-slate-100"
+ class="btn-gold mt-2 inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-semibold"
           >
             {{ orgTypeLabel(org.orgType) }}
           </span>
@@ -129,17 +127,18 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
 import { useReveal } from '@/composables/useReveal'
-import { useAuth } from '@/composables/useAuth'
+import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
 import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 useReveal()
 
-const { getUser } = useAuth()
+const session = useSession()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
 const orgs = ref<PublicOrgCatalogItem[]>([])
@@ -148,7 +147,7 @@ const error = ref('')
 const searchQuery = ref('')
 const selectedOrgType = ref<OrgType | null>(null)
 
-const isAuthenticated = computed(() => !!getUser())
+const isAuthenticated = computed(() => session.user.value !== null)
 
 const typeFilterOptions = computed(() => [
   { value: null as OrgType | null, label: 'All' },
@@ -179,7 +178,7 @@ onMounted(async () => {
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/public`)
+    const res = await api.raw(`/api/orgs/public`)
     const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
     orgs.value = data.orgs ?? []

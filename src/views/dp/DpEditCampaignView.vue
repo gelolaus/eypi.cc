@@ -31,29 +31,29 @@
         <div class="mica-card reveal delay-1 relative flex flex-col gap-5 rounded-3xl border border-gray-200 p-8 md:p-10 dark:border-slate-600">
           <!-- Title -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
-            <input v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-title" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Title</label>
+            <input id="edit-campaign-title" v-model="form.title" type="text" maxlength="200" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
+            <label for="edit-campaign-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/frames/</span>
-              <input v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
+              <input id="edit-campaign-slug" v-model="form.slug" type="text" maxlength="60" class="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none text-gray-900 dark:text-slate-200" @input="sanitizeSlug" />
             </div>
           </div>
 
           <!-- Description -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <input v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-description" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Description <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <input id="edit-campaign-description" v-model="form.description" type="text" maxlength="1000" class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Caption -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
-            <textarea v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
+            <label for="edit-campaign-caption" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Caption <span class="text-gray-400 dark:text-slate-500">(optional)</span></label>
+            <textarea id="edit-campaign-caption" v-model="form.captionTemplate" rows="3" maxlength="2000" class="w-full resize-y rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm leading-relaxed outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:focus:border-slate-500" />
           </div>
 
           <!-- Save metadata -->
@@ -67,7 +67,7 @@
 
           <!-- Frames (persisted immediately) -->
           <div class="border-t border-gray-200 pt-5 dark:border-slate-700">
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</label>
+            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Frames</p>
             <p class="mb-3 font-mono text-[0.65rem] uppercase tracking-wide text-gray-400 dark:text-slate-500">Changes here save instantly.</p>
             <DpFrameUploader :frames="frames" :busy-index="frameBusyIndex" @add="onAddFrame" @remove="onRemoveFrame" @reorder="onReorderFrame" />
           </div>
@@ -86,13 +86,12 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { API_BASE_URL } from '@/config/api'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import { useReveal } from '@/composables/useReveal'
-import { useAuth } from '@/composables/useAuth'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import type { DpUploaderFrame, DpFrame } from '@/types/dp'
 
@@ -100,7 +99,6 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const dialog = useDialog()
-const { authHeaders } = useAuth()
 useReveal()
 
 const slug = route.params.slug as string
@@ -123,9 +121,8 @@ async function saveDetails() {
   if (saving.value || !form.title.trim()) return
   saving.value = true
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}`, {
       method: 'PATCH',
-      headers: authHeaders(),
       body: JSON.stringify({
         title: form.title.trim(),
         slug: form.slug.trim().replace(/^-+|-+$/g, ''),
@@ -135,7 +132,13 @@ async function saveDetails() {
     })
     const data = await res.json() as { status: string; message?: string; slug?: string }
     if (!res.ok) throw new Error(data.message ?? 'Save failed.')
-    if (data.slug) form.slug = data.slug
+    if (data.slug) {
+      form.slug = data.slug
+      const currentSlug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
+      if (data.slug !== currentSlug) {
+        await router.replace({ name: 'dp-edit', params: { slug: data.slug } })
+      }
+    }
     toast.success('Saved.')
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Save failed.')
@@ -147,9 +150,8 @@ async function saveDetails() {
 async function onAddFrame(dataUrl: string) {
   frameBusyIndex.value = frames.value.length
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({ imageData: dataUrl }),
     })
     const data = await res.json() as { status: string; message?: string; frame?: { id: string } }
@@ -169,7 +171,7 @@ async function onRemoveFrame(index: number) {
   if (frames.value.length <= 1) { toast.error('A campaign needs at least one frame.'); return }
   frameBusyIndex.value = index
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Could not remove frame.')
     frames.value.splice(index, 1)
@@ -187,9 +189,8 @@ async function onReorderFrame(from: number, to: number) {
   const [moved] = arr.splice(from, 1)
   arr.splice(to, 0, moved) // optimistic
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}/frames/order`, {
+    const res = await api.raw(`/api/dp/${campaignId.value}/frames/order`, {
       method: 'PATCH',
-      headers: authHeaders(),
       body: JSON.stringify({ orderedIds: arr.map(f => f.id as string) }),
     })
     const data = await res.json() as { status: string; message?: string }
@@ -212,7 +213,7 @@ async function removeCampaign() {
   })
   if (!ok) return
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${campaignId.value}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${campaignId.value}`, { method: 'DELETE' })
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     toast.success('Campaign deleted.')
@@ -224,7 +225,7 @@ async function removeCampaign() {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dp/${slug}/edit`, { headers: authHeaders() })
+    const res = await api.raw(`/api/dp/${slug}/edit`)
     let data: { status?: string; message?: string; campaign?: { id: string; title: string; slug: string; description: string | null; captionTemplate: string | null; frames: DpFrame[] } } = {}
     try { data = await res.json() } catch { /* non-JSON */ }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Campaign not found.')
@@ -233,7 +234,7 @@ onMounted(async () => {
     form.slug = data.campaign.slug
     form.description = data.campaign.description ?? ''
     form.captionTemplate = data.campaign.captionTemplate ?? ''
-    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.imageUrl }))
+    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url }))
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
   } finally {

@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { API_BASE_URL, IS_LOCAL_DEV } from '@/config/api'
 
@@ -40,7 +41,7 @@ const statusClass = computed(() =>
 onMounted(async () => {
   if (!IS_LOCAL_DEV) return
   try {
-    const res = await fetch(`${API_BASE_URL}/api/health`)
+    const res = await api.raw(`/api/health`)
     if (res.ok) {
       status.value = 'online'
       return

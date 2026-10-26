@@ -36,13 +36,13 @@ if (!existsSync(devVarsPath)) {
     console.error('backend/.dev.vars.example is missing')
     process.exit(1)
   }
-  const seeded = seedDevVars(
-    readFileSync(examplePath, 'utf8'),
-    null,
-    randomBytes(32).toString('base64url'),
-  )
+  const seeded = seedDevVars(readFileSync(examplePath, 'utf8'), null, {
+    PASS_TOKEN_SECRET: randomBytes(32).toString('base64url'),
+    AUTH_COOKIE_SECRET: randomBytes(32).toString('base64url'),
+    IP_HASH_SECRET: randomBytes(32).toString('base64url'),
+  })
   writeFileSync(devVarsPath, seeded.text, 'utf8')
-  console.log('Created backend/.dev.vars from the example (JWT_SECRET filled). Fill the remaining keys.')
+  console.log('Created backend/.dev.vars from the example (PASS_TOKEN_SECRET, AUTH_COOKIE_SECRET, and IP_HASH_SECRET filled). Fill the remaining keys.')
 } else {
   console.log('backend/.dev.vars already exists — left unchanged.')
 }

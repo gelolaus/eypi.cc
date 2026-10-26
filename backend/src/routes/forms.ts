@@ -1,62 +1,76 @@
 import { Hono } from 'hono'
-import { isOrgFeature } from '../middleware/orgGuard'
+import {
+  FORM_CATALOG,
+  TEMPLATE_ALLOWLIST,
+  TEMPLATE_MISSING_CODE,
+  TEMPLATE_MISSING_MESSAGE,
+} from '../../../shared/formsCatalog'
 import type { Bindings } from '../lib/db'
+import { isOrgFeature } from '../middleware/orgGuard'
+import { noOrgBody } from '../middleware/orgContext'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-const FORM_CATALOG = [
-  {
-    id: 'concessionaire',
-    title: 'Concessionaire Form',
-    description: 'Generate official concessionaire documents.',
-    route: '/forms/concessionaire',
-  },
-  {
-    id: 'visitors-pass',
-    title: 'Visitors Pass',
-    description: 'Generate a visitors pass from a CSV list of names.',
-    route: '/forms/visitors-pass',
-  },
-  {
-    id: 'letter-of-intent',
-    title: 'Letter of Intent & Waiver',
-    description: 'Batch generate student waivers into a ZIP file from a CSV list.',
-    route: '/forms/letter-of-intent',
-  },
-]
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const PRIVATE_CACHE = 'private, max-age=3600'
 
-const TEMPLATE_ALLOWLIST = new Set([
-  'concessionaire_reply_form.docx',
-  'memorandum_of_agreement.docx',
-  'terms_and_conditions.docx',
-  'waiver_form.docx',
-  'products_and_equipments.docx',
-  'visitors_pass.docx',
-  'letter_of_intent_and_waiver.docx',
-])
+const NOT_FOUND = { error: { code: 'not_found', message: 'Not found' } }
+const TEMPLATE_MISSING = {
+  error: { code: TEMPLATE_MISSING_CODE, message: TEMPLATE_MISSING_MESSAGE },
+}
+
+function quotedEtag(value: string): string {
+  return value.startsWith('"') ? value : `"${value}"`
+}
+
+async function hashEtag(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  const hex = [...new Uint8Array(digest)].map((part) => part.toString(16).padStart(2, '0')).join('')
+  return `"${hex}"`
+}
+
+function etagMatches(header: string | undefined, etag: string): boolean {
+  if (!header) return false
+  if (header.trim() === '*') return true
+  return header.split(',').some((part) => part.trim() === etag)
+}
 
 app.get('/api/forms', isOrgFeature, (c) => {
-  return c.json({ status: 'ok', forms: FORM_CATALOG })
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
+  return c.json({ status: 'ok', orgId, forms: FORM_CATALOG })
 })
 
 app.get('/api/forms/templates/:filename', isOrgFeature, async (c) => {
+  const orgId = c.var.orgId
+  if (!orgId) return c.json(noOrgBody(), 403)
   const filename = c.req.param('filename')
   if (!filename || !TEMPLATE_ALLOWLIST.has(filename)) {
-    return c.json({ status: 'error', message: 'Template not found.' }, 404)
+    return c.json(NOT_FOUND, 404)
   }
 
-  const asset = await c.env.ASSETS.fetch(new URL(`/forms/templates/${filename}`, c.req.url))
-  if (!asset.ok) {
-    return c.json({ status: 'error', message: 'Template not found.' }, 404)
+  const object = await c.env.MEDIA.get(`templates/${filename}`)
+  if (!object) return c.json(TEMPLATE_MISSING, 404)
+
+  const httpEtag = object.httpEtag
+  const rawEtag = object.etag
+  let etag = httpEtag || (rawEtag ? quotedEtag(rawEtag) : '')
+  let bytes: ArrayBuffer | null = null
+  if (!etag) {
+    bytes = await object.arrayBuffer()
+    etag = await hashEtag(bytes)
   }
 
-  return new Response(asset.body, {
-    status: asset.status,
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Cache-Control': 'private, no-store',
-    },
-  })
+  const headers = {
+    'Content-Type': DOCX_TYPE,
+    'Cache-Control': PRIVATE_CACHE,
+    ETag: etag,
+  }
+  if (etagMatches(c.req.header('If-None-Match'), etag)) {
+    return new Response(null, { status: 304, headers })
+  }
+  if (!bytes) bytes = await object.arrayBuffer()
+  return new Response(bytes, { status: 200, headers })
 })
 
 export default app

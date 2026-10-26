@@ -19,13 +19,15 @@ export interface DpCampaignSummary {
   createdAt: string
 }
 
-// A frame in a public/editor payload.
+// A frame in a public/editor payload. `url` is a same-origin media path.
 export interface DpFrame {
   id: string
-  imageUrl: string
+  url: string
   label: string | null
+  width: number
+  height: number
   position: number
 }
 
 export const DP_MAX_FRAMES = 10
-export const DP_FRAME_MAX_BYTES = 2 * 1024 * 1024
+export const DP_FRAME_MAX_BYTES = 3 * 1024 * 1024

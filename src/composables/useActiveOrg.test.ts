@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 const push = vi.fn()
@@ -20,12 +21,6 @@ vi.mock('@/composables/useToast', () => ({
   useToast: () => ({
     success: vi.fn(),
     error: vi.fn(),
-  }),
-}))
-
-vi.mock('@/composables/useAuth', () => ({
-  useAuth: () => ({
-    authHeaders: () => ({ 'Content-Type': 'application/json' }),
   }),
 }))
 

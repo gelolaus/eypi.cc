@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /api/
+Disallow: /account
+Disallow: /admin
+Disallow: /links
+Disallow: /manage
+Sitemap: https://eypi.cc/sitemap.xml

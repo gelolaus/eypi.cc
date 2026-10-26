@@ -8,8 +8,9 @@
           Letter of Intent &amp; Waiver Generator
         </h1>
         <form
-          @submit.prevent="generateDocuments"
           class="grid grid-cols-1 gap-6 md:grid-cols-2"
+          novalidate
+          @submit.prevent="generateDocuments"
         >
           <div>
             <label for="submissionDate" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -19,9 +20,19 @@
               id="submissionDate"
               v-model="formData.submissionDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.submissionDate)"
+              :aria-describedby="errors.submissionDate ? 'submissionDate-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., March 17, 2026"
-            />
+            >
+            <p
+              v-if="errors.submissionDate"
+              id="submissionDate-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.submissionDate }}
+            </p>
           </div>
           <div>
             <label for="eventName" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -31,9 +42,19 @@
               id="eventName"
               v-model="formData.eventName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventName)"
+              :aria-describedby="errors.eventName ? 'eventName-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., SoCIT Fest 2026"
-            />
+            >
+            <p
+              v-if="errors.eventName"
+              id="eventName-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventName }}
+            </p>
           </div>
           <div>
             <label for="orgName" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -43,9 +64,19 @@
               id="orgName"
               v-model="formData.orgName"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.orgName)"
+              :aria-describedby="errors.orgName ? 'orgName-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., Junior Philippine Computer Society"
-            />
+            >
+            <p
+              v-if="errors.orgName"
+              id="orgName-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.orgName }}
+            </p>
           </div>
           <div>
             <label for="eventLocation" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -55,9 +86,19 @@
               id="eventLocation"
               v-model="formData.eventLocation"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventLocation)"
+              :aria-describedby="errors.eventLocation ? 'eventLocation-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., 12/F Auditorium"
-            />
+            >
+            <p
+              v-if="errors.eventLocation"
+              id="eventLocation-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventLocation }}
+            </p>
           </div>
           <div>
             <label for="eventDate" class="mb-1.5 block text-sm font-medium text-g-muted">
@@ -67,15 +108,25 @@
               id="eventDate"
               v-model="formData.eventDate"
               type="text"
-              class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+              :aria-invalid="Boolean(errors.eventDate)"
+              :aria-describedby="errors.eventDate ? 'eventDate-error' : undefined"
+              :class="fieldClass"
               placeholder="e.g., March 21, 2026"
-            />
+            >
+            <p
+              v-if="errors.eventDate"
+              id="eventDate-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.eventDate }}
+            </p>
           </div>
 
           <div class="md:col-span-2">
-            <label class="mb-1.5 block text-sm font-medium text-g-muted">
+            <p class="mb-1.5 block text-sm font-medium text-g-muted">
               Student Names (CSV)
-            </label>
+            </p>
             <label
               for="csvFile"
               class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white/80 px-4 py-8 transition-colors hover:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-g-accent"
@@ -92,19 +143,63 @@
               </span>
               <input
                 id="csvFile"
+                ref="csvInput"
                 type="file"
                 accept=".csv"
                 class="hidden"
+                :aria-invalid="Boolean(errors.csv)"
+                :aria-describedby="errors.csv ? 'csvFile-error' : undefined"
                 @change="onFileChange"
-              />
+              >
             </label>
+            <p
+              v-if="errors.csv"
+              id="csvFile-error"
+              role="alert"
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ errors.csv }}
+            </p>
+            <div
+              v-if="previewNames.length"
+              class="mt-4 overflow-x-auto"
+            >
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">
+                  Parsed names
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="py-1 font-medium text-g-muted">
+                      Name
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(name, index) in previewNames"
+                    :key="`${index}-${name}`"
+                  >
+                    <td class="py-1 text-g-text">
+                      {{ name }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p
+                v-if="parsedNames.length > previewNames.length"
+                class="mt-1 text-sm text-g-muted"
+              >
+                And {{ parsedNames.length - previewNames.length }} more.
+              </p>
+            </div>
           </div>
 
           <div class="md:col-span-2 flex justify-end pt-2">
             <button
               type="submit"
               :disabled="isGenerating"
-              class="flex items-center gap-2 rounded-xl bg-apc-gold px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-eypi-gold-dark dark:hover:bg-eypi-gold-hover"
+              class="btn-gold flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-md transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
             >
               <svg
                 v-if="isGenerating"
@@ -138,18 +233,28 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import PizZip from 'pizzip'
-import Docxtemplater from 'docxtemplater'
-import { saveAs } from 'file-saver'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
-import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
+import {
+  fetchFormTemplate,
+  generatorErrorMessage,
+  letterEntryName,
+  parseNameCsv,
+  renderDocx,
+  requiredError,
+  saveBlob,
+  uniqueFilenameStems,
+  useDocxGenerator,
+  zipBlob,
+} from '@/composables/useDocxGenerator'
+import { useToast } from '@/composables/useToast'
+import { LETTER_TEMPLATE, LETTER_ZIP_NAME } from '@shared/formsCatalog'
+import { computed, reactive, ref } from 'vue'
 
-const { authHeaders } = useAuth()
+const fieldClass = 'w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-sm transition-colors focus:border-g-accent focus:outline-none dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200'
+
 const toast = useToast()
 const dialog = useDialog()
+const { isGenerating, run } = useDocxGenerator()
 
 const formData = reactive({
   submissionDate: '',
@@ -159,9 +264,19 @@ const formData = reactive({
   eventDate: '',
 })
 
-const isGenerating = ref(false)
+const errors = reactive({
+  submissionDate: '',
+  eventName: '',
+  orgName: '',
+  eventLocation: '',
+  eventDate: '',
+  csv: '',
+})
+
+const csvInput = ref<HTMLInputElement | null>(null)
 const csvFileName = ref('')
 const parsedNames = ref<string[]>([])
+const previewNames = computed(() => parsedNames.value.slice(0, 8))
 
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
@@ -169,75 +284,63 @@ function onFileChange(event: Event) {
   if (!file) return
 
   csvFileName.value = file.name
+  errors.csv = ''
   const reader = new FileReader()
-  reader.onload = (e) => {
-    const text = e.target?.result as string
-    parsedNames.value = text
-      .split(/\r?\n/)
-      .map((line) => line.split(';')[0].trim())
-      .filter((name) => name.length > 0)
+  reader.onload = () => {
+    parsedNames.value = parseNameCsv(String(reader.result ?? ''))
   }
   reader.readAsText(file)
 }
 
-const formatFilename = (name: string) =>
-  name.trim().replace(/\s+/g, '_') + '_LOIW.docx'
+function validate(): boolean {
+  errors.submissionDate = requiredError(formData.submissionDate, 'Submission date') ?? ''
+  errors.eventName = requiredError(formData.eventName, 'Event name') ?? ''
+  errors.orgName = requiredError(formData.orgName, 'Organization name') ?? ''
+  errors.eventLocation = requiredError(formData.eventLocation, 'Event location') ?? ''
+  errors.eventDate = requiredError(formData.eventDate, 'Event date') ?? ''
+  errors.csv = parsedNames.value.length ? '' : 'Upload a CSV file with at least one student name.'
+  return Object.values(errors).every((message) => message === '')
+}
+
+function reset() {
+  formData.submissionDate = ''
+  formData.eventName = ''
+  formData.orgName = ''
+  formData.eventLocation = ''
+  formData.eventDate = ''
+  csvFileName.value = ''
+  parsedNames.value = []
+  if (csvInput.value) csvInput.value.value = ''
+  for (const key of Object.keys(errors) as (keyof typeof errors)[]) errors[key] = ''
+}
 
 async function generateDocuments() {
-  if (parsedNames.value.length === 0) {
-    toast.error('Upload a CSV file with at least one student name.')
-    return
-  }
-
-  isGenerating.value = true
+  if (!validate()) return
   try {
-    const response = await fetch(`${API_BASE_URL}/api/forms/templates/letter_of_intent_and_waiver.docx`, {
-      headers: authHeaders(),
-    })
-    if (!response.ok) throw new Error(`Failed to fetch template: ${response.url}`)
-    const buffer = await response.arrayBuffer()
-
-    const masterZip = new PizZip()
-
-    for (const name of parsedNames.value) {
-      const zip = new PizZip(buffer)
-      const doc = new Docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
+    await run(async () => {
+      const buffer = await fetchFormTemplate(LETTER_TEMPLATE)
+      const stems = uniqueFilenameStems(parsedNames.value)
+      const entries = parsedNames.value.map((name, index) => ({
+        name: letterEntryName(stems[index] ?? 'document'),
+        data: renderDocx(buffer, {
+          STUDENT_NAME: name,
+          SUBMISSION_DATE: formData.submissionDate,
+          EVENT_NAME: formData.eventName,
+          ORGANIZATION_NAME: formData.orgName,
+          EVENT_LOCATION: formData.eventLocation,
+          EVENT_DATE: formData.eventDate,
+        }),
+      }))
+      saveBlob(zipBlob(entries), LETTER_ZIP_NAME)
+      reset()
+      await dialog.info({
+        title: 'Documents generated',
+        body: 'Your letter of intent and waiver files are ready in the downloaded ZIP.',
       })
-      doc.render({
-        STUDENT_NAME: name,
-        SUBMISSION_DATE: formData.submissionDate,
-        EVENT_NAME: formData.eventName,
-        ORGANIZATION_NAME: formData.orgName,
-        EVENT_LOCATION: formData.eventLocation,
-        EVENT_DATE: formData.eventDate,
-      })
-      const out = doc.getZip().generate({ type: 'uint8array' })
-      masterZip.file(formatFilename(name), out)
-    }
-
-    const zipBlob = masterZip.generate({ type: 'blob' })
-    saveAs(zipBlob, 'LOIW_Batch.zip')
-
-    formData.submissionDate = ''
-    formData.eventName = ''
-    formData.orgName = ''
-    formData.eventLocation = ''
-    formData.eventDate = ''
-    csvFileName.value = ''
-    parsedNames.value = []
-
-    await dialog.info({
-      title: 'Documents generated',
-      body: 'Your letter of intent and waiver files are ready in the downloaded ZIP.',
     })
-  } catch (e) {
-    console.error(e)
-    toast.error('Could not generate the documents. Check the form and try again.')
-  } finally {
-    isGenerating.value = false
+  } catch (err) {
+    console.error(err)
+    toast.error(generatorErrorMessage(err, 'Could not generate the documents. Check the form and try again.'))
   }
 }
 </script>
-

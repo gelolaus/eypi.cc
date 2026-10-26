@@ -1,0 +1,18 @@
+{
+  "name": "eypi.cc",
+  "short_name": "eypi.cc",
+  "description": "Short links, official paperwork, event tickets, and org pages. One APC login, zero ads.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#F5F5F5",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

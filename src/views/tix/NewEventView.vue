@@ -16,10 +16,7 @@
         v-if="done"
         class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
         <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
         <h2 class="mb-4 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.name }}</h2>
         <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
@@ -27,7 +24,7 @@
         </p>
         <router-link
           :to="`/manage/tix/${form.slug}`"
-          class="inline-block rounded-xl bg-[#DEAC4B] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-eypi-gold-dark"
+ class="btn-gold inline-block rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
           data-cursor="cta"
         >
           Go to Event →
@@ -39,10 +36,7 @@
         v-else
         class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-10"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <!-- Mode toggle -->
         <div class="mb-6 flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
@@ -71,8 +65,9 @@
         <form class="flex flex-col gap-4" @submit.prevent="submit">
           <!-- Event Name -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
+            <label for="event-name" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Event Name</label>
             <input
+              id="event-name"
               v-model="form.name"
               type="text"
               placeholder="e.g. JPCS General Assembly"
@@ -83,10 +78,11 @@
 
           <!-- Slug -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
+            <label for="event-slug" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Link Slug</label>
             <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 transition-colors focus-within:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:focus-within:border-slate-500">
               <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-[#34418F] dark:text-slate-300">eypi.cc/tix/</span>
               <input
+                id="event-slug"
                 v-model="form.slug"
                 type="text"
                 placeholder="bwai2026"
@@ -103,8 +99,9 @@
           <!-- Date + Time -->
           <div class="flex flex-col gap-4 md:flex-row">
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
+              <label for="event-date" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Date</label>
               <input
+                id="event-date"
                 v-model="form.date"
                 type="date"
                 required
@@ -112,8 +109,9 @@
               />
             </div>
             <div class="flex-1">
-              <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
+              <label for="event-time" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Time</label>
               <input
+                id="event-time"
                 v-model="form.time"
                 type="time"
                 required
@@ -124,8 +122,9 @@
 
           <!-- Location -->
           <div>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
+            <label for="event-location" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Location</label>
             <input
+              id="event-location"
               v-model="form.location"
               type="text"
               placeholder="e.g. APC Auditorium"
@@ -136,7 +135,8 @@
 
           <!-- CSV Upload (simple mode only) -->
           <div v-if="!useSelectionMode">
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</label>
+            <p class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Attendee CSV</p>
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
             <div
               class="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-8 text-center transition-colors"
               :class="csvFile
@@ -155,7 +155,7 @@
                 <p class="text-sm text-gray-500 dark:text-slate-400">Drop CSV or click to upload</p>
                 <p class="mt-2 font-mono text-[0.7rem] text-gray-400 dark:text-slate-500">Headers: first_name, last_name, email</p>
               </template>
-              <input ref="fileInput" type="file" accept=".csv" class="hidden" @change="onFileChange" />
+              <input ref="fileInput" type="file" accept=".csv" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
               <button
                 type="button"
                 class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
@@ -172,8 +172,9 @@
             <p class="mb-3 font-mono text-xs text-[#34418F] dark:text-slate-300">
               You'll upload the CSV and configure clusters &amp; criteria on the next page.
             </p>
-            <label class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
+            <label for="event-max-attendees" class="mb-1 block text-sm font-semibold text-[#34418F] dark:text-slate-300">Max Attendees <span class="font-normal text-gray-400">(optional)</span></label>
             <input
+              id="event-max-attendees"
               v-model.number="maxAttendeesValue"
               type="number"
               min="1"
@@ -188,7 +189,7 @@
             type="submit"
             :disabled="loading"
             :class="[
-              'mt-2 w-full rounded-xl bg-[#DEAC4B] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-eypi-gold-dark dark:text-slate-100 dark:hover:bg-eypi-gold-hover',
+              'btn-gold mt-2 w-full rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
               loading ? 'opacity-70 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
             ]"
             data-cursor="cta"
@@ -202,17 +203,17 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
+import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
 import { useReveal } from '@/composables/useReveal'
 import { useToast } from '@/composables/useToast'
-import { useAuth } from '@/composables/useAuth'
-import { TIX_API_URL } from '@/config/tix-api'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
+import { parseAttendeeCsv } from '@/lib/tix/spreadsheet'
 import { useRouter } from 'vue-router'
 
 useReveal()
 const toast = useToast()
-const { authHeaders } = useAuth()
 const router = useRouter()
 
 // ── mode ──────────────────────────────────────────────────────────────────────
@@ -244,37 +245,6 @@ watch(() => form.value.name, (name) => { form.value.slug = toSlug(name) })
 function sanitizeSlug(e: Event) { form.value.slug = toSlug((e.target as HTMLInputElement).value) }
 
 // ── CSV handling ──────────────────────────────────────────────────────────────
-function parseCSV(text: string): Attendee[] {
-  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim())
-  if (lines.length < 2) throw new Error('CSV must have a header row and at least one data row.')
-
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[\s_"]/g, ''))
-  const firstIdx = headers.findIndex(h => ['firstname', 'first'].includes(h))
-  const lastIdx  = headers.findIndex(h => ['lastname', 'last'].includes(h))
-  const emailIdx = headers.findIndex(h => h === 'email' || h === 'emailaddress')
-
-  if (firstIdx === -1 || lastIdx === -1 || emailIdx === -1) {
-    throw new Error('CSV must have first_name, last_name, and email columns.')
-  }
-
-  return lines.slice(1).map(line => {
-    // Simple quoted-field parser
-    const cols: string[] = []
-    let cur = ''
-    let inQuote = false
-    for (const ch of line) {
-      if (ch === '"') { inQuote = !inQuote }
-      else if (ch === ',' && !inQuote) { cols.push(cur.trim()); cur = '' }
-      else { cur += ch }
-    }
-    cols.push(cur.trim())
-    return {
-      firstName: (cols[firstIdx] ?? '').replace(/^"|"$/g, '').trim(),
-      lastName:  (cols[lastIdx]  ?? '').replace(/^"|"$/g, '').trim(),
-      email:     (cols[emailIdx] ?? '').replace(/^"|"$/g, '').trim(),
-    }
-  }).filter(a => a.email)
-}
 
 function onDrop(e: DragEvent) {
   const file = e.dataTransfer?.files[0]
@@ -290,7 +260,7 @@ function loadFile(file: File) {
   const reader = new FileReader()
   reader.onload = ev => {
     try {
-      parsedAttendees.value = parseCSV(ev.target?.result as string)
+      parsedAttendees.value = parseAttendeeCsv(ev.target?.result as string)
       if (!parsedAttendees.value.length) throw new Error('No valid rows found in CSV.')
     } catch (err: unknown) {
       csvError.value = err instanceof Error ? err.message : 'Invalid CSV.'
@@ -313,9 +283,8 @@ async function submit() {
   try {
     // Selection mode: create event without attendees, redirect to selection wizard
     if (useSelectionMode.value) {
-      const res = await fetch(`${TIX_API_URL}/api/events`, {
+      const res = await api.raw(`/api/events`, {
         method: 'POST',
-        headers: authHeaders(),
         body: JSON.stringify({
           name:         form.value.name,
           slug:         form.value.slug,
@@ -334,9 +303,8 @@ async function submit() {
     }
 
     // Legacy mode: create event + attendees, generate QR codes
-    const res = await fetch(`${TIX_API_URL}/api/events`, {
+    const res = await api.raw(`/api/events`, {
       method: 'POST',
-      headers: authHeaders(),
       body: JSON.stringify({
         name:      form.value.name,
         slug:      form.value.slug,

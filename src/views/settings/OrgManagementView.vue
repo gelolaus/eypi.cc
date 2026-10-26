@@ -3,8 +3,8 @@
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <p class="text-sm text-g-muted">Create and manage every org on eypi.cc.</p>
       <router-link
-        to="/settings/org-management/new"
-        class="inline-flex rounded-xl bg-g-accent px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:opacity-90"
+        to="/admin/orgs/new"
+ class="btn-gold inline-flex rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90"
         data-cursor="cta"
       >
         New org
@@ -35,7 +35,7 @@
           </div>
           <div class="col-span-8 text-right sm:col-span-3">
             <router-link
-              :to="{ name: 'settings-org-management-edit', params: { orgId: item.org_id } }"
+              :to="{ name: 'admin-orgs-edit', params: { orgId: item.org_id } }"
               class="text-sm font-semibold text-g-primary hover:text-g-accent"
               data-cursor="nav"
             >
@@ -49,13 +49,17 @@
 </template>
 
 <script setup lang="ts">
+import { api } from '@/lib/api'
 import { ref, onMounted } from 'vue'
-import { API_BASE_URL } from '@/config/api'
-import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
-import type { AdminOrgListItem } from '@/config/admin'
+interface AdminOrgListItem {
+  org_id: string
+  org_name: string
+  owner_email: string
+  is_public_catalog: number
+  created_at: string
+}
 
-const { authHeaders } = useAuth()
 const toast = useToast()
 
 const orgs = ref<AdminOrgListItem[]>([])
@@ -63,7 +67,7 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/orgs/admin`, { headers: authHeaders() })
+    const res = await api.raw(`/api/orgs/admin`)
     const data = await res.json() as { error?: string; orgs?: AdminOrgListItem[] }
     if (!res.ok) throw new Error(data.error || 'Failed to load orgs.')
     orgs.value = data.orgs ?? []

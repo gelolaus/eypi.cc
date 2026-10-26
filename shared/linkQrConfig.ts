@@ -28,7 +28,13 @@ export const DEFAULT_LINK_QR_CONFIG: LinkQrConfig = {
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/
 
+function isMediaLogoUrl(value: string): boolean {
+  if (value.includes('..') || value.includes('\\') || value.includes('?') || value.includes('#')) return false
+  return /^\/media\/qr-logos\/[a-z0-9-]+-[0-9a-f]{8}\.png$/.test(value)
+}
+
 function hasAllowedLogoPrefix(value: string): boolean {
+  if (isMediaLogoUrl(value)) return true
   const prefix = value.slice(0, 40).toLowerCase()
   return (
     prefix.startsWith('data:image/jpeg;base64,')
@@ -39,6 +45,7 @@ function hasAllowedLogoPrefix(value: string): boolean {
 }
 
 function isPersistableLogoDataUrl(value: string): boolean {
+  if (isMediaLogoUrl(value)) return true
   return hasAllowedLogoPrefix(value) && value.length <= QR_LOGO_DATA_URL_MAX
 }
 
