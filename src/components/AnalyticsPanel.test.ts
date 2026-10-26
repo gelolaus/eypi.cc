@@ -80,4 +80,37 @@ describe('AnalyticsPanel', () => {
     expect(urls.some((url) => url.includes('range=7'))).toBe(true)
     wrapper.unmount()
   })
+
+  it('derives the chart colours from the design tokens and keeps ticks legible on dark', async () => {
+    document.documentElement.style.setProperty('--chart-1', 'rgb(12, 34, 56)')
+    const wrapper = mount(AnalyticsPanel, {
+      props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const line = wrapper.findComponent({ name: 'Line' })
+    const data = line.props('data') as { datasets: { borderColor: string; backgroundColor: string }[] }
+    const options = line.props('options') as {
+      scales: { x: { ticks: { color: string } }; y: { ticks: { color: string }; grid: { color: string } } }
+    }
+    expect(data.datasets[0]!.borderColor).toBe('rgb(12, 34, 56)')
+    expect(data.datasets[0]!.backgroundColor).toContain('rgb(12, 34, 56)')
+    expect(options.scales.x.ticks.color).toBeTruthy()
+    expect(options.scales.y.ticks.color).toBeTruthy()
+    expect(options.scales.y.grid.color).toBeTruthy()
+    expect(options.scales.x.ticks.color).not.toBe(options.scales.y.grid.color)
+    document.documentElement.style.removeProperty('--chart-1')
+    wrapper.unmount()
+  })
+
+  it('falls back to a usable chart colour when the variable is missing', async () => {
+    const wrapper = mount(AnalyticsPanel, {
+      props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const data = wrapper.findComponent({ name: 'Line' }).props('data') as { datasets: { borderColor: string }[] }
+    expect(data.datasets[0]!.borderColor.length).toBeGreaterThan(3)
+    wrapper.unmount()
+  })
 })

@@ -7,31 +7,32 @@
       description="Create, search, and manage your short links."
     >
       <div class="mb-6 flex flex-col gap-3 sm:flex-row">
-        <button
-          class="btn-gold min-h-11 rounded-xl px-5 text-base font-semibold sm:order-2"
+        <Button
+          class="sm:order-2"
           type="button"
           @click="openCreate"
         >
           New link
-        </button>
-        <button
-          class="btn-secondary sm:order-1"
+        </Button>
+        <Button
+          class="sm:order-1"
+          variant="outline"
           type="button"
           @click="exportCsv"
         >
           Export CSV
-        </button>
+        </Button>
       </div>
       <p
         v-if="quotaMessage"
-        class="mb-4 text-sm text-red-500"
+        class="mb-4 text-base text-destructive"
         role="alert"
       >
         {{ quotaMessage }}
       </p>
       <p
         v-if="pageError"
-        class="mb-4 text-sm text-red-500"
+        class="mb-4 text-base text-destructive"
         role="alert"
       >
         {{ pageError }}
@@ -62,27 +63,27 @@
       <div
         v-if="selectedIds.length"
         data-bulk-bar
-        class="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-g-border bg-g-surface py-3 pl-3 pr-20 shadow-lg lg:bottom-0"
+        class="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-20 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-popover py-3 pl-3 pr-20 shadow-lg lg:bottom-0"
       >
-        <p class="text-sm text-g-muted">
+        <p class="text-base text-muted-foreground">
           {{ selectedIds.length }} selected
         </p>
-        <button
+        <Button
           aria-label="Disable selected"
-          class="btn-secondary"
+          variant="outline"
           type="button"
           @click="confirmBulkDisable"
         >
           Disable selected
-        </button>
-        <button
+        </Button>
+        <Button
           aria-label="Delete selected"
-          class="btn-secondary border-red-500 text-red-500"
+          variant="destructive"
           type="button"
           @click="confirmBulkDelete"
         >
           Delete selected
-        </button>
+        </Button>
       </div>
     </AppPage>
     <Teleport to="body">
@@ -116,6 +117,7 @@ import {
   type LinkSort,
   type LinkStatusFilter,
 } from '@/composables/useLinks'
+import { Button } from '@/components/ui/button'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import LinkFilters from '@/components/links/LinkFilters.vue'

@@ -61,3 +61,15 @@ describe('DashboardView invite banner', () => {
     expect(wrapper.find('a[href="/invites"]').exists()).toBe(false)
   })
 })
+
+describe('DashboardView module cards', () => {
+  it('renders the modules as Card links with consistent tokens', () => {
+    const wrapper = mountDashboard(0)
+    const cards = wrapper.findAll('a > [data-slot="card"]')
+    expect(cards).toHaveLength(5)
+    for (const card of cards) {
+      expect(card.classes()).toContain('min-h-11')
+      expect(card.html()).not.toMatch(/(?<![a-z])g-(?:primary|muted|text|surface)|#DEAC4B|section-card/)
+    }
+  })
+})

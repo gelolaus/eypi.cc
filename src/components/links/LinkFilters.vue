@@ -1,32 +1,31 @@
 <template>
   <div class="mb-6 grid w-full grid-cols-2 gap-3 md:flex md:flex-row">
     <div class="col-span-2 md:flex-1">
-      <label
-        class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
+      <Label
+        class="mb-1.5"
         for="link-search"
       >
         Search
-      </label>
-      <input
+      </Label>
+      <Input
         id="link-search"
         aria-label="Search links"
-        class="control h-11"
         placeholder="Search slug or destination"
         type="search"
-        :value="query"
+        :model-value="query"
         @input="onQuery"
-      >
+      />
     </div>
     <div>
-      <label
-        class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
+      <Label
+        class="mb-1.5"
         for="link-sort"
       >
         Sort
-      </label>
+      </Label>
       <select
         id="link-sort"
-        class="control h-11 md:min-w-40"
+        class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground md:min-w-40"
         :value="sort"
         @change="onSort"
       >
@@ -42,15 +41,15 @@
       </select>
     </div>
     <div>
-      <label
-        class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
+      <Label
+        class="mb-1.5"
         for="link-status"
       >
         Status
-      </label>
+      </Label>
       <select
         id="link-status"
-        class="control h-11 md:min-w-40"
+        class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground md:min-w-40"
         :value="status"
         @change="onStatus"
       >
@@ -75,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { LinkSort, LinkStatusFilter } from '@/composables/useLinks'
 
 defineProps<{

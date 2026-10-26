@@ -1,32 +1,32 @@
 <template>
-  <section class="mt-8 border-t border-gray-200 pt-8 dark:border-slate-700">
-    <h3 class="text-card-title mb-4 text-gray-500 dark:text-slate-400">
+  <section class="mt-8 border-t border-border pt-8">
+    <h3 class="mb-4 text-base font-semibold text-muted-foreground">
       QR code
     </h3>
     <div class="mb-6 flex justify-center">
+      <!-- QR codes must stay dark on light to scan, so the preview is white in every theme. -->
       <div
         ref="preview"
-        class="rounded-xl border-2 border-gray-200 bg-white p-2 dark:border-slate-600 dark:bg-slate-800/50"
+        data-qr-preview
+        class="rounded-xl border border-border bg-white p-2"
       />
     </div>
-    <label class="mb-4 flex items-center gap-2 text-sm text-g-text">
-      <input
-        class="h-4 w-4 accent-g-accent"
-        type="checkbox"
-        :checked="trackScans"
-        @change="onTrack"
-      >
-      Track QR scans
-    </label>
-    <div class="mb-6 flex flex-col gap-4 text-sm">
-      <div class="flex flex-col gap-1">
-        <label
-          class="text-sm font-medium text-gray-500 dark:text-slate-400"
-          for="qr-body-shape"
-        >Body shape</label>
+    <div class="mb-4 flex min-h-11 items-center gap-3">
+      <Switch
+        id="qr-track-scans"
+        :model-value="trackScans"
+        @update:model-value="emit('update:trackScans', $event === true)"
+      />
+      <Label for="qr-track-scans">
+        Track QR scans
+      </Label>
+    </div>
+    <div class="mb-6 flex flex-col gap-4">
+      <div class="flex flex-col gap-1.5">
+        <Label for="qr-body-shape">Body shape</Label>
         <select
           id="qr-body-shape"
-          class="rounded-lg border-2 border-gray-200 bg-white p-2 outline-none focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
           :value="config.dotType"
           @change="onDot"
         >
@@ -51,14 +51,11 @@
         </select>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div class="flex flex-col gap-1">
-          <label
-            class="text-sm font-medium text-gray-500 dark:text-slate-400"
-            for="qr-eye-frame"
-          >Eye frame</label>
+        <div class="flex flex-col gap-1.5">
+          <Label for="qr-eye-frame">Eye frame</Label>
           <select
             id="qr-eye-frame"
-            class="rounded-lg border-2 border-gray-200 bg-white p-2 outline-none focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+            class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
             :value="config.eyeFrameType"
             @change="onFrame"
           >
@@ -73,14 +70,11 @@
             </option>
           </select>
         </div>
-        <div class="flex flex-col gap-1">
-          <label
-            class="text-sm font-medium text-gray-500 dark:text-slate-400"
-            for="qr-eye-ball"
-          >Eye ball</label>
+        <div class="flex flex-col gap-1.5">
+          <Label for="qr-eye-ball">Eye ball</Label>
           <select
             id="qr-eye-ball"
-            class="rounded-lg border-2 border-gray-200 bg-white p-2 outline-none focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+            class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
             :value="config.eyeBallType"
             @change="onBall"
           >
@@ -93,46 +87,46 @@
           </select>
         </div>
       </div>
-      <div class="flex flex-col gap-1">
-        <label
-          class="text-sm font-medium text-gray-500 dark:text-slate-400"
-          for="qr-matrix-color"
-        >Matrix color</label>
-        <input
+      <div class="flex flex-col gap-1.5">
+        <Label for="qr-matrix-color">
+          Matrix color
+        </Label>
+        <Input
           id="qr-matrix-color"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white p-2 font-mono text-sm uppercase outline-none focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200"
+          class="font-mono uppercase"
           maxlength="7"
           type="text"
-          :value="config.color"
+          :model-value="config.color"
           @input="onColor"
-        >
+        />
       </div>
-      <div class="flex flex-col gap-1">
-        <label
-          class="text-sm font-medium text-gray-500 dark:text-slate-400"
-          for="qr-center-logo"
-        >Center logo</label>
+      <div class="flex flex-col gap-1.5">
+        <Label for="qr-center-logo">
+          Center logo
+        </Label>
         <input
           id="qr-center-logo"
           accept="image/png,image/jpeg,image/webp,image/gif"
-          class="text-xs"
+          class="min-h-11 w-full min-w-0 text-sm text-muted-foreground file:mr-3 file:h-9 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:text-sm file:font-medium file:text-secondary-foreground"
           type="file"
           :aria-describedby="logoError ? 'logo-error' : logoHint ? 'logo-persist-hint' : undefined"
           :aria-invalid="Boolean(logoError)"
           @change="onLogo"
         >
-        <button
+        <Button
           v-if="config.logoDataUrl"
-          class="self-start text-xs font-medium text-gray-500 underline-offset-2 hover:underline dark:text-slate-400"
+          class="self-start"
+          size="sm"
+          variant="ghost"
           type="button"
           @click="removeLogo"
         >
           Remove logo
-        </button>
+        </Button>
         <p
           v-if="logoError"
           id="logo-error"
-          class="text-sm text-red-500"
+          class="text-base text-destructive"
           role="alert"
         >
           {{ logoError }}
@@ -140,25 +134,30 @@
         <p
           v-else-if="logoHint"
           id="logo-persist-hint"
-          class="text-sm text-amber-600 dark:text-amber-400"
+          class="text-base text-muted-foreground"
         >
           This logo is larger than 2 MB. Preview and export include it, but save keeps the style without the logo.
         </p>
       </div>
     </div>
-    <button
-      class="flex w-full items-center justify-center rounded-lg border-2 border-g-primary px-6 py-3 text-sm font-semibold text-g-primary hover:border-g-accent hover:text-g-accent disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-400 dark:text-slate-200"
+    <Button
+      class="w-full"
+      variant="outline"
       type="button"
       :disabled="exporting"
       @click="download"
     >
       {{ exporting ? 'Exporting…' : 'Export PNG' }}
-    </button>
+    </Button>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   QR_LOGO_PREVIEW_MAX_BYTES,
   logoExceedsSaveLimit,
@@ -228,11 +227,6 @@ async function paint() {
 }
 
 watch([dataUrl, () => props.config], () => { void paint() }, { deep: true, immediate: true })
-
-function onTrack(event: Event) {
-  const target = event.target
-  if (target instanceof HTMLInputElement) emit('update:trackScans', target.checked)
-}
 
 function onDot(event: Event) {
   const value = eventValue(event)
@@ -337,6 +331,7 @@ async function download() {
     if (config.logoDataUrl?.startsWith('data:')) {
       config.logoDataUrl = await normalizeQrLogoDataUrl(config.logoDataUrl)
     }
+    // Exports are transparent PNGs of dark modules by design; the on-screen preview is always bg-white.
     await downloadLinkQrPng(1920, dataUrl.value, config, `eypi-qr-${props.slug || 'link'}`, 'transparent')
     toast.success('QR code exported.')
   } catch {

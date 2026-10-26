@@ -1,34 +1,36 @@
 <template>
   <AppPage :title="userName ? `Hi, ${userName}.` : 'Hi.'">
-    <div
+    <Card
       v-if="pendingInviteCount > 0"
-      class="mb-6 rounded-2xl border border-[#DEAC4B]/50 bg-[#DEAC4B]/10 px-5 py-4 text-sm text-g-text"
+      class="border border-primary/40 bg-primary/10 px-5 py-4 text-base text-foreground"
       role="status"
     >
       <p>
         {{ inviteBanner }}
         <router-link
           to="/invites"
-          class="inline-flex min-h-11 items-center font-semibold text-g-primary underline decoration-[#DEAC4B] underline-offset-4 dark:text-[#8FA0E8]"
+          class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           Review invites
         </router-link>
       </p>
-    </div>
+    </Card>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
       <router-link
         v-for="mod in modules"
         :key="mod.id"
         :to="mod.route"
-        class="section-card flex min-h-11 flex-col gap-2 p-6 text-left transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] active:translate-y-px [@media(hover:hover)_and_(pointer:fine)]:hover:border-[#DEAC4B]/60"
+        class="group/module block min-w-0 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <h2 class="text-xl font-semibold tracking-tight text-g-primary dark:text-white">
-          {{ mod.title }}
-        </h2>
-        <p class="text-sm text-g-muted">
-          {{ mod.description }}
-        </p>
+        <Card class="h-full min-h-11 gap-2 p-6 text-left transition-colors group-active/module:translate-y-px [@media(hover:hover)_and_(pointer:fine)]:group-hover/module:bg-muted">
+          <h2 class="text-xl font-semibold tracking-tight text-foreground">
+            {{ mod.title }}
+          </h2>
+          <p class="text-base text-muted-foreground">
+            {{ mod.description }}
+          </p>
+        </Card>
       </router-link>
     </div>
   </AppPage>
@@ -36,6 +38,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Card } from '@/components/ui/card'
 import AppPage from '@/components/layout/AppPage.vue'
 import { useSession } from '@/stores/session'
 

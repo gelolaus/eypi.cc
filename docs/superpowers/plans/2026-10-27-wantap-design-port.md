@@ -235,9 +235,9 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `views/links/LinksView.vue`, `views/DashboardView.vue`, `components/links/*`, `components/AnalyticsPanel.vue`, `components/links/QrDesigner.vue`; update their tests.
 
-- [ ] **Step 1:** Tests (add to the existing files): the link list renders as `Card` rows, the row actions are icon `Button`s with `aria-label`s; at 375px classes allow wrapping (`min-w-0`, `truncate` on slugs, `font-mono` for slugs); `QrDesigner` preview container has an explicit light background (`bg-white`) and the exported colours default to dark modules on a light background (**Review Focus 1**); `AnalyticsPanel` passes chart colours derived from `--chart-1..5` and light grid/tick colours to Chart.js (**Review Focus 4**).
-- [ ] **Step 2:** Replace legacy classes with primitives (`Input`, `Select`, `Switch`, `Tabs`, `Dialog`, `Badge`); keep all logic.
-- [ ] **Step 3:** Run tests; preview at 375/1280. Commit `feat(links): restyle the links dashboard, editor, qr designer and analytics`.
+- [x] **Step 1:** Tests (add to the existing files): the link list renders as `Card` rows, the row actions are icon `Button`s with `aria-label`s; at 375px classes allow wrapping (`min-w-0`, `truncate` on slugs, `font-mono` for slugs); `QrDesigner` preview container has an explicit light background (`bg-white`) and the exported colours default to dark modules on a light background (**Review Focus 1**); `AnalyticsPanel` passes chart colours derived from `--chart-1..5` and light grid/tick colours to Chart.js (**Review Focus 4**).
+- [x] **Step 2:** Replace legacy classes with primitives (`Input`, `Select`, `Switch`, `Tabs`, `Dialog`, `Badge`); keep all logic.
+- [x] **Step 3:** Run tests; preview at 375/1280. Commit `feat(links): restyle the links dashboard, editor, qr designer and analytics`.
 
 ### Task 11: Tix module
 

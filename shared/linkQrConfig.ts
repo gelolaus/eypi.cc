@@ -18,11 +18,15 @@ export interface LinkQrConfig {
   logoDataUrl: string | null
 }
 
+/** QR codes must scan: dark modules on a light background, whatever the UI theme. */
+export const QR_DEFAULT_FOREGROUND = '#0A0A0A'
+export const QR_DEFAULT_BACKGROUND = '#FFFFFF'
+
 export const DEFAULT_LINK_QR_CONFIG: LinkQrConfig = {
   dotType: 'square',
   eyeFrameType: 'square',
   eyeBallType: 'square',
-  color: '#DEAC4B',
+  color: QR_DEFAULT_FOREGROUND,
   logoDataUrl: null,
 }
 

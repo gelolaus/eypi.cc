@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_LINK_QR_CONFIG } from '@shared/linkQrConfig'
+import { DEFAULT_LINK_QR_CONFIG, QR_DEFAULT_BACKGROUND } from '@shared/linkQrConfig'
+import { downloadLinkQrPng, renderLinkQrCanvas } from '@/utils/renderLinkQr'
 import QrDesigner from './QrDesigner.vue'
 
 vi.mock('@/utils/renderLinkQr', () => ({
@@ -62,6 +63,59 @@ describe('QrDesigner logo upload', () => {
       logoDataUrl: '/media/qr-logos/link-1-abcd1234.png',
     })
     expect(JSON.stringify(emitted)).not.toContain('data:')
+    wrapper.unmount()
+  })
+})
+
+function luminance(hex: string): number {
+  const n = Number.parseInt(hex.slice(1), 16)
+  const channel = (v: number) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
+}
+
+describe('QrDesigner contrast', () => {
+  it('defaults to dark modules on a light background', () => {
+    expect(luminance(DEFAULT_LINK_QR_CONFIG.color)).toBeLessThan(0.1)
+    expect(luminance(QR_DEFAULT_BACKGROUND)).toBeGreaterThan(0.9)
+  })
+
+  it('draws the preview on an explicit white container and renders on white', async () => {
+    const wrapper = mount(QrDesigner, {
+      props: { slug: 'alpha1', linkId: null, trackScans: true, config: { ...DEFAULT_LINK_QR_CONFIG } },
+    })
+    await flushPromises()
+    const preview = wrapper.get('[data-qr-preview]')
+    expect(preview.classes()).toContain('bg-white')
+    expect(preview.classes().some((c) => c.startsWith('dark:bg-'))).toBe(false)
+    const calls = vi.mocked(renderLinkQrCanvas).mock.calls
+    const last = calls[calls.length - 1]!
+    expect(last[2].color).toBe(DEFAULT_LINK_QR_CONFIG.color)
+    expect(last[3]).toBe('white')
+    wrapper.unmount()
+  })
+
+  it('keeps the matrix colour input working', async () => {
+    const wrapper = mount(QrDesigner, {
+      props: { slug: 'alpha1', linkId: null, trackScans: true, config: { ...DEFAULT_LINK_QR_CONFIG } },
+    })
+    await wrapper.get('#qr-matrix-color').setValue('#112233')
+    expect(wrapper.emitted('update:config')?.[0]?.[0]).toMatchObject({ color: '#112233' })
+    wrapper.unmount()
+  })
+
+  it('exports a transparent PNG of dark modules by design', async () => {
+    const wrapper = mount(QrDesigner, {
+      props: { slug: 'alpha1', linkId: null, trackScans: true, config: { ...DEFAULT_LINK_QR_CONFIG } },
+    })
+    const exportButton = wrapper.findAll('button').find((b) => b.text().includes('Export PNG'))!
+    await exportButton.trigger('click')
+    await flushPromises()
+    const call = vi.mocked(downloadLinkQrPng).mock.calls[0]!
+    expect(call[2].color).toBe(DEFAULT_LINK_QR_CONFIG.color)
+    expect(call[4]).toBe('transparent')
     wrapper.unmount()
   })
 })

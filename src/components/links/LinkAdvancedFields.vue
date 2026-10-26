@@ -1,64 +1,57 @@
 <template>
   <details
-    class="rounded-xl border border-g-border"
+    class="rounded-xl border border-border"
     open
   >
-    <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-g-text">
+    <summary class="min-h-11 cursor-pointer px-4 py-3 text-base font-semibold text-foreground">
       More options
     </summary>
     <div class="flex flex-col gap-4 px-4 pb-4">
-      <div>
-        <label
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
-          for="link-expires"
-        >
+      <div class="space-y-1.5">
+        <Label for="link-expires">
           Expires
-        </label>
-        <input
+        </Label>
+        <Input
           id="link-expires"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
           type="datetime-local"
-          :value="expiresAt"
+          :model-value="expiresAt"
           @input="onExpires"
-        >
+        />
       </div>
-      <div>
-        <label
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
-          for="link-password"
-        >
+      <div class="space-y-1.5">
+        <Label for="link-password">
           Password
-        </label>
-        <input
+        </Label>
+        <Input
           id="link-password"
           autocomplete="new-password"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
           type="password"
-          :value="password"
+          :model-value="password"
           @input="onPassword"
-        >
+        />
       </div>
       <fieldset class="flex flex-col gap-3">
-        <legend class="mb-1 text-sm font-medium text-gray-700 dark:text-slate-300">
+        <legend class="mb-1 text-base font-medium text-foreground">
           UTM tags
         </legend>
         <div
           v-for="field in fields"
           :key="field.id"
+          class="space-y-1.5"
         >
-          <label
-            class="mb-1 block text-sm text-gray-600 dark:text-slate-400"
+          <Label
+            class="text-muted-foreground"
             :for="field.id"
           >
             {{ field.label }}
-          </label>
-          <input
+          </Label>
+          <Input
             :id="field.id"
-            class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
+            class="font-mono text-sm"
             type="text"
-            :value="utm[field.key]"
+            :model-value="utm[field.key]"
             @input="onUtm(field.key, $event)"
-          >
+          />
         </div>
       </fieldset>
     </div>
@@ -67,6 +60,8 @@
 
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 const props = defineProps<{
   url: string

@@ -6,7 +6,7 @@
   >
     <button
       aria-label="Close panel"
-      class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm dark:bg-slate-900/80"
+      class="absolute inset-0 bg-black/60 outline-none backdrop-blur-sm focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
       type="button"
       @click="emit('close')"
     />
@@ -15,26 +15,28 @@
       ref="panel"
       aria-labelledby="analytics-panel-title"
       aria-modal="true"
-      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-gray-200 bg-white/95 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl dark:border-slate-700/50 dark:bg-slate-900/95 sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-2xl sm:rounded-none sm:border-l sm:border-t-0 sm:p-8"
+      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-border bg-popover p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] text-popover-foreground shadow-2xl outline-none sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-2xl sm:rounded-none sm:border-l sm:border-t-0 sm:p-8"
       role="dialog"
       tabindex="-1"
       @keydown.esc.stop="emit('close')"
     >
-      <button
+      <Button
         aria-label="Close"
-        class="absolute right-2 top-2 flex size-11 items-center justify-center text-2xl text-slate-600 sm:right-5 sm:top-5 hover:text-slate-900 dark:text-slate-400"
+        class="absolute right-2 top-2 sm:right-5 sm:top-5"
+        size="icon"
+        variant="ghost"
         type="button"
         @click="emit('close')"
       >
-        &times;
-      </button>
+        <X />
+      </Button>
       <h2
         id="analytics-panel-title"
-        class="text-section-title mb-2 pr-14 text-slate-900 dark:text-slate-100"
+        class="mb-2 pr-14 text-2xl font-semibold tracking-tight text-foreground"
       >
         Analytics
       </h2>
-      <p class="text-data mb-6 truncate text-sm text-slate-600 dark:text-slate-400">
+      <p class="mb-6 truncate font-mono text-base text-muted-foreground">
         {{ shortUrl }}
       </p>
       <div
@@ -42,66 +44,66 @@
         class="mb-6 flex flex-wrap gap-2"
         role="group"
       >
-        <button
+        <Button
           v-for="option in ranges"
           :key="option.days"
-          class="min-h-11 rounded-full border border-g-border px-4 py-1.5 text-sm"
+          :variant="range === option.days ? 'secondary' : 'outline'"
           type="button"
           :aria-label="option.label"
           :aria-pressed="range === option.days"
           @click="range = option.days"
         >
           {{ option.label }}
-        </button>
+        </Button>
       </div>
       <p
         v-if="isLoading"
-        class="text-sm text-g-muted"
+        class="text-base text-muted-foreground"
       >
         Loading analytics…
       </p>
       <template v-else-if="analytics">
-        <p
+        <Card
           v-if="peakLabel"
-          class="mica-card mb-6 rounded-xl border border-eypi-gold/30 bg-eypi-gold/10 p-4 font-mono text-sm text-slate-900 dark:text-slate-200"
+          class="mb-6 border border-primary/30 bg-primary/10 px-4 py-4 font-mono text-base text-foreground"
         >
-          Busiest hour: {{ peakLabel }}
-        </p>
+          <p>Busiest hour: {{ peakLabel }}</p>
+        </Card>
         <dl class="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div>
-            <dt class="text-xs text-g-muted">
+            <dt class="text-sm text-muted-foreground">
               Total
             </dt>
-            <dd class="font-mono text-2xl text-g-text">
+            <dd class="font-mono text-2xl text-foreground">
               {{ analytics.total }}
             </dd>
           </div>
           <div>
-            <dt class="text-xs text-g-muted">
+            <dt class="text-sm text-muted-foreground">
               Unique visitors
             </dt>
-            <dd class="font-mono text-2xl text-g-text">
+            <dd class="font-mono text-2xl text-foreground">
               {{ analytics.unique }}
             </dd>
           </div>
           <div>
-            <dt class="text-xs text-g-muted">
+            <dt class="text-sm text-muted-foreground">
               QR scans
             </dt>
-            <dd class="font-mono text-2xl text-g-text">
+            <dd class="font-mono text-2xl text-foreground">
               {{ analytics.qr }}
             </dd>
           </div>
           <div>
-            <dt class="text-xs text-g-muted">
+            <dt class="text-sm text-muted-foreground">
               Direct
             </dt>
-            <dd class="font-mono text-2xl text-g-text">
+            <dd class="font-mono text-2xl text-foreground">
               {{ analytics.direct }}
             </dd>
           </div>
         </dl>
-        <h3 class="mb-4 font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+        <h3 class="mb-4 text-sm font-semibold text-muted-foreground">
           Clicks
         </h3>
         <div class="mb-8 h-48">
@@ -113,7 +115,7 @@
         </div>
         <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div>
-            <h3 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+            <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top operating systems
             </h3>
             <ul
@@ -123,21 +125,21 @@
               <li
                 v-for="item in analytics.topOs"
                 :key="item.os"
-                class="flex justify-between gap-2 font-mono text-sm text-slate-900 dark:text-slate-300"
+                class="flex justify-between gap-2 font-mono text-base text-foreground"
               >
                 <span class="min-w-0 break-words">{{ item.os }}</span>
-                <span class="shrink-0 text-slate-600 dark:text-slate-400">{{ item.count }}</span>
+                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
               </li>
             </ul>
             <p
               v-else
-              class="font-mono text-sm text-slate-500"
+              class="font-mono text-base text-muted-foreground"
             >
               No data
             </p>
           </div>
           <div>
-            <h3 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+            <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top countries
             </h3>
             <ul
@@ -147,21 +149,21 @@
               <li
                 v-for="item in analytics.topCountries"
                 :key="item.country"
-                class="flex justify-between gap-2 font-mono text-sm text-slate-900 dark:text-slate-300"
+                class="flex justify-between gap-2 font-mono text-base text-foreground"
               >
                 <span class="min-w-0 break-words">{{ item.country }}</span>
-                <span class="shrink-0 text-slate-600 dark:text-slate-400">{{ item.count }}</span>
+                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
               </li>
             </ul>
             <p
               v-else
-              class="font-mono text-sm text-slate-500"
+              class="font-mono text-base text-muted-foreground"
             >
               No data
             </p>
           </div>
           <div>
-            <h3 class="mb-3 font-mono text-xs font-bold text-slate-600 dark:text-slate-400">
+            <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top referrers
             </h3>
             <ul
@@ -171,30 +173,31 @@
               <li
                 v-for="item in analytics.topReferrers"
                 :key="item.referrer"
-                class="flex justify-between gap-2 font-mono text-sm text-slate-900 dark:text-slate-300"
+                class="flex justify-between gap-2 font-mono text-base text-foreground"
               >
                 <span class="min-w-0 break-words">{{ item.referrer }}</span>
-                <span class="shrink-0 text-slate-600 dark:text-slate-400">{{ item.count }}</span>
+                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
               </li>
             </ul>
             <p
               v-else
-              class="font-mono text-sm text-slate-500"
+              class="font-mono text-base text-muted-foreground"
             >
               No data
             </p>
           </div>
         </div>
-        <button
-          class="mt-8 min-h-11 rounded-lg border-2 border-g-primary px-4 py-2 text-sm font-semibold text-g-primary dark:border-slate-400 dark:text-slate-200"
+        <Button
+          class="mt-8"
+          variant="outline"
           type="button"
           @click="downloadCsv"
         >
           Download CSV
-        </button>
+        </Button>
         <p
           v-if="downloadError"
-          class="mt-2 text-sm text-red-500"
+          class="mt-2 text-base text-destructive"
           role="alert"
         >
           {{ downloadError }}
@@ -202,7 +205,7 @@
       </template>
       <p
         v-else
-        class="text-sm text-g-muted"
+        class="text-base text-muted-foreground"
         role="alert"
       >
         Analytics are unavailable for this link.
@@ -225,6 +228,9 @@ import {
   Tooltip,
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import { X } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 
@@ -272,16 +278,44 @@ const peakLabel = computed(() => {
   return `${hour12}:00 ${period}`
 })
 
+/** Fallbacks used only when the design tokens cannot be read (tests, SSR). */
+const CHART_FALLBACKS = {
+  line: 'oklch(0.78 0.09 55)',
+  tick: 'oklch(0.72 0.02 65)',
+  grid: 'oklch(1 0 0 / 10%)',
+}
+
+function readToken(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  try {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+    return value || fallback
+  } catch {
+    return fallback
+  }
+}
+
+const chartColors = computed(() => {
+  // Re-read when the panel opens so the tokens come from the live document.
+  void props.isOpen
+  return {
+    line: readToken('--chart-1', CHART_FALLBACKS.line),
+    tick: readToken('--muted-foreground', CHART_FALLBACKS.tick),
+    grid: readToken('--border', CHART_FALLBACKS.grid),
+  }
+})
+
 const chartData = computed(() => {
   const timeline = analytics.value?.timeline
   if (!timeline) return null
+  const { line } = chartColors.value
   return {
     labels: timeline.map((point) => point.day),
     datasets: [{
       label: 'Clicks',
       data: timeline.map((point) => point.clicks),
-      borderColor: '#c9a84c',
-      backgroundColor: 'rgba(201, 168, 76, 0.2)',
+      borderColor: line,
+      backgroundColor: `color-mix(in srgb, ${line} 20%, transparent)`,
       fill: true,
       tension: 0.3,
     }],
@@ -289,15 +323,14 @@ const chartData = computed(() => {
 })
 
 const chartOptions = computed(() => {
-  const textColor = '#cbd5e1'
-  const gridColor = 'rgba(255,255,255,0.05)'
+  const { tick, grid } = chartColors.value
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: textColor } },
-      y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: tick } },
+      y: { beginAtZero: true, grid: { color: grid }, ticks: { color: tick } },
     },
   }
 })

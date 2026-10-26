@@ -6,7 +6,7 @@
   >
     <button
       aria-label="Close panel"
-      class="absolute inset-0 bg-black/20 backdrop-blur-sm"
+      class="absolute inset-0 bg-black/60 outline-none backdrop-blur-sm focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
       type="button"
       @click="emit('close')"
     />
@@ -16,64 +16,61 @@
       ref="panel"
       aria-labelledby="link-editor-title"
       aria-modal="true"
-      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-gray-200 bg-white p-5 shadow-2xl sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none sm:border-l sm:border-t-0 sm:p-8 dark:border-slate-700/50 dark:bg-slate-900"
+      class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] w-full flex-col overflow-y-auto rounded-t-3xl border-t border-border bg-popover p-5 text-popover-foreground shadow-2xl outline-none sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:max-w-md sm:rounded-none sm:border-l sm:border-t-0 sm:p-8"
       role="dialog"
       tabindex="-1"
       @keydown.esc.stop="emit('close')"
     >
-      <button
+      <Button
         aria-label="Close"
-        class="absolute right-2 top-2 flex size-11 items-center justify-center text-2xl text-gray-500 sm:right-5 sm:top-5 hover:text-gray-700 dark:text-slate-400"
+        class="absolute right-2 top-2 sm:right-5 sm:top-5"
+        size="icon"
+        variant="ghost"
         type="button"
         @click="emit('close')"
       >
-        &times;
-      </button>
+        <X />
+      </Button>
       <h2
         id="link-editor-title"
-        class="text-section-title mb-8 pr-14 text-g-primary dark:text-slate-200"
+        class="mb-8 pr-14 text-2xl font-semibold tracking-tight text-foreground"
       >
         {{ linkId ? 'Edit link' : 'New link' }}
       </h2>
-      <div class="mb-4">
-        <label
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
-          for="link-destination"
-        >
+      <div class="mb-4 space-y-1.5">
+        <Label for="link-destination">
           Destination
-        </label>
-        <input
+        </Label>
+        <Input
           id="link-destination"
           v-model="url"
           aria-label="Destination"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 outline-none transition-colors focus:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500"
           type="url"
           :aria-describedby="urlError ? 'destination-error' : undefined"
           :aria-invalid="Boolean(urlError)"
           @input="urlError = ''"
-        >
+        />
         <p
           v-if="urlError"
           id="destination-error"
-          class="mt-1 text-sm text-red-500"
+          class="text-base text-destructive"
           role="alert"
         >
           {{ urlError }}
         </p>
       </div>
-      <div class="mb-4">
-        <label
-          class="mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300"
-          for="link-slug"
-        >
+      <div class="mb-4 space-y-1.5">
+        <Label for="link-slug">
           Custom slug
-        </label>
-        <div class="flex items-center rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 focus-within:border-g-accent dark:border-slate-600 dark:bg-mica-navy-input">
-          <span class="shrink-0 font-mono font-bold text-g-primary dark:text-slate-200">eypi.cc/</span>
+        </Label>
+        <div
+          class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 dark:bg-input/30"
+        >
+          <span class="shrink-0 font-mono font-semibold text-foreground">eypi.cc/</span>
           <input
             id="link-slug"
             aria-label="Custom slug"
-            class="min-w-0 flex-1 border-0 bg-transparent font-mono outline-none dark:text-slate-200"
+            class="min-w-0 flex-1 border-0 bg-transparent font-mono text-base outline-none"
             type="text"
             :aria-describedby="slugDescribedBy"
             :aria-invalid="Boolean(slugError)"
@@ -83,7 +80,7 @@
         </div>
         <p
           id="slug-help"
-          class="mt-1 text-sm text-g-muted"
+          class="text-base text-muted-foreground"
         >
           Optional. Lowercase letters, numbers, and hyphens.
         </p>
@@ -91,14 +88,14 @@
           v-if="availability"
           id="slug-availability"
           aria-live="polite"
-          class="mt-1 text-sm text-g-text"
+          class="text-base text-foreground"
         >
           {{ availability }}
         </p>
         <p
           v-if="slugError"
           id="slug-error"
-          class="mt-1 text-sm text-red-500"
+          class="text-base text-destructive"
           role="alert"
         >
           {{ slugError }}
@@ -114,22 +111,24 @@
       />
       <p
         v-if="passwordError"
-        class="mt-2 text-sm text-red-500"
+        class="mt-2 text-base text-destructive"
         role="alert"
       >
         {{ passwordError }}
       </p>
-      <label
+      <div
         v-if="linkId && protectedLink"
-        class="mt-4 flex items-center gap-2 text-sm text-g-text"
+        class="mt-4 flex min-h-11 items-center gap-3"
       >
-        <input
-          v-model="clearPassword"
-          class="h-4 w-4 accent-g-accent"
-          type="checkbox"
-        >
-        Remove password
-      </label>
+        <Switch
+          id="link-clear-password"
+          :model-value="clearPassword"
+          @update:model-value="clearPassword = $event === true"
+        />
+        <Label for="link-clear-password">
+          Remove password
+        </Label>
+      </div>
       <QrDesigner
         :config="qrConfig"
         :link-id="linkId"
@@ -141,33 +140,39 @@
       />
       <p
         v-if="formError"
-        class="mt-4 text-sm text-red-500"
+        class="mt-4 text-base text-destructive"
         role="alert"
       >
         {{ formError }}
       </p>
-      <div class="sticky bottom-0 -mx-5 mt-6 border-t border-gray-100 bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:-mx-8 sm:-mb-8 sm:px-8 dark:border-slate-700/50 dark:bg-slate-900">
-        <button
-          class="btn-gold min-h-12 w-full rounded-xl px-8 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-70"
+      <div class="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-popover px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:-mx-8 sm:-mb-8 sm:px-8">
+        <Button
+          class="w-full"
+          size="lg"
           type="button"
           :disabled="saving || qrImageBusy"
           @click="submit"
         >
           {{ linkId ? 'Save changes' : 'Create link' }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { X } from 'lucide-vue-next'
 import { computed, inject, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { ApiError, api } from '@/lib/api'
-import { DEFAULT_LINK_QR_CONFIG, parseLinkQrConfig, type LinkQrConfig } from '@shared/linkQrConfig'
+import { DEFAULT_LINK_QR_CONFIG, QR_DEFAULT_FOREGROUND, parseLinkQrConfig, type LinkQrConfig } from '@shared/linkQrConfig'
 import { normalizeSlugInput, validateSlug } from '@shared/slugRules'
 import { validateDestination, type DestinationCode } from '@shared/urlSafety'
 import { linksKey, useLinks, type LinkDetail } from '@/composables/useLinks'
 import { useFocusTrap } from '@/composables/useFocusTrap'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import LinkAdvancedFields from '@/components/links/LinkAdvancedFields.vue'
 import QrDesigner from '@/components/links/QrDesigner.vue'
 
@@ -340,7 +345,7 @@ async function submit() {
     return
   }
   if (!/^#[0-9A-Fa-f]{6}$/.test(qrConfig.value.color.trim())) {
-    formError.value = 'Matrix color must be a hex value like #DEAC4B.'
+    formError.value = `Matrix color must be a hex value like ${QR_DEFAULT_FOREGROUND}.`
     return
   }
   const body = {

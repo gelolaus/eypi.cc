@@ -1,9 +1,9 @@
 <template>
   <div class="w-full">
-    <div class="space-y-3 md:mica-card md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
+    <div class="flex flex-col gap-3">
       <div
         v-if="loading && items.length === 0"
-        class="space-y-3"
+        class="flex flex-col gap-3"
         role="status"
       >
         <span class="sr-only">Loading links</span>
@@ -11,7 +11,7 @@
           v-for="n in 3"
           :key="n"
           aria-hidden="true"
-          class="h-28 rounded-3xl bg-g-border motion-safe:animate-pulse"
+          class="h-28 rounded-xl bg-muted motion-safe:animate-pulse"
         ></div>
       </div>
       <template v-else-if="items.length > 0">
@@ -29,34 +29,37 @@
           @toggle="emit('toggle', link.id, $event)"
         />
       </template>
-      <div
+      <Card
         v-else
-        class="rounded-2xl border border-g-border px-6 py-16 text-center md:border-0"
+        class="items-center px-6 py-16 text-center"
       >
-        <h2 class="text-sm font-semibold text-gray-500 dark:text-slate-400">
+        <h2 class="text-base font-semibold text-foreground">
           {{ filtered ? 'No matching links' : 'No links yet' }}
         </h2>
         <p
           v-if="!filtered"
-          class="mx-auto mt-2 max-w-md text-sm text-gray-400 dark:text-slate-500"
+          class="mx-auto max-w-md text-base text-muted-foreground"
         >
           Create a short link with New link.
         </p>
-      </div>
+      </Card>
     </div>
-    <button
+    <Button
       v-if="hasMore"
-      class="btn-secondary mt-4 w-full sm:w-auto"
+      class="mt-4 w-full sm:w-auto"
+      variant="outline"
       type="button"
       :disabled="loading"
       @click="emit('load-more')"
     >
       Load more
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import LinkRow from '@/components/links/LinkRow.vue'
 import type { LinkListItem } from '@/composables/useLinks'
 
