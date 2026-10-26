@@ -82,6 +82,21 @@ async function sessionRequest(
   }
 }
 
+function squarePngDataUrl(): string {
+  const bytes = new Uint8Array(26)
+  bytes.set([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    0x00, 0x00, 0x00, 0x0d,
+    0x49, 0x48, 0x44, 0x52,
+  ])
+  const view = new DataView(bytes.buffer)
+  view.setUint32(16, 1080)
+  view.setUint32(20, 1080)
+  bytes[24] = 8
+  bytes[25] = 6
+  return `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`
+}
+
 function json(method: string, body: unknown, extra: Record<string, string> = {}): RequestInit {
   return {
     method,
@@ -231,7 +246,7 @@ describe('route authz', () => {
 
       const res = await request('/api/dp', json('POST', {
         title: 'Frame',
-        frames: [{ imageData: 'data:image/png;base64,iVBORw0KGgo=' }],
+        frames: [{ imageData: squarePngDataUrl() }],
       }, { 'X-Active-Org-Id': 'org-1' }))
 
       expect(res.status).toBe(201)

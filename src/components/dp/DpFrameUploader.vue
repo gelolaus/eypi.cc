@@ -26,6 +26,22 @@
         <span class="pointer-events-none absolute bottom-1.5 left-1.5 flex items-center rounded-md bg-black/50 px-1 py-1 text-white" aria-hidden="true">
           <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" /></svg>
         </span>
+        <div class="absolute bottom-1.5 right-1.5 flex gap-1">
+          <button
+            type="button"
+            class="rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white disabled:opacity-40"
+            :disabled="i === 0"
+            aria-label="Move up"
+            @click.stop="$emit('reorder', i, i - 1)"
+          >Up</button>
+          <button
+            type="button"
+            class="rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[0.6rem] font-bold text-white disabled:opacity-40"
+            :disabled="i === frames.length - 1"
+            aria-label="Move down"
+            @click.stop="$emit('reorder', i, i + 1)"
+          >Down</button>
+        </div>
         <button
           type="button"
           :disabled="busyIndex === i"
@@ -57,7 +73,7 @@
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
       </div>
       <p class="text-sm font-medium text-gray-500 dark:text-slate-400">{{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}</p>
-      <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">transparent PNG · ≤2 MB each</p>
+      <p class="mt-1 text-xs text-gray-400 dark:text-slate-500">transparent PNG, up to 3 MB</p>
     </div>
 
     <p v-if="uploadError" id="frame-upload-error" class="mt-2 text-sm text-red-500">{{ uploadError }}</p>
@@ -66,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { getCurrentInstance, ref } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpUploaderFrame } from '@/types/dp'
 
@@ -86,7 +102,9 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const instance = getCurrentInstance()
 const fileInput = ref<HTMLInputElement | null>(null)
+let addQueue: Promise<void> = Promise.resolve()
 const dragging = ref(false)
 const uploadError = ref('')
 const max = props.max ?? DP_MAX_FRAMES
@@ -113,25 +131,57 @@ function onDragEnd() {
   overIndex.value = null
 }
 
-function readFiles(files: FileList | File[]) {
+function readFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(new Error('read'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function emitAdd(dataUrl: string) {
+  const raw = instance?.vnode.props?.onAdd as
+    | ((value: string) => unknown)
+    | Array<(value: string) => unknown>
+    | undefined
+  const handlers = Array.isArray(raw) ? raw : raw ? [raw] : []
+  if (handlers.length === 0) {
+    emit('add', dataUrl)
+    return
+  }
+  await Promise.all(handlers.map((handler) => handler(dataUrl)))
+}
+
+async function addSerial(list: File[]) {
   uploadError.value = ''
-  const list = Array.from(files)
-  let remaining = max - props.frames.length
   for (const file of list) {
-    if (remaining <= 0) { uploadError.value = `Remove a frame before adding more. The limit is ${max}.`; break }
+    if (props.frames.length >= max) {
+      uploadError.value = `Remove a frame before adding more. The limit is ${max}.`
+      break
+    }
     const fileType = file.type.toLowerCase()
     const isPng = fileType === 'image/png' || fileType === 'image/x-png' || (!fileType && file.name.toLowerCase().endsWith('.png'))
     if (!isPng) {
       uploadError.value = `Choose a transparent PNG instead of "${file.name}".`
       continue
     }
-    if (file.size > DP_FRAME_MAX_BYTES) { uploadError.value = `Choose a file under 2 MB instead of "${file.name}".`; continue }
-    remaining--
-    const reader = new FileReader()
-    reader.onload = () => emit('add', reader.result as string)
-    reader.onerror = () => toast.error(`Could not read "${file.name}".`)
-    reader.readAsDataURL(file)
+    if (file.size > DP_FRAME_MAX_BYTES) {
+      uploadError.value = `Choose a file under 3 MB instead of "${file.name}".`
+      continue
+    }
+    try {
+      const dataUrl = await readFile(file)
+      await emitAdd(dataUrl)
+    } catch {
+      toast.error(`Could not read "${file.name}".`)
+    }
   }
+}
+
+function readFiles(files: FileList | File[]) {
+  const list = Array.from(files)
+  addQueue = addQueue.then(() => addSerial(list)).catch(() => {})
 }
 
 function onPicked(e: Event) {

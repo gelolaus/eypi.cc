@@ -1,42 +1,166 @@
 import { Hono } from 'hono'
-import { db, type Bindings } from '../lib/db'
 import type { Client } from '@libsql/client/web'
+import { db, type Bindings } from '../lib/db'
+import { ApiError } from '../lib/errors'
+import { deleteObject, mediaUrl, putImage } from '../lib/media'
+import { reportError } from '../lib/reportError'
+import { checkRateLimit } from '../lib/rateLimit'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
 
-// DP Blast — Twibbonize-style profile-frame campaigns. Mounted into the unified
-// eypi.cc Worker in index.ts; CORS, preflight, and security headers are applied
-// centrally there, so this module only declares the /api/dp/* handlers.
-//
-// A campaign owns MANY frames (dp_frames), lives at a custom slug, and is
-// editable. Frames are stored as base64 data-URLs directly in Turso — zero new
-// infra, and data: images never taint the client export canvas. All
-// cropping/scaling/merging happens client-side; the server never touches pixels.
+// Profile-frame campaigns. Frames are validated PNGs in R2. The public page
+// merges a visitor photo on a canvas. The server stores object keys.
 const app = new Hono<{ Bindings: Bindings }>()
 
-// Validation caps. A data-URL for a ~2 MB PNG is ~2.7M base64 chars; 2.8M gives
-// a little headroom while still rejecting anything meaningfully oversized.
 const TITLE_MAX = 200
 const DESCRIPTION_MAX = 1000
 const CAPTION_MAX = 2000
 const LABEL_MAX = 80
 const SLUG_MAX = 60
-const FRAME_MAX_CHARS = 2_800_000
 const MAX_FRAMES = 10
+const MIN_FRAME_PX = 1080
+const MAX_FRAME_BYTES = 3 * 1024 * 1024
+const DOWNLOAD_WINDOW_SEC = 24 * 60 * 60
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-function validateFrame(frame: unknown): string | null {
-  if (typeof frame !== 'string') {
-    return 'Each frame must be a PNG data-URL (data:image/png;base64,…).'
+type StoredFrame = {
+  id: string
+  key: string
+  label: string | null
+}
+
+function frameMessage(err: ApiError): string {
+  if (err.code === 'not_square') return 'Use a square PNG.'
+  if (err.code === 'too_small') return 'Use a PNG at least 1080 px on each side.'
+  if (err.code === 'file_too_large') return 'Use a PNG under 3 MB.'
+  if (err.code === 'invalid_image') return 'Use a transparent PNG.'
+  return err.message
+}
+
+function decodeDataUrl(value: string): Uint8Array | null {
+  const match = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)$/i.exec(value.trim())
+  if (!match?.[1]) return null
+  let binary: string
+  try {
+    binary = atob(match[1].replace(/\s/g, ''))
+  } catch {
+    return null
   }
-  const prefix = frame.slice(0, 30).toLowerCase()
-  if (!prefix.startsWith('data:image/png;base64,') && !prefix.startsWith('data:image/x-png;base64,')) {
-    return 'Each frame must be a PNG data-URL (data:image/png;base64,…).'
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function pngHasAlpha(bytes: Uint8Array): boolean {
+  if (bytes.length < 26 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
+    return false
   }
-  if (frame.length > FRAME_MAX_CHARS) {
-    return 'A frame image is too large — keep each under ~2 MB.'
+  if (bytes[25] === 4 || bytes[25] === 6) return true
+  for (let i = 8; i + 8 < bytes.length; i += 1) {
+    if (bytes[i] === 0x74 && bytes[i + 1] === 0x52 && bytes[i + 2] === 0x4e && bytes[i + 3] === 0x53) return true
   }
-  return null
+  return false
+}
+
+function pngSize(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length < 24 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
+    return null
+  }
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const width = view.getUint32(16)
+  const height = view.getUint32(20)
+  if (width < 1 || height < 1) return null
+  return { width, height }
+}
+
+function readFrameBytes(imageData: unknown): Uint8Array {
+  if (typeof imageData !== 'string') {
+    throw new ApiError(422, 'invalid_image', 'Use a transparent PNG.')
+  }
+  const bytes = decodeDataUrl(imageData)
+  if (!bytes || !pngHasAlpha(bytes)) {
+    throw new ApiError(422, 'invalid_image', 'Use a transparent PNG.')
+  }
+  return bytes
+}
+
+function frameLabel(label: unknown): string | null {
+  if (typeof label !== 'string') return null
+  const trimmed = label.trim().slice(0, LABEL_MAX)
+  return trimmed || null
+}
+
+function isFrameKey(value: string): boolean {
+  return value.startsWith('frames/') && !value.includes('..')
+}
+
+async function discardKeys(env: Bindings, keys: string[]) {
+  await Promise.all(keys.map(async (key) => {
+    try {
+      await deleteObject(env, key)
+    } catch {
+      // The write already failed. A missing object should not hide that error.
+    }
+  }))
+}
+
+async function storeFrame(
+  env: Bindings,
+  campaignId: string,
+  bytes: Uint8Array,
+  label: string | null,
+): Promise<StoredFrame> {
+  const id = crypto.randomUUID()
+  const image = await putImage(env, {
+    prefix: `frames/${campaignId}`,
+    id,
+    bytes,
+    allowed: ['png'],
+    maxBytes: MAX_FRAME_BYTES,
+    requireSquare: true,
+    minSize: MIN_FRAME_PX,
+  })
+  return { id, key: image.key, label }
+}
+
+async function presentFrame(env: Bindings, stored: string): Promise<{ url: string; width: number; height: number }> {
+  if (stored.startsWith('data:')) {
+    const bytes = decodeDataUrl(stored)
+    const size = bytes ? pngSize(bytes) : null
+    return { url: stored, width: size?.width ?? 0, height: size?.height ?? 0 }
+  }
+  if (stored.startsWith('/media/') || stored.startsWith('http://') || stored.startsWith('https://')) {
+    return { url: stored, width: 0, height: 0 }
+  }
+  let width = 0
+  let height = 0
+  const object = await env.MEDIA.get(stored)
+  if (object) {
+    const size = pngSize(new Uint8Array(await object.arrayBuffer()))
+    if (size) {
+      width = size.width
+      height = size.height
+    }
+  }
+  return { url: mediaUrl(stored), width, height }
+}
+
+async function loadFrames(env: Bindings, client: Client, campaignId: string) {
+  const frames = await client.execute({
+    sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    args: [campaignId],
+  })
+  return Promise.all(frames.rows.map(async (frame) => {
+    const presented = await presentFrame(env, String(frame.image_url ?? ''))
+    return {
+      id: String(frame.id),
+      label: frame.label == null ? null : String(frame.label),
+      url: presented.url,
+      width: presented.width,
+      height: presented.height,
+      position: Number(frame.position ?? 0),
+    }
+  }))
 }
 
 function slugify(title: string): string {
@@ -48,13 +172,21 @@ function slugify(title: string): string {
   return base || 'frame'
 }
 
+async function slugTaken(client: Client, candidate: string, excludeId?: string): Promise<boolean> {
+  const campaign = await client.execute({ sql: 'SELECT id FROM dp_campaigns WHERE slug = ?', args: [candidate] })
+  if (campaign.rows.some((row) => row.id !== excludeId)) return true
+  const history = await client.execute({
+    sql: 'SELECT campaign_id FROM dp_slug_history WHERE old_slug = ?',
+    args: [candidate],
+  })
+  return history.rows.some((row) => row.campaign_id !== excludeId)
+}
+
 // Find a slug not already taken (ignoring excludeId, the campaign being edited).
 async function uniqueSlug(client: Client, base: string, excludeId?: string): Promise<string> {
   let candidate = base
   for (let n = 2; ; n++) {
-    const r = await client.execute({ sql: 'SELECT id FROM dp_campaigns WHERE slug = ?', args: [candidate] })
-    const taken = r.rows.length > 0 && r.rows[0].id !== excludeId
-    if (!taken) return candidate
+    if (!(await slugTaken(client, candidate, excludeId))) return candidate
     const suffix = `-${n}`
     candidate = `${base.slice(0, SLUG_MAX - suffix.length)}${suffix}`
   }
@@ -74,9 +206,8 @@ async function resolveSlug(
   if (wanted.length > SLUG_MAX || !SLUG_RE.test(wanted)) {
     return { error: 'Slug must be lowercase letters, numbers, and hyphens only.', status: 400 }
   }
-  const r = await client.execute({ sql: 'SELECT id FROM dp_campaigns WHERE slug = ?', args: [wanted] })
-  if (r.rows.length > 0 && r.rows[0].id !== excludeId) {
-    return { error: 'That link is already taken — choose another.', status: 409 }
+  if (await slugTaken(client, wanted, excludeId)) {
+    return { error: 'That link is already taken. Choose another.', status: 409 }
   }
   return { slug: wanted }
 }
@@ -118,9 +249,16 @@ app.post('/api/dp', isOrgFeature, async (c) => {
   const frames = Array.isArray(body.frames) ? body.frames : []
   if (frames.length === 0) return c.json({ status: 'error', message: 'Add at least one frame.' }, 400)
   if (frames.length > MAX_FRAMES) return c.json({ status: 'error', message: `A campaign can have at most ${MAX_FRAMES} frames.` }, 400)
-  for (const f of frames) {
-    const err = validateFrame(f.imageData)
-    if (err) return c.json({ status: 'error', message: err }, 400)
+
+  let decoded: { bytes: Uint8Array; label: string | null }[]
+  try {
+    decoded = frames.map((frame) => ({
+      bytes: readFrameBytes(frame.imageData),
+      label: frameLabel(frame.label),
+    }))
+  } catch (err) {
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    throw err
   }
 
   const client = db(c)
@@ -129,21 +267,31 @@ app.post('/api/dp', isOrgFeature, async (c) => {
   const slug = resolved.slug!
 
   const id = crypto.randomUUID()
-  // frame_image_url is a vestigial NOT NULL column from 0003; '' satisfies it
-  // while frames now live in dp_frames.
+  // frame_image_url is a vestigial NOT NULL column from the baseline; frames live in dp_frames.
   const orgId = c.var.orgId
   if (!orgId) return c.json(noOrgBody(), 403)
 
-  await client.execute({
-    sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [id, user.id, orgId, title, slug, description || null, '', captionTemplate || null],
-  })
-  await client.batch(
-    frames.map((f, i) => ({
-      sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
-      args: [crypto.randomUUID(), id, f.imageData!, (f.label ?? '').trim().slice(0, LABEL_MAX) || null, i],
-    })),
-  )
+  const stored: StoredFrame[] = []
+  try {
+    for (const frame of decoded) {
+      stored.push(await storeFrame(c.env, id, frame.bytes, frame.label))
+    }
+    await client.batch([
+      {
+        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [id, user.id, orgId, title, slug, description || null, '', captionTemplate || null],
+      },
+      ...stored.map((frame, index) => ({
+        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
+        args: [frame.id, id, frame.key, frame.label, index],
+      })),
+    ], 'write')
+  } catch (err) {
+    await discardKeys(c.env, stored.map((frame) => frame.key))
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    reportError(c, err)
+    return c.json({ status: 'error', message: 'Could not create the campaign.' }, 500)
+  }
 
   return c.json({ status: 'ok', campaign: { id, title, slug } }, 201)
 })
@@ -195,8 +343,6 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
   const userOrgId = c.var.orgId
   if (!userOrgId || row.org_id !== userOrgId) return c.json({ status: 'error', message: 'Forbidden.' }, 403)
 
-  const frames = await client.execute({ sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at', args: [row.id] })
-
   return c.json({
     status: 'ok',
     campaign: {
@@ -205,7 +351,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
-      frames: frames.rows.map(f => ({ id: f.id, imageUrl: f.image_url, label: f.label, position: Number(f.position ?? 0) })),
+      frames: await loadFrames(c.env, client, String(row.id)),
     },
   })
 })
@@ -221,22 +367,36 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const body = await c.req.json() as { imageData?: string; label?: string }
-  const err = validateFrame(body.imageData)
-  if (err) return c.json({ status: 'error', message: err }, 400)
+  let bytes: Uint8Array
+  try {
+    bytes = readFrameBytes(body.imageData)
+  } catch (err) {
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    throw err
+  }
 
-  const countRes = await client.execute({ sql: 'SELECT COUNT(*) AS cnt, MAX(position) AS maxpos FROM dp_frames WHERE campaign_id = ?', args: [id] })
-  const count = Number(countRes.rows[0]?.cnt ?? 0)
-  if (count >= MAX_FRAMES) return c.json({ status: 'error', message: `A campaign can have at most ${MAX_FRAMES} frames.` }, 400)
-  const nextPos = Number(countRes.rows[0]?.maxpos ?? -1) + 1
+  let stored: StoredFrame
+  try {
+    stored = await storeFrame(c.env, id, bytes, frameLabel(body.label))
+  } catch (err) {
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    throw err
+  }
 
-  const frameId = crypto.randomUUID()
-  await client.execute({
-    sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
-    args: [frameId, id, body.imageData!, (body.label ?? '').trim().slice(0, LABEL_MAX) || null, nextPos],
+  const inserted = await client.execute({
+    sql: `INSERT INTO dp_frames (id, campaign_id, image_url, label, position)
+          SELECT ?, ?, ?, ?, COALESCE((SELECT MAX(position) FROM dp_frames WHERE campaign_id = ?), -1) + 1
+          WHERE (SELECT COUNT(*) FROM dp_frames WHERE campaign_id = ?) < ?`,
+    args: [stored.id, id, stored.key, stored.label, id, id, MAX_FRAMES],
   })
+  if (Number(inserted.rowsAffected) !== 1) {
+    await discardKeys(c.env, [stored.key])
+    return c.json({ status: 'error', message: `A campaign can have at most ${MAX_FRAMES} frames.` }, 400)
+  }
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
+  const placed = await client.execute({ sql: 'SELECT position FROM dp_frames WHERE id = ?', args: [stored.id] })
 
-  return c.json({ status: 'ok', frame: { id: frameId, position: nextPos } }, 201)
+  return c.json({ status: 'ok', frame: { id: stored.id, position: Number(placed.rows[0]?.position ?? 0) } }, 201)
 })
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────
@@ -255,9 +415,17 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
     return c.json({ status: 'error', message: 'A campaign needs at least one frame.' }, 400)
   }
 
+  const existingFrame = await client.execute({
+    sql: 'SELECT image_url FROM dp_frames WHERE id = ? AND campaign_id = ?',
+    args: [frameId, id],
+  })
+  if (existingFrame.rows.length === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
+  const imageKey = String(existingFrame.rows[0]?.image_url ?? '')
+
   const del = await client.execute({ sql: 'DELETE FROM dp_frames WHERE id = ? AND campaign_id = ?', args: [frameId, id] })
   if (del.rowsAffected === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
+  if (isFrameKey(imageKey)) await discardKeys(c.env, [imageKey])
 
   return c.json({ status: 'ok' })
 })
@@ -335,20 +503,40 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
     if (captionTemplate.length > CAPTION_MAX) return c.json({ status: 'error', message: `Caption must be ${CAPTION_MAX} characters or fewer.` }, 400)
     updates.push('caption_template = ?'); args.push(captionTemplate || null)
   }
+  let nextSlug: string | undefined
   if (body.slug !== undefined) {
     // Re-derive title for the auto-slug fallback when slug is cleared.
     const titleRow = await client.execute({ sql: 'SELECT title FROM dp_campaigns WHERE id = ?', args: [id] })
     const currentTitle = (body.title?.trim()) || (titleRow.rows[0]?.title as string) || ''
     const resolved = await resolveSlug(client, body.slug, currentTitle, id)
     if (resolved.error) return c.json({ status: 'error', message: resolved.error }, resolved.status ?? 400)
-    updates.push('slug = ?'); args.push(resolved.slug!)
+    nextSlug = resolved.slug
+    updates.push('slug = ?'); args.push(nextSlug!)
   }
 
   if (!updates.length) return c.json({ status: 'error', message: 'Nothing to update.' }, 400)
 
+  const current = await client.execute({ sql: 'SELECT slug FROM dp_campaigns WHERE id = ?', args: [id] })
+  const oldSlug = String(current.rows[0]?.slug ?? '')
   updates.push('updated_at = CURRENT_TIMESTAMP')
   args.push(id)
-  await client.execute({ sql: `UPDATE dp_campaigns SET ${updates.join(', ')} WHERE id = ?`, args })
+
+  const statements: { sql: string; args: (string | null)[] }[] = []
+  if (nextSlug && nextSlug !== oldSlug) {
+    statements.push(
+      {
+        sql: 'DELETE FROM dp_slug_history WHERE old_slug = ? AND campaign_id = ?',
+        args: [nextSlug, id],
+      },
+      {
+        sql: `INSERT INTO dp_slug_history (old_slug, campaign_id) VALUES (?, ?)
+              ON CONFLICT(old_slug) DO UPDATE SET campaign_id = excluded.campaign_id`,
+        args: [oldSlug, id],
+      },
+    )
+  }
+  statements.push({ sql: `UPDATE dp_campaigns SET ${updates.join(', ')} WHERE id = ?`, args })
+  await client.batch(statements, 'write')
 
   // Return the (possibly auto-generated) slug so the editor can reflect it.
   const after = await client.execute({ sql: 'SELECT slug FROM dp_campaigns WHERE id = ?', args: [id] })
@@ -365,23 +553,42 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
+  const frames = await client.execute({ sql: 'SELECT image_url FROM dp_frames WHERE campaign_id = ?', args: [id] })
   await client.batch([
     { sql: 'DELETE FROM dp_frames WHERE campaign_id = ?', args: [id] },
     { sql: 'DELETE FROM dp_campaigns WHERE id = ?', args: [id] },
-  ])
+  ], 'write')
+  await discardKeys(
+    c.env,
+    frames.rows.map((frame) => String(frame.image_url ?? '')).filter(isFrameKey),
+  )
 
   return c.json({ status: 'ok', message: 'Campaign deleted.' })
 })
 
 // ── POST /api/dp/:id/download ─────────────────────────────────────────────────
-// Public, best-effort counter bump fired after a successful client-side export.
+// Public counter. One increment per IP per campaign per day, after a real save.
 app.post('/api/dp/:id/download', async (c) => {
   const id = c.req.param('id')!
-  const result = await db(c).execute({
+  const client = db(c)
+  const existing = await client.execute({ sql: 'SELECT id FROM dp_campaigns WHERE id = ?', args: [id] })
+  if (existing.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
+
+  const ip = c.req.header('CF-Connecting-IP')?.trim() || 'unknown'
+  const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'dp-download',
+    subject: `${id}:${ip}`,
+    limit: 1,
+    windowSec: DOWNLOAD_WINDOW_SEC,
+  })
+  if (!decision.ok) {
+    return c.json({ status: 'error', message: 'You already downloaded this frame today.' }, 429)
+  }
+
+  await client.execute({
     sql: 'UPDATE dp_campaigns SET download_count = download_count + 1 WHERE id = ?',
     args: [id],
   })
-  if (result.rowsAffected === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
   return c.json({ status: 'ok', ok: true })
 })
 
@@ -392,18 +599,25 @@ app.post('/api/dp/:id/download', async (c) => {
 app.get('/api/dp/:slug', async (c) => {
   const slug = c.req.param('slug')!
   const client = db(c)
-  const result = await client.execute({
+  let result = await client.execute({
     sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
     args: [slug],
   })
+  if (result.rows.length === 0) {
+    const history = await client.execute({
+      sql: 'SELECT campaign_id FROM dp_slug_history WHERE old_slug = ?',
+      args: [slug],
+    })
+    if (history.rows.length > 0) {
+      result = await client.execute({
+        sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE id = ?',
+        args: [history.rows[0]?.campaign_id],
+      })
+    }
+  }
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
 
   const row = result.rows[0]
-  const frames = await client.execute({
-    sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
-    args: [row.id],
-  })
-
   return c.json({
     status: 'ok',
     campaign: {
@@ -412,8 +626,10 @@ app.get('/api/dp/:slug', async (c) => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
-      frames: frames.rows.map(f => ({ id: f.id, imageUrl: f.image_url, label: f.label, position: Number(f.position ?? 0) })),
+      frames: await loadFrames(c.env, client, String(row.id)),
     },
+  }, 200, {
+    'Cache-Control': 'public, max-age=60',
   })
 })
 

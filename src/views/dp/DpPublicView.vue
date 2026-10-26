@@ -36,8 +36,9 @@
       <!-- Canvas card -->
       <div class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 p-5 sm:p-8 dark:border-slate-600">
         <div
-          class="dp-checker aspect-square w-full overflow-hidden border border-gray-200 dark:border-slate-700 relative transition-all duration-300"
+          class="dp-checker w-full overflow-hidden border border-gray-200 dark:border-slate-700 relative transition-all duration-300"
           :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
+          :style="{ aspectRatio: frameAspect }"
         >
           <canvas
             ref="canvasRef"
@@ -87,7 +88,7 @@
         <div class="mt-6 flex flex-col gap-4">
           <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-[#34418F] px-6 py-3 text-sm font-semibold text-[#34418F] transition-colors hover:bg-[#34418F] hover:text-white dark:border-slate-400 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-100">
             {{ headshot ? 'Change Photo' : 'Upload Your Photo' }}
-            <input type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
+            <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="onHeadshotPicked" />
           </label>
 
           <div v-if="headshot" class="flex items-center gap-4">
@@ -191,11 +192,25 @@ const error = ref('')
 const exporting = ref(false)
 const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, frames: [] })
 
+const MAX_PHOTO_EDGE = 2160
+const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
+
+type PhotoSource = HTMLImageElement | ImageBitmap
+
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const photoInput = ref<HTMLInputElement | null>(null)
 const frameImgs = ref<HTMLImageElement[]>([])
 const selectedIndex = ref(0)
-const headshot = ref<HTMLImageElement | null>(null)
+const headshot = ref<PhotoSource | null>(null)
 const previewShape = ref<'square' | 'circle'>('square')
+
+const frameAspect = computed(() => {
+  const frame = frameImgs.value[selectedIndex.value]
+  const width = frame?.naturalWidth || frame?.width || 0
+  const height = frame?.naturalHeight || frame?.height || 0
+  if (!width || !height) return '1 / 1'
+  return `${width} / ${height}`
+})
 
 const { scale, offsetX, offsetY, onPointerDown, onPointerMove, onPointerUp, onWheel, reset } = useDpCanvas(canvasRef)
 
@@ -226,6 +241,12 @@ function draw() {
   const canvas = canvasRef.value
   const frame = frameImgs.value[selectedIndex.value]
   if (!canvas || !frame) return
+  const width = frame.naturalWidth || frame.width
+  const height = frame.naturalHeight || frame.height
+  if (width > 0 && height > 0 && (canvas.width !== width || canvas.height !== height)) {
+    canvas.width = width
+    canvas.height = height
+  }
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
@@ -241,24 +262,41 @@ function draw() {
     ctx.drawImage(photo, cx - drawW / 2, cy - drawH / 2, drawW, drawH)
   }
 
-  // Selected frame on top, stretched to the (fixed) canvas size.
   ctx.drawImage(frame, 0, 0, canvas.width, canvas.height)
 }
 
 watch([scale, offsetX, offsetY, selectedIndex], scheduleDraw)
 
 // ── Headshot input (never uploaded anywhere) ─────────────────────────────────
-function onHeadshotPicked(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
+async function downscalePhoto(file: File): Promise<ImageBitmap> {
+  const bitmap = await createImageBitmap(file)
+  const longest = Math.max(bitmap.width, bitmap.height)
+  if (longest <= MAX_PHOTO_EDGE) return bitmap
+  const scale = MAX_PHOTO_EDGE / longest
+  const resized = await createImageBitmap(bitmap, {
+    resizeWidth: Math.max(1, Math.round(bitmap.width * scale)),
+    resizeHeight: Math.max(1, Math.round(bitmap.height * scale)),
+    resizeQuality: 'high',
+  })
+  bitmap.close()
+  return resized
+}
+
+async function onHeadshotPicked(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
   if (!file) return
-  if (!file.type.startsWith('image/')) { toast.error('Please choose an image file.'); return }
-  const reader = new FileReader()
-  reader.onload = () => {
-    const img = new Image()
-    img.onload = () => { headshot.value = img; reset(); scheduleDraw() }
-    img.src = reader.result as string
+  try {
+    const bitmap = await downscalePhoto(file)
+    if (headshot.value && 'close' in headshot.value) headshot.value.close()
+    headshot.value = bitmap
+    reset()
+    scheduleDraw()
+  } catch {
+    toast.error(PHOTO_ERROR)
+  } finally {
+    input.value = ''
   }
-  reader.readAsDataURL(file)
 }
 
 // ── Export ───────────────────────────────────────────────────────────────────
@@ -271,13 +309,32 @@ async function download() {
     if (!blob) { toast.error('Could not render the image. Try again.'); return }
     const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
     const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
-    saveAs(blob, `eypi-dp-${safe}${suffix}.png`)
-    toast.success('Downloaded. Share your new profile picture.')
+    const filename = `eypi-dp-${safe}${suffix}.png`
+    const file = new File([blob], filename, { type: 'image/png' })
+    const shared = await sharePhoto(file)
+    if (shared === 'cancelled') return
+    if (!shared) {
+      saveAs(blob, filename)
+      toast.success('Downloaded. Share your new profile picture.')
+    }
     api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')
   } finally {
     exporting.value = false
+  }
+}
+
+async function sharePhoto(file: File): Promise<boolean | 'cancelled'> {
+  if (typeof navigator.share !== 'function') return false
+  const payload = { files: [file] }
+  if (typeof navigator.canShare === 'function' && !navigator.canShare(payload)) return false
+  try {
+    await navigator.share(payload)
+    return true
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled'
+    return false
   }
 }
 
@@ -311,16 +368,10 @@ onMounted(async () => {
     Object.assign(campaign, data.campaign)
     if (!campaign.frames.length) throw new Error('This campaign has no frames yet.')
 
-    frameImgs.value = await Promise.all(campaign.frames.map(f => loadImage(f.imageUrl)))
+    frameImgs.value = await Promise.all(campaign.frames.map((frame) => loadImage(frame.url)))
 
     loading.value = false
     await nextTick()
-    const canvas = canvasRef.value
-    if (canvas) {
-      // Force canvas backing store to be exactly 1080x1080 for high quality 1:1 exports
-      canvas.width = 1080
-      canvas.height = 1080
-    }
     scheduleDraw()
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'

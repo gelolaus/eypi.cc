@@ -132,7 +132,13 @@ async function saveDetails() {
     })
     const data = await res.json() as { status: string; message?: string; slug?: string }
     if (!res.ok) throw new Error(data.message ?? 'Save failed.')
-    if (data.slug) form.slug = data.slug
+    if (data.slug) {
+      form.slug = data.slug
+      const currentSlug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
+      if (data.slug !== currentSlug) {
+        await router.replace({ name: 'dp-edit', params: { slug: data.slug } })
+      }
+    }
     toast.success('Saved.')
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Save failed.')
@@ -228,7 +234,7 @@ onMounted(async () => {
     form.slug = data.campaign.slug
     form.description = data.campaign.description ?? ''
     form.captionTemplate = data.campaign.captionTemplate ?? ''
-    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.imageUrl }))
+    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url }))
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
   } finally {
