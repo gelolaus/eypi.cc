@@ -48,10 +48,7 @@
       v-else-if="!filteredEvents.length"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
       <p class="text-sm font-medium text-g-muted">{{ events.length ? 'No matching events' : 'No events yet' }}</p>
       <p class="mt-3 text-sm leading-relaxed text-g-muted">
         {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
@@ -106,6 +103,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import OrgLockout from '@/components/OrgLockout.vue'
+import PageShell from '@/components/PageShell.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 
 const toast = useToast()

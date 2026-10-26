@@ -168,7 +168,7 @@ box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.20)
 
 ### Dark mode mechanism
 
-Dark mode is toggled by adding or removing the class `dark` on `<html>`. No `prefers-color-scheme` media query is used; the user's preference is stored in `localStorage` under the key `eypi_dark_mode`. Default is light mode.
+Dark mode is the class `dark` on `<html>`. A saved choice in `localStorage` under `eypi_dark_mode` (`true` or `false`) wins. With no saved choice, the page follows `matchMedia('(prefers-color-scheme: dark)')`. `public/theme-init.js` adds the class before CSS paints, and `initDarkMode()` applies it again before mount. `index.html` sets `<meta name="color-scheme" content="light dark">`.
 
 `body` transitions `background-color` and `color` over `0.3s ease` on mode change:
 ```css
@@ -257,7 +257,7 @@ No fluid-type library. Clamp midpoints are hand-authored in the `3vw` to `8vw` r
 | Card inner padding | `2rem` (p-8, 32px) |
 | Card inner padding (lg) | `3rem` (p-12, 48px) on settings |
 | Footer inner padding | `clamp(4rem, 8vw, 6rem)` top; `clamp(1.5rem, 6vw, 6rem)` sides; `clamp(2.5rem, 5vw, 4rem)` bottom |
-| Toast position | `1.5rem` from bottom and right edges |
+| Toast position | `6rem` from the bottom, `1.5rem` from the right (clears the scroll-top button) |
 | Scroll-top button | `2rem` from bottom and right |
 
 ### Breakpoints
@@ -565,7 +565,8 @@ Do not use `window.confirm()` or `alert()` for product feedback.
 
 ### 6.6 Signal strip toast
 
-Position: `fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999`
+Position: `fixed; bottom: 6rem; right: 1.5rem; z-index: 9999`
+The `6rem` bottom offset clears the scroll-top button (`44px` tall, `2rem` from the bottom).
 Stacks vertically with `gap: 0.75rem`. Cap: 3. Dedup: same type + message refreshes the timer.
 
 **Strip**:
@@ -901,7 +902,7 @@ Z-index hierarchy (matches [src/App.vue](src/App.vue) and teleported overlays):
 | Footer | `1` | `<footer>` (relative) |
 | Fixed nav | `9990` | Pill nav wrapper |
 | Scroll-top button | `9998` | Fixed bottom-right |
-| Toast container | `9999` | Signal strip (bottom-right) |
+| Toast container | `9999` | Signal strip (above the scroll-top button) |
 | DialogHost | `10000` | Mica Info / Confirm |
 | Slide panel backdrop | `99990` | Teleported overlay |
 | Slide panel | `99991` | Teleported panel |

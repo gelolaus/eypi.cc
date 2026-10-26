@@ -1,9 +1,6 @@
 <template>
   <div class="mica-card relative rounded-3xl border border-gray-200 p-8 dark:border-slate-600">
-    <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-    <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-    <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-    <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <PageShell />
 
     <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
     <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
@@ -51,6 +48,8 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
+
 defineProps<{
   columnHeaders: string[]
   mapError: string

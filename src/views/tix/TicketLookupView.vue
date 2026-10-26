@@ -19,10 +19,7 @@
         v-if="ticket"
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <p class="mb-4 font-mono text-lg font-bold text-[#34418F] dark:text-slate-200">{{ ticket.firstName }} {{ ticket.lastName }}</p>
 
@@ -67,10 +64,7 @@
         v-else
         class="mica-card relative w-full rounded-3xl border border-gray-200 dark:border-slate-600 p-8"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <h2 class="mb-6 text-center font-mono text-xl font-bold uppercase tracking-widest text-[#34418F] dark:text-slate-200">
           View Your Ticket
@@ -132,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
 import { api } from '@/lib/api'
 import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'

@@ -16,10 +16,7 @@
         v-if="done"
         class="mica-card reveal relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 text-center"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
         <p class="mb-2 text-sm font-medium text-emerald-500">Event Created</p>
         <h2 class="mb-4 font-mono text-xl font-bold text-[#34418F] dark:text-slate-200">{{ form.name }}</h2>
         <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
@@ -39,10 +36,7 @@
         v-else
         class="mica-card reveal delay-1 relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-10"
       >
-        <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-        <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+        <PageShell />
 
         <!-- Mode toggle -->
         <div class="mb-6 flex overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
@@ -209,6 +203,7 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
 import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
 import { useReveal } from '@/composables/useReveal'

@@ -1,12 +1,5 @@
 <template>
-  <section class="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-28">
-    <div class="mica-card relative w-full max-w-3xl rounded-3xl border border-gray-200 dark:border-slate-600 p-8 md:p-14">
-      <!-- Corner screws -->
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
+  <LegalLayout>
       <!-- Header -->
       <div class="mb-10 border-b border-gray-200 dark:border-slate-700 pb-8">
         <h1 class="text-section-title mb-1">
@@ -71,9 +64,9 @@
         </div>
 
       </div>
-    </div>
-  </section>
+  </LegalLayout>
 </template>
 
 <script setup lang="ts">
+import LegalLayout from '@/components/LegalLayout.vue'
 </script>

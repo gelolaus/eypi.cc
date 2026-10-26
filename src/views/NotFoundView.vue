@@ -6,11 +6,7 @@
     <div
       class="mica-card relative flex w-full max-w-md flex-col items-center rounded-3xl border border-gray-200 p-8 text-center shadow-xl sm:p-12"
     >
-      <!-- Corner screws -->
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
 
       <!-- Error Code -->
       <h1
@@ -43,3 +39,7 @@
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
+</script>

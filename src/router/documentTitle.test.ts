@@ -102,4 +102,10 @@ describe('route titles', () => {
     expect(smooth).toEqual({ top: 0, behavior: 'smooth' })
     vi.unstubAllGlobals()
   })
+
+  it('returns savedPosition so the back button restores scroll', () => {
+    const current = router.currentRoute.value
+    const saved = { left: 12, top: 480 }
+    expect(router.options.scrollBehavior?.(current, current, saved)).toEqual(saved)
+  })
 })

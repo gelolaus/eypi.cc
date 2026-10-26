@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-none fixed bottom-6 right-6 z-[9999] flex w-[min(100vw-2rem,20rem)] flex-col gap-3"
+    class="pointer-events-none fixed bottom-24 right-6 z-[9999] flex w-[min(100vw-2rem,20rem)] flex-col gap-3"
     :aria-live="hasError ? 'assertive' : 'polite'"
     aria-relevant="additions text"
   >

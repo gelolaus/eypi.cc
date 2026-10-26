@@ -63,10 +63,7 @@
       v-else-if="orgs.length === 0"
       class="mica-card relative rounded-3xl border border-g-border p-12 text-center"
     >
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+      <PageShell />
       <p class="font-mono text-sm uppercase tracking-widest text-g-muted">No organizations in the directory yet</p>
       <p class="mt-3 font-mono text-xs leading-relaxed text-g-muted">
         Org officers can opt in from Settings → Org Management.
@@ -130,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import PageShell from '@/components/PageShell.vue'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useReveal } from '@/composables/useReveal'
