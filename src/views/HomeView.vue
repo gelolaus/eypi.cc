@@ -1,8 +1,8 @@
 <template>
-  <div class="relative flex min-h-screen min-w-0 flex-1 flex-col">
+  <div class="relative flex min-h-dvh min-w-0 flex-1 flex-col">
     <section
       id="hero"
-      class="relative flex min-h-screen min-w-0 flex-col items-center justify-center"
+      class="relative flex min-h-[85dvh] min-w-0 flex-col items-center justify-center"
     >
       <HeroSection />
     </section>

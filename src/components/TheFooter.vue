@@ -7,19 +7,19 @@
 
       <!-- Full-width stacked link rows -->
       <nav class="footer-links-full" aria-label="Footer navigation">
-        <router-link to="/contact" class="footer-link-row" data-cursor="nav">
+        <router-link to="/contact" class="footer-link-row min-h-11" data-cursor="nav">
           <span>Contact</span>
           <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
-        <router-link to="/privacy" class="footer-link-row" data-cursor="nav">
+        <router-link to="/privacy" class="footer-link-row min-h-11" data-cursor="nav">
           <span>Privacy</span>
           <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
-        <router-link to="/terms" class="footer-link-row" data-cursor="nav">
+        <router-link to="/terms" class="footer-link-row min-h-11" data-cursor="nav">
           <span>Terms</span>
           <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
-        <router-link to="/acceptable-use" class="footer-link-row" data-cursor="nav">
+        <router-link to="/acceptable-use" class="footer-link-row min-h-11" data-cursor="nav">
           <span>Acceptable use</span>
           <span class="footer-arrow" aria-hidden="true">↗</span>
         </router-link>
@@ -27,7 +27,7 @@
           href="https://gelolaus.com"
           target="_blank"
           rel="noopener noreferrer"
-          class="footer-link-row"
+          class="footer-link-row min-h-11"
           data-cursor="nav"
         >
           <span>Creator: gelolaus.com</span>

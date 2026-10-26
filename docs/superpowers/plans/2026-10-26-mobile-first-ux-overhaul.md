@@ -102,8 +102,8 @@
 
 **Files:** `HeroSection.vue`, `FeaturesCarousel.vue`, `StatsStrip.vue`, `WhyEypi.vue`, `ClosingCta.vue`, `TheFooter.vue`, `HomeView.vue`.
 
-- [ ] Tests first (`HeroSection.test.ts`, `TheFooter.test.ts`, `a11ySurfaces.test.ts` stay green or are updated with reason): one composition per viewport: one headline, one support line, one primary CTA (`h-12`/`h-14`); drop bouncing scroll cue and per-badge blur; carousel becomes native scroll-snap on mobile (keeps pause/play button, `article` slides, `inert` on hidden ones); footer heading `clamp` reduced, link rows 44px+, `.footer-arrow` stays `aria-hidden` `↗`.
-- [ ] Commit `feat(landing): simplify the hero and make the footer mobile-first`.
+- [x] Tests first (`HeroSection.test.ts`, `TheFooter.test.ts`, `a11ySurfaces.test.ts` stay green or are updated with reason): one composition per viewport: one headline, one support line, one primary CTA (`h-12`/`h-14`); drop bouncing scroll cue and per-badge blur; carousel becomes native scroll-snap on mobile (keeps pause/play button, `article` slides, `inert` on hidden ones); footer heading `clamp` reduced, link rows 44px+, `.footer-arrow` stays `aria-hidden` `↗`.
+- [x] Commit `feat(landing): simplify the hero and make the footer mobile-first`.
 
 ### Task 8: Auth, account, dashboard and static pages
 
