@@ -11,6 +11,7 @@ import adminMigrationRoutes from './routes/adminMigrations'
 import authMicrosoft from './routes/authMicrosoft'
 import legalRoutes from './routes/legal'
 import linkRoutes from './routes/links'
+import accountRoutes from './routes/account'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
 import eventRoutes from './routes/events'
@@ -70,6 +71,7 @@ app.use('/api/*', csrf)
 // Mount feature routers. Each declares its own full /api/... paths.
 app.route('/', authMicrosoft)
 app.route('/', meRoutes)
+app.route('/', accountRoutes)
 app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)

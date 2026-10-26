@@ -196,19 +196,23 @@ const router = createRouter({
 
     // ── Account & legal ──────────────────────────────────────────────────────
     {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/views/AccountView.vue'),
+      meta: { requiresAuth: true, title: 'Account' },
+    },
+    {
       path: '/settings',
       component: () => import('@/views/settings/SettingsLayout.vue'),
       meta: { requiresAuth: true },
       children: [
         {
           path: '',
-          redirect: { name: 'settings-security' },
+          redirect: { name: 'account' },
         },
         {
           path: 'security',
-          name: 'settings-security',
-          component: () => import('@/views/SettingsView.vue'),
-          meta: { title: 'Settings' },
+          redirect: { name: 'account' },
         },
         {
           path: 'organizations',
@@ -331,6 +335,7 @@ router.beforeEach(async (to, _from, next) => {
     || record.name === 'acceptable-use'
     || record.name === 'contact'
     || record.name === 'login'
+    || record.name === 'account'
   ))
   if (signedIn && session.needsConsent.value.length > 0 && !skipsConsent) {
     next({ name: 'consent', query: { returnTo: to.fullPath } })
@@ -358,7 +363,7 @@ router.beforeEach(async (to, _from, next) => {
       return
     }
     if (signedIn.role !== 'admin') {
-      next({ name: 'settings-security', replace: true })
+      next({ name: 'account', replace: true })
       return
     }
   }

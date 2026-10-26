@@ -54,7 +54,22 @@ describe('route guards', () => {
 
     await router.push('/settings/org-management')
 
-    expect(router.currentRoute.value.name).toBe('settings-security')
+    expect(router.currentRoute.value.name).toBe('account')
+  })
+
+  it('redirects /settings and /settings/security to /account and keeps org management', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => me('user')))
+
+    await router.push('/settings')
+    expect(router.currentRoute.value.name).toBe('account')
+    expect(router.currentRoute.value.fullPath).toBe('/account')
+
+    await router.push('/settings/security')
+    expect(router.currentRoute.value.name).toBe('account')
+
+    expect(router.resolve('/settings/org-management').name).toBe('settings-org-management')
+    expect(router.resolve('/settings/org-management/new').name).toBe('settings-org-management-new')
+    expect(router.resolve('/settings/org-management/org-1').name).toBe('settings-org-management-edit')
   })
 
   it('lets an admin open org management', async () => {
@@ -96,6 +111,28 @@ describe('route guards', () => {
 
     expect(router.currentRoute.value.name).toBe('consent')
     expect(router.currentRoute.value.query.returnTo).toBe('/links')
+  })
+
+  it('leaves /account in place when a signed-in user needs consent', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      user: {
+        id: 'user-1',
+        email: 'ada@apc.edu.ph',
+        name: 'Ada',
+        role: 'user',
+      },
+      pendingInviteCount: 0,
+      needsConsent: [{ document: 'privacy', version: '2026-11-01' }],
+      orgs: [],
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })))
+
+    if (router.currentRoute.value.fullPath !== '/contact') await router.push('/contact')
+    await router.push('/account')
+
+    expect(router.currentRoute.value.name).toBe('account')
   })
 
   it('leaves /privacy in place when a signed-in user needs consent', async () => {

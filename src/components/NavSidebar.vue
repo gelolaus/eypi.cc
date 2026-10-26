@@ -157,7 +157,7 @@ const appLinks = [
   { to: '/manage/frames', label: 'Frames' },
   { to: '/orgs', label: 'Orgs' },
   { to: '/invites', label: 'Invites' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/account', label: 'Account' },
 ]
 
 const pendingInviteCount = computed(() => useSession().pendingInviteCount.value)

@@ -57,7 +57,7 @@ interface SettingsTab {
 
 const tabs = computed<SettingsTab[]>(() => {
   const items: SettingsTab[] = [
-    { name: 'settings-security', label: 'Account' },
+    { name: 'account', label: 'Account' },
   ]
   if (isSuperAdmin.value) {
     items.push({ name: 'settings-org-management', label: 'Org Management', prefix: '/settings/org-management' })

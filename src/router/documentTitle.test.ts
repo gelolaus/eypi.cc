@@ -36,7 +36,7 @@ const pages: Record<string, string> = {
   'orgs-modify': 'Org settings',
   'org-catalog': 'Orgs',
   'org-profile': 'Organization',
-  'settings-security': 'Settings',
+  account: 'Account',
   'settings-org-management': 'Org management',
   'settings-org-management-new': 'New organization',
   'settings-org-management-edit': 'Edit organization',

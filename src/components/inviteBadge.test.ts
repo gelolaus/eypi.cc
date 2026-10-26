@@ -17,7 +17,7 @@ const router = createRouter({
     { path: '/manage/frames', component: { template: '<div />' } },
     { path: '/orgs', component: { template: '<div />' } },
     { path: '/invites', component: { template: '<div />' } },
-    { path: '/settings', component: { template: '<div />' } },
+    { path: '/account', component: { template: '<div />' } },
     { path: '/login', component: { template: '<div />' } },
   ],
 })
