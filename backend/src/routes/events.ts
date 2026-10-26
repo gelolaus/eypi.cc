@@ -11,6 +11,7 @@ import { selectAttendees } from '../../../src/lib/tix/selection'
 import type { Client } from '@libsql/client/web'
 
 const SQL_IN_CHUNK = 200
+const MAX_UPLOAD_ROWS = 5000
 
 const ALREADY_FINALIZED = {
   status: 'error' as const,
@@ -95,6 +96,10 @@ const LATEST_ACTION_IS = `(
 
 function actionError(code: string, message: string) {
   return { status: 'error' as const, message, error: { code, message } }
+}
+
+function attendeeHasFirstName(attendee: { firstName?: unknown }): boolean {
+  return typeof attendee?.firstName === 'string' && attendee.firstName.trim().length > 0
 }
 
 function attendeeLabel(first: unknown, last: unknown): string {
@@ -237,6 +242,10 @@ app.post('/api/events', async (c) => {
   const eventId = crypto.randomUUID()
   const selectionLocked = hasAttendees ? 1 : 0
   const maxAttendees = body.maxAttendees ?? null
+
+  if (hasAttendees && body.attendees!.some((attendee) => !attendeeHasFirstName(attendee))) {
+    return c.json(actionError('missing_first_name', 'Every attendee needs a first name.'), 422)
+  }
 
   await client.execute({
     sql: 'INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -415,7 +424,10 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
     }
   }
 
-  if (!body.rows?.length) return c.json({ status: 'error', message: 'No rows provided.' }, 400)
+  if (!Array.isArray(body.rows) || body.rows.length === 0) return c.json({ status: 'error', message: 'No rows provided.' }, 400)
+  if (body.rows.length > MAX_UPLOAD_ROWS) {
+    return c.json(actionError('too_many_rows', 'Spreadsheets are limited to 5,000 rows.'), 422)
+  }
   if (!body.columnMapping?.emailCol) return c.json({ status: 'error', message: 'columnMapping.emailCol is required.' }, 400)
 
   // Pre-generate IDs so we can return them to the frontend

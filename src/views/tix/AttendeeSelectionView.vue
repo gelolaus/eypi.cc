@@ -28,449 +28,91 @@
       Step {{ stepIndex + 1 }} of {{ visibleSteps.length }}
     </p>
 
-    <!-- ─── STEP 1: UPLOAD ─────────────────────────────────────────────── -->
-    <div v-if="currentStep === 'upload'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <UploadStep
+      v-if="currentStep === 'upload'"
+      :file-name="csvFile?.name ?? ''"
+      :row-count="allRows.length"
+      :column-count="columnHeaders.length"
+      :error="csvError"
+      :uploading="uploading"
+      @file="loadFile"
+      @upload="uploadCsv"
+    />
 
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Upload Spreadsheet</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Upload your respondents spreadsheet (.xlsx). Any column layout is accepted — you'll map the columns next.</p>
+    <MapColumnsStep
+      v-else-if="currentStep === 'map-columns'"
+      :column-headers="columnHeaders"
+      :map-error="mapError"
+      :get-col-role="getColRole"
+      :set-col-role="setColRole"
+      @back="currentStep = 'upload'"
+      @continue="confirmMapping"
+    />
 
-      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- file drop target; keyboard users use Browse -->
-      <div
-        class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors"
-        :class="csvFile
-          ? 'border-emerald-400 bg-emerald-50/50 dark:border-emerald-600 dark:bg-emerald-900/10'
-          : 'border-gray-300 bg-white/40 hover:border-[#34418F] dark:border-slate-600 dark:bg-mica-navy-input dark:hover:border-slate-500'"
-        @dragover.prevent
-        @drop.prevent="onDrop"
-      >
-        <p v-if="csvFile" class="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-          {{ csvFile.name }} — {{ allRows.length }} rows, {{ columnHeaders.length }} columns
-        </p>
-        <template v-else>
-          <p class="text-sm text-gray-500 dark:text-slate-400">Drop .xlsx or click to upload</p>
-        </template>
-        <input ref="fileInput" type="file" accept=".xlsx" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
-        <button
-          type="button"
-          class="mt-3 rounded-lg border border-gray-300 bg-white px-4 py-1.5 font-mono text-xs text-gray-600 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:bg-transparent dark:text-slate-400 dark:hover:border-slate-400"
-          @click="fileInput?.click()"
-        >
-          {{ csvFile ? 'Change file' : 'Browse' }}
-        </button>
-      </div>
-      <p v-if="csvError" class="mt-2 text-xs font-medium text-red-500">{{ csvError }}</p>
+    <ClustersStep
+      v-else-if="currentStep === 'clusters'"
+      :column-mapping="columnMapping"
+      :clusters="clusters"
+      :cluster-raw-count="clusterRawCount"
+      :total-cluster-max="totalClusterMax"
+      :cluster-error="clusterError"
+      :saving-clusters="savingClusters"
+      :set-cluster-max="setClusterMax"
+      @back="currentStep = 'map-columns'"
+      @continue="saveClusters"
+    />
 
-      <button
-        :disabled="!csvFile || !allRows.length || uploading"
-        :class="[
-          'mt-6 w-full rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
-          (!csvFile || !allRows.length || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
-        ]"
-        @click="uploadCsv"
-      >
-        {{ uploading ? 'Uploading…' : 'Upload Spreadsheet & Continue →' }}
-      </button>
-    </div>
+    <CriteriaStep
+      v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'"
+      :clusters="clusters"
+      :criteria-columns="criteriaColumns"
+      :open-clusters="openClusters"
+      :total-eligible="totalEligible"
+      :saving-criteria="savingCriteria"
+      :cluster-raw-count="clusterRawCount"
+      :cluster-eligible-count="clusterEligibleCount"
+      :unique-values-for-cluster="uniqueValuesForCluster"
+      :unique-values="uniqueValues"
+      :is-checked="isChecked"
+      :count-in-cluster="countInCluster"
+      :count-in-all="countInAll"
+      :toggle-cluster-open="toggleClusterOpen"
+      :toggle-filter="toggleFilter"
+      @leave="leaveCriteria"
+    />
 
-    <!-- ─── STEP 2: MAP COLUMNS ────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'map-columns'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <GuaranteeStep
+      v-else-if="currentStep === 'guarantee'"
+      v-model="guaranteeSearch"
+      :guarantee-search-results="guaranteeSearchResults"
+      :guaranteed-row-ids="guaranteedRowIds"
+      :column-mapping="columnMapping"
+      :get-display-name="getDisplayName"
+      :get-email="getEmail"
+      :row-by-id="rowById"
+      :add-guarantee="addGuarantee"
+      :remove-guarantee="removeGuarantee"
+      @back="backFromGuarantee"
+      @continue="currentStep = 'confirm'"
+    />
 
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
-
-      <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-        <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
-          <span>Column</span><span>Role</span>
-        </div>
-        <div
-          v-for="col in columnHeaders"
-          :key="col"
-          class="grid grid-cols-2 items-center border-b border-gray-100 px-4 py-2.5 last:border-0 dark:border-slate-700/60"
-        >
-          <span class="truncate font-mono text-xs text-gray-700 dark:text-slate-300 pr-2">{{ col }}</span>
-          <select
-            :value="getColRole(col)"
-            :aria-label="`Role for ${col}`"
-            class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-            @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="criteria">Criteria</option>
-            <option value="email">Email</option>
-            <option value="first_name">First Name</option>
-            <option value="last_name">Last Name</option>
-            <option value="full_name">Full Name</option>
-            <option value="cluster">Cluster / Group</option>
-            <option value="ignore">Ignore</option>
-          </select>
-        </div>
-      </div>
-
-      <p v-if="mapError" class="mt-3 text-xs font-medium text-red-500">{{ mapError }}</p>
-
-      <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'upload'">← Back</button>
-        <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
-          @click="confirmMapping"
-        >
-          Continue →
-        </button>
-      </div>
-    </div>
-
-    <!-- ─── STEP 3: CLUSTERS ──────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'clusters'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Configure Clusters</h2>
-      <p class="mb-1 font-mono text-xs text-gray-500 dark:text-slate-400">
-        Column: <span class="font-bold text-[#34418F] dark:text-slate-300">{{ columnMapping?.clusterCol }}</span>
-      </p>
-      <p class="mb-6 font-mono text-xs text-gray-400 dark:text-slate-500">Set how many attendees each group can have. Total capacity is the sum of all quotas.</p>
-
-      <div class="space-y-3">
-        <div
-          v-for="cl in clusters"
-          :key="cl.value"
-          class="flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input"
-        >
-          <div class="flex-1">
-            <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
-            <p class="font-mono text-[0.65rem] text-gray-400 dark:text-slate-500 uppercase tracking-wide">{{ clusterRawCount(cl.value) }} respondents</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <label :for="`cluster-max-${cl.value}`" class="font-mono text-xs text-gray-500 dark:text-slate-400">Max:</label>
-            <input
-              :id="`cluster-max-${cl.value}`"
-              :value="cl.maxCount"
-              type="number"
-              min="0"
-              class="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-sm font-bold text-center outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-              @input="cl.maxCount = Math.max(0, parseInt(($event.target as HTMLInputElement).value) || 0)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-4 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-800/50">
-        <p class="font-mono text-xs text-gray-600 dark:text-slate-400">
-          Total capacity: <span class="font-bold text-[#34418F] dark:text-slate-200">{{ totalClusterMax }}</span> attendees
-        </p>
-      </div>
-
-      <p v-if="clusterError" class="mt-3 text-xs font-medium text-red-500">{{ clusterError }}</p>
-
-      <div class="mt-6 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'map-columns'">← Back</button>
-        <button
-          :disabled="savingClusters"
-          :class="[
-            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
-            savingClusters ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110 hover:-translate-y-0.5',
-          ]"
-          @click="saveClusters"
-        >
-          {{ savingClusters ? 'Saving…' : 'Continue →' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- ─── STEP 4: CLUSTER FILTERS (or global filter if no clusters) ─── -->
-    <div v-else-if="currentStep === 'cluster-filter' || currentStep === 'filter'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Selection Criteria</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">
-        Check the answer values you want to <span class="font-bold">include</span> in the raffle. Unchecked = excluded. Empty column = no filter applied.
-      </p>
-
-      <!-- Cluster-aware filter accordion -->
-      <template v-if="clusters.length">
-        <div v-for="cl in clusters" :key="cl.value" class="mb-4 overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-          <button
-            class="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-slate-800/40"
-            @click="toggleClusterOpen(cl.value)"
-          >
-            <div>
-              <p class="font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</p>
-              <p class="text-xs font-medium text-gray-400 dark:text-slate-500">
-                max {{ cl.maxCount }} · {{ clusterEligibleCount(cl.value) }} eligible of {{ clusterRawCount(cl.value) }} total
-              </p>
-            </div>
-            <span class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ openClusters.has(cl.value) ? '▲' : '▼' }}</span>
-          </button>
-
-          <div v-if="openClusters.has(cl.value)" class="border-t border-gray-100 px-4 py-4 dark:border-slate-700">
-            <div v-if="!criteriaColumns.length" class="font-mono text-xs text-gray-400 dark:text-slate-500">No criteria columns configured.</div>
-            <div v-for="col in criteriaColumns" :key="col" class="mb-4 last:mb-0">
-              <p class="mb-2 text-sm font-semibold text-gray-600 dark:text-slate-400">{{ col }}</p>
-              <div class="flex flex-wrap gap-2">
-                <label
-                  v-for="val in uniqueValuesForCluster(col, cl.value)"
-                  :key="val"
-                  class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
-                  :class="isChecked(cl.value, col, val)
-                    ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
-                    : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="isChecked(cl.value, col, val)"
-                    class="h-3.5 w-3.5 accent-[#34418F]"
-                    @change="toggleFilter(cl.value, col, val)"
-                  />
-                  <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
-                  <span class="font-mono text-[0.6rem] text-gray-400 dark:text-slate-500">({{ countInCluster(col, val, cl.value) }})</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <!-- No-cluster global filter -->
-      <template v-else>
-        <div v-for="col in criteriaColumns" :key="col" class="mb-6 last:mb-0">
-          <p class="mb-2 text-sm font-semibold text-gray-600 dark:text-slate-400">{{ col }}</p>
-          <div class="flex flex-wrap gap-2">
-            <label
-              v-for="val in uniqueValues(col)"
-              :key="val"
-              class="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors"
-              :class="isChecked(null, col, val)
-                ? 'border-[#34418F] bg-[#34418F]/10 dark:border-slate-400 dark:bg-slate-700/50'
-                : 'border-gray-200 bg-white/60 hover:border-gray-300 dark:border-slate-600 dark:bg-mica-navy-input'"
-            >
-              <input
-                type="checkbox"
-                :checked="isChecked(null, col, val)"
-                class="h-3.5 w-3.5 accent-[#34418F]"
-                @change="toggleFilter(null, col, val)"
-              />
-              <span class="font-mono text-xs text-gray-700 dark:text-slate-300">{{ val }}</span>
-              <span class="font-mono text-[0.6rem] text-gray-400 dark:text-slate-500">({{ countInAll(col, val) }})</span>
-            </label>
-          </div>
-        </div>
-        <div v-if="!criteriaColumns.length" class="font-mono text-xs text-gray-400 dark:text-slate-500">No criteria columns configured.</div>
-      </template>
-
-      <!-- Live summary -->
-      <div class="mt-6 rounded-xl bg-gray-50 px-4 py-3 dark:bg-slate-800/50">
-        <p class="font-mono text-xs text-gray-600 dark:text-slate-400">
-          Total eligible: <span class="font-bold text-[#34418F] dark:text-slate-200">{{ totalEligible }}</span>
-        </p>
-      </div>
-
-      <div class="mt-6 flex gap-3">
-        <button
-          :disabled="savingCriteria"
-          class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-400"
-          @click="leaveCriteria('back')"
-        >← Back</button>
-        <button
-          :disabled="savingCriteria"
-          :class="[
-            'flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 dark:bg-slate-700',
-            savingCriteria ? 'cursor-not-allowed opacity-50' : 'hover:brightness-110 hover:-translate-y-0.5',
-          ]"
-          @click="leaveCriteria('forward')"
-        >
-          {{ savingCriteria ? 'Saving…' : 'Continue →' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- ─── STEP 5: GUARANTEE ─────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'guarantee'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Manual Guarantees</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Add specific people who are guaranteed a slot regardless of the raffle. These reduce the available raffle slots.</p>
-
-      <!-- Search -->
-      <div class="mb-4">
-        <input
-          v-model="guaranteeSearch"
-          type="text"
-          placeholder="Search by name or email…"
-          aria-label="Search guarantees"
-          class="w-full rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-2.5 text-sm outline-none transition-colors focus:border-[#34418F] dark:bg-mica-navy-input dark:border-slate-600 dark:text-slate-200 dark:placeholder-slate-400"
-        />
-      </div>
-
-      <!-- Search results -->
-      <div v-if="guaranteeSearch.trim() && guaranteeSearchResults.length" class="mb-4 max-h-52 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-600">
-        <div
-          v-for="row in guaranteeSearchResults"
-          :key="row.id"
-          class="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-0 dark:border-slate-700/60"
-        >
-          <div>
-            <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(row) }}</p>
-            <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(row) }}
-              <span v-if="columnMapping?.clusterCol" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
-                {{ row.rawData[columnMapping.clusterCol] ?? '—' }}
-              </span>
-            </p>
-          </div>
-          <button
-            v-if="!guaranteedRowIds.has(row.id)"
-            class="rounded-lg bg-[#34418F] px-3 py-1 font-mono text-xs text-white transition-colors hover:brightness-110 dark:bg-slate-600"
-            @click="addGuarantee(row.id)"
-          >
-            Add
-          </button>
-          <span v-else class="font-mono text-xs text-emerald-500">Added ✓</span>
-        </div>
-      </div>
-      <div v-else-if="guaranteeSearch.trim() && !guaranteeSearchResults.length" class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">No matches found.</div>
-
-      <!-- Guaranteed list -->
-      <div v-if="guaranteedRowIds.size" class="mb-4">
-        <p class="mb-2 text-data text-xs font-semibold text-gray-500 dark:text-slate-400">Guaranteed ({{ guaranteedRowIds.size }})</p>
-        <div class="max-h-52 overflow-y-auto rounded-xl border border-gray-200 dark:border-slate-600">
-          <div
-            v-for="rowId in [...guaranteedRowIds]"
-            :key="rowId"
-            class="flex items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-0 dark:border-slate-700/60"
-          >
-            <div>
-              <p class="font-mono text-sm text-gray-800 dark:text-slate-200">{{ getDisplayName(rowById(rowId)) }}</p>
-              <p class="font-mono text-xs text-gray-400 dark:text-slate-500">{{ getEmail(rowById(rowId)) }}
-                <span v-if="columnMapping?.clusterCol && rowById(rowId)" class="ml-2 rounded bg-[#34418F]/10 px-1.5 py-0.5 text-[0.6rem] font-bold text-[#34418F] dark:bg-slate-700 dark:text-slate-300">
-                  {{ rowById(rowId)!.rawData[columnMapping!.clusterCol!] ?? '—' }}
-                </span>
-              </p>
-            </div>
-            <button
-              class="rounded-lg border border-red-200 px-2 py-1 font-mono text-xs text-red-500 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/10"
-              @click="removeGuarantee(rowId)"
-            >✕</button>
-          </div>
-        </div>
-      </div>
-      <p v-else class="mb-4 font-mono text-xs text-gray-400 dark:text-slate-500">No guaranteed attendees yet.</p>
-
-      <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="backFromGuarantee">← Back</button>
-        <button
-          class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 dark:bg-slate-700"
-          @click="currentStep = 'confirm'"
-        >
-          Continue →
-        </button>
-      </div>
-    </div>
-
-    <!-- ─── STEP 6: CONFIRM ───────────────────────────────────────────── -->
-    <div v-else-if="currentStep === 'confirm'" class="mica-card relative rounded-3xl border border-gray-200 dark:border-slate-600 p-8">
-      <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-      <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
-
-      <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Confirm & Generate</h2>
-      <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">Once you finalize, QR codes will be generated and downloaded.</p>
-
-      <!-- Max attendees edit -->
-      <div class="mb-6 flex items-center gap-3 rounded-xl border border-gray-200 bg-white/50 px-4 py-3 dark:border-slate-600 dark:bg-mica-navy-input">
-        <label for="selection-max-attendees" class="text-sm font-semibold text-gray-600 dark:text-slate-400">Max Attendees:</label>
-        <input
-          id="selection-max-attendees"
-          v-model.number="maxAttendeesEdit"
-          type="number"
-          min="1"
-          placeholder="Unlimited"
-          class="w-28 rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-mono text-sm font-bold outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
-        />
-        <span class="font-mono text-[0.65rem] text-gray-400 dark:text-slate-500">(auto-sum from clusters: {{ totalClusterMax || '—' }})</span>
-      </div>
-
-      <!-- Cluster summary table -->
-      <div v-if="clusters.length" class="mb-6 overflow-x-auto rounded-xl border border-gray-200 dark:border-slate-600">
-        <div class="min-w-[520px]">
-        <div class="text-data grid grid-cols-5 border-b border-gray-100 bg-gray-50/60 px-4 py-2 text-xs font-semibold text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
-          <span class="col-span-2">Cluster</span>
-          <span class="text-center">Quota</span>
-          <span class="text-center">Guaranteed</span>
-          <span class="text-center">Raffle pool</span>
-        </div>
-        <div
-          v-for="cl in clusters"
-          :key="cl.value"
-          class="grid grid-cols-5 items-center border-b border-gray-100 px-4 py-3 last:border-0 dark:border-slate-700/60"
-        >
-          <span class="col-span-2 font-mono text-sm font-bold text-gray-800 dark:text-slate-200">{{ cl.value }}</span>
-          <span class="text-center font-mono text-sm text-gray-700 dark:text-slate-300">{{ cl.maxCount }}</span>
-          <span class="text-center font-mono text-sm text-gray-700 dark:text-slate-300">{{ guaranteedCountForCluster(cl.value) }}</span>
-          <div class="text-center">
-            <span class="font-mono text-sm text-gray-700 dark:text-slate-300">{{ rafflePoolForCluster(cl.value) }}</span>
-            <p
-              v-if="needsRaffleForCluster(cl.value)"
-              class="font-mono text-[0.6rem] text-amber-500 uppercase tracking-wide"
-            >raffle</p>
-            <p v-else-if="unfilledSlotsForCluster(cl.value) > 0" class="font-mono text-[0.6rem] text-blue-400 uppercase tracking-wide">
-              {{ unfilledSlotsForCluster(cl.value) }} unfilled
-            </p>
-            <p v-else class="font-mono text-[0.6rem] text-emerald-500 uppercase tracking-wide">all fit</p>
-          </div>
-        </div>
-        </div>
-      </div>
-
-      <!-- No-cluster summary -->
-      <div v-else class="mb-6 grid grid-cols-3 gap-3">
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ guaranteedRowIds.size }}</p>
-          <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Guaranteed</p>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ globalEligibleRows.length }}</p>
-          <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Eligible</p>
-        </div>
-        <div class="rounded-xl border border-gray-200 bg-white/50 px-4 py-3 text-center dark:border-slate-600 dark:bg-mica-navy-input">
-          <p class="font-mono text-2xl font-black text-[#34418F] dark:text-slate-200">{{ maxAttendeesEdit ?? '∞' }}</p>
-          <p class="font-mono text-[0.6rem] uppercase tracking-widest text-gray-400 dark:text-slate-500">Max slots</p>
-        </div>
-      </div>
-
-      <!-- Unfilled warning -->
-      <div v-if="hasUnfilledClusters" class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 font-mono text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/10 dark:text-amber-400">
-        Some clusters have fewer eligible respondents than their quota — those slots will remain unfilled. You can re-raffle after finalization once more respondents are available.
-      </div>
-
-      <div class="mt-2 flex gap-3">
-        <button class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="currentStep = 'guarantee'">← Back</button>
-        <button
-          :disabled="finalizing"
-          :class="[
-            'btn-gold flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200',
-            finalizing ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110 hover:-translate-y-0.5',
-          ]"
-          @click="finalize"
-        >
-          {{ finalizingLabel }}
-        </button>
-      </div>
-    </div>
+    <ConfirmStep
+      v-else-if="currentStep === 'confirm'"
+      v-model="maxAttendeesEdit"
+      :clusters="clusters"
+      :total-cluster-max="totalClusterMax"
+      :guaranteed-row-ids="guaranteedRowIds"
+      :global-eligible-rows="globalEligibleRows"
+      :has-unfilled-clusters="hasUnfilledClusters"
+      :finalizing="finalizing"
+      :finalizing-label="finalizingLabel"
+      :guaranteed-count-for-cluster="guaranteedCountForCluster"
+      :raffle-pool-for-cluster="rafflePoolForCluster"
+      :needs-raffle-for-cluster="needsRaffleForCluster"
+      :unfilled-slots-for-cluster="unfilledSlotsForCluster"
+      @back="currentStep = 'guarantee'"
+      @finalize="finalize"
+    />
 
   </section>
 </template>
@@ -482,6 +124,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 import { selectAttendees } from '@/lib/tix/selection'
+import { acceptsSpreadsheetFile, MAX_SPREADSHEET_ROWS, parseSpreadsheet } from '@/lib/tix/spreadsheet'
+import UploadStep from '@/components/tix/selection/UploadStep.vue'
+import MapColumnsStep from '@/components/tix/selection/MapColumnsStep.vue'
+import ClustersStep from '@/components/tix/selection/ClustersStep.vue'
+import CriteriaStep from '@/components/tix/selection/CriteriaStep.vue'
+import GuaranteeStep from '@/components/tix/selection/GuaranteeStep.vue'
+import ConfirmStep from '@/components/tix/selection/ConfirmStep.vue'
 import type { CsvRow, ColumnMapping, ClusterConfig } from '@/types/selection'
 
 const route  = useRoute()
@@ -520,7 +169,6 @@ const stepIndex = computed(() => visibleSteps.value.findIndex(s => s.key === cur
 // ── CSV upload ────────────────────────────────────────────────────────────────
 const csvFile   = ref<File | null>(null)
 const csvError  = ref('')
-const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const allRows   = ref<CsvRow[]>([])
 const columnHeaders = ref<string[]>([])
@@ -573,50 +221,20 @@ function autoDetectRoles(headers: string[]): Record<string, string> {
   return roles
 }
 
-// ── XLSX parsing ──────────────────────────────────────────────────────────────
-async function parseXlsx(buffer: ArrayBuffer): Promise<{ headers: string[]; rows: Record<string, string>[] }> {
-  const XLSX = await import('xlsx')
-  const workbook = XLSX.read(buffer, { type: 'array' })
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '', raw: false })
 
-  if (raw.length < 2) throw new Error('File must have a header row and at least one data row.')
-
-  const headers = (raw[0] as unknown[])
-    .map(h => String(h ?? '').trim())
-    .filter(Boolean)
-
-  const rows = (raw.slice(1) as unknown[][])
-    .filter(row => row.some(cell => cell !== '' && cell !== undefined && cell !== null))
-    .map(row => {
-      const obj: Record<string, string> = {}
-      for (let i = 0; i < headers.length; i++) {
-        obj[headers[i]] = String(row[i] ?? '').trim()
-      }
-      return obj
-    })
-
-  return { headers, rows }
-}
-
-function onDrop(e: DragEvent) {
-  const file = e.dataTransfer?.files[0]
-  if (file) loadFile(file)
-}
-function onFileChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) loadFile(file)
-}
 function loadFile(file: File) {
   csvError.value = ''
-  if (!file.name.endsWith('.xlsx')) {
+  if (!acceptsSpreadsheetFile(file.name)) {
     csvError.value = 'Please upload an .xlsx file.'
     return
   }
   const reader = new FileReader()
   reader.onload = async ev => {
     try {
-      const { headers, rows } = await parseXlsx(ev.target?.result as ArrayBuffer)
+      const buffer = ev.target?.result
+      if (!(buffer instanceof ArrayBuffer)) throw new Error('Invalid file.')
+      const { headers, rows } = await parseSpreadsheet(buffer)
+      if (rows.length > MAX_SPREADSHEET_ROWS) throw new Error('Spreadsheets are limited to 5,000 rows.')
       if (!rows.length) throw new Error('No data rows found in the spreadsheet.')
       csvFile.value = file
       columnHeaders.value = headers
@@ -633,6 +251,10 @@ function loadFile(file: File) {
 
 async function uploadCsv() {
   if (!allRows.value.length) return
+  if (allRows.value.length > MAX_SPREADSHEET_ROWS) {
+    toast.error('Spreadsheets are limited to 5,000 rows.')
+    return
+  }
   uploading.value = true
   try {
     const mapping = buildMapping()
@@ -640,8 +262,8 @@ async function uploadCsv() {
       method: 'POST',
       body: JSON.stringify({ rows: allRows.value.map(r => r.rawData), columnMapping: mapping }),
     })
-    const data = await res.json() as { status: string; message?: string; rowIds?: string[] }
-    if (!res.ok) throw new Error(data.message ?? 'Upload failed.')
+    const data = await res.json() as { status: string; message?: string; error?: { message?: string }; rowIds?: string[] }
+    if (!res.ok) throw new Error(data.message ?? data.error?.message ?? 'Upload failed.')
     if (data.rowIds) {
       allRows.value = allRows.value.map((r, i) => ({ ...r, id: data.rowIds![i] ?? r.id }))
     }
@@ -701,6 +323,11 @@ function clusterRawCount(value: string): number {
   if (!columnMapping.value?.clusterCol) return 0
   const col = columnMapping.value.clusterCol
   return allRows.value.filter(r => r.rawData[col] === value).length
+}
+
+function setClusterMax(value: string, maxCount: number) {
+  const cluster = clusters.value.find((item) => item.value === value)
+  if (cluster) cluster.maxCount = maxCount
 }
 
 async function persistClusters() {

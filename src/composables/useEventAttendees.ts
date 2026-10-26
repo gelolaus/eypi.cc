@@ -32,6 +32,32 @@ function isApcAttendee(attendee: AttendeeRow): boolean {
   return cluster.includes('asia pacific college') || cluster.includes('jpcs')
 }
 
+async function downloadAttendeeWorkbook(
+  filename: string,
+  sheetName: string,
+  rows: { firstName: string; lastName: string; email: string; cluster: string; qr: string }[],
+) {
+  const exceljs = await import('exceljs')
+  const workbook = new exceljs.Workbook()
+  const sheet = workbook.addWorksheet(sheetName)
+  sheet.columns = [
+    { header: 'First Name', key: 'firstName' },
+    { header: 'Last Name', key: 'lastName' },
+    { header: 'Email Address', key: 'email' },
+    { header: 'Cluster', key: 'cluster' },
+    { header: 'QR Code File Name', key: 'qr' },
+  ]
+  for (const row of rows) sheet.addRow(row)
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function useEventAttendees(slug: string) {
   const toast = useToast()
   const attendees = ref<AttendeeRow[]>([])
@@ -116,25 +142,19 @@ export function useEventAttendees(slug: string) {
     if (!attendees.value.length) return
     exportingXlsx.value = true
     try {
-      const XLSX = await import('xlsx')
       const toRow = (attendee: AttendeeRow) => ({
-        'First Name': (attendee.first_name ?? '').trim(),
-        'Last Name': (attendee.last_name ?? '').trim(),
-        'Email Address': (attendee.email ?? '').trim(),
-        Cluster: (attendee.cluster_value ?? '').trim(),
-        'QR Code File Name': attendeeQrFileName(qrIdentity(attendee)),
+        firstName: (attendee.first_name ?? '').trim(),
+        lastName: (attendee.last_name ?? '').trim(),
+        email: (attendee.email ?? '').trim(),
+        cluster: (attendee.cluster_value ?? '').trim(),
+        qr: attendeeQrFileName(qrIdentity(attendee)),
       })
       const active = attendees.value.filter((attendee) => attendee.status !== 'removed')
       const apc = active.filter((attendee) => isApcAttendee(attendee)).map(toRow)
       const nonApc = active.filter((attendee) => !isApcAttendee(attendee)).map(toRow)
 
-      const workbookApc = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbookApc, XLSX.utils.json_to_sheet(apc), 'APC Attendees')
-      XLSX.writeFile(workbookApc, `${slug}-attendees-apc.xlsx`)
-
-      const workbookOther = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbookOther, XLSX.utils.json_to_sheet(nonApc), 'Other Attendees')
-      XLSX.writeFile(workbookOther, `${slug}-attendees-non-apc.xlsx`)
+      await downloadAttendeeWorkbook(`${slug}-attendees-apc.xlsx`, 'APC Attendees', apc)
+      await downloadAttendeeWorkbook(`${slug}-attendees-non-apc.xlsx`, 'Other Attendees', nonApc)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Export failed.')
     } finally {

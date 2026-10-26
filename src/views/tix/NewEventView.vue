@@ -214,6 +214,7 @@ import { ref, computed, watch } from 'vue'
 import { useReveal } from '@/composables/useReveal'
 import { useToast } from '@/composables/useToast'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
+import { parseAttendeeCsv } from '@/lib/tix/spreadsheet'
 import { useRouter } from 'vue-router'
 
 useReveal()
@@ -249,37 +250,6 @@ watch(() => form.value.name, (name) => { form.value.slug = toSlug(name) })
 function sanitizeSlug(e: Event) { form.value.slug = toSlug((e.target as HTMLInputElement).value) }
 
 // ── CSV handling ──────────────────────────────────────────────────────────────
-function parseCSV(text: string): Attendee[] {
-  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim())
-  if (lines.length < 2) throw new Error('CSV must have a header row and at least one data row.')
-
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[\s_"]/g, ''))
-  const firstIdx = headers.findIndex(h => ['firstname', 'first'].includes(h))
-  const lastIdx  = headers.findIndex(h => ['lastname', 'last'].includes(h))
-  const emailIdx = headers.findIndex(h => h === 'email' || h === 'emailaddress')
-
-  if (firstIdx === -1 || lastIdx === -1 || emailIdx === -1) {
-    throw new Error('CSV must have first_name, last_name, and email columns.')
-  }
-
-  return lines.slice(1).map(line => {
-    // Simple quoted-field parser
-    const cols: string[] = []
-    let cur = ''
-    let inQuote = false
-    for (const ch of line) {
-      if (ch === '"') { inQuote = !inQuote }
-      else if (ch === ',' && !inQuote) { cols.push(cur.trim()); cur = '' }
-      else { cur += ch }
-    }
-    cols.push(cur.trim())
-    return {
-      firstName: (cols[firstIdx] ?? '').replace(/^"|"$/g, '').trim(),
-      lastName:  (cols[lastIdx]  ?? '').replace(/^"|"$/g, '').trim(),
-      email:     (cols[emailIdx] ?? '').replace(/^"|"$/g, '').trim(),
-    }
-  }).filter(a => a.email)
-}
 
 function onDrop(e: DragEvent) {
   const file = e.dataTransfer?.files[0]
@@ -295,7 +265,7 @@ function loadFile(file: File) {
   const reader = new FileReader()
   reader.onload = ev => {
     try {
-      parsedAttendees.value = parseCSV(ev.target?.result as string)
+      parsedAttendees.value = parseAttendeeCsv(ev.target?.result as string)
       if (!parsedAttendees.value.length) throw new Error('No valid rows found in CSV.')
     } catch (err: unknown) {
       csvError.value = err instanceof Error ? err.message : 'Invalid CSV.'

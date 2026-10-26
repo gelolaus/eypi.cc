@@ -1,0 +1,65 @@
+<template>
+  <div class="mica-card relative rounded-3xl border border-gray-200 p-8 dark:border-slate-600">
+    <div class="absolute left-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <div class="absolute right-3 top-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <div class="absolute bottom-3 left-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+    <div class="absolute bottom-3 right-3 h-2 w-2 rounded-full bg-gray-400 shadow-inner" />
+
+    <h2 class="mb-1 text-sm font-semibold text-[#34418F] dark:text-slate-300">Map Columns</h2>
+    <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
+
+    <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
+      <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+        <span>Column</span><span>Role</span>
+      </div>
+      <div
+        v-for="col in columnHeaders"
+        :key="col"
+        class="grid grid-cols-2 items-center border-b border-gray-100 px-4 py-2.5 last:border-0 dark:border-slate-700/60"
+      >
+        <span class="truncate pr-2 font-mono text-xs text-gray-700 dark:text-slate-300">{{ col }}</span>
+        <select
+          :value="getColRole(col)"
+          :aria-label="`Role for ${col}`"
+          class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+          @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
+        >
+          <option value="criteria">Criteria</option>
+          <option value="email">Email</option>
+          <option value="first_name">First Name</option>
+          <option value="last_name">Last Name</option>
+          <option value="full_name">Full Name</option>
+          <option value="cluster">Cluster / Group</option>
+          <option value="ignore">Ignore</option>
+        </select>
+      </div>
+    </div>
+
+    <p v-if="mapError" class="mt-3 text-xs font-medium text-red-500">{{ mapError }}</p>
+
+    <div class="mt-6 flex gap-3">
+      <button type="button" class="rounded-xl border border-gray-200 px-4 py-3 text-xs font-mediumr text-gray-500 transition-colors hover:border-[#34418F] hover:text-[#34418F] dark:border-slate-600 dark:text-slate-400" @click="emit('back')">← Back</button>
+      <button
+        type="button"
+        class="flex-1 rounded-xl bg-[#34418F] px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 dark:bg-slate-700"
+        @click="emit('continue')"
+      >
+        Continue →
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  columnHeaders: string[]
+  mapError: string
+  getColRole: (col: string) => string
+  setColRole: (col: string, role: string) => void
+}>()
+
+const emit = defineEmits<{
+  back: []
+  continue: []
+}>()
+</script>
