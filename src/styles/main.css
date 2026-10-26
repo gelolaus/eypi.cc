@@ -290,8 +290,16 @@
       transform: translate(4px, -4px);
     }
 
-    .scroll-top-btn:hover {
-      transform: translateY(-3px) scale(1.05);
+    .btn-primary:not(:disabled):hover {
+      filter: brightness(1.12);
+    }
+
+    .btn-secondary:not(:disabled):hover {
+      border-color: var(--color-primary);
+    }
+
+    .btn-danger:not(:disabled):hover {
+      filter: brightness(1.12);
     }
   }
 }
@@ -498,7 +506,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
   .btn-primary,
   .btn-secondary,
-  .btn-ghost,
   .btn-danger {
     display: inline-flex;
     align-items: center;
@@ -517,37 +524,30 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
   .btn-primary:active,
   .btn-secondary:active,
-  .btn-ghost:active,
   .btn-danger:active {
     transform: translateY(1px);
   }
 
   .btn-primary:disabled,
   .btn-secondary:disabled,
-  .btn-ghost:disabled,
   .btn-danger:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 
   .btn-primary {
-    background-color: #34418F;
+    background-color: var(--color-primary);
     color: #ffffff;
   }
 
   html.dark .btn-primary {
-    background-color: #8FA0E8;
+    background-color: var(--color-primary);
     color: #0A0A0A;
   }
 
   .btn-secondary {
     background-color: var(--color-surface);
     border-color: var(--color-border);
-    color: var(--color-text);
-  }
-
-  .btn-ghost {
-    background-color: transparent;
     color: var(--color-text);
   }
 
@@ -559,12 +559,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   .btn-lg {
     min-height: 3rem;
     padding-inline: 1.5rem;
-  }
-
-  .btn-sm {
-    min-height: 2.25rem;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
   }
 
   .section-card {
@@ -628,7 +622,6 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
   .btn-primary,
   .btn-secondary,
-  .btn-ghost,
   .btn-danger,
   .control {
     transition: none;
