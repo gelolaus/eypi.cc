@@ -7,8 +7,31 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const backendDir = join(__dirname, '..')
 
+// Mirrors shared/linksKv.ts encodeLinkKv (v2). The parity test keeps them aligned.
 function encodeLinkKvEntry(entry) {
-  return JSON.stringify(entry)
+  const payload = { v: 2, id: entry.id, url: entry.url }
+  if (entry.exp !== undefined) payload.exp = entry.exp
+  if (entry.pw) payload.pw = 1
+  return JSON.stringify(payload)
+}
+
+function epochSeconds(value) {
+  if (!value) return undefined
+  const text = String(value)
+  const ms = Date.parse(text.includes('T') ? text : `${text.replace(' ', 'T')}Z`)
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : undefined
+}
+
+export function expectedKvValue(row) {
+  const entry = { id: String(row.id), url: String(row.original_url) }
+  const exp = epochSeconds(row.expires_at)
+  if (exp !== undefined) entry.exp = exp
+  if (row.password_hash) entry.pw = true
+  return encodeLinkKvEntry(entry)
+}
+
+export function staleValues(expected, stored) {
+  return [...expected.keys()].filter((slug) => stored.has(slug) && stored.get(slug) !== expected.get(slug))
 }
 
 export function diffKv(dbLinks, kvKeys) {
@@ -36,7 +59,10 @@ export function liveLinksSql(columnNames) {
     filters.push("(expires_at IS NULL OR datetime(expires_at) > datetime('now'))")
   }
   const where = filters.length === 0 ? '' : ` WHERE ${filters.join(' AND ')}`
-  return `SELECT id, slug, original_url FROM links${where}`
+  const columns = ['id', 'slug', 'original_url']
+  if (names.has('expires_at')) columns.push('expires_at')
+  if (names.has('password_hash')) columns.push('password_hash')
+  return `SELECT ${columns.join(', ')} FROM links${where}`
 }
 
 export function parseKvKeyList(raw) {
@@ -54,7 +80,7 @@ export function parseKvKeyList(raw) {
 export function writePlan(args, diff) {
   if (args.dryRun) return { put: [], delete: [] }
   return {
-    put: diff.put,
+    put: args.reconcile ? [...diff.put, ...(diff.rewrite ?? [])] : diff.put,
     delete: args.reconcile ? diff.delete : [],
   }
 }
@@ -122,6 +148,17 @@ function listRemoteKvKeys(namespaceId) {
   return parseKvKeyList(raw)
 }
 
+function readRemoteKvValue(namespaceId, key) {
+  try {
+    return execSync(
+      `npx wrangler kv key get "${key}" --namespace-id=${namespaceId} --remote`,
+      { cwd: backendDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+  } catch {
+    return null
+  }
+}
+
 function bulkPut(namespaceId, entries) {
   const bulkPath = join(backendDir, '.links-kv-backfill.json')
   writeFileSync(bulkPath, JSON.stringify(entries))
@@ -168,7 +205,7 @@ Option B — one-off in PowerShell (same session only):
 
 The default is a dry run (print the diff, write nothing).
   --yes                 put live slugs missing from KV
-  --yes --reconcile     also delete KV slugs that are not enabled, non-expired links
+  --yes --reconcile     also rewrite stale values and delete KV slugs that are not live links
 `)
     process.exit(1)
   }
@@ -191,10 +228,19 @@ The default is a dry run (print the diff, write nothing).
     }
 
     const diff = diffKv([...dbByLower.keys()], [...kvByLower.keys()])
+    if (args.reconcile) {
+      const expected = new Map([...dbByLower].map(([slug, row]) => [slug, expectedKvValue(row)]))
+      const stored = new Map()
+      for (const slug of dbByLower.keys()) {
+        if (kvByLower.has(slug)) stored.set(slug, readRemoteKvValue(namespaceId, kvByLower.get(slug)))
+      }
+      diff.rewrite = staleValues(expected, stored)
+    }
     const plan = writePlan(args, diff)
 
     console.log(args.dryRun ? 'Dry run. No keys written.' : 'Writing LINKS_KV.')
     printSlugs('put', diff.put)
+    if (args.reconcile) printSlugs('rewrite (stored value differs)', diff.rewrite ?? [])
     printSlugs('delete', diff.delete)
     if (!args.reconcile && diff.delete.length > 0) {
       console.log('Stale keys were not deleted. Pass --yes --reconcile to delete them.')
@@ -213,7 +259,7 @@ The default is a dry run (print the diff, write nothing).
           const row = dbByLower.get(slug)
           return {
             key: slug,
-            value: encodeLinkKvEntry({ id: String(row.id), url: String(row.original_url) }),
+            value: expectedKvValue(row),
           }
         }),
       )
