@@ -1,40 +1,61 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
-    <div v-if="loading" role="status" aria-busy="true" class="space-y-6">
+    <div
+      v-if="loading"
+      role="status"
+      aria-busy="true"
+      class="space-y-6"
+    >
       <span class="sr-only">Loading</span>
-      <div class="h-48 rounded-3xl bg-g-border motion-safe:animate-pulse md:h-56" aria-hidden="true" />
-      <div class="h-8 w-2/3 rounded-lg bg-g-border motion-safe:animate-pulse" aria-hidden="true" />
-      <div class="h-40 rounded-3xl bg-g-border motion-safe:animate-pulse" aria-hidden="true" />
+      <div
+        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse md:h-56"
+        aria-hidden="true"
+      />
+      <div
+        class="h-8 w-2/3 rounded-lg bg-muted motion-safe:animate-pulse"
+        aria-hidden="true"
+      />
+      <div
+        class="h-40 rounded-3xl bg-muted motion-safe:animate-pulse"
+        aria-hidden="true"
+      />
     </div>
 
-    <div
+    <Card
       v-else-if="error"
-      class="mica-card rounded-3xl border border-g-border p-12 text-center"
+      class="items-center gap-0 rounded-3xl p-12 text-center"
     >
-      <p class="text-sm text-red-500">{{ error }}</p>
-      <router-link
-        to="/orgs"
-        class="mt-6 inline-flex min-h-11 items-center text-sm font-medium text-[#34418F] hover:text-[#DEAC4B] dark:text-slate-300"
-       
+      <p
+        role="alert"
+        class="text-sm text-destructive"
       >
-        ← Back to directory
-      </router-link>
-    </div>
+        {{ error }}
+      </p>
+      <Button
+        as-child
+        variant="ghost"
+        class="mt-6"
+      >
+        <router-link to="/orgs">
+          ← Back to directory
+        </router-link>
+      </Button>
+    </Card>
 
     <template v-else-if="profile">
       <div
         v-if="isPreview"
-        class="mb-6 rounded-2xl border border-[#DEAC4B]/40 bg-[#DEAC4B]/10 px-4 py-3 text-sm text-g-text"
+        class="mb-6 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm"
       >
-        Preview mode — showing unsaved changes. Save your profile in org settings to publish.
+        Preview mode: showing unsaved changes. Save your profile in org settings to publish.
       </div>
 
       <!-- Hero -->
-      <header class="reveal mb-8 overflow-hidden rounded-3xl border border-g-border bg-g-surface">
+      <Card class="mb-8 gap-0 overflow-hidden rounded-3xl p-0">
         <div class="relative">
           <div
             class="relative h-44 md:h-52"
-            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
+            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted'"
           >
             <img
               v-if="profile.bannerUrl"
@@ -48,13 +69,17 @@
           <div class="absolute bottom-0 left-6 z-10 translate-y-1/2 sm:left-8">
             <div
               v-if="profile.logoUrl"
-              class="h-28 w-28 shrink-0 overflow-hidden rounded-2xl border-4 border-g-surface bg-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+              class="size-28 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-card shadow-lg md:size-32"
             >
-              <img :src="profile.logoUrl" :alt="`${profile.name} logo`" class="h-full w-full object-cover" />
+              <img
+                :src="profile.logoUrl"
+                :alt="`${profile.name} logo`"
+                class="h-full w-full object-cover"
+              />
             </div>
             <div
               v-else
-              class="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl border-4 border-g-surface bg-[#34418F] font-mono text-2xl font-black text-white shadow-lg dark:border-slate-900 md:h-32 md:w-32"
+              class="flex size-28 shrink-0 items-center justify-center rounded-2xl border-4 border-card bg-primary font-mono text-2xl font-black text-primary-foreground shadow-lg md:size-32"
             >
               {{ orgInitials(profile.name) }}
             </div>
@@ -62,152 +87,141 @@
         </div>
 
         <div class="px-6 pb-8 pt-16 sm:px-8 md:pt-[4.5rem]">
-          <h1
-            class="text-section-title break-words"
-          >
+          <h1 class="break-words font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
             {{ profile.name }}
           </h1>
 
           <p
             v-if="profile.tagline"
-            class="mt-3 max-w-3xl text-sm leading-relaxed text-g-muted"
+            class="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground"
           >
             {{ profile.tagline }}
           </p>
 
-          <span
+          <Badge
             v-if="orgTypeDisplay"
- class="btn-gold inline-flex w-fit items-center rounded-full px-4 py-1.5 text-xs font-semibold"
+            variant="secondary"
+            class="h-6 px-3"
             :class="profile.tagline ? 'mt-2' : 'mt-3'"
           >
             {{ orgTypeDisplay }}
-          </span>
+          </Badge>
         </div>
-      </header>
+      </Card>
 
       <!-- Tabs -->
       <div class="mb-6 flex gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
-        <button
+        <Button
           v-for="(tab, i) in TABS"
           :key="tab"
           type="button"
-          :class="[
-            'min-h-11 shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
-            activeTab === i
-              ? 'bg-[#34418F] text-white dark:bg-slate-700 dark:text-slate-100'
-              : 'bg-transparent text-gray-400 hover:text-[#34418F] dark:text-slate-400 dark:hover:text-slate-200',
-          ]"
-         
+          :variant="activeTab === i ? 'secondary' : 'ghost'"
+          :aria-pressed="activeTab === i"
+          class="shrink-0 px-4 text-sm"
           @click="activeTab = i"
         >
           {{ tab }}
-        </button>
+        </Button>
       </div>
 
       <!-- About -->
-      <div v-if="activeTab === 0" class="reveal delay-2 mica-card rounded-3xl border border-g-border p-6 sm:p-8">
+      <Card
+        v-if="activeTab === 0"
+        class="gap-0 rounded-3xl p-6 sm:p-8"
+      >
         <div
           v-if="aboutHtml"
-          class="org-markdown prose-sm max-w-none text-sm leading-relaxed text-g-text"
+          class="max-w-none text-sm leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
           v-html="aboutHtml"
         />
-        <p v-else class="text-sm leading-relaxed text-g-muted">
+        <p
+          v-else
+          class="text-sm leading-relaxed text-muted-foreground"
+        >
           This organization hasn't added a description yet.
         </p>
 
-        <nav v-if="hasSocialLinks" class="mt-8 flex flex-wrap gap-2 border-t border-g-border pt-6">
-          <a
+        <nav
+          v-if="hasSocialLinks"
+          class="mt-8 flex flex-wrap gap-2 border-t border-border pt-6"
+        >
+          <Button
             v-for="link in visibleSocialLinks"
             :key="link.key"
-            :href="link.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex min-h-[44px] items-center justify-center rounded-full border border-g-border bg-white/60 px-4 py-2 text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent dark:bg-slate-900/60 dark:hover:text-g-accent"
-            :aria-label="link.label"
-           
+            as-child
+            variant="outline"
+            class="rounded-full px-4 text-sm"
           >
-            {{ link.label }}
-          </a>
+            <a
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="link.label"
+            >
+              {{ link.label }}
+            </a>
+          </Button>
         </nav>
-      </div>
+      </Card>
 
       <!-- Events -->
-      <div v-else class="reveal delay-2 grid gap-6 md:grid-cols-2">
-        <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
-          <h2 class="text-card-title mb-4 text-g-accent">
-            Upcoming events
+      <div
+        v-else
+        class="grid gap-6 md:grid-cols-2"
+      >
+        <Card
+          v-for="group in eventGroups"
+          :key="group.title"
+          class="gap-0 rounded-3xl p-6 sm:p-8"
+        >
+          <h2
+            class="mb-4 font-heading text-lg font-semibold"
+            :class="group.muted ? 'text-muted-foreground' : 'text-primary'"
+          >
+            {{ group.title }}
           </h2>
           <p
-            v-if="events.upcoming.length === 0"
-            class="text-sm leading-relaxed text-g-muted"
+            v-if="group.items.length === 0"
+            class="text-sm leading-relaxed text-muted-foreground"
           >
-            No upcoming events.
+            {{ group.empty }}
           </p>
-          <ul v-else class="space-y-4">
+          <ul
+            v-else
+            class="space-y-4"
+          >
             <li
-              v-for="event in events.upcoming"
+              v-for="event in group.items"
               :key="event.slug"
-              class="border-t border-g-border pt-4 first:border-t-0 first:pt-0"
+              class="border-t border-border pt-4 first:border-t-0 first:pt-0"
             >
               <router-link
                 :to="`/tix/${event.slug}`"
-                class="group block"
-               
+                class="group block rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
+                <p class="text-sm font-semibold group-hover:text-primary">
                   {{ event.name }}
                 </p>
-                <p class="text-data mt-1 text-xs text-g-muted">
+                <p class="mt-1 font-mono text-xs text-muted-foreground">
                   {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
                 </p>
-                <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
+                <p class="mt-0.5 text-sm text-muted-foreground">{{ event.location }}</p>
               </router-link>
             </li>
           </ul>
-        </section>
-
-        <section class="mica-card rounded-3xl border border-g-border p-6 sm:p-8">
-          <h2 class="text-card-title mb-4 text-g-muted">
-            Past events
-          </h2>
-          <p
-            v-if="events.past.length === 0"
-            class="text-sm leading-relaxed text-g-muted"
-          >
-            No past events yet.
-          </p>
-          <ul v-else class="space-y-4">
-            <li
-              v-for="event in events.past"
-              :key="event.slug"
-              class="border-t border-g-border pt-4 first:border-t-0 first:pt-0"
-            >
-              <router-link
-                :to="`/tix/${event.slug}`"
-                class="group block"
-               
-              >
-                <p class="text-sm font-semibold text-g-text group-hover:text-g-accent">
-                  {{ event.name }}
-                </p>
-                <p class="text-data mt-1 text-xs text-g-muted">
-                  {{ formatEventDate(event.eventDate) }} · {{ event.eventTime }}
-                </p>
-                <p class="mt-0.5 text-sm text-g-muted">{{ event.location }}</p>
-              </router-link>
-            </li>
-          </ul>
-        </section>
+        </Card>
       </div>
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useReveal } from '@/composables/useReveal'
 import { renderMarkdown } from '@/composables/useMarkdown'
 import {
   orgInitials,
@@ -217,8 +231,6 @@ import {
   type OrgSocialLinks,
 } from '@/types/orgs'
 import { orgTypeLabel } from '@/constants/orgTypes'
-
-useReveal()
 
 const TABS = ['About', 'Events'] as const
 const route = useRoute()
@@ -232,6 +244,11 @@ const events = ref<{ upcoming: PublicOrgEvent[]; past: PublicOrgEvent[] }>({
   past: [],
 })
 const activeTab = ref(0)
+
+const eventGroups = computed(() => [
+  { title: 'Upcoming events', items: events.value.upcoming, empty: 'No upcoming events.', muted: false },
+  { title: 'Past events', items: events.value.past, empty: 'No past events yet.', muted: true },
+])
 
 const aboutHtml = computed(() => renderMarkdown(profile.value?.aboutMarkdown))
 
@@ -338,29 +355,3 @@ watch(
 )
 </script>
 
-<style scoped>
-.org-markdown :deep(h1),
-.org-markdown :deep(h2),
-.org-markdown :deep(h3) {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.org-markdown :deep(p) {
-  margin-bottom: 0.75rem;
-}
-
-.org-markdown :deep(a) {
-  color: #34418F;
-  text-decoration: underline;
-}
-
-.org-markdown :deep(ul),
-.org-markdown :deep(ol) {
-  margin-left: 1.25rem;
-  margin-bottom: 0.75rem;
-}
-</style>

@@ -251,8 +251,8 @@ Failure modes the spec implies but no feature task would otherwise test, most li
 
 **Files:** Modify `views/orgs/*`, `views/settings/*`, `views/AccountView.vue`, `views/InvitesView.vue`, `components/orgs/InviteCard.vue`, `views/ReportView.vue`; update their tests.
 
-- [ ] **Step 1:** Update tests for structure only (cards, buttons, labelled inputs); invite pending badges still show counts.
-- [ ] **Step 2:** Restyle. Commit `feat(orgs): restyle org management, settings, account and invites`.
+- [x] **Step 1:** Update tests for structure only (cards, buttons, labelled inputs); invite pending badges still show counts.
+- [x] **Step 2:** Restyle. Commit `feat(orgs): restyle org management, settings, account and invites`.
 
 ### Task 13: DP and Forms
 

@@ -1,50 +1,53 @@
 <template>
-  <article class="mica-card flex flex-col gap-4 rounded-2xl border border-g-border p-5 text-left sm:flex-row sm:items-center">
+  <Card class="flex-col gap-4 rounded-2xl p-5 text-left sm:flex-row sm:items-center">
     <OrgLogo
       :logo-url="invite.logoUrl"
       :name="invite.orgName"
       size="md"
     />
     <div class="min-w-0 flex-1">
-      <h2 class="text-card-title text-g-text">
+      <h2 class="break-words font-heading text-lg font-semibold">
         {{ invite.orgName }}
       </h2>
-      <p class="mt-1 text-sm text-g-muted">
+      <p class="mt-1 text-sm text-muted-foreground">
         {{ meta }}
       </p>
       <p
         v-if="error"
         role="alert"
-        class="mt-2 text-sm text-red-500"
+        class="mt-2 text-sm text-destructive"
       >
         {{ error }}
       </p>
     </div>
     <div class="flex shrink-0 gap-2 max-sm:[&>button]:flex-1">
-      <button
+      <Button
         type="button"
-        class="btn-secondary text-sm"
+        variant="outline"
+        class="text-sm"
         :disabled="busy"
         @click="decline"
       >
         Decline
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+        class="px-4 text-sm"
         :disabled="busy"
         @click="accept"
       >
         Accept
-      </button>
+      </Button>
     </div>
-  </article>
+  </Card>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import OrgLogo from '@/components/OrgLogo.vue'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { formatInviteMeta, type OrgInvite } from '@/components/orgs/invites'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useDialog } from '@/composables/useDialog'

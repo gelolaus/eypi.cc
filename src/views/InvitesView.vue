@@ -6,14 +6,14 @@
     <p
       v-if="loadError"
       role="alert"
-      class="text-sm text-red-600 dark:text-red-400"
+      class="text-sm text-destructive"
     >
       {{ loadError }}
     </p>
     <PageSkeleton v-else-if="loading" />
     <p
       v-else-if="invites.length === 0"
-      class="text-sm text-g-muted"
+      class="text-sm text-muted-foreground"
     >
       No pending invites.
     </p>

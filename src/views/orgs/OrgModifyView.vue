@@ -4,18 +4,27 @@
       <OrgLockout />
     </div>
 
-    <div v-else-if="loading" role="status" aria-busy="true" class="space-y-4">
+    <div
+      v-else-if="loading"
+      role="status"
+      aria-busy="true"
+      class="space-y-4"
+    >
       <span class="sr-only">Loading</span>
-      <div class="h-10 w-1/2 rounded-lg bg-g-border motion-safe:animate-pulse" />
-      <div class="h-64 rounded-3xl bg-g-border motion-safe:animate-pulse" />
+      <div class="h-10 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
+      <div class="h-64 rounded-3xl bg-muted motion-safe:animate-pulse" />
     </div>
 
-    <div v-else-if="error" class="mica-card rounded-3xl p-8 text-center text-sm text-red-500">
+    <div
+      v-else-if="error"
+      role="alert"
+      class="rounded-3xl border border-destructive/30 bg-destructive/10 p-8 text-center text-sm text-destructive"
+    >
       {{ error }}
     </div>
 
     <template v-else-if="org && profileForm">
-      <header class="mb-6 flex flex-col gap-3 border-b border-g-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <header class="flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div class="flex min-w-0 items-start gap-4">
           <OrgLogo
             :logo-url="profileForm.logoUrl"
@@ -23,37 +32,37 @@
             size="md"
           />
           <div class="min-w-0">
-            <h2 class="text-section-title break-words">{{ org.org_name }}</h2>
+            <h2 class="break-words font-heading text-xl font-semibold tracking-tight">{{ org.org_name }}</h2>
           </div>
         </div>
-        <span
-          class="inline-flex w-fit rounded-full border px-3 py-1 text-sm font-medium"
-          :class="isOwner ? 'border-g-accent/40 bg-g-accent/10 text-g-accent' : 'border-g-border text-g-muted'"
+        <Badge
+          :variant="isOwner ? 'default' : 'outline'"
+          class="h-7 px-3 text-sm"
         >
           {{ isOwner ? 'Owner' : 'Member' }}
-        </span>
+        </Badge>
       </header>
 
       <!-- Public directory profile -->
-      <AppSection class="mb-6">
-        <div class="mb-6 flex flex-col gap-3 border-b border-g-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <AppSection>
+        <div class="mb-6 flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h3 class="text-section-title">Public profile</h3>
-            <p class="mt-1 text-sm text-g-muted">Shown on /orgs when listed in the directory.</p>
+            <h3 class="font-heading text-xl font-semibold tracking-tight">Public profile</h3>
+            <p class="mt-1 text-sm text-muted-foreground">Shown on /orgs when listed in the directory.</p>
           </div>
-          <button
+          <Button
             type="button"
-            class="btn-secondary shrink-0 gap-1 text-sm text-g-muted transition-colors hover:border-g-accent hover:text-g-accent"
-           
+            variant="outline"
+            class="shrink-0 gap-1 text-sm"
             @click="openPreview"
           >
             Preview ↗
-          </button>
+          </Button>
         </div>
 
-        <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-g-border bg-white/20 p-4 dark:bg-slate-900/20">
+        <div class="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/40 p-4">
           <div>
-            <p class="text-sm font-medium text-g-text">List in /orgs directory</p>
+            <p class="text-sm font-medium">List in /orgs directory</p>
           </div>
           <button
             type="button"
@@ -61,259 +70,421 @@
             :aria-checked="profileForm.isPublicCatalog"
             :aria-label="profileForm.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
             :disabled="togglingCatalog"
-            class="group relative flex h-11 w-14 shrink-0 items-center justify-center disabled:opacity-50"
+            class="group relative flex h-11 w-14 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
             @click="togglePublicCatalog"
           >
             <span
               class="relative block h-7 w-12 rounded-full transition-colors"
-              :class="profileForm.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+              :class="profileForm.isPublicCatalog ? 'bg-primary' : 'bg-input'"
             >
               <span
-                class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
+                class="pointer-events-none absolute left-0.5 top-0.5 block size-6 rounded-full bg-background shadow transition-transform"
                 :class="profileForm.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
               />
             </span>
           </button>
         </div>
 
-        <form class="space-y-5" @submit.prevent="saveProfile">
+        <form
+          class="space-y-5"
+          @submit.prevent="saveProfile"
+        >
           <div class="flex flex-col gap-2">
-            <label for="tagline" class="text-sm font-medium text-g-muted">Tagline</label>
-            <input id="tagline" v-model="profileForm.tagline" type="text" maxlength="160" class="field-input" />
+            <Label for="tagline">Tagline</Label>
+            <Input
+              id="tagline"
+              v-model="profileForm.tagline"
+              type="text"
+              maxlength="160"
+            />
           </div>
 
           <div class="flex flex-col gap-2">
-            <label for="org-type" class="text-sm font-medium text-g-muted">Org type</label>
-            <select id="org-type" v-model="profileForm.orgType" class="field-input">
+            <Label for="org-type">Org type</Label>
+            <select
+              id="org-type"
+              v-model="profileForm.orgType"
+              :class="selectClass"
+            >
               <option value="">Not set</option>
-              <option v-for="option in ORG_TYPE_OPTIONS" :key="option.value" :value="option.value">
+              <option
+                v-for="option in ORG_TYPE_OPTIONS"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
           </div>
 
           <div class="flex flex-col gap-2">
-            <label for="about" class="text-sm font-medium text-g-muted">About (Markdown)</label>
-            <textarea id="about" v-model="profileForm.aboutMarkdown" rows="6" maxlength="8000" class="field-input" />
+            <Label for="about">About (Markdown)</Label>
+            <Textarea
+              id="about"
+              v-model="profileForm.aboutMarkdown"
+              rows="6"
+              maxlength="8000"
+              class="rounded-xl px-3.5"
+            />
           </div>
 
           <div class="grid gap-5 md:grid-cols-2">
             <div class="flex flex-col gap-3">
-              <span class="text-sm font-medium text-g-muted">Banner</span>
+              <span class="text-base font-medium">Banner</span>
               <div
-                class="relative h-28 overflow-hidden rounded-xl border border-g-border"
-                :class="profileForm.bannerUrl ? '' : 'bg-gradient-to-br from-[#34418F] to-[#DEAC4B]'"
+                class="relative h-28 overflow-hidden rounded-xl border border-border"
+                :class="profileForm.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted'"
               >
-                <img v-if="profileForm.bannerUrl" :src="profileForm.bannerUrl" alt="Banner preview" class="h-full w-full object-cover" />
+                <img
+                  v-if="profileForm.bannerUrl"
+                  :src="profileForm.bannerUrl"
+                  alt="Banner preview"
+                  class="h-full w-full object-cover"
+                />
               </div>
-              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border px-4 py-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                 {{ uploadingBanner ? 'Uploading...' : 'Upload banner' }}
-                <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingBanner" @change="onBannerPicked" />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="sr-only"
+                  :disabled="uploadingBanner"
+                  @change="onBannerPicked"
+                />
               </label>
-              <button
+              <Button
                 v-if="profileForm.bannerUrl"
                 type="button"
-                class="min-h-11 text-left text-sm font-medium text-red-500"
+                variant="destructive"
+                class="w-fit text-sm"
                 :disabled="uploadingBanner"
                 @click="clearOrgImage('bannerUrl')"
               >
                 Remove banner
-              </button>
+              </Button>
             </div>
 
             <div class="flex flex-col gap-3">
-              <span class="text-sm font-medium text-g-muted">Logo</span>
+              <span class="text-base font-medium">Logo</span>
               <div class="flex h-28 items-center justify-center">
                 <div
                   v-if="profileForm.logoUrl"
-                  class="h-24 w-24 overflow-hidden rounded-2xl border border-g-border"
+                  class="size-24 overflow-hidden rounded-2xl border border-border"
                 >
-                  <img :src="profileForm.logoUrl" alt="Logo preview" class="h-full w-full object-cover" />
+                  <img
+                    :src="profileForm.logoUrl"
+                    alt="Logo preview"
+                    class="h-full w-full object-cover"
+                  />
                 </div>
                 <div
                   v-else
-                  class="flex h-24 w-24 items-center justify-center rounded-2xl border border-g-border bg-[#34418F]/10 text-lg font-bold text-g-primary"
+                  class="flex size-24 items-center justify-center rounded-2xl border border-border bg-primary/10 text-lg font-bold text-primary"
                 >
                   {{ orgInitials(org.org_name) }}
                 </div>
               </div>
-              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-g-border px-4 py-3 text-center text-sm font-medium text-g-muted transition-colors hover:border-g-accent hover:text-g-accent">
+              <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border px-4 py-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                 {{ uploadingLogo ? 'Uploading...' : 'Upload logo' }}
-                <input type="file" accept="image/jpeg,image/png,image/webp" class="hidden" :disabled="uploadingLogo" @change="onLogoPicked" />
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  class="sr-only"
+                  :disabled="uploadingLogo"
+                  @change="onLogoPicked"
+                />
               </label>
-              <button
+              <Button
                 v-if="profileForm.logoUrl"
                 type="button"
-                class="min-h-11 text-left text-sm font-medium text-red-500"
+                variant="destructive"
+                class="w-fit text-sm"
                 :disabled="uploadingLogo"
                 @click="clearOrgImage('logoUrl')"
               >
                 Remove logo
-              </button>
+              </Button>
             </div>
           </div>
 
           <div>
-            <p class="mb-3 text-sm font-medium text-g-muted">Social links</p>
+            <p class="mb-3 text-base font-medium">Social links</p>
             <div class="grid gap-4 sm:grid-cols-2">
-              <div v-for="field in SOCIAL_FIELD_META" :key="field.key" class="flex flex-col gap-2">
-                <label :for="`social-${field.key}`" class="text-sm font-medium text-g-muted">{{ field.label }}</label>
-                <div v-if="field.prefix" class="flex overflow-hidden rounded-lg border-2 border-gray-200 focus-within:border-g-primary dark:border-slate-600 dark:focus-within:border-slate-500">
-                  <span class="text-data flex shrink-0 items-center bg-white/50 px-3 text-xs text-g-muted dark:bg-mica-navy-input">{{ field.prefix }}</span>
+              <div
+                v-for="field in SOCIAL_FIELD_META"
+                :key="field.key"
+                class="flex flex-col gap-2"
+              >
+                <Label :for="`social-${field.key}`">{{ field.label }}</Label>
+                <div
+                  v-if="field.prefix"
+                  class="flex h-11 overflow-hidden rounded-xl border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
+                >
+                  <span class="flex shrink-0 items-center bg-muted px-3 font-mono text-xs text-muted-foreground">{{ field.prefix }}</span>
                   <input
                     :id="`social-${field.key}`"
                     v-model="profileForm.socialHandles[field.key]"
                     type="text"
                     :placeholder="field.placeholder"
-                    class="min-w-0 flex-1 bg-white/50 px-3 py-3 text-sm text-g-text outline-none dark:bg-mica-navy-input dark:text-slate-200"
+                    class="min-w-0 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-muted-foreground"
                   />
                 </div>
-                <input
+                <Input
                   v-else
                   :id="`social-${field.key}`"
                   v-model="profileForm.socialHandles[field.key]"
                   type="text"
                   :placeholder="field.placeholder"
-                  class="field-input"
                 />
               </div>
             </div>
           </div>
 
-          <button type="submit" :disabled="savingProfile || uploadingLogo || uploadingBanner" class="btn-gold inline-flex min-h-11 w-full items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+          <Button
+            type="submit"
+            :disabled="savingProfile || uploadingLogo || uploadingBanner"
+            class="w-full px-6 sm:w-auto"
+          >
             {{ savingProfile ? 'Saving...' : 'Save profile' }}
-          </button>
+          </Button>
         </form>
       </AppSection>
 
       <!-- Owner: members -->
-      <AppSection v-if="isOwner" class="mb-6">
-        <h3 class="text-section-title mb-6 border-b border-g-border pb-4">Members</h3>
+      <AppSection v-if="isOwner">
+        <h3 class="mb-6 border-b border-border pb-4 font-heading text-xl font-semibold tracking-tight">Members</h3>
 
-        <div v-if="loadingMembers" class="mb-6 h-20 animate-pulse rounded-xl bg-white/50 dark:bg-slate-800/40" />
-        <p v-else-if="membersError" role="alert" class="mb-6 text-sm text-red-500">
+        <div
+          v-if="loadingMembers"
+          class="mb-6 h-20 animate-pulse rounded-xl bg-muted"
+        />
+        <p
+          v-else-if="membersError"
+          role="alert"
+          class="mb-6 text-sm text-destructive"
+        >
           {{ membersError }}
         </p>
-        <p v-else-if="members.length === 0" class="mb-6 text-sm text-g-muted">
+        <p
+          v-else-if="members.length === 0"
+          class="mb-6 text-sm text-muted-foreground"
+        >
           No members yet.
         </p>
-        <div v-else class="mb-6 md:overflow-hidden md:rounded-2xl md:border md:border-g-border">
-          <table role="table" aria-label="Members" class="text-data block w-full border-collapse text-left text-sm md:table md:text-xs">
-            <thead role="rowgroup" class="sr-only md:not-sr-only md:table-header-group">
-              <tr role="row" class="border-b border-g-border bg-white/40 text-xs font-semibold text-g-muted dark:bg-mica-navy-header">
-                <th role="columnheader" class="px-4 py-3">Name</th>
-                <th role="columnheader" class="px-4 py-3">Email</th>
-                <th role="columnheader" class="px-4 py-3 text-center">Status</th>
-                <th role="columnheader" class="px-4 py-3 text-right">Actions</th>
+        <div
+          v-else
+          class="mb-6 overflow-x-auto md:rounded-2xl md:border md:border-border"
+        >
+          <table
+            role="table"
+            aria-label="Members"
+            class="block w-full border-collapse text-left font-mono text-sm md:table md:text-xs"
+          >
+            <thead
+              role="rowgroup"
+              class="sr-only md:not-sr-only md:table-header-group"
+            >
+              <tr
+                role="row"
+                class="border-b border-border bg-muted/40 text-xs font-semibold text-muted-foreground"
+              >
+                <th
+                  role="columnheader"
+                  class="px-4 py-3"
+                >Name</th>
+                <th
+                  role="columnheader"
+                  class="px-4 py-3"
+                >Email</th>
+                <th
+                  role="columnheader"
+                  class="px-4 py-3 text-center"
+                >Status</th>
+                <th
+                  role="columnheader"
+                  class="px-4 py-3 text-right"
+                >Actions</th>
               </tr>
             </thead>
-            <tbody role="rowgroup" class="block space-y-3 md:table-row-group md:space-y-0">
+            <tbody
+              role="rowgroup"
+              class="block space-y-3 md:table-row-group md:space-y-0"
+            >
               <tr
                 v-for="member in members"
                 :key="member.email"
                 role="row"
-                class="block rounded-2xl border border-g-border bg-g-surface p-4 md:table-row md:rounded-none md:border-0 md:border-b md:border-g-border/70 md:bg-transparent md:p-0 md:last:border-0"
+                class="block rounded-2xl border border-border bg-card p-4 md:table-row md:rounded-none md:border-0 md:border-b md:border-border/70 md:bg-transparent md:p-0 md:last:border-0"
               >
-                <td role="cell" class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal">{{ member.name?.trim() || 'No account yet' }}</td>
-                <td role="cell" class="block break-all text-g-muted md:table-cell md:px-4 md:py-3 md:text-inherit">{{ member.email }}</td>
-                <td role="cell" class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center">{{ memberStatus(member) }}</td>
-                <td role="cell" class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right">
-                  <div v-if="isPendingMember(member)" class="flex flex-wrap gap-2 md:justify-end">
-                    <button
+                <td
+                  role="cell"
+                  class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal"
+                >{{ member.name?.trim() || 'No account yet' }}</td>
+                <td
+                  role="cell"
+                  class="block break-all text-muted-foreground md:table-cell md:px-4 md:py-3 md:text-inherit"
+                >{{ member.email }}</td>
+                <td
+                  role="cell"
+                  class="mt-1 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-center"
+                >{{ memberStatus(member) }}</td>
+                <td
+                  role="cell"
+                  class="mt-2 block md:mt-0 md:table-cell md:px-4 md:py-3 md:text-right"
+                >
+                  <div
+                    v-if="isPendingMember(member)"
+                    class="flex flex-wrap gap-2 md:justify-end"
+                  >
+                    <Button
                       type="button"
-                      class="btn-secondary min-h-11 px-4 text-sm disabled:opacity-50"
+                      variant="outline"
+                      class="px-4 text-sm"
                       :disabled="resendingEmail === member.email"
                       @click="resendInvite(member.email)"
                     >
                       {{ resendingEmail === member.email ? 'Resending...' : 'Resend' }}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
-                      class="btn-secondary min-h-11 px-4 text-sm text-red-500"
+                      variant="destructive"
+                      class="px-4 text-sm"
                       @click="cancelInvite(member.email)"
                     >
                       Cancel invite
-                    </button>
+                    </Button>
                   </div>
-                  <button
+                  <Button
                     v-else-if="member.activated_at && !isOwnerMember(member)"
                     type="button"
-                    class="btn-secondary min-h-11 px-4 text-sm text-red-500"
+                    variant="destructive"
+                    class="px-4 text-sm"
                     @click="removeMember(member.email)"
                   >
                     Remove
-                  </button>
-                  <span v-else-if="member.activated_at" class="text-g-muted">Owner</span>
+                  </Button>
+                  <span
+                    v-else-if="member.activated_at"
+                    class="text-muted-foreground"
+                  >Owner</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p v-if="membersActionError" role="alert" class="mb-6 text-sm text-red-500">
+        <p
+          v-if="membersActionError"
+          role="alert"
+          class="mb-6 text-sm text-destructive"
+        >
           {{ membersActionError }}
         </p>
 
         <div class="mb-6">
-          <form class="flex flex-col gap-2 sm:flex-row" @submit.prevent="sendInvite">
-            <input v-model="inviteEmail" type="email" required placeholder="peer@apc.edu.ph" aria-label="Invite email" class="field-input min-w-0 flex-1" />
-            <button type="submit" :disabled="sendingInvite" class="btn-primary shrink-0">
-              {{ sendingInvite ? 'Inviting...' : 'Invite' }}
-            </button>
+          <form
+            class="flex flex-col gap-2"
+            @submit.prevent="sendInvite"
+          >
+            <Label for="invite-email">Invite email</Label>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <Input
+                id="invite-email"
+                v-model="inviteEmail"
+                type="email"
+                required
+                placeholder="peer@apc.edu.ph"
+                :aria-invalid="Boolean(inviteError)"
+                :aria-describedby="inviteError ? 'invite-error' : undefined"
+                class="min-w-0 flex-1"
+              />
+              <Button
+                type="submit"
+                :disabled="sendingInvite"
+                class="shrink-0 px-6"
+              >
+                {{ sendingInvite ? 'Inviting...' : 'Invite' }}
+              </Button>
+            </div>
           </form>
-          <p v-if="inviteError" role="alert" class="mt-2 text-sm text-red-500">
+          <p
+            v-if="inviteError"
+            id="invite-error"
+            role="alert"
+            class="mt-2 text-sm text-destructive"
+          >
             {{ inviteError }}
           </p>
         </div>
 
-        <form class="flex flex-col gap-3 border-t border-g-border pt-6" @submit.prevent="confirmTransfer">
+        <form
+          class="flex flex-col gap-3 border-t border-border pt-6"
+          @submit.prevent="confirmTransfer"
+        >
           <div class="flex flex-col gap-2">
-            <label for="new-owner" class="text-sm font-medium text-g-muted">New owner</label>
+            <Label for="new-owner">New owner</Label>
             <select
               id="new-owner"
               v-model="transferEmail"
               required
               :disabled="activeMembers.length === 0"
-              class="field-input"
+              :class="selectClass"
             >
-              <option value="" disabled>
+              <option
+                value=""
+                disabled
+              >
                 Select a member
               </option>
-              <option v-for="member in activeMembers" :key="member.email" :value="member.email">
+              <option
+                v-for="member in activeMembers"
+                :key="member.email"
+                :value="member.email"
+              >
                 {{ memberLabel(member) }}
               </option>
             </select>
           </div>
-          <p v-if="!loadingMembers && !membersError && activeMembers.length === 0" class="text-sm text-g-muted">
+          <p
+            v-if="!loadingMembers && !membersError && activeMembers.length === 0"
+            class="text-sm text-muted-foreground"
+          >
             Invite an active member before transferring ownership.
           </p>
-          <button
+          <Button
             type="submit"
+            variant="destructive"
             :disabled="transferring || activeMembers.length === 0"
-            class="btn-danger w-full sm:w-fit"
+            class="w-full sm:w-fit"
           >
             {{ transferring ? 'Transferring...' : 'Transfer ownership' }}
-          </button>
+          </Button>
         </form>
       </AppSection>
 
       <!-- Member: leave -->
       <AppSection v-else>
-        <h3 class="text-card-title mb-2">Leave org</h3>
-        <p class="mb-4 text-sm text-g-muted">You will lose access to org-scoped tools until re-invited.</p>
-        <button
+        <h3 class="mb-2 font-heading text-lg font-semibold">Leave org</h3>
+        <p class="mb-4 text-sm text-muted-foreground">You will lose access to org-scoped tools until re-invited.</p>
+        <Button
           type="button"
+          variant="destructive"
           :disabled="leaving"
-          class="btn-danger w-full sm:w-fit"
+          class="w-full sm:w-fit"
           @click="leaveOrg"
         >
           {{ leaving ? 'Leaving...' : 'Leave org' }}
-        </button>
+        </Button>
       </AppSection>
     </template>
   </AppPage>
 </template>
 
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -359,6 +530,8 @@ interface ProfileFormState {
   logoUrl: string
   socialHandles: Required<OrgSocialLinks>
 }
+
+const selectClass = 'h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground'
 
 const route = useRoute()
 const router = useRouter()
@@ -777,9 +950,3 @@ onMounted(loadOrgContext)
 watch(slug, loadOrgContext)
 </script>
 
-<style scoped>
-@reference "../../styles/main.css";
-.field-input {
-  @apply min-h-11 rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 sm:text-sm dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-</style>

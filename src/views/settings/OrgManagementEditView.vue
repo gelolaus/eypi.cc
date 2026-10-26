@@ -1,50 +1,75 @@
 <template>
-  <div>
-    <router-link
-      to="/admin/orgs"
-      class="mb-6 inline-flex min-h-11 items-center text-sm font-medium text-g-muted transition-colors hover:text-g-accent"
-     
+  <div class="space-y-6">
+    <Button
+      as-child
+      variant="ghost"
+      class="-ml-3 w-fit text-muted-foreground"
     >
-      ← Back to org management
-    </router-link>
+      <router-link to="/admin/orgs">
+        ← Back to org management
+      </router-link>
+    </Button>
 
-    <section class="mica-card rounded-3xl p-6 sm:p-8">
-      <header class="mb-6 border-b border-g-border pb-5">
-        <h2 class="text-section-title">
-          {{ isCreate ? 'New org' : 'Edit org' }}
-        </h2>
-      </header>
+    <Card class="gap-0 rounded-3xl p-6 sm:p-8">
+      <h2 class="mb-6 border-b border-border pb-5 font-heading text-xl font-semibold tracking-tight">
+        {{ isCreate ? 'New org' : 'Edit org' }}
+      </h2>
 
-      <form class="space-y-5" @submit.prevent="save">
+      <form
+        class="space-y-5"
+        @submit.prevent="save"
+      >
         <div class="flex flex-col gap-2">
-          <label for="org-slug" class="text-sm font-medium text-g-muted">Org slug</label>
-          <input id="org-slug" v-model="form.id" type="text" required class="field-input text-data" placeholder="jpcs" />
+          <Label for="org-slug">Org slug</Label>
+          <Input
+            id="org-slug"
+            v-model="form.id"
+            type="text"
+            required
+            class="font-mono"
+            placeholder="jpcs"
+          />
         </div>
         <div class="flex flex-col gap-2">
-          <label for="org-name" class="text-sm font-medium text-g-muted">Org name</label>
-          <input id="org-name" v-model="form.name" type="text" required class="field-input" placeholder="Junior Philippine Computer Society" />
+          <Label for="org-name">Org name</Label>
+          <Input
+            id="org-name"
+            v-model="form.name"
+            type="text"
+            required
+            placeholder="Junior Philippine Computer Society"
+          />
         </div>
         <div class="flex flex-col gap-2">
-          <label for="owner-email" class="text-sm font-medium text-g-muted">Owner email</label>
-          <input id="owner-email" v-model="form.ownerEmail" type="email" required class="field-input" placeholder="president@student.apc.edu.ph" />
+          <Label for="owner-email">Owner email</Label>
+          <Input
+            id="owner-email"
+            v-model="form.ownerEmail"
+            type="email"
+            required
+            placeholder="president@student.apc.edu.ph"
+          />
         </div>
 
-        <div v-if="!isCreate" class="flex items-center justify-between rounded-2xl border border-g-border p-4">
-          <span class="text-sm font-medium text-g-text">List in /orgs directory</span>
+        <div
+          v-if="!isCreate"
+          class="flex items-center justify-between gap-4 rounded-2xl border border-border p-4"
+        >
+          <span class="text-sm font-medium">List in /orgs directory</span>
           <button
             type="button"
             role="switch"
             :aria-checked="form.isPublicCatalog"
             :aria-label="form.isPublicCatalog ? 'Remove from directory' : 'List in directory'"
-            class="flex h-11 w-14 shrink-0 items-center justify-center"
+            class="flex h-11 w-14 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             @click="form.isPublicCatalog = !form.isPublicCatalog"
           >
             <span
               class="relative block h-7 w-12 rounded-full transition-colors"
-              :class="form.isPublicCatalog ? 'bg-g-accent' : 'bg-gray-300 dark:bg-slate-600'"
+              :class="form.isPublicCatalog ? 'bg-primary' : 'bg-input'"
             >
               <span
-                class="pointer-events-none absolute left-0.5 top-0.5 block h-6 w-6 rounded-full bg-white shadow transition-transform"
+                class="pointer-events-none absolute left-0.5 top-0.5 block size-6 rounded-full bg-background shadow transition-transform"
                 :class="form.isPublicCatalog ? 'translate-x-5' : 'translate-x-0'"
               />
             </span>
@@ -52,25 +77,33 @@
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row">
-          <button type="submit" :disabled="saving" class="btn-gold inline-flex min-h-11 items-center justify-center rounded-xl px-6 text-base font-semibold transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+          <Button
+            type="submit"
+            :disabled="saving"
+            class="px-6"
+          >
             {{ saving ? 'Saving...' : isCreate ? 'Create org' : 'Save changes' }}
-          </button>
-          <button
+          </Button>
+          <Button
             v-if="!isCreate"
             type="button"
+            variant="destructive"
             :disabled="deleting"
-            class="btn-danger"
             @click="deleteOrg"
           >
             {{ deleting ? 'Deleting...' : 'Delete org' }}
-          </button>
+          </Button>
         </div>
       </form>
-    </section>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { api } from '@/lib/api'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -197,9 +230,3 @@ async function deleteOrg() {
 onMounted(loadOrg)
 </script>
 
-<style scoped>
-@reference "../../styles/main.css";
-.field-input {
-  @apply min-h-11 rounded-lg border-2 border-gray-200 bg-white/50 px-4 py-3 text-base text-g-text outline-none transition-colors placeholder:text-g-muted focus:border-g-primary focus:bg-white disabled:opacity-60 sm:text-sm dark:border-slate-600 dark:bg-mica-navy-input dark:text-slate-200 dark:focus:border-slate-500;
-}
-</style>

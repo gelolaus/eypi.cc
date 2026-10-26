@@ -32,10 +32,11 @@ describe('mobile-first auth and static pages', () => {
     expect(src).toContain('aria-invalid')
   })
 
-  it.each(['views/ReportView.vue'])('%s uses 44px+ 16px fields and a full-width h-12 primary button', (file) => {
+  it.each(['views/ReportView.vue'])('%s uses labelled 44px fields and a full-width lg primary button', (file) => {
     const src = read(file)
-    expect(src).toMatch(/class="control[^"]*"/)
-    expect(src).toMatch(/btn-primary[^"]*btn-lg[^"]*w-full|btn-lg[^"]*btn-primary[^"]*w-full/)
+    expect(src).toContain('<Textarea')
+    expect(src).toContain('<Label')
+    expect(src).toMatch(/<Button[^>]*size="lg"[^>]*class="[^"]*w-full/)
     expect(src).toContain('aria-invalid')
   })
 
@@ -70,11 +71,11 @@ describe('mobile-first auth and static pages', () => {
     expect(read(file)).toContain('<AppPage')
   })
 
-  it('account sections use AppSection with control fields', () => {
+  it('account sections use AppSection with Input fields', () => {
     const src = read('views/AccountView.vue')
     expect((src.match(/<AppSection/g) ?? []).length).toBeGreaterThanOrEqual(4)
-    expect(src).toContain('class="control"')
+    expect(src).toContain('<Input')
     expect(src).toContain('aria-invalid')
-    expect(src).toContain('btn-danger')
+    expect(src).toContain('variant="destructive"')
   })
 })

@@ -4,182 +4,187 @@
     class="!max-w-3xl"
   >
     <div class="flex flex-col gap-6">
-    <AppSection title="Profile">
-      <div class="flex flex-col gap-3">
-        <p class="text-g-text">
-          {{ name }}
-        </p>
-        <p class="text-data break-all text-sm text-g-muted">
-          {{ email }}
-        </p>
-        <p>
-          <span class="inline-flex min-h-6 items-center rounded-full border border-g-border px-2.5 py-0.5 text-xs font-semibold text-g-text">
-            {{ roleLabel }}
-          </span>
-        </p>
-        <p class="text-sm text-g-muted">
-          Signed in with Microsoft (APC)
-        </p>
-      </div>
-    </AppSection>
-
-    <AppSection title="Sessions">
-      <div class="flex flex-col gap-4">
-      <p
-        v-if="loadError"
-        class="text-sm text-red-600 dark:text-red-400"
-        role="alert"
-      >
-        {{ loadError }}
-      </p>
-      <p
-        v-else-if="loadingSessions"
-        class="text-sm text-g-muted"
-      >
-        Loading sessions.
-      </p>
-      <p
-        v-else-if="sessions.length === 0"
-        class="text-sm text-g-muted"
-      >
-        No sessions.
-      </p>
-      <ul
-        v-else
-        class="flex flex-col gap-3"
-      >
-        <li
-          v-for="row in sessions"
-          :key="row.id"
-          class="mica-card flex flex-col gap-2 rounded-2xl border border-g-border p-4"
-        >
-          <p class="text-sm font-semibold text-g-text">
-            {{ row.device }}
+      <AppSection title="Profile">
+        <div class="flex flex-col gap-3">
+          <p>
+            {{ name }}
           </p>
-          <p class="text-data text-sm text-g-muted">
-            Last active
-            <time :datetime="row.lastSeenAt">{{ manilaLabel(row.lastSeenAt) }}</time>
+          <p class="break-all font-mono text-sm text-muted-foreground">
+            {{ email }}
+          </p>
+          <p>
+            <Badge
+              variant="outline"
+              class="h-6 px-2.5"
+            >
+              {{ roleLabel }}
+            </Badge>
+          </p>
+          <p class="text-sm text-muted-foreground">
+            Signed in with Microsoft (APC)
+          </p>
+        </div>
+      </AppSection>
+
+      <AppSection title="Sessions">
+        <div class="flex flex-col gap-4">
+          <p
+            v-if="loadError"
+            class="text-sm text-destructive"
+            role="alert"
+          >
+            {{ loadError }}
           </p>
           <p
-            v-if="row.current"
-            class="text-sm text-g-text"
+            v-else-if="loadingSessions"
+            class="text-sm text-muted-foreground"
           >
-            Current
+            Loading sessions.
           </p>
-          <button
-            class="btn-secondary w-full sm:w-auto"
-            type="button"
-            @click="revoke(row)"
+          <p
+            v-else-if="sessions.length === 0"
+            class="text-sm text-muted-foreground"
           >
-            Revoke
-          </button>
-        </li>
-      </ul>
-      <p
-        v-if="actionError"
-        class="text-sm text-red-600 dark:text-red-400"
-        role="alert"
-      >
-        {{ actionError }}
-      </p>
-      <button
-        class="btn-secondary w-full sm:w-auto"
-        type="button"
-        @click="signOutEverywhere"
-      >
-        Sign out everywhere
-      </button>
-      </div>
-    </AppSection>
-
-    <AppSection title="Export">
-      <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-3 sm:flex-row">
-        <button
-          class="btn-secondary w-full sm:w-auto"
-          type="button"
-          @click="downloadData"
-        >
-          Download my data (JSON)
-        </button>
-        <button
-          class="btn-secondary w-full sm:w-auto"
-          type="button"
-          @click="downloadLinks"
-        >
-          Download my links (CSV)
-        </button>
-      </div>
-      <p
-        v-if="exportError"
-        class="text-sm text-red-600 dark:text-red-400"
-        role="alert"
-      >
-        {{ exportError }}
-      </p>
-      </div>
-    </AppSection>
-
-    <AppSection title="Delete account">
-      <div class="flex flex-col gap-4">
-      <p class="text-sm text-g-muted">
-        This permanently deletes your links, sessions, and profile.
-      </p>
-      <form
-        class="flex flex-col gap-4"
-        @submit.prevent="onDelete"
-      >
-        <div class="flex flex-col gap-2">
-          <label
-            class="text-sm font-semibold text-g-text"
-            for="delete-confirm-email"
+            No sessions.
+          </p>
+          <ul
+            v-else
+            class="flex flex-col gap-3"
           >
-            Type your email to confirm
-          </label>
-          <input
-            id="delete-confirm-email"
-            v-model="confirmEmail"
-            autocomplete="off"
-            class="control"
-            :aria-invalid="Boolean(deleteError)"
-            :aria-describedby="deleteError ? 'delete-error' : undefined"
-            type="email"
-          >
-        </div>
-        <p
-          v-if="deleteError"
-          id="delete-error"
-          class="text-sm text-red-600 dark:text-red-400"
-          role="alert"
-        >
-          {{ deleteError }}
-        </p>
-        <ul
-          v-if="blockedOrgs.length > 0"
-          class="flex flex-col gap-2"
-        >
-          <li
-            v-for="org in blockedOrgs"
-            :key="org.id"
-          >
-            <router-link
-              class="text-sm font-semibold text-g-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-              :to="`/orgs/modify/${org.id}`"
+            <li
+              v-for="row in sessions"
+              :key="row.id"
             >
-              {{ org.name }}
-            </router-link>
-          </li>
-        </ul>
-        <button
-          class="btn-danger w-full sm:w-auto"
-          type="submit"
-          :disabled="!canDelete"
-        >
-          Delete account
-        </button>
-      </form>
-      </div>
-    </AppSection>
+              <Card class="gap-2 rounded-2xl bg-background/40 p-4">
+                <p class="text-sm font-semibold">
+                  {{ row.device }}
+                </p>
+                <p class="font-mono text-sm text-muted-foreground">
+                  Last active
+                  <time :datetime="row.lastSeenAt">{{ manilaLabel(row.lastSeenAt) }}</time>
+                </p>
+                <p
+                  v-if="row.current"
+                  class="text-sm"
+                >
+                  Current
+                </p>
+                <Button
+                  variant="outline"
+                  class="w-full sm:w-auto sm:self-start"
+                  type="button"
+                  @click="revoke(row)"
+                >
+                  Revoke
+                </Button>
+              </Card>
+            </li>
+          </ul>
+          <p
+            v-if="actionError"
+            class="text-sm text-destructive"
+            role="alert"
+          >
+            {{ actionError }}
+          </p>
+          <Button
+            variant="outline"
+            class="w-full sm:w-auto sm:self-start"
+            type="button"
+            @click="signOutEverywhere"
+          >
+            Sign out everywhere
+          </Button>
+        </div>
+      </AppSection>
+
+      <AppSection title="Export">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              class="w-full sm:w-auto"
+              type="button"
+              @click="downloadData"
+            >
+              Download my data (JSON)
+            </Button>
+            <Button
+              variant="outline"
+              class="w-full sm:w-auto"
+              type="button"
+              @click="downloadLinks"
+            >
+              Download my links (CSV)
+            </Button>
+          </div>
+          <p
+            v-if="exportError"
+            class="text-sm text-destructive"
+            role="alert"
+          >
+            {{ exportError }}
+          </p>
+        </div>
+      </AppSection>
+
+      <AppSection title="Delete account">
+        <div class="flex flex-col gap-4">
+          <p class="text-sm text-muted-foreground">
+            This permanently deletes your links, sessions, and profile.
+          </p>
+          <form
+            class="flex flex-col gap-4"
+            @submit.prevent="onDelete"
+          >
+            <div class="flex flex-col gap-2">
+              <Label for="delete-confirm-email">
+                Type your email to confirm
+              </Label>
+              <Input
+                id="delete-confirm-email"
+                v-model="confirmEmail"
+                autocomplete="off"
+                :aria-invalid="Boolean(deleteError)"
+                :aria-describedby="deleteError ? 'delete-error' : undefined"
+                type="email"
+              />
+            </div>
+            <p
+              v-if="deleteError"
+              id="delete-error"
+              class="text-sm text-destructive"
+              role="alert"
+            >
+              {{ deleteError }}
+            </p>
+            <ul
+              v-if="blockedOrgs.length > 0"
+              class="flex flex-col gap-2"
+            >
+              <li
+                v-for="org in blockedOrgs"
+                :key="org.id"
+              >
+                <router-link
+                  class="inline-flex min-h-8 items-center rounded-lg text-sm font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  :to="`/orgs/modify/${org.id}`"
+                >
+                  {{ org.name }}
+                </router-link>
+              </li>
+            </ul>
+            <Button
+              variant="destructive"
+              class="w-full sm:w-auto sm:self-start"
+              type="submit"
+              :disabled="!canDelete"
+            >
+              Delete account
+            </Button>
+          </form>
+        </div>
+      </AppSection>
     </div>
   </AppPage>
 </template>
@@ -187,6 +192,11 @@
 <script setup lang="ts">
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/lib/api'

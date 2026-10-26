@@ -1,17 +1,12 @@
 <template>
-  <section
-    class="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:py-24"
-  >
-    <div
-      class="mica-card relative w-full max-w-md rounded-3xl border border-gray-200 p-6 sm:p-8 dark:border-slate-600"
-    >
-
-      <h1 class="text-section-title mb-2 text-center text-[#34418F] dark:text-slate-200">
+  <section class="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-4 py-10 sm:py-24">
+    <Card class="w-full max-w-md gap-0 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(0,0,0,0.65)] sm:p-8">
+      <h1 class="mb-2 text-center font-display text-3xl font-semibold tracking-tight">
         Report a link
       </h1>
       <p
         v-if="slug"
-        class="text-data mb-6 text-center text-sm text-gray-500 dark:text-slate-400"
+        class="mb-6 text-center font-mono text-sm text-muted-foreground"
       >
         {{ slug }}
       </p>
@@ -19,7 +14,7 @@
       <p
         v-if="submitted"
         role="status"
-        class="text-center text-sm leading-relaxed text-gray-600 dark:text-slate-300"
+        class="text-center text-sm leading-relaxed text-muted-foreground"
       >
         Thanks. We'll review this link.
       </p>
@@ -29,16 +24,16 @@
         class="flex flex-col"
         @submit.prevent="onSubmit"
       >
-        <label
+        <Label
           for="report-reason"
-          class="mb-1 text-sm font-medium text-gray-700 dark:text-slate-300"
+          class="mb-1.5"
         >
           Reason
-        </label>
+        </Label>
         <select
           id="report-reason"
           v-model="reason"
-          class="control h-11 text-base"
+          class="h-11 w-full min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
           :aria-invalid="Boolean(reasonError)"
           :aria-describedby="reasonError ? 'reason-error' : undefined"
         >
@@ -65,29 +60,29 @@
           v-if="reasonError"
           id="reason-error"
           role="alert"
-          class="mt-2 text-sm text-red-600 dark:text-red-400"
+          class="mt-2 text-sm text-destructive"
         >
           {{ reasonError }}
         </p>
 
-        <label
+        <Label
           for="report-details"
-          class="mb-1 mt-4 text-sm font-medium text-gray-700 dark:text-slate-300"
+          class="mb-1.5 mt-4"
         >
           Details
-        </label>
-        <textarea
+        </Label>
+        <Textarea
           id="report-details"
           v-model="details"
           rows="4"
           maxlength="1000"
-          class="control text-base"
+          class="rounded-xl px-3.5"
           :aria-invalid="Boolean(detailsError)"
           :aria-describedby="detailsDescribedBy"
         />
         <p
           id="details-hint"
-          class="mt-1 text-sm text-gray-500 dark:text-slate-400"
+          class="mt-1 text-sm text-muted-foreground"
         >
           Up to 1000 characters.
         </p>
@@ -95,7 +90,7 @@
           v-if="detailsError"
           id="details-error"
           role="alert"
-          class="mt-2 text-sm text-red-600 dark:text-red-400"
+          class="mt-2 text-sm text-destructive"
         >
           {{ detailsError }}
         </p>
@@ -104,26 +99,31 @@
           v-if="formError"
           id="report-error"
           role="alert"
-          class="mt-4 text-sm text-red-600 dark:text-red-400"
+          class="mt-4 text-sm text-destructive"
         >
           {{ formError }}
         </p>
 
-        <button
+        <Button
           type="submit"
-          class="btn-primary btn-lg mt-6 w-full"
+          size="lg"
+          class="mt-6 w-full"
           :disabled="pending"
         >
           Submit report
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { api, ApiError } from '@/lib/api'
 
 const REASONS = new Set(['phishing', 'malware', 'spam', 'inappropriate', 'other'])

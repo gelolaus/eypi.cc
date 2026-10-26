@@ -56,7 +56,7 @@ describe('orgs mobile layout', () => {
     const row = wrapper.get('[data-org-row]')
     expect(row.classes()).toContain('rounded-2xl')
     expect(wrapper.html()).not.toMatch(/min-w-\[\d+px\]/)
-    expect(row.get('a').classes()).toContain('btn-secondary')
+    expect(row.get('a').attributes('data-slot')).toBe('button')
   })
 
   it('OrgSwitcher opens a bottom sheet on mobile that is not clipped on the left', async () => {
