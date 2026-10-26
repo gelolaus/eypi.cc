@@ -205,6 +205,61 @@ describe('Safe Browsing on link writes', () => {
     expect(calls).toHaveLength(0)
   })
 
+  it('does not call Safe Browsing when create fails the quota or the hourly limit', async () => {
+    stubFetch(() => jsonResponse({}))
+    const overQuota = await createTestApp({
+      user: owner,
+      env: { SAFE_BROWSING_API_KEY: API_KEY },
+      seed: async (client) => {
+        await client.execute({
+          sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)',
+          args: [owner.id, owner.email, owner.name, owner.role],
+        })
+        const lines: string[] = []
+        for (let i = 0; i < 500; i++) {
+          lines.push(
+            `INSERT INTO links (id, user_id, original_url, slug) VALUES ('link-${i}', '${owner.id}', 'https://example.com/${i}', 'q${String(i).padStart(4, '0')}');`,
+          )
+        }
+        await client.executeMultiple(lines.join('\n'))
+      },
+    })
+
+    const quotaRes = await overQuota.request('/api/links', post({ url: 'https://example.com/over', slug: 'over-quota' }))
+
+    expect(quotaRes.status).toBe(429)
+    expect(await quotaRes.json()).toMatchObject({ error: { code: 'quota_exceeded' } })
+    expect(calls).toHaveLength(0)
+
+    const limited = await withOwner(API_KEY)
+    const expiry = Math.floor(Date.now() / 1000) + 3600
+    await limited.env.RATE_LIMIT_KV.put(`rl:create:${owner.id}`, `30:${expiry}`)
+    const rateRes = await limited.request('/api/links', post({ url: 'https://example.com/limited', slug: 'over-rate' }))
+
+    expect(rateRes.status).toBe(429)
+    expect(await rateRes.json()).toMatchObject({ error: { code: 'too_many' } })
+    expect(calls).toHaveLength(0)
+  })
+
+  it('calls Safe Browsing before inserting a create that is under quota and the hourly limit', async () => {
+    const { request, client } = await withOwner(API_KEY)
+    let rowsAtLookup = -1
+    stubFetch(async () => {
+      const rows = await client.execute('SELECT COUNT(*) AS n FROM links')
+      rowsAtLookup = Number(rows.rows[0]?.n ?? 0)
+      return jsonResponse({})
+    })
+
+    const res = await request('/api/links', post({ url: 'https://example.com/ok', slug: 'under-limit' }))
+
+    expect(res.status).toBe(201)
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.url).toBe(`${ENDPOINT}?key=${API_KEY}`)
+    expect(rowsAtLookup).toBe(0)
+    const rows = await client.execute('SELECT COUNT(*) AS n FROM links')
+    expect(Number(rows.rows[0]?.n)).toBe(1)
+  })
+
   it('returns 422 unsafe_destination when an edit matches a threat and keeps the old url', async () => {
     stubFetch((call) => {
       const url = threatUrl(call.body)

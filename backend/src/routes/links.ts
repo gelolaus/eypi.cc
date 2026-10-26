@@ -588,8 +588,6 @@ app.post('/api/links', requireAuth, async (c) => {
       url: destinationMessage(destination.code),
     })
   }
-  const blocked = await rejectUnsafeDestination(c, destination.url)
-  if (blocked) return blocked
 
   let customSlug: string | null = null
   if (body.slug != null && body.slug !== '') {
@@ -639,6 +637,9 @@ app.post('/api/links', requireAuth, async (c) => {
     windowSec: HOUR_SEC,
   })
   if (!decision.ok) return tooMany(c, decision.retryAfter)
+
+  const blocked = await rejectUnsafeDestination(c, destination.url)
+  if (blocked) return blocked
 
   if (customSlug) {
     const existing = await loadBySlug(c, customSlug)
