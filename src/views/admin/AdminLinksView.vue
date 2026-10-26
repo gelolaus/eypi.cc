@@ -107,7 +107,7 @@
                 <select
                   :id="`reason-${link.id}`"
                   v-model="reasons[link.id]"
-                  class="h-11 w-auto min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground"
+                  class="h-11 w-auto min-w-0 rounded-xl border border-input bg-transparent px-3.5 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&>option]:bg-popover [&>option]:text-popover-foreground"
                 >
                   <option value="abuse">
                     Abuse

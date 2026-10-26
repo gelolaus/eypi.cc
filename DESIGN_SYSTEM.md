@@ -1,6 +1,6 @@
 # eypi.cc Design System
 
-The wantap design language, applied to eypi.cc. Dark only. Every value below is read from the code (`src/styles/tokens.css`, `src/styles/main.css`, `src/components/ui/*`, `src/components/layout/*`, `src/components/marketing/*`) and guarded by `src/styles/design.test.ts`. If the code and this file disagree, the code wins: fix this file.
+The wantap design language (layout, components, type, motion) in the APC light palette. Light only. Every value below is read from the code (`src/styles/tokens.css`, `src/styles/main.css`, `src/components/ui/*`, `src/components/layout/*`, `src/components/marketing/*`) and guarded by `src/styles/design.test.ts`. If the code and this file disagree, the code wins: fix this file.
 
 ## Contents
 
@@ -14,7 +14,7 @@ The wantap design language, applied to eypi.cc. Dark only. Every value below is 
 8. Motion and reduced motion
 9. Accessibility
 10. Z-index
-11. QR exception
+11. QR output
 12. Toasts
 13. UI writing rules
 
@@ -22,49 +22,49 @@ The wantap design language, applied to eypi.cc. Dark only. Every value below is 
 
 **eypi.cc** is a URL shortener and org-tool suite for the Asia Pacific College (APC) student community.
 
-- The reference is the wantap.cc repository. Where a class string or token is shared, copy it from wantap.cc; do not reinvent it.
-- The palette is warm and dark: a near-black brown background and one coral accent (`#e8a87c`). There is no second accent color.
-- The app is dark only. `index.html` carries `class="dark"` on `<html>`, `src/main.ts` covers mounts that bypass it, and the palette lives in the `.dark` block of `tokens.css`. There is no light theme and no theme toggle.
+- The reference for layout, components, type and motion is the wantap.cc repository. Where a class string is shared, copy it from wantap.cc; do not reinvent it. The palette is eypi's own.
+- The palette is the APC brand on warm neutrals: APC blue (`#35438c`) is the primary and APC gold (`#deac4b`) is the accent. Gold is used for fills and washes (`--accent`, `--chart-2`) and is never text on a light surface or the background of white text.
+- The app is light only. `index.html` declares `color-scheme: light`, the palette lives in the `:root` block of `tokens.css`, and no `dark:` utility exists anywhere (Tailwind's default `dark` variant follows the OS, so one stray `dark:` class would darken part of the UI). There is no dark theme and no theme toggle.
 - Components never hard-code colors. They use the token utilities (`bg-background`, `text-muted-foreground`, `border-border`, `bg-primary/15`). Two allowances exist, both enforced by `design.test.ts`: the Microsoft logo fills in `LoginView.vue` (fixed by Microsoft brand rules) and the camera viewfinder scrim in `ScannerPanel.vue`.
 - Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`).
 
 ## 2. Tokens
 
-Defined once, in the `.dark` block of `src/styles/tokens.css`. `src/styles/main.css` maps each one to a Tailwind color (`--color-background: var(--background)` and so on), so `bg-primary`, `text-foreground`, `border-border`, `ring-ring` work with opacity modifiers.
+Defined once, in the `:root` block of `src/styles/tokens.css`. `src/styles/main.css` maps each one to a Tailwind color (`--color-background: var(--background)` and so on), so `bg-primary`, `text-foreground`, `border-border`, `ring-ring` work with opacity modifiers.
 
 | Token | Value | Use |
 |---|---|---|
-| `--background` | `oklch(0.14 0.01 55)` | Page background |
-| `--foreground` | `oklch(0.96 0.01 75)` | Body text |
-| `--card` | `oklch(0.18 0.012 55 / 75%)` | Card fill (translucent) |
-| `--card-foreground` | `oklch(0.96 0.01 75)` | Text on cards |
-| `--popover` | `oklch(0.17 0.012 55)` | Menus, dialogs, tooltips, toasts |
-| `--popover-foreground` | `oklch(0.96 0.01 75)` | Text on popovers |
-| `--primary` | `#e8a87c` | The coral accent: primary buttons, active nav, links |
-| `--primary-foreground` | `oklch(0.18 0.02 55)` | Text on primary |
-| `--secondary` | `oklch(0.22 0.012 55)` | Secondary buttons, quiet fills |
-| `--secondary-foreground` | `oklch(0.96 0.01 75)` | Text on secondary |
-| `--muted` | `oklch(0.2 0.01 55)` | Hover wash, tab list, avatar fallback |
-| `--muted-foreground` | `oklch(0.72 0.02 65)` | Secondary text, placeholders |
-| `--accent` | `color-mix(in oklch, #e8a87c 18%, transparent)` | Highlight wash behind the accent |
-| `--accent-foreground` | `oklch(0.9 0.04 65)` | Text on the accent wash |
-| `--destructive` | `oklch(0.704 0.191 22.216)` | Errors and destructive actions |
-| `--border` | `oklch(1 0 0 / 10%)` | All hairlines |
-| `--input` | `oklch(1 0 0 / 12%)` | Input borders and fills |
-| `--ring` | `color-mix(in oklch, #e8a87c 55%, transparent)` | Focus ring |
-| `--chart-1` | `#e8a87c` | Chart series 1 |
-| `--chart-2` | `oklch(0.556 0 0)` | Chart series 2 |
-| `--chart-3` | `oklch(0.439 0 0)` | Chart series 3 |
-| `--chart-4` | `oklch(0.371 0 0)` | Chart series 4 |
-| `--chart-5` | `oklch(0.269 0 0)` | Chart series 5 |
-| `--sidebar` | `oklch(0.15 0.01 55)` | Sidebar background |
-| `--sidebar-foreground` | `oklch(0.96 0.01 75)` | Sidebar text |
-| `--sidebar-primary` | `#e8a87c` | Sidebar accent |
-| `--sidebar-primary-foreground` | `oklch(0.18 0.02 55)` | Text on the sidebar accent |
-| `--sidebar-accent` | `oklch(0.22 0.012 55)` | Sidebar hover fill |
-| `--sidebar-accent-foreground` | `oklch(0.96 0.01 75)` | Text on the sidebar hover fill |
-| `--sidebar-border` | `oklch(1 0 0 / 10%)` | Sidebar hairlines |
-| `--sidebar-ring` | `color-mix(in oklch, #e8a87c 55%, transparent)` | Sidebar focus ring |
+| `--background` | `#f5f5f5` | Page background |
+| `--foreground` | `#0a0a0a` | Body text |
+| `--card` | `#ffffff` | Card fill |
+| `--card-foreground` | `#0a0a0a` | Text on cards |
+| `--popover` | `#ffffff` | Menus, dialogs, tooltips, toasts |
+| `--popover-foreground` | `#0a0a0a` | Text on popovers |
+| `--primary` | `#35438c` | APC blue: primary buttons, active nav, links |
+| `--primary-foreground` | `#ffffff` | Text on primary |
+| `--secondary` | `#ebebeb` | Secondary buttons, quiet fills |
+| `--secondary-foreground` | `#0a0a0a` | Text on secondary |
+| `--muted` | `#ebebeb` | Hover wash, tab list, avatar fallback |
+| `--muted-foreground` | `#5c5c5c` | Secondary text, placeholders |
+| `--accent` | `color-mix(in srgb, #deac4b 25%, transparent)` | APC gold wash: menu hover, highlights |
+| `--accent-foreground` | `#0a0a0a` | Text on the accent wash |
+| `--destructive` | `#c62828` | Errors and destructive actions |
+| `--border` | `#e2e2e2` | All hairlines |
+| `--input` | `#8c8c8c` | Input borders (3:1 on white and on the page) |
+| `--ring` | `#35438c` | Focus ring (solid; the halo is `ring-ring/50`) |
+| `--chart-1` | `#35438c` | Chart series 1 |
+| `--chart-2` | `#deac4b` | Chart series 2 |
+| `--chart-3` | `#7783c4` | Chart series 3 |
+| `--chart-4` | `#a87a1c` | Chart series 4 |
+| `--chart-5` | `#9aa0b8` | Chart series 5 |
+| `--sidebar` | `#ffffff` | Sidebar background |
+| `--sidebar-foreground` | `#0a0a0a` | Sidebar text |
+| `--sidebar-primary` | `#35438c` | Sidebar accent |
+| `--sidebar-primary-foreground` | `#ffffff` | Text on the sidebar accent |
+| `--sidebar-accent` | `#ebebf2` | Sidebar hover fill |
+| `--sidebar-accent-foreground` | `#0a0a0a` | Text on the sidebar hover fill |
+| `--sidebar-border` | `#e2e2e2` | Sidebar hairlines |
+| `--sidebar-ring` | `#35438c` | Sidebar focus ring |
 | `--radius` | `0.875rem` | Base radius (section 4) |
 
 `design.test.ts` asserts every value in this table, and that this file names every token in `tokens.css` and no token that does not exist there.
@@ -117,10 +117,10 @@ Default controls use `rounded-xl`; `sm` and `xs` use `rounded-lg`. Section cards
 | Surface | Classes | Notes |
 |---|---|---|
 | Page | `bg-background` | Set on `body` and the app shell |
-| Card | `Card`: `rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10` | Translucent fill |
+| Card | `Card`: `rounded-xl bg-card text-card-foreground ring-1 ring-foreground/10` | White fill on the grey page |
 | Section card | `AppSection`: `Card` with `gap-0 rounded-3xl p-6 sm:p-7` | Titled with `font-heading text-xl font-semibold tracking-tight` |
 | Popover (menu, select, dialog, tooltip) | `bg-popover text-popover-foreground ring-1 ring-foreground/10` | Tooltips invert: `bg-foreground text-background` |
-| Glass panel | `.glass-panel` utility: `bg-card backdrop-blur-xl border border-border` | Used for translucent panels over the dot grid |
+| Glass panel | `.glass-panel` utility: `bg-card backdrop-blur-xl border border-border` | Used for panels over the dot grid |
 | Bars (top bar, tab bar) | `bg-background/90` or `bg-background/95` with `backdrop-blur-md`, `border-border` | Section 6 |
 | Dot grid | `.bg-dot-grid` | `radial-gradient` of `--foreground` at 16% opacity, `1px` dots, `24px 24px`. Used at `opacity-35` to `opacity-40` behind hero and empty states |
 
@@ -160,7 +160,7 @@ div[data-app-shell].flex h-dvh flex-col bg-background
 ```
 section.relative isolate overflow-hidden px-5 pb-24 pt-12 sm:px-6 sm:pt-20
   .bg-dot-grid pointer-events-none absolute inset-0 -z-10 opacity-40
-  .float-slow decorative blobs: size-40 rounded-3xl bg-primary/15 and size-28 rounded-full bg-primary/10
+  .float-slow decorative blobs: size-40 rounded-3xl bg-primary/15 and size-28 rounded-full bg-accent
   div.mx-auto grid max-w-5xl grid-cols-1 items-center gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12
 ```
 
@@ -195,7 +195,7 @@ All primitives live in `src/components/ui/<name>/` and are imported from the fol
 | `Card` | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`, `CardContent`, `CardFooter` | `size`: `default` (spacing 4) or `sm` (spacing 3). |
 | `Dialog` | `Dialog`, `DialogTrigger`, `DialogPortal`, `DialogOverlay`, `DialogContent`, `DialogHeader`, `DialogFooter`, `DialogTitle`, `DialogDescription`, `DialogClose` | Content: centered, `max-w-[calc(100%-2rem)] sm:max-w-sm`, `rounded-xl bg-popover p-4`. Overlay `bg-black/10` with `backdrop-blur-xs`. Close button is a `ghost` `icon-sm` with an `sr-only` label (`showCloseButton`). |
 | `DropdownMenu` | Root, Trigger, Content, Item, CheckboxItem, RadioGroup, RadioItem, Label, Separator, Shortcut, Group, Sub, SubTrigger, SubContent, Portal | Content: `rounded-lg bg-popover p-1 shadow-md ring-1 ring-foreground/10`, `min-w-32`. |
-| `Input` | `Input` | One style: `h-11 rounded-xl border-input bg-transparent px-3.5 text-base`, `dark:bg-input/30`. `aria-invalid` turns the border and ring destructive. |
+| `Input` | `Input` | One style: `h-11 rounded-xl border-input bg-transparent px-3.5 text-base`. `aria-invalid` turns the border and ring destructive. |
 | `Textarea` | `Textarea` | `min-h-16 rounded-lg border-input px-2.5 py-2 text-base md:text-sm`, auto-grows (`field-sizing-content`). |
 | `Label` | `Label` | `text-base font-medium leading-none`. |
 | `Select` | Root, Trigger, Value, Content, Item, Group, Label, Separator, ScrollUp/DownButton | Trigger `size`: `default` `h-11`, `sm` `h-9`. Content `rounded-lg bg-popover shadow-md`, `position` `item-aligned` (default) or `popper`. |
@@ -205,7 +205,7 @@ All primitives live in `src/components/ui/<name>/` and are imported from the fol
 | `Tabs` | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `TabsList` `variant`: `default` (`bg-muted`) or `line` (transparent, underline on the active trigger). `h-11`, horizontal or vertical. |
 | `Tooltip` | `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent` | Inverted: `bg-foreground text-background text-xs rounded-md`, `max-w-xs`. |
 | `Avatar` | `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarGroupCount` | `size`: `sm` `size-6`, `default` `size-8`, `lg` `size-10`. |
-| `Toaster` | `Toaster` (vue-sonner wrapper) | Dark theme, mapped to the popover tokens. See section 12. |
+| `Toaster` | `Toaster` (vue-sonner wrapper) | Light theme, mapped to the popover tokens. See section 12. |
 
 Focus on every interactive primitive: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50` (badges, tabs and the slider thumb use the same ring at `3px`).
 
@@ -231,17 +231,29 @@ Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead
 
 ## 9. Accessibility
 
-**Contrast.** `design.test.ts` computes WCAG contrast from the token values (oklch to linear sRGB, card blended over the background) and requires the thresholds below. Measured ratios with the current tokens:
+**Contrast.** `design.test.ts` computes WCAG contrast from the token values (sRGB to linear light, the accent wash blended over the background) and requires the thresholds below. Measured ratios with the current tokens:
 
 | Pair | Required | Measured |
 |---|---|---|
-| `--foreground` on `--background` | 4.5:1 | 17.72:1 |
-| `--muted-foreground` on `--background` | 4.5:1 | 8.00:1 |
-| `--primary-foreground` on `--primary` | 4.5:1 | 9.27:1 |
-| `--card-foreground` on `--card` over `--background` | 4.5:1 | 16.99:1 |
-| `--ring` (primary at 55% over `--background`) against `--background` | 3:1 (non-text) | 5.84:1 |
+| `--foreground` on `--background` | 4.5:1 | 18.16:1 |
+| `--muted-foreground` on `--background` | 4.5:1 | 6.13:1 |
+| `--muted-foreground` on `--muted` | 4.5:1 | 5.61:1 |
+| `--primary-foreground` on `--primary` | 4.5:1 | 9.00:1 |
+| `--primary` as text on `--background` (links, active nav) | 4.5:1 | 8.26:1 |
+| `--primary` as text on `--card` | 4.5:1 | 9.00:1 |
+| `--destructive` as text on `--background` | 4.5:1 | 5.16:1 |
+| `--destructive` as text on `--card` | 4.5:1 | 5.62:1 |
+| `--card-foreground` on `--card` | 4.5:1 | 19.80:1 |
+| `--accent-foreground` on the `--accent` wash over `--background` | 4.5:1 | 16.00:1 |
+| `--sidebar-accent-foreground` on `--sidebar-accent` | 4.5:1 | 16.69:1 |
+| `--ring` against `--background` (non-text) | 3:1 | 8.26:1 |
+| `--ring` against `--card` (non-text) | 3:1 | 9.00:1 |
+| `--input` against `--card` (control border) | 3:1 | 3.36:1 |
+| `--input` against `--background` (control border) | 3:1 | 3.08:1 |
 
-**Focus ring.** Every focusable control shows a ring in `--ring`: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`. The base layer also sets `outline-ring/50` on every element.
+APC gold is not in this table because it is never text and never carries white text; on `--background` it is about 1.9:1, so it is decorative only.
+
+**Focus ring.** Every focusable control shows a ring in `--ring`: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`. `--ring` is solid APC blue, so the border of a focused control is full strength and the halo is the 50% ring around it. The base layer also sets `outline-ring/50` on every element.
 
 **Touch targets.** Controls are 44px by default (section 4).
 
@@ -269,13 +281,13 @@ Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead
 
 Toasts are rendered by vue-sonner, which manages its own stacking.
 
-## 11. QR exception
+## 11. QR output
 
-QR codes must stay dark on a light background to scan. The QR preview in `QrDesigner.vue` is therefore white in every theme; it is the one place the dark-only rule does not apply. Do not theme QR output.
+QR codes must stay dark on a light background to scan. The QR preview in `QrDesigner.vue` is therefore always white; there is no theme to follow, so this is a rule for QR output, not an exception. Do not theme QR output.
 
 ## 12. Toasts
 
-`ToastContainer` mounts the `Toaster` wrapper (`src/components/ui/sonner`) with `rich-colors` and `position="top-center"`. The wrapper uses `theme="dark"` and maps the sonner background, text, border and radius variables to `--popover`, `--popover-foreground`, `--border` and `--radius`. Status icons are lucide icons at `size-4`.
+`ToastContainer` mounts the `Toaster` wrapper (`src/components/ui/sonner`) with `rich-colors` and `position="top-center"`. The wrapper uses `theme="light"` and maps the sonner background, text, border and radius variables to `--popover`, `--popover-foreground`, `--border` and `--radius`. Status icons are lucide icons at `size-4`.
 
 The `useToast()` store (`success`, `error`, `info`) remains the source of truth for dedupe, cap and timers; vue-sonner only renders (`duration: Infinity`, the store dismisses). Call `useToast()`, never `toast` from vue-sonner directly.
 

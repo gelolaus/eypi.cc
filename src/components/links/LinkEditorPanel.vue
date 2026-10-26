@@ -64,7 +64,7 @@
           Custom slug
         </Label>
         <div
-          class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20 dark:bg-input/30"
+          class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 has-aria-invalid:border-destructive has-aria-invalid:ring-3 has-aria-invalid:ring-destructive/20"
         >
           <span class="shrink-0 font-mono font-semibold text-foreground">eypi.cc/</span>
           <input

@@ -9,7 +9,7 @@
       aria-hidden="true"
     />
     <div
-      class="float-slow pointer-events-none absolute -right-8 bottom-16 -z-10 size-28 rounded-full bg-primary/10"
+      class="float-slow pointer-events-none absolute -right-8 bottom-16 -z-10 size-28 rounded-full bg-accent"
       aria-hidden="true"
     />
 

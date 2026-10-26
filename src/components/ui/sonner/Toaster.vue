@@ -6,7 +6,7 @@ import 'vue-sonner/style.css'
 
 <template>
   <Sonner
-    theme="dark"
+    theme="light"
     class="toaster group"
     :style="{
       '--normal-bg': 'var(--popover)',
