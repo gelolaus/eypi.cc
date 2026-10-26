@@ -374,9 +374,9 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Modify `src/views/settings/OrgManagementEditView.vue` (remove the transfer form), `src/views/orgs/OrgModifyView.vue` (leave refresh, members pick-list, empty and error states, "Cancel invite"/"Resend" for pending, 409 messages), `backend/src/routes/orgs.ts` (slug rename = insert new org → repoint children → delete old, in one batch; lowercase session email for leave).
 
-- [ ] **Step 1: Failing tests:** `PATCH /api/orgs/:id` with a new slug on an org that has members, events and campaigns → 200 and all children point at the new id (`createTestApp` has FKs on); leave clears the active org and refetches (component test).
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `fix(orgs): make slug rename FK-safe and refresh state after leaving`.
+- [x] **Step 1: Failing tests:** `PATCH /api/orgs/:id` with a new slug on an org that has members, events and campaigns → 200 and all children point at the new id (`createTestApp` has FKs on); leave clears the active org and refetches (component test).
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `fix(orgs): make slug rename FK-safe and refresh state after leaving`.
 
 ---
 
