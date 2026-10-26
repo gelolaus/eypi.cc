@@ -73,7 +73,6 @@ export type Bindings = {
   AUTH_COOKIE_SECRET?: string
   /** SPA origin for Microsoft sign-in redirects. */
   FRONTEND_ORIGIN?: string
-  ASSETS: Fetcher
   /** Public and private objects in the eypi-media bucket. */
   MEDIA: R2Bucket
   // Google Wallet (JWT save link)

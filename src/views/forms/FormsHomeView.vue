@@ -46,41 +46,14 @@
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
+import { FORM_CATALOG, type FormCatalogItem } from '@shared/formsCatalog'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
-interface FormCatalogItem {
-  id: string
-  title: string
-  description: string
-  route: string
-}
-
-const FALLBACK_FORMS: FormCatalogItem[] = [
-  {
-    id: 'concessionaire',
-    title: 'Concessionaire Form',
-    description: 'MOA, waiver, reply form, and related docs in one ZIP.',
-    route: '/forms/concessionaire',
-  },
-  {
-    id: 'visitors-pass',
-    title: 'Visitors Pass',
-    description: 'Generate a visitors pass from a CSV list of names.',
-    route: '/forms/visitors-pass',
-  },
-  {
-    id: 'letter-of-intent',
-    title: 'Letter of Intent & Waiver',
-    description: 'Batch generate student waivers into a ZIP file from a CSV list.',
-    route: '/forms/letter-of-intent',
-  },
-]
 
 const router = useRouter()
 
 const loading = ref(true)
-const availableForms = ref<FormCatalogItem[]>(FALLBACK_FORMS)
+const availableForms = ref<FormCatalogItem[]>(FORM_CATALOG.map((form) => ({ ...form })))
 
 const searchQuery = ref('')
 

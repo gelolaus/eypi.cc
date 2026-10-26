@@ -132,7 +132,6 @@ function testEnv(overrides: Partial<Bindings> = {}): Bindings {
     RESEND_API_KEY: 'test-resend',
     RATE_LIMIT_KV: memoryKv(),
     LINKS_KV: memoryKv(),
-    ASSETS: { fetch: async () => new Response(null, { status: 404 }) } as unknown as Bindings['ASSETS'],
     MEDIA: memoryR2() as unknown as R2Bucket,
     ...overrides,
   }
