@@ -462,9 +462,9 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Copy:** create button "New link"; slug helper "Optional. Lowercase letters, numbers, and hyphens."; availability "Available" / "Taken" / "Reserved" / "Not allowed"; advanced section "More options" with "Expires", "Password", "UTM tags"; badges "Expired", "Disabled", "Protected", "Disabled by moderator"; bulk "Delete {n} links?"; quota "You've reached 500 links. Delete some to add more."
 
-- [ ] **Step 1: Failing tests:** typing a slug debounces 300 ms and shows availability; the UTM builder appends `utm_source` etc. without duplicating existing params; `?url=` prefills but does not create; created link appears via the returned id; the analytics chunk loads only when the panel opens (assert dynamic import).
-- [ ] **Step 2–4:** FAIL → implement → PASS. `npm run build`: the `LinksView` chunk no longer contains chart.js (check `dist/assets` names).
-- [ ] **Step 5: Commit** `feat(links): rebuild the links page with filters, bulk actions, and advanced options`.
+- [x] **Step 1: Failing tests:** typing a slug debounces 300 ms and shows availability; the UTM builder appends `utm_source` etc. without duplicating existing params; `?url=` prefills but does not create; created link appears via the returned id; the analytics chunk loads only when the panel opens (assert dynamic import).
+- [x] **Step 2–4:** FAIL → implement → PASS. `npm run build`: the `LinksView` chunk no longer contains chart.js (check `dist/assets` names).
+- [x] **Step 5: Commit** `feat(links): rebuild the links page with filters, bulk actions, and advanced options`.
 
 ### Task 4.6: Unlock, expired, and report pages
 
