@@ -569,19 +569,19 @@ feat(db): add versioned migrations with a ledger and baseline
 
 **Files:** Create `backend/src/routes/adminMigrations.ts` (`POST /api/admin/migrations/media?dryRun=1`, `requireAdmin`), test.
 
-- [ ] Failing test: seeded `data:` frame, org logo and QR logo → after the run, columns hold keys, the R2 fake has objects, and a second run is a no-op. Implement → PASS. Owner runs dry run, then real run, in production (expected: 6 frames, 2 org images, 4 QR logos). Commit `feat(admin): add one-off media migration to R2`; after the production run, a follow-up commit `chore(admin): remove the completed media migration endpoint`.
+- [x] Failing test: seeded `data:` frame, org logo and QR logo → after the run, columns hold keys, the R2 fake has objects, and a second run is a no-op. Implement → PASS. Owner runs dry run, then real run, in production (expected: 6 frames, 2 org images, 4 QR logos). Commit `feat(admin): add one-off media migration to R2`; after the production run, a follow-up commit `chore(admin): remove the completed media migration endpoint`.
 
 ### Task 6.5: Templates in R2 and the shared generator (F-FORM-2..6)
 
 **Files:** Create `shared/formsCatalog.ts`, `src/composables/useDocxGenerator.ts` (+ test). Modify `backend/src/routes/forms.ts` (read `templates/<file>` from `MEDIA`; ETag; `private, max-age=3600`), the three generator views, `src/views/forms/FormsHomeView.vue`. Delete the backend `assets` block, `backend/assets/forms/`, and the `.gitignore` template rule. Add `docs/operations.md` steps for `wrangler r2 object put eypi-media/templates/<file> --file <path>`.
 
-- [ ] Failing tests: CSV via papaparse detects the header and handles `,` and `;`; the filename sanitizer turns `Juan/Dela Cruz` into `Juan_Dela_Cruz`, and duplicates get `-2`; a missing template gives error code `template_missing` with copy "This form's template is missing. Tell the eypi.cc admin."; `walkInCount` 501 → inline error. Implement → PASS. Commit `refactor(forms): serve templates from R2 and share one DOCX generator`.
+- [x] Failing tests: CSV via papaparse detects the header and handles `,` and `;`; the filename sanitizer turns `Juan/Dela Cruz` into `Juan_Dela_Cruz`, and duplicates get `-2`; a missing template gives error code `template_missing` with copy "This form's template is missing. Tell the eypi.cc admin."; `walkInCount` 501 → inline error. Implement → PASS. Commit `refactor(forms): serve templates from R2 and share one DOCX generator`.
 
 ### Task 6.6: Frame page share previews
 
 **Files:** Modify `worker/index.ts` (`HTMLRewriter` for `/frames/:slug`: title, description, `og:image` = first frame absolute URL, `twitter:card=summary_large_image`).
 
-- [ ] Failing test: a `/frames/abc` HTML response contains `<meta property="og:image" content="https://eypi.cc/media/frames/…">`. Implement → PASS. Commit `feat(seo): add share previews for frame campaigns`.
+- [x] Failing test: a `/frames/abc` HTML response contains `<meta property="og:image" content="https://eypi.cc/media/frames/…">`. Implement → PASS. Commit `feat(seo): add share previews for frame campaigns`.
 
 ---
 
