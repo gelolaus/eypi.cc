@@ -14,7 +14,7 @@
           <span class="min-w-0 flex-1 truncate text-left font-mono text-sm font-bold text-[#34418F] dark:text-slate-200">{{ shareDisplay }}</span>
           <button
             type="button"
-            class="shrink-0 rounded-lg bg-[#34418F] px-3 py-1.5 font-mono text-xs font-semibold text-white transition-colors hover:bg-[#2a3578] dark:bg-slate-700 dark:hover:bg-slate-600"
+            class="btn-primary min-h-11 min-w-11 shrink-0"
             @click="copyShare"
           >Copy</button>
         </div>

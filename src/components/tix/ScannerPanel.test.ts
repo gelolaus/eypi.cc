@@ -32,3 +32,13 @@ describe('ScannerPanel', () => {
     expect(wrapper.html()).not.toContain('max-w-sm')
   })
 })
+
+describe('ScannerPanel action bar', () => {
+  it('is sticky at the bottom with safe-area padding', () => {
+    const wrapper = mount(ScannerPanel, { props: { slug: 'launch' } })
+    const bar = wrapper.get('[data-scanner-actions]')
+    expect(bar.classes()).toContain('sticky')
+    expect(bar.classes()).toContain('bottom-0')
+    expect(bar.classes().join(' ')).toContain('safe-area-inset-bottom')
+  })
+})

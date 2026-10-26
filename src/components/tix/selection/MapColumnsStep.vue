@@ -6,19 +6,19 @@
     <p class="mb-6 font-mono text-xs text-gray-500 dark:text-slate-400">One column must be the attendee's email.</p>
 
     <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-slate-600">
-      <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-2 font-mono text-xs font-bold uppercase tracking-widest text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
+      <div class="grid grid-cols-2 border-b border-gray-100 bg-gray-50/60 px-4 py-3 font-mono text-sm font-bold uppercase tracking-wide text-[#34418F] dark:border-slate-700 dark:bg-mica-navy-header dark:text-slate-400">
         <span>Column</span><span>Role</span>
       </div>
       <div
         v-for="col in columnHeaders"
         :key="col"
-        class="grid grid-cols-2 items-center border-b border-gray-100 px-4 py-2.5 last:border-0 dark:border-slate-700/60"
+        class="grid grid-cols-2 items-center gap-2 border-b border-gray-100 px-4 py-2 last:border-0 dark:border-slate-700/60"
       >
-        <span class="truncate pr-2 font-mono text-xs text-gray-700 dark:text-slate-300">{{ col }}</span>
+        <span class="truncate pr-2 font-mono text-sm text-gray-700 dark:text-slate-300">{{ col }}</span>
         <select
           :value="getColRole(col)"
           :aria-label="`Role for ${col}`"
-          class="rounded-lg border border-gray-200 bg-white px-2 py-1.5 font-mono text-xs outline-none transition-colors focus:border-[#34418F] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+          class="control font-mono"
           @change="setColRole(col, ($event.target as HTMLSelectElement).value)"
         >
           <option value="criteria">Criteria</option>

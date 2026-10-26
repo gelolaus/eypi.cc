@@ -44,7 +44,7 @@
         {{ scanMessage }}
       </div>
     </div>
-    <div data-scanner-actions class="flex items-center justify-center gap-3 bg-g-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div data-scanner-actions class="sticky bottom-0 z-10 flex items-center justify-center gap-3 bg-g-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <button
         v-if="needsCameraPrompt"
         type="button"
