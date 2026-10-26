@@ -3,12 +3,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 // Runs `npm audit --omit=dev` and fails on high or critical advisories.
-// xlsx stays allowlisted. node-forge left with Apple Wallet.
+// No packages are allowlisted: any high or critical advisory fails the run.
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const prefix = process.argv[2]
 const cwd = prefix ? path.resolve(root, prefix) : root
-const allowedPackages = new Set(['xlsx'])
+const allowedPackages = new Set()
 const blockingSeverities = new Set(['high', 'critical'])
 
 const result = spawnSync('npm', ['audit', '--omit=dev', '--json'], {
@@ -44,7 +44,7 @@ if (allowed.length > 0) {
   console.log(`[audit ${where}] allowed until WS5: ${allowed.join(', ')}`)
 }
 if (blockers.length > 0) {
-  console.error(`[audit ${where}] high or critical advisories outside xlsx:`)
+  console.error(`[audit ${where}] high or critical advisories:`)
   for (const blocker of blockers) console.error(`- ${blocker}`)
   process.exit(1)
 }

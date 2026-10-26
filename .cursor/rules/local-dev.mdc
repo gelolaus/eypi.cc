@@ -18,7 +18,7 @@ Versioned SQL lives in `backend/migrations`. Inspect or apply it with `npm run m
 
 ## Auth
 
-Password routes are still the sign-in path: `/login`, `/verify`, `/reset-password`, `/api/auth/login`, `/api/auth/register`, `/api/auth/verify`, and `/api/auth/password`.
+Sign-in is Microsoft only (APC tenant) with an HttpOnly cookie session: `/login` starts `/api/auth/microsoft/start`, the callback sets the session cookie, and `/api/me` reads it. There are no password, register, verify, or reset routes; do not add them. See `CONTEXT.md` and `AGENTS.md`.
 
 ## Safety (still required)
 

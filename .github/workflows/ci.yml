@@ -20,6 +20,5 @@ jobs:
       - run: npm run build
       - run: npx wrangler deploy --dry-run --config dist/eypicc_frontend/wrangler.json
       - run: npx wrangler deploy --dry-run --config backend/wrangler.jsonc
-      # xlsx stays allowlisted. node-forge left with Apple Wallet.
       - run: node scripts/audit-prod.mjs
       - run: node scripts/audit-prod.mjs backend
