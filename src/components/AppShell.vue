@@ -58,6 +58,7 @@ import TheFooter from '@/components/TheFooter.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useNavDrawer } from '@/composables/useNavDrawer'
+import { installPaneScroll } from '@/composables/paneScroll'
 import { useScrollContainer } from '@/composables/useScrollContainer'
 import { useToast } from '@/composables/useToast'
 import { isAppShellRoute, navItems } from '@/config/nav'
@@ -132,13 +133,9 @@ watch(paneRef, (pane) => {
   container.value = pane
 }, { flush: 'post' })
 
-watch(
-  () => route.path,
-  () => {
-    drawer.close()
-    if (paneRef.value) paneRef.value.scrollTop = 0
-  },
-)
+// Close the drawer on navigation. Pane scroll save/restore/reset lives in installPaneScroll.
+watch(() => route.path, () => drawer.close())
+const disposePaneScroll = installPaneScroll(router, () => paneRef.value)
 
 watch(isAuthenticated, (signedIn) => {
   if (signedIn) {
@@ -159,6 +156,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
+  disposePaneScroll()
   drawer.close()
   setBodyScrollLock(false)
   container.value = null

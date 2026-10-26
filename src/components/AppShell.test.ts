@@ -117,6 +117,26 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  it('restores the pane position on back and resets it on push', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const pane = wrapper.get('main#app-content').element as HTMLElement
+    const scrollTo = vi.fn((options: ScrollToOptions) => {
+      pane.scrollTop = options.top ?? 0
+    })
+    pane.scrollTo = scrollTo as unknown as typeof pane.scrollTo
+
+    pane.scrollTop = 640
+    await router.push('/manage/tix')
+    await flushPromises()
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+
+    router.back()
+    await flushPromises()
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 640, behavior: 'auto' })
+    wrapper.unmount()
+  })
+
   it('uses the app shell for org pages too', async () => {
     signIn()
     const wrapper = await mountAt('/orgs')
