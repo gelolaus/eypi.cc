@@ -36,7 +36,7 @@ export function checkFrontendBundle(files) {
   return problems
 }
 
-const KB = 1024
+const KB = 1000
 const ENTRY_JS_BUDGET = 70 * KB
 const ENTRY_CSS_BUDGET = 22 * KB
 const ROUTE_CHUNK_BUDGET = 40 * KB
@@ -45,7 +45,7 @@ const HEAVY_CHUNK_EXEMPT = /useDocxGenerator|exceljs|AttendeeSelection|jszip|pap
 // Public routes a visitor lands on cold. guest-ticket joins once its view exists.
 const PUBLIC_ROUTES = [/views\/dp\/DpPublicView/, /views\/tix\/TicketLookupView/, /guest-?ticket/i]
 
-const fmt = (bytes) => `${(bytes / KB).toFixed(1)} KB`
+const fmt = (bytes) => `${(bytes / KB).toFixed(1)} kB`
 
 function staticClosure(manifest, startKeys) {
   const seen = new Set()

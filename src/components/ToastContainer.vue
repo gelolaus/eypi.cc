@@ -29,19 +29,19 @@ function show(t: Toast) {
   shown.set(t.id, id)
 }
 
-watch(
-  () => toasts.value.map((t) => t.id).join(','),
-  () => {
-    const live = new Set(toasts.value.map((t) => t.id))
-    for (const t of toasts.value) if (!shown.has(t.id)) show(t)
-    for (const [storeId, id] of shown) {
-      if (live.has(storeId)) continue
-      shown.delete(storeId)
-      sonner.dismiss(id)
-    }
-  },
-  { immediate: true, flush: 'sync' },
-)
+function sync() {
+  const live = new Set(toasts.value.map((t) => t.id))
+  for (const t of toasts.value) if (!shown.has(t.id)) show(t)
+  for (const [storeId, id] of shown) {
+    if (live.has(storeId)) continue
+    shown.delete(storeId)
+    sonner.dismiss(id)
+  }
+}
+
+// Not immediate: the host mounts lazily, and sonner only receives toasts once its
+// Toaster has subscribed. Toasts raised before that are replayed in onMounted.
+watch(() => toasts.value.map((t) => t.id).join(','), sync, { flush: 'sync' })
 
 function toastIdFrom(target: EventTarget | null): number | null {
   const el = (target as Element | null)?.closest?.('[data-sonner-toast]')
@@ -66,6 +66,7 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
+  sync()
   window.addEventListener('keydown', onKeydown)
   document.addEventListener('mouseover', onEnter)
   document.addEventListener('mouseout', onLeave)

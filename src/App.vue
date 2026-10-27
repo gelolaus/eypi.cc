@@ -19,18 +19,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, provide, watch } from 'vue'
+import { computed, defineAsyncComponent, type Component as VueComponent, ref, provide, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { loadAppShell } from '@/components/layout/loadAppShell'
 import PublicShell from '@/components/layout/PublicShell.vue'
+import { reloadOnceForChunkError } from '@/lib/chunkReload'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import AppTransition from '@/components/AppTransition.vue'
 
 // The signed-in shell is only fetched on app pages. Public pages never pay for it.
 const AppShell = defineAsyncComponent(loadAppShell)
-const ToastContainer = defineAsyncComponent(() => import('@/components/ToastContainer.vue'))
-const DialogHost = defineAsyncComponent(() => import('@/components/DialogHost.vue'))
+// Retry once, then reload once on a stale chunk, so a dialog never hangs unseen.
+function lazyHost(load: () => Promise<VueComponent>) {
+  return defineAsyncComponent({
+    loader: load,
+    onError(err, retry, fail, attempts) {
+      if (attempts <= 1) retry()
+      else if (!reloadOnceForChunkError(err, window.location.pathname + window.location.search)) fail()
+    },
+  })
+}
+const ToastContainer = lazyHost(() => import('@/components/ToastContainer.vue'))
+const DialogHost = lazyHost(() => import('@/components/DialogHost.vue'))
 
 // Latches stay true once set so an open overlay never unmounts mid-animation.
 const { toasts } = useToast()

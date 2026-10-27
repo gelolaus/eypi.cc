@@ -41,7 +41,7 @@ describe('isCiEnvironment', () => {
 })
 
 describe('checkBundleBudgets', () => {
-  const KB = 1024
+  const KB = 1000
   const sizes = {}
   const gz = (file) => sizes[file] ?? 0
   const manifest = () => ({
@@ -71,7 +71,8 @@ describe('checkBundleBudgets', () => {
   it('names an over-budget entry and its size', () => {
     set({ 'assets/index-a.js': 71 * KB })
     const problems = checkBundleBudgets(manifest(), gz)
-    expect(problems.some((p) => p.includes('assets/index-a.js') && p.includes('71.0 KB'))).toBe(true)
+    expect(problems.some((p) => p.includes('assets/index-a.js') && p.includes('71.0 kB'))).toBe(true)
+    expect(problems).toHaveLength(1)
   })
   it('flags an over-budget entry stylesheet', () => {
     set({ 'assets/index-a.css': 23 * KB })

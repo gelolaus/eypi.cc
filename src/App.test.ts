@@ -67,3 +67,23 @@ describe('App layouts', () => {
     wrapper.unmount()
   })
 })
+
+describe('lazy overlay hosts', () => {
+  it('shows a toast and a dialog raised before the hosts have mounted', async () => {
+    const { useToast } = await import('@/composables/useToast')
+    const { useDialog } = await import('@/composables/useDialog')
+    await router.push('/')
+    await router.isReady()
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: { plugins: [router], stubs: { AppTransition: true, PublicShell: { template: '<div><slot /></div>' } } },
+    })
+    useToast().success('Saved early')
+    const answer = useDialog().confirm({ title: 'Sure early?', body: 'Body' })
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Saved early'))
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Sure early?'))
+    useDialog().abort()
+    expect(await answer).toBe(false)
+    wrapper.unmount()
+  })
+})
