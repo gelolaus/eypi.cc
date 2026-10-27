@@ -7,22 +7,28 @@
   <!-- Page transition overlay -->
   <AppTransition ref="appTransitionRef" />
 
-  <AppShell>
+  <component :is="Shell">
     <router-view v-slot="{ Component }">
       <component :is="Component" />
     </router-view>
-  </AppShell>
+  </component>
 
   <ToastContainer />
   <DialogHost />
 </template>
 
 <script setup lang="ts">
-import { ref, provide } from 'vue'
-import AppShell from '@/components/layout/AppShell.vue'
+import { computed, defineAsyncComponent, ref, provide } from 'vue'
+import { useRoute } from 'vue-router'
+import PublicShell from '@/components/layout/PublicShell.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import DialogHost from '@/components/DialogHost.vue'
 import AppTransition from '@/components/AppTransition.vue'
+
+// The signed-in shell is only fetched on app pages. Public pages never pay for it.
+const AppShell = defineAsyncComponent(() => import('@/components/layout/AppShell.vue'))
+const route = useRoute()
+const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)
 

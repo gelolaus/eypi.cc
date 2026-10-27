@@ -138,11 +138,11 @@
 **Interfaces:**
 - Produces: `RouteMeta.layout?: 'app' | 'public'` (default `'app'`), declared in `src/router/meta.d.ts`.
 
-- [ ] **Step 1: Failing tests:** `public routes render PublicShell and never import AppShell` (spy on the async loader); `app routes render AppShell`.
-- [ ] **Step 2: Run** `npx vitest run src/App.test.ts src/components/layout/PublicShell.test.ts` → FAIL.
-- [ ] **Step 3: Implement.** `AppShell` via `defineAsyncComponent(() => import(...))`. `PublicShell` = brand header (logo, Sign in or Dashboard link), slot, slim footer, using the existing footer markup from `AppShell`.
-- [ ] **Step 4: Run** → PASS; `npm run build` and note the entry gz size in the commit body.
-- [ ] **Step 5: Commit** `perf(shell): load the app shell only on signed-in pages`.
+- [x] **Step 1: Failing tests:** `public routes render PublicShell and never import AppShell` (spy on the async loader); `app routes render AppShell`.
+- [x] **Step 2: Run** `npx vitest run src/App.test.ts src/components/layout/PublicShell.test.ts` → FAIL.
+- [x] **Step 3: Implement.** `AppShell` via `defineAsyncComponent(() => import(...))`. `PublicShell` = brand header (logo, Sign in or Dashboard link), slot, slim footer, using the existing footer markup from `AppShell`.
+- [x] **Step 4: Run** → PASS; `npm run build` and note the entry gz size in the commit body.
+- [x] **Step 5: Commit** `perf(shell): load the app shell only on signed-in pages`.
 
 ### Task 8: Replace chart.js in link analytics
 

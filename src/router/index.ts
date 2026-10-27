@@ -18,8 +18,8 @@ const router = createRouter({
     return { top: 0, behavior: reduce ? 'auto' : 'smooth' }
   },
   routes: [
-    { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
-    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Sign in' } },
+    { path: '/', name: 'home', component: HomeView, meta: { layout: 'public', title: 'Home' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { layout: 'public', title: 'Sign in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {
@@ -108,7 +108,7 @@ const router = createRouter({
       path: '/frames/:slug',
       name: 'dp-public',
       component: () => import('@/views/dp/DpPublicView.vue'),
-      meta: { title: 'Frame' },
+      meta: { layout: 'public', title: 'Frame' },
     },
 
     // ── Tix module (ticketing) ───────────────────────────────────────────────
@@ -150,7 +150,7 @@ const router = createRouter({
       path: '/tix/:eventId',
       name: 'ticket-lookup',
       component: () => import('@/views/tix/TicketLookupView.vue'),
-      meta: { title: 'Ticket lookup' },
+      meta: { layout: 'public', title: 'Ticket lookup' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────
@@ -306,19 +306,19 @@ const router = createRouter({
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Privacy' },
+      meta: { layout: 'public', title: 'Privacy' },
     },
     {
       path: '/terms',
       name: 'terms',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Terms' },
+      meta: { layout: 'public', title: 'Terms' },
     },
     {
       path: '/acceptable-use',
       name: 'acceptable-use',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Acceptable use' },
+      meta: { layout: 'public', title: 'Acceptable use' },
     },
     {
       path: '/consent',
@@ -330,25 +330,25 @@ const router = createRouter({
       path: '/contact',
       name: 'contact',
       component: () => import('@/views/ContactView.vue'),
-      meta: { title: 'Contact' },
+      meta: { layout: 'public', title: 'Contact' },
     },
     {
       path: '/unlock/:slug',
       name: 'unlock',
       component: () => import('@/views/UnlockView.vue'),
-      meta: { title: 'Unlock' },
+      meta: { layout: 'public', title: 'Unlock' },
     },
     {
       path: '/expired',
       name: 'expired',
       component: () => import('@/views/ExpiredView.vue'),
-      meta: { title: 'Expired' },
+      meta: { layout: 'public', title: 'Expired' },
     },
     {
       path: '/report',
       name: 'report',
       component: () => import('@/views/ReportView.vue'),
-      meta: { title: 'Report' },
+      meta: { layout: 'public', title: 'Report' },
     },
 
     // ── Link shortener redirect — MUST stay second-to-last ───────────────────
@@ -356,13 +356,13 @@ const router = createRouter({
       path: '/:slug',
       name: 'redirect',
       component: () => import('@/views/RedirectView.vue'),
-      meta: { title: 'Redirect' },
+      meta: { layout: 'public', title: 'Redirect' },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
-      meta: { title: 'Page not found' },
+      meta: { layout: 'public', title: 'Page not found' },
     },
   ],
 })
