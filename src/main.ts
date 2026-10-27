@@ -14,5 +14,5 @@ app.config.errorHandler = (err, instance, info) => {
 app.directive('prefetch', vPrefetch)
 app.use(router).mount('#app')
 // web-vitals reads buffered entries, so loading it after first paint loses nothing.
-void import('@/lib/rum').then(({ startRum }) => startRum(router))
+void import('@/lib/rum').then(({ startRum }) => startRum(router)).catch(() => {})
 registerSw()

@@ -15,6 +15,8 @@ type Sample = {
 }
 
 const MAX_BATCH = 10
+/** Share of page loads that report vitals. Decided once per load, before any listener registers. */
+export const RUM_SAMPLE_RATE = 0.25
 
 export function deviceClass(width: number, coarsePointer: boolean): Device {
   if (width < 768) return 'mobile'
@@ -35,14 +37,27 @@ function connectionLabel(): string | null {
  * Collects Core Web Vitals and sends them in one batch per page view.
  * Sends the route NAME only (never the path or query) and nothing that identifies the visitor.
  */
-export function startRum(router: Router, send: (url: string, body: string) => boolean = beacon): void {
+export function startRum(
+  router: Router,
+  send: (url: string, body: string) => boolean = beacon,
+  random: () => number = Math.random,
+): void {
   if (!import.meta.env.PROD) return
+  if (random() >= RUM_SAMPLE_RATE) return
 
   const buffer = new Map<string, Sample>()
   const url = `${API_BASE_URL}/api/rum`
 
-  const record = (metric: { name: string; value: number; rating: string; navigationType?: string }) => {
+  type Metric = { name: string; value: number; rating: string; navigationType?: string }
+  // Vitals can fire before the first navigation resolves; hold them until the route name is known.
+  const waiting: Metric[] = []
+
+  const record = (metric: Metric) => {
     const route = router.currentRoute.value.name
+    if (route === undefined || route === null) {
+      waiting.push(metric)
+      return
+    }
     if (typeof route !== 'string' || !RUM_ROUTES.has(route)) return
     const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
     buffer.set(`${route}:${metric.name}`, {
@@ -64,6 +79,12 @@ export function startRum(router: Router, send: (url: string, body: string) => bo
       send(url, JSON.stringify(samples.slice(i, i + MAX_BATCH)))
     }
   }
+
+  void router.isReady().then(() => {
+    for (const metric of waiting.splice(0)) record(metric)
+  }, () => {
+    waiting.length = 0
+  })
 
   onLCP(record)
   onINP(record)

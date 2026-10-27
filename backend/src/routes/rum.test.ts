@@ -46,6 +46,17 @@ describe('POST /api/rum', () => {
     expect(Number(rows.rows[0].c)).toBe(0)
   })
 
+  it('rejects bodies over 4096 bytes', async () => {
+    const { request, client } = await createTestApp()
+    const big = JSON.stringify(Array.from({ length: 80 }, () => sample))
+    expect(big.length).toBeGreaterThan(4096)
+    const res = await request('/api/rum', post(big))
+    expect(res.status).toBe(400)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('too_large')
+    const rows = await client.execute('SELECT COUNT(*) AS c FROM rum_samples')
+    expect(Number(rows.rows[0].c)).toBe(0)
+  })
+
   it('rate limits at 60 per minute per IP', async () => {
     const { request } = await createTestApp()
     for (let i = 0; i < 60; i++) {

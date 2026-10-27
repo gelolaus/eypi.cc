@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
 import { db, type Bindings } from '../lib/db'
-import { badRequest, tooMany } from '../lib/errors'
+import { ApiError, badRequest, tooMany } from '../lib/errors'
 import { hmacIp } from '../lib/ipHash'
 import { checkRateLimit } from '../lib/rateLimit'
 import { parseRumBatch } from '../lib/rum'
+
+const MAX_BODY_BYTES = 4096
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -20,10 +22,16 @@ app.post('/api/rum', async (c) => {
   })
   if (!decision.ok) throw tooMany()
 
+  const declared = Number(c.req.header('content-length') ?? 0)
+  if (declared > MAX_BODY_BYTES) throw badRequest('too_large', 'That batch is too large.')
+
   let body: unknown
   try {
-    body = JSON.parse(await c.req.text())
-  } catch {
+    const text = await c.req.text()
+    if (text.length > MAX_BODY_BYTES) throw badRequest('too_large', 'That batch is too large.')
+    body = JSON.parse(text)
+  } catch (error) {
+    if (error instanceof ApiError) throw error
     throw badRequest('invalid', 'Send a JSON array of samples.')
   }
   const samples = parseRumBatch(body)
