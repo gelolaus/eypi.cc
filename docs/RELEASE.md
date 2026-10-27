@@ -249,3 +249,16 @@ Then, in a browser:
 - `Sign out` ends the session, and `/account` lists the current session.
 
 Tick Task 2.6 Steps 1 to 3 in the plan only after the owner has done and checked them.
+
+## October 2026 security review: owner checklist
+
+Items from the October 2026 report that code cannot change. Do these in the dashboards, then tick them.
+
+- [ ] **No PHP anywhere.** This repo is Hono on Workers plus a static SPA, so PHP2Shell (CVE-2026-109618 and CVE-2026-109619) does not apply. Confirm nothing else answers on `api.eypi.cc` or `*.eypi.cc` (the Laravel Forge mail records are Resend/Forge DNS only).
+- [ ] **Email auth.** Add a DMARC record (`_dmarc.eypi.cc`, start with `v=DMARC1; p=quarantine; rua=mailto:<inbox>`) and an apex SPF record that matches the sending provider, then check DKIM passes for `send.eypi.cc`.
+- [ ] **Cloudflare.** Keep the managed WAF ruleset on, HSTS preload on, and Always Use HTTPS on for `eypi.cc`.
+- [ ] **Node.** CI and Workers build on Node 22. Keep it on 22.23.4 or later (Brotli and TLS fixes of 21 Oct 2026).
+- [ ] **Lockfiles.** `npm ls tensorlake @subql/common` in both packages must return nothing. Last checked 27 Oct 2026: clean.
+- [ ] **security.txt.** `public/.well-known/security.txt` expires 2027-10-27. Renew it before then.
+
+Known and accepted: `style-src 'unsafe-inline'` stays in `public/_headers`. The app uses inline `style` attributes and `vue-sonner` injects a `<style>` tag at runtime, so removing it breaks toasts and layout. `script-src 'self'` is strict, which is what blocks injected scripts. `exceljs` pulls `uuid` below 11.1.1 (moderate, only unsafe when a caller passes a buffer, which exceljs does not).
