@@ -129,7 +129,7 @@ describe('DpPublicView photos', () => {
     expect(file.wasCleared()).toBe(true)
   })
 
-  it('shares the rendered photo file', async () => {
+  it('saves the rendered photo to the device without opening the share sheet', async () => {
     const share = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close() {} })))
     Object.defineProperty(navigator, 'share', { configurable: true, value: share })
@@ -145,12 +145,11 @@ describe('DpPublicView photos', () => {
     await download!.trigger('click')
     await flushPromises()
 
-    expect(share).toHaveBeenCalledTimes(1)
-    const files = share.mock.calls[0]?.[0]?.files as File[]
-    expect(files).toHaveLength(1)
-    expect(files[0]).toBeInstanceOf(File)
-    expect(files[0].type).toBe('image/png')
-    expect(vi.mocked(saveAs)).not.toHaveBeenCalled()
+    expect(share).not.toHaveBeenCalled()
+    expect(vi.mocked(saveAs)).toHaveBeenCalledTimes(1)
+    const [blob, filename] = vi.mocked(saveAs).mock.calls[0]
+    expect((blob as Blob).type).toBe('image/png')
+    expect(filename).toMatch(/^eypi-dp-.*\.png$/)
   })
 })
 

@@ -358,31 +358,13 @@ async function download() {
     const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
     const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
     const filename = `eypi-dp-${safe}${suffix}.png`
-    const file = new File([blob], filename, { type: 'image/png' })
-    const shared = await sharePhoto(file)
-    if (shared === 'cancelled') return
-    if (!shared) {
-      saveAs(blob, filename)
-      toast.success('Downloaded. Share your new profile picture.')
-    }
+    saveAs(blob, filename)
+    toast.success('Downloaded. Share your new profile picture.')
     api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')
   } finally {
     exporting.value = false
-  }
-}
-
-async function sharePhoto(file: File): Promise<boolean | 'cancelled'> {
-  if (typeof navigator.share !== 'function') return false
-  const payload = { files: [file] }
-  if (typeof navigator.canShare === 'function' && !navigator.canShare(payload)) return false
-  try {
-    await navigator.share(payload)
-    return true
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled'
-    return false
   }
 }
 
