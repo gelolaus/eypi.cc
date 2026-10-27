@@ -655,6 +655,11 @@ describe('guest ticket shell', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('X-Robots-Tag')).toBe('noindex')
   })
+
+  it('does not leak the token path in the Referer header', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/t/abcDEF123'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.headers.get('Referrer-Policy')).toBe('no-referrer')
+  })
 })
 
 describe('frame campaign share preview', () => {

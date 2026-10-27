@@ -168,13 +168,6 @@ describe('create and update', () => {
     expect((await row(client)).selection_locked).toBe(1)
   })
 
-  it('creates with legacy attendees in a draft', async () => {
-    const { request, client } = await createTestApp({ user: member, seed })
-    const { res } = await create(request, { attendees: [{ firstName: 'A', lastName: 'B', email: 'a@x.test' }] })
-    expect(res.status).toBe(201)
-    expect((await client.execute('SELECT COUNT(*) AS n FROM attendees')).rows[0].n).toBe(1)
-  })
-
   it('patches fields, clears nullable ones and validates the result', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await create(request, { admissionMode: 'fcfs', description: 'x', endTime: '10:00', capacity: 5 })
@@ -198,7 +191,7 @@ describe('create and update', () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await create(request, { admissionMode: 'fcfs' })
     await send(request, 'POST', '/api/events/fest/publish')
-    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery' })).status).toBe(200)
+    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery', registrationClosesAt: '2099-01-01 00:00:00' })).status).toBe(200)
     expect((await row(client)).admission_mode).toBe('lottery')
     const id = String((await row(client)).id)
     await client.execute({ sql: "INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, source) VALUES ('s1', ?, 'A', 'B', 'a@x.test', 'q1', 'entered', 'self')", args: [id] })
@@ -213,7 +206,7 @@ describe('create and update', () => {
 
   it('does not lock the mode for imported rows, but does once the lottery is drawn', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
-    await create(request, { admissionMode: 'lottery' })
+    await create(request, { admissionMode: 'lottery', registrationClosesAt: '2099-01-01 00:00:00' })
     const id = String((await row(client)).id)
     await client.execute({ sql: "INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, source) VALUES ('i1', ?, 'A', 'B', 'a@x.test', 'q1', 'confirmed', 'import')", args: [id] })
     expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval' })).status).toBe(200)
@@ -532,7 +525,7 @@ describe('GET /api/events/:slug editor fields', () => {
   it('returns the settings the builder edits to the owning org only', async () => {
     const { request } = await createTestApp({ user: member, seed })
     const made = await create(request, {
-      description: 'Hello **there**', endTime: '11:00', admissionMode: 'lottery', visibility: 'public', capacity: 40,
+      description: 'Hello **there**', endTime: '11:00', admissionMode: 'lottery', registrationClosesAt: '2099-02-01T00:00:00Z', visibility: 'public', capacity: 40,
       waitlistEnabled: true, registrationOpensAt: '2099-01-01T00:00:00Z',
       questions: [{ id: 'diet', label: 'Diet', type: 'choice', options: ['None', 'Vegan'], required: true }],
     })
@@ -542,7 +535,7 @@ describe('GET /api/events/:slug editor fields', () => {
     expect(event).toMatchObject({
       isLead: true, status: 'draft', description: 'Hello **there**', endTime: '11:00', admissionMode: 'lottery',
       visibility: 'public', capacity: 40, waitlistEnabled: true, registrationOpensAt: '2099-01-01 00:00:00',
-      registrationClosesAt: null, coverUrl: null, questions: [{ id: 'diet', label: 'Diet', type: 'choice', options: ['None', 'Vegan'], required: true }],
+      registrationClosesAt: '2099-02-01 00:00:00', coverUrl: null, questions: [{ id: 'diet', label: 'Diet', type: 'choice', options: ['None', 'Vegan'], required: true }],
     })
   })
 
@@ -585,5 +578,88 @@ describe('GET /api/events/:slug editor fields', () => {
     expect(event).not.toHaveProperty('questions')
     expect(event).not.toHaveProperty('lotteryDrawnAt')
     expect(event).not.toHaveProperty('confirmedCount')
+  })
+})
+
+describe('lottery closing time', () => {
+  it('requires registrationClosesAt on create and when switching a draft to lottery', async () => {
+    const { request } = await createTestApp({ user: member, seed })
+    const missing = await create(request, { admissionMode: 'lottery' })
+    expect(missing.res.status).toBe(422)
+    expect(missing.body.error?.fields?.registrationClosesAt).toBeTruthy()
+    await create(request, { admissionMode: 'fcfs' })
+    const patch = await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery' })
+    expect(patch.status).toBe(422)
+    const ok = await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery', registrationClosesAt: '2099-01-01T00:00:00Z' })
+    expect(ok.status).toBe(200)
+  })
+})
+
+describe('DELETE /api/events/:slug with registrations', () => {
+  it('refuses a published event with student registrations', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c); await seedAttendee(c, 1, 'confirmed') } })
+    await client.execute("UPDATE attendees SET source = 'self'")
+    const res = await send(request, 'DELETE', '/api/events/ev')
+    expect(res.status).toBe(409)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('has_registrations')
+    expect(await row(client, 'ev')).toBeDefined()
+  })
+
+  it('still deletes a published import event whose rows are all imported', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c); await seedAttendee(c, 1, 'confirmed') } })
+    expect((await send(request, 'DELETE', '/api/events/ev')).status).toBe(200)
+    expect(await row(client, 'ev')).toBeUndefined()
+  })
+
+  it('deletes a draft', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c, { status: 'draft' }); await seedAttendee(c, 1, 'confirmed') } })
+    await client.execute("UPDATE attendees SET source = 'self'")
+    expect((await send(request, 'DELETE', '/api/events/ev')).status).toBe(200)
+  })
+})
+
+describe('import-only routes', () => {
+  it('answer 409 not_import_event for a non-import event', async () => {
+    const { request } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c) } })
+    const calls: [string, string, unknown][] = [
+      ['POST', '/api/events/ev/finalize', { selectedRows: [{ rowId: 'x', clusterValue: null }], maxAttendees: null }],
+      ['POST', '/api/events/ev/upload-csv', { rows: [{ email: 'a@x.test' }], columnMapping: { emailCol: 'email', firstNameCol: null, lastNameCol: null, fullNameCol: null, clusterCol: null, criteriaColumns: [] } }],
+      ['POST', '/api/events/ev/clusters/A/raffle', {}],
+      ['POST', '/api/events/ev/add-guest', { firstName: 'G', email: 'g@x.test' }],
+    ]
+    for (const [method, path, body] of calls) {
+      const res = await send(request, method, path, body)
+      expect(res.status, path).toBe(409)
+      expect(((await res.json()) as { error: { code: string } }).error.code, path).toBe('not_import_event')
+    }
+  })
+})
+
+describe('add-guest on an import event', () => {
+  const seedImport = async (c: Client, max: number) => {
+    await seed(c)
+    await seedEvent(c, { max })
+    await c.execute("UPDATE events SET admission_mode = 'import' WHERE slug = 'ev'")
+  }
+
+  it('adds a confirmed manual guest and refuses at capacity', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: (c) => seedImport(c, 1) })
+    const ok = await send(request, 'POST', '/api/events/ev/add-guest', { firstName: 'G', email: 'g@x.test' })
+    expect(ok.status).toBe(200)
+    const r = (await client.execute("SELECT status, source, registered_at FROM attendees WHERE email = 'g@x.test'")).rows[0]
+    expect(r).toMatchObject({ status: 'confirmed', source: 'manual' })
+    expect(r.registered_at).not.toBeNull()
+    expect((await send(request, 'POST', '/api/events/ev/add-guest', { firstName: 'H', email: 'h@x.test' })).status).toBe(409)
+  })
+
+  it('does not oversell when two guests are added for the last seat', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: (c) => seedImport(c, 1) })
+    await request('/api/me')
+    const [a, b] = await Promise.all([
+      send(request, 'POST', '/api/events/ev/add-guest', { firstName: 'G', email: 'g@x.test' }),
+      send(request, 'POST', '/api/events/ev/add-guest', { firstName: 'H', email: 'h@x.test' }),
+    ])
+    expect([a.status, b.status].sort()).toEqual([200, 409])
+    expect(Number((await client.execute("SELECT COUNT(*) AS n FROM attendees WHERE status = 'confirmed'")).rows[0].n)).toBe(1)
   })
 })

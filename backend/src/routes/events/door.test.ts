@@ -240,6 +240,16 @@ describe('remove and restore', () => {
     expect((await row(client, 'c1')).status).toBe('cancelled')
   })
 
+  it('restore refuses on a cancelled event', async () => {
+    const { request, client } = await setup()
+    await client.execute("UPDATE attendees SET source = 'import', decided_by = 'mem-1' WHERE id = 'c1'")
+    await client.execute("UPDATE events SET status = 'cancelled' WHERE slug = 'door'")
+    const res = await act(request, 'restore', 'c1')
+    expect(res.status).toBe(409)
+    expect(await codeOf(res)).toBe('event_cancelled')
+    expect((await row(client, 'c1')).status).toBe('cancelled')
+  })
+
   it('restore refuses a non-cancelled attendee', async () => {
     const { request } = await setup()
     const res = await act(request, 'restore', 'a1')

@@ -243,16 +243,17 @@ app.get('/api/tickets', requireAuth, async (c) => {
   // Captured before the selects, so a decision made while they run still counts as new next time.
   const seenAt = String((await client.execute(`SELECT ${NOW_SQL} AS t`)).rows[0].t)
 
+  // Past from 06:00 Manila the day after the event (UTC+8 minus 6 hours = +2), matching isPastEvent in the app.
   const [upcoming, past] = await Promise.all([
     client.execute({
       sql: `${TICKET_SELECT}
-            WHERE a.user_id = ? AND e.event_date >= date('now', '+8 hours')
+            WHERE a.user_id = ? AND e.event_date >= date('now', '+2 hours')
             ORDER BY e.event_date, e.event_time`,
       args: [userId],
     }),
     client.execute({
       sql: `${TICKET_SELECT}
-            WHERE a.user_id = ? AND e.event_date < date('now', '+8 hours')
+            WHERE a.user_id = ? AND e.event_date < date('now', '+2 hours')
             ORDER BY e.event_date DESC, e.event_time DESC`,
       args: [userId],
     }),

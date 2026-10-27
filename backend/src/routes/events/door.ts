@@ -170,6 +170,7 @@ app.post('/api/events/:slug/restore', async (c) => {
   // Self-cancelled means source = 'self' AND decided_by IS NULL and stays cancelled. Rows cancelled by the
   // org, or by migration 0011 from a legacy 'removed' row (decided_by NULL, non-self source), may be restored.
   // The seat guard is inside the UPDATE, so concurrent restores cannot oversell.
+  if (event.status === 'cancelled') return c.json(actionError('event_cancelled', 'This event was cancelled, so nobody can be restored.'), 409)
   if (String(a.status) !== 'cancelled') return c.json(actionError('not_removed', `${name} is not removed.`), 409)
   if (a.decided_by == null && String(a.source) === 'self') {
     return c.json(actionError('self_cancelled', `${name} cancelled their own registration.`), 409)

@@ -10,9 +10,8 @@ export function actionError(code: string, message: string) {
   return { status: 'error' as const, message, error: { code, message } }
 }
 
-export function attendeeHasFirstName(attendee: { firstName?: unknown }): boolean {
-  return typeof attendee?.firstName === 'string' && attendee.firstName.trim().length > 0
-}
+/** CSV selection, finalize, raffle and manual guests only exist for CSV import events. */
+export const NOT_IMPORT_EVENT = actionError('not_import_event', 'This is only available for CSV import events.')
 
 export function attendeeLabel(first: unknown, last: unknown): string {
   return `${String(first ?? '')} ${String(last ?? '')}`.replace(/\s+/g, ' ').trim()

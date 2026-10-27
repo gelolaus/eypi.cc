@@ -7,7 +7,7 @@ import { ApiError } from '../../lib/errors'
 import { decodeDataUrl, deleteWithVariants, mediaUrl, parseImageMeta, putImage } from '../../lib/media'
 import { eventCreateSchema, eventPatchSchema, zodFields } from '../../lib/tix/eventSchema'
 import { NOW_SQL, promoteWaitlistStatement } from '../../lib/tix/registration'
-import { actionError, ALREADY_FINALIZED, attendeeHasFirstName, requireEventLead } from './shared'
+import { actionError, ALREADY_FINALIZED, NOT_IMPORT_EVENT, requireEventLead } from './shared'
 
 const SQL_IN_CHUNK = 200
 
@@ -54,6 +54,9 @@ function crossFieldErrors(v: { mode: string; waitlist: boolean; opens: string | 
   if (v.opens && v.closes && Date.parse(`${v.closes.replace(' ', 'T')}Z`) <= Date.parse(`${v.opens.replace(' ', 'T')}Z`)) {
     fields.registrationClosesAt = 'Registration must close after it opens.'
   }
+  if (v.mode === 'lottery' && !v.closes) {
+    fields.registrationClosesAt = 'A lottery needs a closing time.'
+  }
   return Object.keys(fields).length > 0 ? fields : null
 }
 
@@ -69,8 +72,7 @@ const COVER_DATA_URL_MAX = 14 * 1024 * 1024
 const app = new Hono<{ Bindings: Bindings }>()
 
 // ── POST /api/events ─────────────────────────────────────────────────────────
-// Create event. When attendees is absent/empty, creates in selection mode
-// (selection_locked=0) and returns selectionLocked:false for frontend redirect.
+// Create a draft event in selection mode (selection_locked=0).
 app.post('/api/events', async (c) => {
   const user = c.var.user
   if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
@@ -84,23 +86,13 @@ app.post('/api/events', async (c) => {
   const parsed = eventCreateSchema.safeParse(raw)
   if (!parsed.success) return c.json(invalidEvent(zodFields(parsed.error)), 422)
   const input = parsed.data
-  const attendeesIn = (raw as { attendees?: unknown }).attendees
-  const body = { ...input, attendees: attendeesIn as { firstName: string; lastName: string; email: string }[] | null | undefined }
+  const body = input
 
   const mode = input.admissionMode ?? 'import'
   const opens = input.registrationOpensAt ?? null
   const closes = input.registrationClosesAt ?? null
   const crossFields = crossFieldErrors({ mode, waitlist: input.waitlistEnabled === true, opens, closes })
   if (crossFields) return c.json(invalidEvent(crossFields), 422)
-
-  // The event builder no longer sends `attendees`; this legacy branch stays for older callers and tests.
-  const hasAttendees = Array.isArray(body.attendees) && body.attendees.length > 0
-  // Legacy mode requires attendees; selection mode requires none
-  if (!hasAttendees && body.attendees !== undefined && body.attendees !== null && Array.isArray(body.attendees) && body.attendees.length === 0) {
-    // Empty array explicitly sent — treat as selection mode
-  } else if (!hasAttendees && body.attendees != null) {
-    // Non-empty validation only for legacy (when attendees key is present and non-null)
-  }
 
   const client = db(c)
   const orgId = c.var.orgId
@@ -112,12 +104,7 @@ app.post('/api/events', async (c) => {
   }
 
   const eventId = crypto.randomUUID()
-  const selectionLocked = hasAttendees ? 1 : 0
   const maxAttendees = input.capacity !== undefined ? input.capacity : (input.maxAttendees ?? null)
-
-  if (hasAttendees && body.attendees!.some((attendee) => !attendeeHasFirstName(attendee))) {
-    return c.json(actionError('missing_first_name', 'Every attendee needs a first name.'), 422)
-  }
 
   try {
   await client.execute({
@@ -127,7 +114,7 @@ app.post('/api/events', async (c) => {
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?)`,
     args: [
       eventId, body.slug, user.id, orgId, body.name, body.date, body.time, input.endTime ?? null, body.location,
-      input.description?.trim() ? input.description : null, maxAttendees, selectionLocked, mode,
+      input.description?.trim() ? input.description : null, maxAttendees, 0, mode,
       input.visibility ?? 'unlisted', input.waitlistEnabled ? 1 : 0, opens, closes, JSON.stringify(input.questions ?? []),
     ],
   })
@@ -139,49 +126,11 @@ app.post('/api/events', async (c) => {
     throw err
   }
 
-  if (!hasAttendees) {
-    return c.json({
-      status: 'ok',
-      event: { id: eventId, slug: body.slug, status: 'draft' },
-      selectionLocked: false,
-      attendees: [],
-    }, 201)
-  }
-
-  // Legacy path: bulk-insert provided attendees
-  const seen = new Set<string>()
-  const unique = body.attendees!
-    .filter(a => a.email?.trim())
-    .filter(a => {
-      const key = a.email.toLowerCase().trim()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .map(a => ({
-      id: crypto.randomUUID(),
-      qrToken: crypto.randomUUID(),
-      firstName: a.firstName.trim(),
-      lastName: a.lastName.trim(),
-      email: a.email.toLowerCase().trim(),
-    }))
-
-  if (!unique.length) {
-    return c.json({ status: 'error', message: 'At least one valid attendee is required.' }, 400)
-  }
-
-  await client.batch(
-    unique.map(a => ({
-      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token) VALUES (?, ?, ?, ?, ?, ?)',
-      args: [a.id, eventId, a.firstName, a.lastName, a.email, a.qrToken],
-    }))
-  )
-
   return c.json({
     status: 'ok',
     event: { id: eventId, slug: body.slug, status: 'draft' },
-    selectionLocked: true,
-    attendees: unique.map(({ id, firstName, lastName, email, qrToken }) => ({ id, firstName, lastName, email, qrToken })),
+    selectionLocked: false,
+    attendees: [],
   }, 201)
 })
 
@@ -310,6 +259,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (event.admission_mode !== 'import') return c.json(NOT_IMPORT_EVENT, 409)
   if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {
@@ -401,7 +351,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
   try {
     await client.batch([
       ...attendees.map(a => ({
-        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id, registered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
         args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, a.clusterValue, a.csvRowId],
       })),
       ...inChunks(rowIds).map(chunk => ({
@@ -415,7 +365,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
     ], 'write')
   } catch (error) {
     await client.batch([
-      { sql: 'DELETE FROM attendees WHERE event_id = ?', args: [event.id] },
+      { sql: "DELETE FROM attendees WHERE event_id = ? AND source = 'import'", args: [event.id] },
       { sql: 'UPDATE events SET selection_locked = 0 WHERE id = ?', args: [event.id] },
     ], 'write')
     throw error
@@ -440,6 +390,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (event.admission_mode !== 'import') return c.json(NOT_IMPORT_EVENT, 409)
   if (event.selection_locked !== 1) return c.json({ status: 'error', message: 'Event is not finalized yet.' }, 409)
 
   const clusterRes = await client.execute({
@@ -528,7 +479,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 
   await client.batch([
     ...newAttendees.map(a => ({
-      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, csv_row_id, registered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
       args: [a.id, event.id as string, a.firstName, a.lastName, a.email, a.qrToken, clusterValue, a.csvRowId],
     })),
     ...inChunks(winnerIds).map(chunk => ({
@@ -556,6 +507,16 @@ app.delete('/api/events/:slug', async (c) => {
   const event = leadCheck.event
 
   const eventId = event.id as string
+  // Published events with student registrations are cancelled, not deleted, so people are told.
+  if (event.status !== 'draft') {
+    const self = await client.execute({
+      sql: `SELECT COUNT(*) AS n FROM attendees WHERE event_id = ? AND source = 'self'`,
+      args: [eventId],
+    })
+    if (Number(self.rows[0]?.n ?? 0) > 0) {
+      throw new ApiError(409, 'has_registrations', 'This event has registrations. Cancel it instead of deleting it.')
+    }
+  }
   await client.batch([
     { sql: 'DELETE FROM check_ins WHERE event_id = ?',           args: [eventId] },
     { sql: 'DELETE FROM attendees WHERE event_id = ?',           args: [eventId] },
@@ -635,7 +596,7 @@ app.patch('/api/events/:slug', async (c) => {
   })
   if (crossFields) {
     const touchedWaitlist = body.waitlistEnabled !== undefined || body.admissionMode !== undefined
-    const touchedWindow = body.registrationOpensAt !== undefined || body.registrationClosesAt !== undefined
+    const touchedWindow = body.registrationOpensAt !== undefined || body.registrationClosesAt !== undefined || body.admissionMode !== undefined
     if (!touchedWaitlist) delete crossFields.waitlistEnabled
     if (!touchedWindow) delete crossFields.registrationClosesAt
     if (Object.keys(crossFields).length > 0) return c.json(invalidEvent(crossFields), 422)
@@ -837,26 +798,8 @@ app.post('/api/events/:slug/add-guest', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (event.admission_mode !== 'import') return c.json(NOT_IMPORT_EVENT, 409)
   if (Number(event.selection_locked) !== 1) return c.json({ status: 'error', message: 'Event must be finalized before adding guests.' }, 409)
-
-  // Capacity check (exclude removed attendees)
-  if (event.max_attendees !== null) {
-    const countRes = await client.execute({
-      sql: `SELECT COUNT(*) as cnt
-            FROM attendees a
-            LEFT JOIN (
-              SELECT attendee_id, action,
-                     ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
-              FROM check_ins
-              WHERE event_id = ?
-            ) ci ON ci.attendee_id = a.id AND ci.rn = 1
-            WHERE a.event_id = ? AND a.status != 'cancelled' AND (ci.action IS NULL OR ci.action != 'removed')`,
-      args: [event.id, event.id],
-    })
-    if (Number(countRes.rows[0]?.cnt ?? 0) >= Number(event.max_attendees)) {
-      return c.json({ status: 'error', message: 'This event is at full capacity.' }, 409)
-    }
-  }
 
   const body = await c.req.json() as {
     csvRowId?: string
@@ -911,10 +854,23 @@ app.post('/api/events/:slug/add-guest', async (c) => {
 
   const newId = crypto.randomUUID()
   const qrToken = crypto.randomUUID()
-  await client.execute({
-    sql: 'INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    args: [newId, event.id as string, firstName, lastName, email, qrToken, clusterValue],
-  })
+  // One statement checks the seat count and writes, so concurrent adds cannot oversell.
+  const cap = event.max_attendees === null ? null : Number(event.max_attendees)
+  let inserted
+  try {
+    inserted = await client.execute({
+      sql: `INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, cluster_value, status, source, registered_at)
+            SELECT ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'manual', CURRENT_TIMESTAMP
+            WHERE ? IS NULL OR (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
+      args: [newId, event.id as string, firstName, lastName, email, qrToken, clusterValue, cap, event.id as string, cap],
+    })
+  } catch (err) {
+    if (/UNIQUE constraint failed/i.test(String(err instanceof Error ? err.message : err))) {
+      return c.json({ status: 'error', message: 'An attendee with this email already exists.' }, 409)
+    }
+    throw err
+  }
+  if (Number(inserted.rowsAffected) !== 1) return c.json({ status: 'error', message: 'This event is at full capacity.' }, 409)
 
   if (body.csvRowId) {
     await client.execute({

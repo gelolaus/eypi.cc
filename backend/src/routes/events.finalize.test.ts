@@ -183,6 +183,8 @@ describe('finalize', () => {
       args: [eventId],
     })
     expect(String(stored.rows[0]?.csv_row_id)).toBe('row-ada')
+    const stamped = await client.execute({ sql: 'SELECT registered_at FROM attendees WHERE event_id = ?', args: [eventId] })
+    expect(stamped.rows[0]?.registered_at).not.toBeNull()
   })
 })
 

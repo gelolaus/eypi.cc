@@ -558,7 +558,7 @@ async function exportCsv() {
     link.href = href
     link.download = `${props.slug}-attendees.csv`
     link.click()
-    URL.revokeObjectURL(href)
+    setTimeout(() => URL.revokeObjectURL(href), 1000)
   } catch (err: unknown) {
     toast.error(messageOf(err, 'Could not export the attendees. Try again.'))
   } finally {

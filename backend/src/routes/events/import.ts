@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db, type Bindings } from '../../lib/db'
-import { actionError, ALREADY_FINALIZED, requireEventLead } from './shared'
+import { actionError, ALREADY_FINALIZED, NOT_IMPORT_EVENT, requireEventLead } from './shared'
 
 const MAX_UPLOAD_ROWS = 5000
 
@@ -18,6 +18,7 @@ app.post('/api/events/:slug/upload-csv', async (c) => {
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
   if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
   const event = leadCheck.event
+  if (event.admission_mode !== 'import') return c.json(NOT_IMPORT_EVENT, 409)
   if (Number(event.selection_locked) === 1) return c.json(ALREADY_FINALIZED, 409)
 
   const body = await c.req.json() as {

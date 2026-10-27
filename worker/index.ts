@@ -694,6 +694,7 @@ export default {
       const asset = await env.ASSETS.fetch(request)
       const headers = new Headers(asset.headers)
       headers.set('X-Robots-Tag', 'noindex')
+      headers.set('Referrer-Policy', 'no-referrer')
       return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers })
     }
 

@@ -307,6 +307,29 @@ describe('GET /api/tickets', () => {
     expect(tickets.every((t) => t.status === 'pending' && t.qrToken === null)).toBe(true)
   })
 
+  it('keeps yesterday evening events upcoming until 06:00 Manila the next day', async () => {
+    const { request, client } = await createTestApp({
+      user: student,
+      seed: async (c) => {
+        await seedEvent(c, { slug: 'late', date: '2099-01-01' })
+        await seedEvent(c, { slug: 'old', date: '2001-01-01' })
+      },
+    })
+    await warm(request)
+    for (const slug of ['late', 'old']) {
+      await client.execute({
+        sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token, user_id, status, source, registered_at)
+              VALUES (?, ?, 'S', ?, ?, ?, 'confirmed', 'self', CURRENT_TIMESTAMP)`,
+        args: [`a-${slug}`, `id-${slug}`, `${slug}@x.test`, `qr-${slug}`, student.id],
+      })
+    }
+    // The cutoff is date('now', '+2 hours'): an event dated on that day is still upcoming.
+    const day = String((await client.execute("SELECT date('now', '+2 hours') AS d")).rows[0].d)
+    await client.execute({ sql: "UPDATE events SET event_date = ? WHERE slug = 'late'", args: [day] })
+    const { tickets } = await (await request('/api/tickets')).json() as { tickets: { event: { slug: string } }[] }
+    expect(tickets.map((t) => t.event.slug)).toEqual(['late', 'old'])
+  })
+
   it('anonymous is 401', async () => {
     const { request } = await createTestApp()
     expect((await request('/api/tickets')).status).toBe(401)
