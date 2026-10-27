@@ -11,6 +11,7 @@ type Seed = {
   max?: number | null
   description?: string | null
   cover?: string | null
+  questions?: unknown[]
 }
 
 async function seed(client: Client, o: Seed = {}) {
@@ -19,9 +20,9 @@ async function seed(client: Client, o: Seed = {}) {
   await client.execute({ sql: "INSERT OR IGNORE INTO organizations (id, name, owner_id) VALUES ('org-1', 'Alpha', 'owner')", args: [] })
   await client.execute({
     sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, end_time, location, org_id,
-            selection_locked, status, admission_mode, max_attendees, waitlist_enabled, description, cover_key, cover_meta)
-          VALUES (?, ?, 'owner', 'Fest', '2099-01-01', '09:00', '11:00', 'Hall', 'org-1', 1, ?, ?, ?, 1, ?, ?, NULL)`,
-    args: [`id-${slug}`, slug, o.status ?? 'published', o.mode ?? 'fcfs', o.max === undefined ? 3 : o.max, o.description ?? null, o.cover ?? null],
+            selection_locked, status, admission_mode, max_attendees, waitlist_enabled, description, cover_key, cover_meta, questions)
+          VALUES (?, ?, 'owner', 'Fest', '2099-01-01', '09:00', '11:00', 'Hall', 'org-1', 1, ?, ?, ?, 1, ?, ?, NULL, ?)`,
+    args: [`id-${slug}`, slug, o.status ?? 'published', o.mode ?? 'fcfs', o.max === undefined ? 3 : o.max, o.description ?? null, o.cover ?? null, JSON.stringify(o.questions ?? [])],
   })
 }
 
@@ -49,6 +50,17 @@ describe('GET /api/events/:slug/public', () => {
     })
     expect(body.event).not.toHaveProperty('id')
     expect(body.viewer).toEqual({ ticket: null })
+  })
+
+  it('includes the registration questions', async () => {
+    const questions = [
+      { id: 'q1', label: 'Year level', type: 'choice', options: ['1', '2'], required: true },
+      { id: 'q2', label: 'Allergies', type: 'text', required: false },
+    ]
+    const { request } = await createTestApp({ seed: async (c) => { await seed(c, { questions }); await seed(c, { slug: 'none' }) } })
+    const body = await (await request('/api/events/ev/public')).json() as { event: { questions: unknown } }
+    expect(body.event.questions).toEqual(questions)
+    expect(((await (await request('/api/events/none/public')).json()) as { event: { questions: unknown } }).event.questions).toEqual([])
   })
 
   it('404s drafts and unknown slugs, even for an org member', async () => {

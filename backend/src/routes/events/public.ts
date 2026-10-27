@@ -4,7 +4,7 @@ import { checkRateLimit } from '../../lib/rateLimit'
 import { notFound } from '../../lib/errors'
 import { withEdgeCache } from '../../lib/edgeCache'
 import { renderEventMarkdown } from '../../lib/markdownHtml'
-import { findTicket } from '../../lib/tix/registration'
+import { findTicket, parseQuestions } from '../../lib/tix/registration'
 import { loadPassContext, parsePassFields, verifyPassToken } from '../../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../../lib/passes/googleWallet'
 
@@ -38,7 +38,7 @@ app.get('/api/events/:slug/public', async (c) => {
     const res = await client.execute({
       sql: `SELECT e.id, e.slug, e.name, e.event_date, e.event_time, e.end_time, e.location, e.description,
                    e.cover_key, e.cover_meta, e.admission_mode, e.max_attendees, e.waitlist_enabled,
-                   e.registration_opens_at, e.registration_closes_at, e.status,
+                   e.registration_opens_at, e.registration_closes_at, e.status, e.questions,
                    o.id AS org_slug, o.name AS org_name,
                    (SELECT COUNT(*) FROM attendees a WHERE a.event_id = e.id AND a.status = 'confirmed') AS confirmed
             FROM events e JOIN organizations o ON o.id = e.org_id
@@ -72,6 +72,7 @@ app.get('/api/events/:slug/public', async (c) => {
         registrationOpensAt: text(row.registration_opens_at),
         registrationClosesAt: text(row.registration_closes_at),
         status: String(row.status),
+        questions: parseQuestions(row.questions),
         org: { slug: String(row.org_slug), name: String(row.org_name) },
       },
       viewer: { ticket },

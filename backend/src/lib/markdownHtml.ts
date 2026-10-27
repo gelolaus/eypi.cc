@@ -9,6 +9,7 @@
  *
  * Supported: paragraphs, line breaks, #-####, **bold**, *italic*, `code`, fenced code,
  * flat bullet and numbered lists, > quotes, [text](url).
+ * Limits: no nested lists or tables, and a link URL ends at the first `)`.
  */
 
 const ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -43,7 +44,7 @@ function inline(source: string): string {
   return out + emphasis(escapeHtml(source.slice(last)))
 }
 
-const HEADING = /^(#{1,6})\s+(.*?)\s*#*\s*$/
+const HEADING = /^(#{1,6})[ \t]+(.+)$/
 const BULLET = /^\s*[-*+]\s+(.*)$/
 const NUMBERED = /^\s*\d{1,9}[.)]\s+(.*)$/
 const FENCE = /^\s*```/
@@ -68,7 +69,8 @@ function blocks(lines: string[], depth: number): string {
     const heading = HEADING.exec(line)
     if (heading) {
       const level = Math.min(heading[1].length, 4)
-      html.push(`<h${level}>${inline(heading[2])}</h${level}>`)
+      const title = heading[2].trim().replace(/[ \t]+#+$/, '')
+      html.push(`<h${level}>${inline(title)}</h${level}>`)
       i++
       continue
     }
