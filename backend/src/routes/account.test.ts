@@ -571,6 +571,48 @@ describe('account routes', () => {
     expect(await column(client, 'SELECT id FROM users')).toEqual(['joana-id'])
   })
 
+  it('deletes future self-registrations, promotes the waitlist, and keeps past ones without the user id', async () => {
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute('PRAGMA foreign_keys = ON')
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertUser(db, 'lead-id', 'lead@apc.edu.ph', 'Lead')
+        await insertSession(db, await sha256Hex(TOKEN), 'ada-id', CHROME_WINDOWS)
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, max_attendees)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'event-future', 'future-event', 'lead-id', 'Future', '2099-01-01', '10:00', 'APC', 1,
+            'event-past', 'past-event', 'lead-id', 'Past', '2020-01-01', '10:00', 'APC', 1,
+            'event-import', 'import-event', 'lead-id', 'Import', '2099-02-01', '10:00', 'APC', 5,
+          ],
+        })
+        await db.execute({
+          sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token, user_id, status, source, registered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?),
+                       (?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'att-future', 'event-future', 'Ada', 'ada@apc.edu.ph', 'qr-future', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000',
+            'att-wait', 'event-future', 'Wes', 'wes@example.com', 'qr-wait', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000',
+            'att-past', 'event-past', 'Ada', 'ada@apc.edu.ph', 'qr-past', 'ada-id', 'confirmed', 'self', '2019-01-01 00:00:00.000',
+            'att-import', 'event-import', 'Ada', 'ada.alt@apc.edu.ph', 'qr-import', 'ada-id', 'confirmed', 'import', '2026-01-03 00:00:00.000',
+          ],
+        })
+      },
+    })
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: 'ada@apc.edu.ph' }))
+    expect(res.status).toBe(204)
+
+    expect(await column(client, "SELECT id FROM attendees WHERE id = 'att-future'")).toEqual([])
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'att-wait'")).toEqual(['confirmed'])
+    const past = await client.execute("SELECT user_id FROM attendees WHERE id = 'att-past'")
+    expect(past.rows).toHaveLength(1)
+    expect(past.rows[0]?.user_id).toBeNull()
+    const imported = await client.execute("SELECT user_id FROM attendees WHERE id = 'att-import'")
+    expect(imported.rows[0]?.user_id).toBeNull()
+  })
+
   it('still returns 204 when a QR logo cannot be deleted, without logging the email or user id', async () => {
     const currentId = await sha256Hex(TOKEN)
     const media = {
