@@ -9,6 +9,7 @@ import importRoutes from './import'
 import door from './door'
 import publicRoutes from './public'
 import registrations from './registrations'
+import lottery from './lottery'
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
@@ -52,6 +53,7 @@ app.use('/api/events/*', async (c, next) => {
 })
 
 app.route('/', inbox)
+app.route('/', lottery)
 app.route('/', manage)
 app.route('/', importRoutes)
 app.route('/', door)

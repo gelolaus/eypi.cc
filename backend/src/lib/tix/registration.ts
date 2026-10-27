@@ -13,7 +13,7 @@ export function promoteWaitlistStatement(eventId: string, capacity: number | nul
           WHERE id = (
             SELECT id FROM attendees
             WHERE event_id = ? AND status = 'waitlisted'
-            ORDER BY registered_at, rowid LIMIT 1
+            ORDER BY COALESCE(decided_at, registered_at), rowid LIMIT 1
           )
           AND (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
     args: [eventId, eventId, cap],
