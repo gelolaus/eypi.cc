@@ -8,8 +8,16 @@ const ariaLabel = computed(() => `Bar list: ${props.items.map((i) => `${i.label}
 
 <template>
   <div>
-    <ul role="img" :aria-label="ariaLabel" class="space-y-2">
-      <li v-for="item in items" :key="item.label" aria-hidden="true">
+    <ul
+      role="img"
+      :aria-label="ariaLabel"
+      class="space-y-2"
+    >
+      <li
+        v-for="item in items"
+        :key="item.label"
+        aria-hidden="true"
+      >
         <div class="mb-1 flex justify-between gap-2 text-sm">
           <span class="truncate">{{ item.label }}</span>
           <span class="tabular-nums text-muted-foreground">{{ item.value }}</span>
@@ -25,7 +33,14 @@ const ariaLabel = computed(() => `Bar list: ${props.items.map((i) => `${i.label}
     <table class="sr-only">
       <caption>{{ ariaLabel }}</caption>
       <tbody>
-        <tr v-for="item in items" :key="item.label"><th scope="row">{{ item.label }}</th><td>{{ item.value }}</td></tr>
+        <tr
+          v-for="item in items"
+          :key="item.label"
+        >
+          <th scope="row">
+            {{ item.label }}
+          </th><td>{{ item.value }}</td>
+        </tr>
       </tbody>
     </table>
   </div>

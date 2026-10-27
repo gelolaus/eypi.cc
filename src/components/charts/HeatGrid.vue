@@ -14,8 +14,16 @@ const hours = Array.from({ length: 24 }, (_, h) => h)
 
 <template>
   <div v-if="valid">
-    <svg viewBox="0 0 264 80" role="img" :aria-label="label" class="w-full">
-      <g v-for="(v, i) in cells" :key="i">
+    <svg
+      viewBox="0 0 264 80"
+      role="img"
+      :aria-label="label"
+      class="w-full"
+    >
+      <g
+        v-for="(v, i) in cells"
+        :key="i"
+      >
         <rect
           :x="(i % 24) * 11"
           :y="Math.floor(i / 24) * 11"
@@ -30,12 +38,32 @@ const hours = Array.from({ length: 24 }, (_, h) => h)
     <table class="sr-only">
       <caption>{{ label }}</caption>
       <thead>
-        <tr><th scope="col">Day</th><th v-for="h in hours" :key="h" scope="col">{{ h }}:00</th></tr>
+        <tr>
+          <th scope="col">
+            Day
+          </th><th
+            v-for="h in hours"
+            :key="h"
+            scope="col"
+          >
+            {{ h }}:00
+          </th>
+        </tr>
       </thead>
       <tbody>
-        <tr v-for="(d, di) in DAYS" :key="d">
-          <th scope="row">{{ d }}</th>
-          <td v-for="h in hours" :key="h">{{ cells[di * 24 + h] }}</td>
+        <tr
+          v-for="(d, di) in DAYS"
+          :key="d"
+        >
+          <th scope="row">
+            {{ d }}
+          </th>
+          <td
+            v-for="h in hours"
+            :key="h"
+          >
+            {{ cells[di * 24 + h] }}
+          </td>
         </tr>
       </tbody>
     </table>

@@ -50,13 +50,42 @@ const xTicks = computed(() => {
 
 <template>
   <figure class="w-full">
-    <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="ariaLabel" class="w-full">
-      <g class="text-muted-foreground" font-size="11" fill="currentColor">
-        <g v-for="t in ticks" :key="t">
-          <line :x1="M.l" :x2="W - M.r" :y1="yScale(t)" :y2="yScale(t)" stroke="var(--border)" stroke-width="1" />
-          <text :x="M.l - 6" :y="yScale(t) + 4" text-anchor="end">{{ t }}</text>
+    <svg
+      :viewBox="`0 0 ${W} ${H}`"
+      role="img"
+      :aria-label="ariaLabel"
+      class="w-full"
+    >
+      <g
+        class="text-muted-foreground"
+        font-size="11"
+        fill="currentColor"
+      >
+        <g
+          v-for="t in ticks"
+          :key="t"
+        >
+          <line
+            :x1="M.l"
+            :x2="W - M.r"
+            :y1="yScale(t)"
+            :y2="yScale(t)"
+            stroke="var(--border)"
+            stroke-width="1"
+          />
+          <text
+            :x="M.l - 6"
+            :y="yScale(t) + 4"
+            text-anchor="end"
+          >{{ t }}</text>
         </g>
-        <text v-for="t in xTicks" :key="t.i" :x="xScale(t.i)" :y="H - 8" text-anchor="middle">{{ t.l }}</text>
+        <text
+          v-for="t in xTicks"
+          :key="t.i"
+          :x="xScale(t.i)"
+          :y="H - 8"
+          text-anchor="middle"
+        >{{ t.l }}</text>
       </g>
       <path
         v-for="(d, i) in paths"
@@ -79,11 +108,36 @@ const xTicks = computed(() => {
         stroke-width="1.5"
       />
     </svg>
-    <ul v-if="series.length > 1" class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-      <li v-for="(s, i) in series" :key="s.label" class="flex items-center gap-1.5">
-        <svg viewBox="0 0 28 10" class="h-2.5 w-7" aria-hidden="true">
-          <line x1="1" x2="27" y1="5" y2="5" :stroke="colors[i % colors.length]" stroke-width="2" :stroke-dasharray="dashes[i % dashes.length]" />
-          <path :d="marker(shapes[i % shapes.length], 14, 5)" :fill="shapes[i % shapes.length] === 'cross' ? 'none' : colors[i % colors.length]" :stroke="colors[i % colors.length]" stroke-width="1" transform="scale(.9) translate(1.5 .5)" />
+    <ul
+      v-if="series.length > 1"
+      class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground"
+    >
+      <li
+        v-for="(s, i) in series"
+        :key="s.label"
+        class="flex items-center gap-1.5"
+      >
+        <svg
+          viewBox="0 0 28 10"
+          class="h-2.5 w-7"
+          aria-hidden="true"
+        >
+          <line
+            x1="1"
+            x2="27"
+            y1="5"
+            y2="5"
+            :stroke="colors[i % colors.length]"
+            stroke-width="2"
+            :stroke-dasharray="dashes[i % dashes.length]"
+          />
+          <path
+            :d="marker(shapes[i % shapes.length], 14, 5)"
+            :fill="shapes[i % shapes.length] === 'cross' ? 'none' : colors[i % colors.length]"
+            :stroke="colors[i % colors.length]"
+            stroke-width="1"
+            transform="scale(.9) translate(1.5 .5)"
+          />
         </svg>
         {{ s.label }}
       </li>
@@ -91,12 +145,32 @@ const xTicks = computed(() => {
     <table class="sr-only">
       <caption>{{ ariaLabel }}</caption>
       <thead>
-        <tr><th scope="col"><span class="sr-only">Period</span></th><th v-for="s in series" :key="s.label" scope="col">{{ s.label }}</th></tr>
+        <tr>
+          <th scope="col">
+            <span class="sr-only">Period</span>
+          </th><th
+            v-for="s in series"
+            :key="s.label"
+            scope="col"
+          >
+            {{ s.label }}
+          </th>
+        </tr>
       </thead>
       <tbody>
-        <tr v-for="(x, i) in labels" :key="x">
-          <th scope="row">{{ x }}</th>
-          <td v-for="s in series" :key="s.label">{{ s.points[i]?.y }}</td>
+        <tr
+          v-for="(x, i) in labels"
+          :key="x"
+        >
+          <th scope="row">
+            {{ x }}
+          </th>
+          <td
+            v-for="s in series"
+            :key="s.label"
+          >
+            {{ s.points[i]?.y }}
+          </td>
         </tr>
       </tbody>
     </table>

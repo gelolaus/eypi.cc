@@ -17,12 +17,23 @@ const wording = computed(() => ((rounded.value ?? 0) > 0 ? 'increase versus prev
 
 <template>
   <div class="rounded-2xl border bg-card p-4">
-    <p class="text-sm text-muted-foreground">{{ label }}</p>
-    <p class="mt-1 text-2xl font-semibold tabular-nums">{{ value }}</p>
-    <p v-if="deltaText" class="mt-1 text-sm text-muted-foreground" data-testid="delta">
+    <p class="text-sm text-muted-foreground">
+      {{ label }}
+    </p>
+    <p class="mt-1 text-2xl font-semibold tabular-nums">
+      {{ value }}
+    </p>
+    <p
+      v-if="deltaText"
+      class="mt-1 text-sm text-muted-foreground"
+      data-testid="delta"
+    >
       <span aria-hidden="true">{{ arrow }}</span>
       {{ deltaText }}
-      <span v-if="wording" class="sr-only">{{ wording }}</span>
+      <span
+        v-if="wording"
+        class="sr-only"
+      >{{ wording }}</span>
     </p>
   </div>
 </template>

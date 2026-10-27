@@ -16,13 +16,34 @@ const path = computed(() => {
 
 <template>
   <div>
-    <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="label" class="h-8 w-full" preserveAspectRatio="none">
-      <path :d="path" fill="none" stroke="var(--chart-1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+    <svg
+      :viewBox="`0 0 ${W} ${H}`"
+      role="img"
+      :aria-label="label"
+      class="h-8 w-full"
+      preserveAspectRatio="none"
+    >
+      <path
+        :d="path"
+        fill="none"
+        stroke="var(--chart-1)"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        vector-effect="non-scaling-stroke"
+      />
     </svg>
     <table class="sr-only">
       <caption>{{ label }}</caption>
       <tbody>
-        <tr v-for="(v, i) in values" :key="i"><th scope="row">{{ i + 1 }}</th><td>{{ v }}</td></tr>
+        <tr
+          v-for="(v, i) in values"
+          :key="i"
+        >
+          <th scope="row">
+            {{ i + 1 }}
+          </th><td>{{ v }}</td>
+        </tr>
       </tbody>
     </table>
   </div>
