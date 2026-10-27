@@ -223,6 +223,13 @@ Focus on every interactive primitive: `focus-visible:border-ring focus-visible:r
 
 Rules: color is never the only signal. `LineChart` gives each series its own dash pattern and marker shape (circle, square, diamond, triangle, cross) as well as its color, and `StatTile` pairs the delta color with an arrow and a signed percent. Every chart has `role="img"` and an `aria-label` that states the data (`BarList` is HTML, not SVG, but carries the same `role="img"`). Charts need a visible text label or legend and must fit 360px without horizontal scroll.
 
+**Tix patterns** (`src/components/tix/`, `src/views/tix/`):
+
+- **Ticket card** (`TicketCard`): `Card` with `rounded-3xl`, event name and a status `Badge` at the top, date and location below, then a bordered section with a sentence that explains the status. The QR shows only when the status is `confirmed`; other statuses show their sentence instead. Waitlisted cards state the position as text. Used on `/tickets` and `/t/:token`.
+- **Status badges** say the status in words (`Confirmed`, `Waitlist`, `Pending`, `In the lottery`, `Not accepted`, `Cancelled`). Variant changes the look (`default`, `secondary`, `outline`), never the meaning. The same labels appear in event lists and the attendees inbox.
+- **Door result states** (`DoorModeView`): a full-width card announced through `role="status"` with `aria-live="assertive"`. Each result carries its own sentence (`Checked in`, `Already checked in`, `Not on the guest list`, `Not confirmed`) plus the guest name, in white text on a solid color (emerald, amber, destructive) and a vibration pattern. Color never carries the result alone. Offline, save-failed and sync-stuck banners use `role="status"` or `role="alert"` and say what to do.
+- **Tabs** on the event detail and the attendees inbox are `role="tablist"` with `role="tab"` buttons, `aria-selected`, `aria-controls` to a `role="tabpanel"`, and a roving `tabindex` (0 on the active tab, -1 on the rest). `onTabKeydown` (`src/lib/tix/tabKeys.ts`) adds ArrowLeft, ArrowRight, Home and End with wraparound. Tab counts are part of the label text.
+
 App-level components built on these: `AppPage`, `AppSection`, `BrandLogo`, `OrgSwitcher`, `AccountMenu`, `SiteNavSheet`, `DialogHost` (confirm and info dialogs via `useDialog()`), `PageSkeleton`, `ScrollTop`, `AppImage`.
 
 ## 8. Motion and reduced motion

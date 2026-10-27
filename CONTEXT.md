@@ -41,9 +41,15 @@ Use these terms. Prefer them over invented synonyms.
 | **active org** | Org context for a multi-org user. Client: `localStorage.active_org_id`. API: `X-Active-Org-Id` (invalid value → 403, no silent fallback). |
 | **session** | Opaque server-side session in Turso (`sessions`). The cookie holds a random token; the table holds its sha256. |
 | **consent** | Versioned acceptance of privacy and terms (`/consent`). The API is gated until current versions are accepted. |
-| **event** | Org-scoped ticketed event (`events`). |
-| **attendee** | Person with a ticket; has `qr_token`. |
-| **ticket** | Attendee-facing QR + event info. |
+| **event** | Org-scoped ticketed event (`events`). Lifecycle `events.status`: `draft` → `published` → `closed` or `cancelled` (a closed event can be published again). |
+| **registration** | An attendee row created by a signed-in user through `POST /api/events/:slug/register` (`source = 'self'`, `user_id` set). Cancelled with `DELETE /api/events/:slug/registration`. |
+| **admission mode** | `events.admission_mode`, how registrations become tickets: `fcfs` (first come first served, confirmed until capacity, then waitlist if enabled), `lottery` (entered until `draw`), `approval` (pending until an organiser decides), `import` (CSV/XLSX selection and finalize; the original flow). |
+| **attendee** | Person with a ticket; has `qr_token`. One pool for every mode, with a `status`. |
+| **attendee status** | `pending` (awaiting approval), `entered` (in the lottery), `waitlisted`, `confirmed` (holds a ticket and can check in), `declined`, `cancelled`. Removing an attendee sets `cancelled`; restoring sets it back. |
+| **ticket** | Attendee-facing QR + event info. Shown on `/tickets` (signed-in) or `/t/:token` (guest). |
+| **guest link** | Private ticket URL `/t/:token` for an attendee with no account. Only the token hash is stored (`guest_token_hash`), so a link is issued (or rotated, which kills the old one) by an organiser through `POST /api/events/:slug/attendees/:id/guest-link` and resolved by `GET /api/tickets/guest/:token` (`private, no-store`). It replaced searching for a ticket by name. |
+| **door mode** | Full-screen check-in at `/manage/tix/:slug/door`. Loads the confirmed roster onto the device, scans against it locally, and syncs. |
+| **offline queue** | Check-ins made in door mode are stored in IndexedDB on the device and sent to `POST /api/events/:slug/checkins/sync` every few seconds while online; the server reports conflicts such as another device checking the guest in first. |
 | **pass token** | Short-lived JWT (`typ: 'pass'`) signed with `PASS_TOKEN_SECRET` for the Google Wallet endpoint. Never a session. |
 | **pass** / **wallet pass** | Google Wallet save URL. (Apple Wallet was removed.) |
 | **check-in** | Scan/log entry for an attendee (`check_ins`). |
@@ -91,7 +97,7 @@ Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and
 | Link reports (public) | `backend/src/routes/reports.ts` |
 | Orgs, members, invites, public catalog (`GET /api/orgs/:org_id/summary` for the dashboard) | `backend/src/routes/orgs.ts` |
 | Org feature gate / org context | `backend/src/middleware/orgGuard.ts` (`isOrgFeature`), `orgContext.ts` |
-| Events / Tix | `backend/src/routes/events.ts` |
+| Events / Tix | `backend/src/routes/events/*` (split by area: `index.ts` mounts them). `manage.ts` events CRUD, publish/close/cancel, cover, clusters, finalize, add-guest; `import.ts` CSV upload and column mapping; `public.ts` `GET /api/events/:slug`, `GET /api/events/:slug/public` and the Google Wallet pass; `registrations.ts` `POST /api/events/:slug/register`, `DELETE /api/events/:slug/registration`, `GET /api/tickets`, `POST /api/tickets/:id/pass`; `inbox.ts` `GET /attendees` and `POST /attendees/bulk`; `lottery.ts` `POST /draw`; `guests.ts` `guest-link`, `attendees.csv` (needs `X-Active-Org-Id`) and `GET /api/tickets/guest/:token`; `door.ts` check-in, remove/restore, `roster`, `live`, `checkins/sync` |
 | Frames / DP | `backend/src/routes/dp.ts` |
 | Forms catalog + templates | `backend/src/routes/forms.ts` |
 | Admin panel API, audit log | `backend/src/routes/admin.ts`, `lib/audit.ts` |
@@ -112,8 +118,10 @@ Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and
 | Forms | `/forms` (org-gated) |
 | Frames admin | `/manage/frames` |
 | Frames public | `/frames/:slug` |
-| Tix admin | `/manage/tix` |
-| Tix public ticket | `/tix/:slug` |
+| Tix admin | `/manage/tix`, `/manage/tix/new`, `/manage/tix/:id/edit` (builder), `/manage/tix/:id/select`, `/manage/tix/:id` (event detail), `/manage/tix/:slug/door` (door mode) |
+| Tix public event page | `/tix/:slug` |
+| My tickets (signed in) | `/tickets` |
+| Guest ticket (private link) | `/t/:token` |
 | Orgs | `/orgs`, `/orgs/:slug`, `/orgs/modify`, `/invites` |
 | Account | `/account` |
 | Admin panel | `/admin`, `/admin/users`, `/admin/links`, `/admin/reports`, `/admin/audit`, `/admin/orgs`, `/admin/speed`, `/admin/maintenance` |
@@ -129,7 +137,7 @@ Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and
 | Links | **User** (`user_id`) |
 | Events, DP/Frames, Forms | **Org** (via activated membership + `X-Active-Org-Id`) |
 | Admin panel | **Platform** (`users.role = 'admin'`) |
-| Public Frames / Tix lookup / org catalog / link redirect | **Unauthenticated** where noted |
+| Public Frames / Tix event page / guest ticket / org catalog / link redirect | **Unauthenticated** where noted |
 
 Org gate: backend `isOrgFeature` + frontend `requiresOrg` / `useOrgMembership`.
 
@@ -163,7 +171,7 @@ Good deepening targets (seams that already exist): link resolve (KV vs API), org
 1. **Link** — create → Turso + KV → edge 302 (or SPA fallback) → analytics.
 2. **Auth** — "Sign in with Microsoft" → callback checks tenant and APC email domain → upsert user → session cookie → consent gate → onboarding attaches pre-provisioned memberships (does not auto-activate).
 3. **Org** — admin creates org → owner invites email (Resend) → invitee accepts in `/invites` → activated membership → active org context.
-4. **Tix** — create event → (optional) CSV/XLSX selection → finalize → public lookup → QR / Google Wallet pass → check-in.
+4. **Tix** — create event as `draft` (builder: mode, capacity, questions, dates) → publish → people register at `/tix/:slug` (or an organiser imports a CSV and finalizes, or adds guests) → status per admission mode (fcfs, lottery draw, approval inbox) → ticket on `/tickets` or a private `/t/:token` guest link, with QR and Google Wallet pass → check-in in door mode (offline-capable) → close or cancel.
 5. **Frames** — create campaign + frames (R2) → public `/frames/:slug` → canvas merge → download count.
 6. **Forms** — org-gated catalog → fetch template from R2 → client DOCX fill → download.
 7. **Abuse** — public report → admin reports view → disable link / resolve.

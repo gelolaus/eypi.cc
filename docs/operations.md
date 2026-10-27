@@ -124,6 +124,15 @@ A failure is reported through `reportError` with code `retention_failed` and doe
 
 The second cron trigger `15 * * * *` (every hour at minute 15) runs `runHourlyRollups`: it rebuilds `rum_daily` (p75 per day, route, metric and device) from `rum_samples` for yesterday and today (UTC). It is safe to repeat. A failure is reported with code `rollups_failed`. If Admin → Speed looks stale, check this trigger and the Worker logs. `0 19 * * *` and `15 * * * *` must both stay in `backend/wrangler.jsonc`.
 
+## Phase 2 deploy notes (Tix registration)
+
+- Apply `0011_tix_registration` with the runner, then deploy the backend and the frontend straight away. The migration is additive and needs no `--allow-destructive`.
+- Deploy-window gap: between the migration and the new backend deploy, the old backend still creates attendees without `registered_at`, so those rows stay `NULL`. The old backend also keeps writing `removed` check-ins, which the new code does not read as a removal, so those attendees stay `confirmed`. Keep the window short. The backfill statements in `backend/migrations/0011_tix_registration.sql` (set `registered_at` where `NULL`, cancel attendees whose latest check-in is `removed`) are idempotent; run them again after the deploy if the window was long.
+- The slugs `t` and `tickets` are now reserved (`shared/reservedSlugs.ts`). Before deploying, check that no existing short link uses either slug; such a link stops redirecting.
+- Privacy: when an account is deleted, its future self-registrations without check-ins are deleted. Attendee rows for past events and rows with check-ins are kept with `user_id` set to `NULL`, and still hold the attendee's name and email as the organiser's attendance record (`backend/src/lib/accountDeletion.ts`).
+- Door mode stores the confirmed roster (names and QR tokens) and unsent check-ins in IndexedDB on the device. The roster is removed with the "Clear offline data" button and when a different person signs in; on sign-out only unsent check-ins stay. Tell door staff to use organiser devices.
+- The QR scanner (`qr-scanner`) loads as its own chunk when the scanner opens. A device that has never opened the scanner online cannot scan offline; open door mode once with a connection before the event.
+
 ## Service worker kill switch
 
 If the site shows an old version or keeps breaking after a deploy, replace the service worker with one that deletes its caches and unregisters itself: `cp public/sw-kill.js public/sw.js`, commit, and deploy the frontend only. Restore with `git checkout public/sw.js` once the bug is fixed. The full steps are in the Emergency section of [owner-guide-speed-tix-analytics.md](owner-guide-speed-tix-analytics.md).
