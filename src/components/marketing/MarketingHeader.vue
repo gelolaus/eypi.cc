@@ -66,7 +66,7 @@ import BrandLogo from '@/components/brand/BrandLogo.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useNavDrawer } from '@/composables/useNavDrawer'
-import { navItems, type NavItem } from '@/config/nav'
+import type { NavItem } from '@/config/nav'
 import { useSession } from '@/stores/session'
 
 const session = useSession()
@@ -78,7 +78,10 @@ const pendingInviteCount = computed(() => session.pendingInviteCount.value)
 const inlineItems = computed<NavItem[]>(() =>
   isAuthenticated.value
     ? [{ to: '/dashboard', label: 'Dashboard', icon: 'home', cta: true }]
-    : navItems({ authenticated: false, admin: false }),
+    : [
+        { to: '/orgs', label: 'Orgs', icon: 'orgs' },
+        { to: '/login', label: 'Get started', icon: 'login', cta: true },
+      ],
 )
 
 const menuLabel = computed(() => {
