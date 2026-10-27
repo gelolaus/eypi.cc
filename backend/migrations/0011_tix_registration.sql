@@ -14,6 +14,9 @@ ALTER TABLE events ADD COLUMN waitlist_enabled INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE events ADD COLUMN questions TEXT NOT NULL DEFAULT '[]';
 ALTER TABLE events ADD COLUMN lottery_drawn_at DATETIME;
 
+-- Events that already existed were listed on the org profile; keep them listed.
+UPDATE events SET visibility = 'public' WHERE status = 'published';
+
 ALTER TABLE attendees ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE attendees ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed';
 ALTER TABLE attendees ADD COLUMN source TEXT NOT NULL DEFAULT 'import';
@@ -41,6 +44,12 @@ WHERE id IN (
     )
 );
 
+-- The attendee status is now the source of truth: retire the legacy 'removed' action so a
+-- later restore (status back to confirmed) cannot leave a stale 'removed' as the latest row.
+-- 'checked_out' keeps the invariant "latest action checked_in means in the venue".
+-- Do not re-run the cancel statement above after attendees have been restored.
+UPDATE check_ins SET action = 'checked_out' WHERE action = 'removed';
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_attendees_event_user
   ON attendees(event_id, user_id) WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_attendees_guest_token_hash
@@ -49,3 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_attendees_event_status_registered
   ON attendees(event_id, status, registered_at);
 CREATE INDEX IF NOT EXISTS idx_check_ins_event_attendee_actioned
   ON check_ins(event_id, attendee_id, actioned_at);
+CREATE INDEX IF NOT EXISTS idx_attendees_email_unlinked
+  ON attendees(lower(email)) WHERE user_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_attendees_user
+  ON attendees(user_id) WHERE user_id IS NOT NULL;

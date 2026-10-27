@@ -97,11 +97,7 @@ describe('removed attendee pass', () => {
     const { request, env } = await createTestApp({
       seed: async (db) => {
         await seedEvent(db, { id: 'event-removed', slug: 'door' }, [removed])
-        await db.execute({
-          sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
-                VALUES (?, ?, ?, 'removed', ?)`,
-          args: ['check-1', removed.id, 'event-removed', '2026-10-25 00:00:00'],
-        })
+        await db.execute({ sql: `UPDATE attendees SET status = 'cancelled' WHERE id = ?`, args: [removed.id] })
       },
     })
     const token = await signPassToken(env, { attendeeId: removed.id, eventId: 'event-removed', slug: 'door' })

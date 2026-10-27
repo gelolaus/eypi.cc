@@ -548,8 +548,8 @@ const MODES: { value: AdmissionMode; label: string; help: string }[] = [
   { value: 'import', label: 'CSV import', help: 'Upload an attendee list and issue tickets yourself.' },
 ]
 const VISIBILITIES: { value: Visibility; label: string; help: string }[] = [
-  { value: 'unlisted', label: 'Unlisted', help: 'Only people with the link can find it.' },
-  { value: 'public', label: 'Public', help: 'Listed on the organization profile.' },
+  { value: 'unlisted', label: 'Unlisted', help: 'Not listed on the organization profile. Only people with the link can find it.' },
+  { value: 'public', label: 'Public', help: 'Listed on the organization profile once published.' },
 ]
 const STATUS_LABELS: Record<EventStatus, string> = { draft: 'Draft', published: 'Published', closed: 'Closed', cancelled: 'Cancelled' }
 const ADMISSION_LOCKED = 'The admission mode cannot be changed once people have registered or the lottery has been drawn.'

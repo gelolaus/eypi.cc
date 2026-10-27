@@ -116,10 +116,7 @@ describe('check-in actions', () => {
       user: lead,
       seed: async (db) => {
         await seedDoor(db)
-        await db.execute({
-          sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
-                VALUES ('ci-removed', 'att-1', 'event-1', 'removed', '2026-10-26 01:00:00')`,
-        })
+        await db.execute("UPDATE attendees SET status = 'cancelled' WHERE id = 'att-1'")
       },
     })
 
@@ -129,19 +126,15 @@ describe('check-in actions', () => {
     const rows = await client.execute({
       sql: "SELECT action FROM check_ins WHERE attendee_id = 'att-1' ORDER BY rowid",
     })
-    expect(rows.rows.map((row) => row.action)).toEqual(['removed'])
+    expect(rows.rows).toHaveLength(0)
   })
 
-  it('restore returns a cancelled attendee to not_checked_in (legacy removed row ignored)', async () => {
+  it('restore returns a cancelled attendee to not_checked_in', async () => {
     const { request, client } = await createTestApp({
       user: lead,
       seed: async (db) => {
         await seedDoor(db)
         await db.execute("UPDATE attendees SET status = 'cancelled', decided_by = 'user-lead' WHERE id = 'att-1'")
-        await db.execute({
-          sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
-                VALUES ('ci-removed', 'att-1', 'event-1', 'removed', '2026-10-26 01:00:00')`,
-        })
       },
     })
 
@@ -150,9 +143,9 @@ describe('check-in actions', () => {
 
     const listed = await request('/api/events/door/attendees', { headers })
     const body = await listed.json() as { attendees: { id: string; status: string | null }[] }
-    expect(body.attendees.find((row) => row.id === 'att-1')?.status).toBe('not_checked_in')
+    expect(body.attendees.find((row) => row.id === 'att-1')?.status ?? null).toBeNull()
     const written = await client.execute('SELECT action FROM check_ins')
-    expect(written.rows.map((row) => row.action)).toEqual(['removed'])
+    expect(written.rows).toHaveLength(0)
   })
 
   it('remove cancels the attendee without writing a check_ins row and lists as removed', async () => {

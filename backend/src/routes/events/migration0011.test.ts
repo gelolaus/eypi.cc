@@ -40,7 +40,7 @@ describe('migration 0011_tix_registration', () => {
     const ev = (await client.execute(`SELECT * FROM events WHERE id = 'e1'`)).rows[0]
     expect(ev.status).toBe('published')
     expect(ev.admission_mode).toBe('import')
-    expect(ev.visibility).toBe('unlisted')
+    expect(ev.visibility).toBe('public')
     expect(ev.questions).toBe('[]')
     expect(ev.waitlist_enabled).toBe(0)
     for (const col of ['description', 'cover_key', 'cover_meta', 'end_time', 'registration_opens_at', 'registration_closes_at', 'lottery_drawn_at']) {
@@ -67,6 +67,22 @@ describe('migration 0011_tix_registration', () => {
       ['a2', 'cancelled'],
       ['a3', 'confirmed'],
     ])
+  })
+
+  it('keeps published events listed and retires the legacy removed action', async () => {
+    const client = await migrated()
+    const ev = (await client.execute(`SELECT visibility FROM events WHERE id = 'e1'`)).rows[0]
+    expect(ev.visibility).toBe('public')
+    const removed = await client.execute(`SELECT COUNT(*) AS n FROM check_ins WHERE action = 'removed'`)
+    expect(Number(removed.rows[0].n)).toBe(0)
+    const latest = (aid: string) =>
+      client.execute({ sql: `SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC, rowid DESC LIMIT 1`, args: [aid] })
+    expect((await latest('a2')).rows[0].action).toBe('checked_out')
+    // restoring the cancelled attendee leaves a latest action that is not checked_in
+    await client.execute(`UPDATE attendees SET status = 'confirmed' WHERE id = 'a2'`)
+    expect((await latest('a2')).rows[0].action).not.toBe('checked_in')
+    const st = (await client.execute(`SELECT status FROM attendees WHERE id = 'a2'`)).rows[0]
+    expect(st.status).toBe('confirmed')
   })
 
   it('backfills registered_at for every existing attendee', async () => {
@@ -107,6 +123,8 @@ describe('migration 0011_tix_registration', () => {
       'idx_attendees_event_user',
       'idx_attendees_event_status_registered',
       'idx_check_ins_event_attendee_actioned',
+      'idx_attendees_email_unlinked',
+      'idx_attendees_user',
     ]))
   })
 })

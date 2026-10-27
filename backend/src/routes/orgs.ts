@@ -375,6 +375,7 @@ app.get('/public/:slug', (c) => withEdgeCache(c, 30, async () => {
           SELECT slug, name, event_date, event_time, location
           FROM events
           WHERE org_id = ? AND event_date >= date('now')
+            AND status != 'draft' AND visibility = 'public'
           ORDER BY event_date ASC, event_time ASC
         `,
         args: [orgId],
@@ -384,6 +385,7 @@ app.get('/public/:slug', (c) => withEdgeCache(c, 30, async () => {
           SELECT slug, name, event_date, event_time, location
           FROM events
           WHERE org_id = ? AND event_date < date('now')
+            AND status != 'draft' AND visibility = 'public'
           ORDER BY event_date DESC, event_time DESC
         `,
         args: [orgId],

@@ -17,22 +17,10 @@ function inChunks<T>(items: readonly T[], size = SQL_IN_CHUNK): T[][] {
   return chunks
 }
 
-// Latest check-in wins, including ties at the same second (higher rowid).
-// A removed attendee (cancelled, or a legacy 'removed' row) does not occupy a cluster slot.
+// A cancelled attendee does not occupy a cluster slot; attendee status is the source of truth.
 const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
     FROM attendees a
-    WHERE a.event_id = ? AND a.cluster_value = ? AND a.status != 'cancelled'
-      AND NOT EXISTS (
-        SELECT 1 FROM check_ins ci
-        WHERE ci.attendee_id = a.id
-          AND ci.action = 'removed'
-          AND ci.rowid = (
-            SELECT c2.rowid FROM check_ins c2
-            WHERE c2.attendee_id = a.id
-            ORDER BY c2.actioned_at DESC, c2.rowid DESC
-            LIMIT 1
-          )
-      )`
+    WHERE a.event_id = ? AND a.cluster_value = ? AND a.status != 'cancelled'`
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied

@@ -82,7 +82,7 @@ app.get('/api/events/:slug/attendees', async (c) => {
       sql: `
         SELECT a.id, a.first_name, a.last_name, a.email, a.qr_token, a.cluster_value,
                CASE WHEN a.status = 'cancelled' THEN 'removed'
-                    WHEN ci.action IN ('removed', 'not_checked_in') THEN 'not_checked_in'
+                    WHEN ci.action = 'not_checked_in' THEN 'not_checked_in'
                     ELSE ci.action END AS status, ci.actioned_at, a.status AS admission_status
         FROM attendees a
         LEFT JOIN (
