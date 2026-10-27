@@ -136,6 +136,7 @@ describe('pickStrategy', () => {
   it('bypasses anything that is not a plain GET', () => {
     expect(pick('https://eypi.cc/assets/x.js', { method: 'POST' })).toBe('bypass')
     expect(pick('https://api.eypi.cc/api/tickets', { method: 'DELETE' })).toBe('bypass')
+    expect(pick('https://api.eypi.cc/api/tickets/att-1/pass', { method: 'POST' })).toBe('bypass')
     expect(pick('https://eypi.cc/media/v.mp4', { headers: { Range: 'bytes=0-10' } })).toBe('bypass')
   })
 })

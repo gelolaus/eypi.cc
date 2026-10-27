@@ -47,13 +47,17 @@ export function icsFilename(ticket: TicketDto): string {
   return `${ticket.event.slug.replace(/[^a-z0-9-]/gi, '') || 'event'}.ics`
 }
 
-/** One VEVENT calendar file. Event times are Asia/Manila (UTC+8, no daylight saving) and written as UTC. */
-export function buildIcs(ticket: TicketDto, now: Date = new Date()): string {
+/**
+ * One VEVENT calendar file, or null when the stored date or time cannot be read.
+ * Event times are Asia/Manila (UTC+8, no daylight saving) and written as UTC.
+ * A missing, unreadable or not-after-the-start end time means start + 2 hours.
+ */
+export function buildIcs(ticket: TicketDto, now: Date = new Date()): string | null {
   const { event } = ticket
   const start = manilaToUtcMs(event.eventDate, event.eventTime)
+  if (Number.isNaN(start)) return null
   let end = event.endTime ? manilaToUtcMs(event.eventDate, event.endTime) : Number.NaN
-  if (Number.isNaN(end)) end = start + DEFAULT_DURATION_MS
-  else if (end <= start) end += 24 * 60 * 60 * 1000 // ends after midnight
+  if (Number.isNaN(end) || end <= start) end = start + DEFAULT_DURATION_MS
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -67,7 +71,8 @@ export function buildIcs(ticket: TicketDto, now: Date = new Date()): string {
     `DTEND:${stamp(end)}`,
     `SUMMARY:${escapeText(event.name)}`,
     `LOCATION:${escapeText(event.location)}`,
-    `DESCRIPTION:${escapeText(`Your ticket for ${event.name}: https://eypi.cc/tickets`)}`,
+    `DESCRIPTION:${escapeText(`Event details: https://eypi.cc/tix/${event.slug}`)}`,
+    `URL:https://eypi.cc/tix/${event.slug}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ]

@@ -18,3 +18,13 @@ export type TicketDto = {
     coverMeta: unknown
   }
 }
+
+/** Today in Asia/Manila as YYYY-MM-DD. */
+export function manilaToday(now: number = Date.now()): string {
+  return new Date(now + 8 * 3600_000).toISOString().slice(0, 10)
+}
+
+/** The event day is over (Manila). Past tickets show no QR and cannot be cancelled. */
+export function isPastEvent(ticket: TicketDto, now: number = Date.now()): boolean {
+  return ticket.event.eventDate < manilaToday(now)
+}

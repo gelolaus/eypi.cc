@@ -649,6 +649,14 @@ function frameShellFetch() {
   }))
 }
 
+describe('guest ticket shell', () => {
+  it('is served with X-Robots-Tag: noindex', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/t/abcDEF123'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.status).toBe(200)
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex')
+  })
+})
+
 describe('frame campaign share preview', () => {
   beforeEach(() => {
     logLinkClick.mockClear()

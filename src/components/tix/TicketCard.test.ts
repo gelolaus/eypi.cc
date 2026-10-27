@@ -20,7 +20,7 @@ vi.mock('@/lib/queryCache', () => ({ invalidate: (p: string) => invalidate(p) })
 function ticket(status: string, extra: Partial<TicketDto> = {}): TicketDto {
   return {
     id: 'att-1', status, qrToken: status === 'confirmed' ? 'qr-secret' : null, waitlistPosition: null, answers: {},
-    event: { slug: 'launch', name: 'Launch Night', eventDate: '2026-11-10', eventTime: '19:00', endTime: '21:00', location: 'APC Hall', coverUrl: null, coverMeta: null },
+    event: { slug: 'launch', name: 'Launch Night', eventDate: '2099-11-10', eventTime: '19:00', endTime: '21:00', location: 'APC Hall', coverUrl: null, coverMeta: null },
     ...extra,
   } as TicketDto
 }
@@ -34,7 +34,7 @@ describe('TicketCard', () => {
   it('shows the event name, date, time and place in Manila terms', () => {
     const w = mount(TicketCard, { props: { ticket: ticket('confirmed') } })
     expect(w.text()).toContain('Launch Night')
-    expect(w.text()).toContain('Nov 10, 2026')
+    expect(w.text()).toContain('Nov 10, 2099')
     expect(w.text()).toContain('7:00 PM')
     expect(w.text()).toContain('APC Hall')
   })
@@ -64,7 +64,7 @@ describe('TicketCard', () => {
   })
 
   it('offers Google Wallet only for a confirmed ticket with a pass token', async () => {
-    expect(mount(TicketCard, { props: { ticket: ticket('confirmed') } }).text()).not.toContain('Google Wallet')
+    expect(mount(TicketCard, { props: { ticket: ticket('confirmed'), guest: true } }).text()).not.toContain('Google Wallet')
     expect(mount(TicketCard, { props: { ticket: ticket('pending'), passToken: 'p' } }).text()).not.toContain('Google Wallet')
     const fetchMock = vi.fn(async () => json({ status: 'ok', url: 'https://pay.google.com/gp/v/save/x' }))
     vi.stubGlobal('fetch', fetchMock)
@@ -75,6 +75,63 @@ describe('TicketCard', () => {
     await flushPromises()
     const url = String((fetchMock.mock.calls[0] as unknown[])[0])
     expect(url).toContain('/api/events/launch/passes/google?token=tok%20en')
+  })
+
+  it('makes a wallet link on demand for an own confirmed ticket without a pass token', async () => {
+    const fetchMock = vi.fn(async () => json({ url: 'https://pay.google.com/gp/v/save/x' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const w = mount(TicketCard, { props: { ticket: ticket('confirmed') } })
+    const btn = w.findAll('button').find((b) => b.text().includes('Google Wallet'))!
+    expect(btn).toBeTruthy()
+    await btn.trigger('click')
+    await flushPromises()
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toContain('/api/tickets/att-1/pass')
+    expect(init.method).toBe('POST')
+  })
+
+  it('shows no wallet button for a guest ticket without a pass token', () => {
+    const w = mount(TicketCard, { props: { ticket: ticket('confirmed'), guest: true } })
+    expect(w.text()).not.toContain('Google Wallet')
+  })
+
+  it('asks for a fresh pass token once when the guest pass token has expired', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json({ message: 'Invalid or expired pass token.' }, 400))
+      .mockResolvedValueOnce(json({ url: 'https://pay.google.com/gp/v/save/y' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const refreshPass = vi.fn(async () => 'fresh')
+    const w = mount(TicketCard, { props: { ticket: ticket('confirmed'), guest: true, passToken: 'old', refreshPass } })
+    await w.findAll('button').find((b) => b.text().includes('Google Wallet'))!.trigger('click')
+    await flushPromises()
+    expect(refreshPass).toHaveBeenCalledTimes(1)
+    expect(String((fetchMock.mock.calls[1] as unknown[])[0])).toContain('token=fresh')
+  })
+
+  it('shows the error when the retry also fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ message: 'Invalid or expired pass token.' }, 400)))
+    const refreshPass = vi.fn(async () => 'fresh')
+    const w = mount(TicketCard, { props: { ticket: ticket('confirmed'), guest: true, passToken: 'old', refreshPass } })
+    await w.findAll('button').find((b) => b.text().includes('Google Wallet'))!.trigger('click')
+    await flushPromises()
+    expect(refreshPass).toHaveBeenCalledTimes(1)
+    expect(w.find('[role="alert"]').text()).toContain('expired')
+  })
+
+  it('hides the QR, wallet, calendar and cancel once the event is over', async () => {
+    const past = ticket('confirmed')
+    past.event.eventDate = '2020-01-01'
+    const w = mount(TicketCard, { props: { ticket: past, passToken: 'p' } })
+    await flushPromises()
+    expect(w.find('[data-ticket-qr]').exists()).toBe(false)
+    expect(w.text()).toContain('This event has passed')
+    for (const label of ['Google Wallet', 'Add to calendar', 'Cancel registration']) expect(w.text()).not.toContain(label)
+  })
+
+  it('skips the calendar button when the date cannot be read', () => {
+    const bad = ticket('confirmed')
+    bad.event.eventTime = 'TBA'
+    expect(mount(TicketCard, { props: { ticket: bad } }).text()).not.toContain('Add to calendar')
   })
 
   it('downloads a calendar file', async () => {

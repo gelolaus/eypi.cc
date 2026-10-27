@@ -687,6 +687,14 @@ export default {
       })
     }
 
+    // Private guest ticket links: the shell is served, but never indexed.
+    if (/^\/t\/[^/]+$/.test(path)) {
+      const asset = await env.ASSETS.fetch(request)
+      const headers = new Headers(asset.headers)
+      headers.set('X-Robots-Tag', 'noindex')
+      return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers })
+    }
+
     const match = path.match(/^\/([^/]+)$/)
     if (!match) {
       if (isSpaRoute(path)) return env.ASSETS.fetch(request)

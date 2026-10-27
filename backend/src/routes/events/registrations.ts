@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { InStatement } from '@libsql/client/web'
-import { ApiError, conflict, notFound, unauthorized } from '../../lib/errors'
+import { ApiError, conflict, notFound, tooMany, unauthorized } from '../../lib/errors'
 import { db, type Bindings } from '../../lib/db'
 import { canTransition, initialStatus, registrationOpen, type AdmissionMode } from '../../lib/tix/admission'
 import {
@@ -12,6 +12,9 @@ import {
   ticketFromRow,
   validateAnswers,
 } from '../../lib/tix/registration'
+import { buildGoogleWalletSaveUrl } from '../../lib/passes/googleWallet'
+import { loadPassContext } from '../../lib/passes/context'
+import { checkRateLimit } from '../../lib/rateLimit'
 import { enforceConsent } from '../../middleware/requireConsent'
 import { requireAuth } from '../../middleware/requireAuth'
 
@@ -220,6 +223,38 @@ app.get('/api/tickets', requireAuth, async (c) => {
     args: [userId],
   })
   return c.json({ tickets: [...upcoming.rows, ...past.rows].map(ticketFromRow) })
+})
+
+const PASS_RL_LIMIT = 20
+const PASS_RL_WINDOW = 900
+
+// POST /api/tickets/:id/pass: the signed-in student's own Google Wallet save link, made on demand.
+// Own, confirmed tickets only; anything else looks like it does not exist. Never cached.
+app.post('/api/tickets/:id/pass', requireAuth, async (c) => {
+  c.header('Cache-Control', 'private, no-store')
+  const denied = await enforceConsent(c)
+  if (denied) return denied
+  const userId = c.var.userId
+  const client = db(c)
+  const res = await client.execute({
+    sql: `SELECT a.id, e.slug FROM attendees a JOIN events e ON e.id = a.event_id
+          WHERE a.id = ? AND a.user_id = ? AND a.status = 'confirmed'`,
+    args: [c.req.param('id'), userId],
+  })
+  const row = res.rows[0]
+  if (!row) throw notFound('Ticket not found.')
+  const limit = await checkRateLimit(c.env.RATE_LIMIT_KV, { bucket: 'ticket-pass', subject: userId, limit: PASS_RL_LIMIT, windowSec: PASS_RL_WINDOW })
+  if (!limit.ok) throw tooMany('Too many attempts. Wait a few minutes and try again.')
+  try {
+    const slug = String(row.slug)
+    const ctx = await loadPassContext(client, slug, String(row.id))
+    if (!ctx) throw notFound('Ticket not found.')
+    return c.json({ url: await buildGoogleWalletSaveUrl(ctx, c.env) })
+  } catch (err) {
+    if (err instanceof ApiError) throw err
+    console.error('POST /api/tickets/:id/pass error:', err instanceof Error ? err.message : 'unknown')
+    throw new ApiError(503, 'wallet_unavailable', 'Wallet passes are not available right now.')
+  }
 })
 
 export default app

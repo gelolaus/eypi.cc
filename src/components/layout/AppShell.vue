@@ -65,7 +65,7 @@
               data-ticket-updates
               :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
             >
-              <span aria-hidden="true">{{ ticketCount }}</span>
+              <span aria-hidden="true">{{ ticketBadge }}</span>
               <span class="sr-only">{{ ticketLabel }}</span>
             </Badge>
           </router-link>
@@ -166,7 +166,7 @@
                   data-ticket-updates
                   class="absolute -right-3 -top-2 h-4 min-w-4 px-1 text-[10px]"
                 >
-                  <span aria-hidden="true">{{ ticketCount }}</span>
+                  <span aria-hidden="true">{{ ticketBadge }}</span>
                   <span class="sr-only">{{ ticketLabel }}</span>
                 </Badge>
               </span>
@@ -234,6 +234,7 @@ const isAuthenticated = computed(() => session.user.value !== null)
 const isAdmin = computed(() => session.user.value?.role === 'admin')
 const inviteCount = computed(() => session.pendingInviteCount.value)
 const ticketCount = computed(() => session.ticketUpdates.value)
+const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
 const ticketLabel = computed(() => `${ticketCount.value} new ${ticketCount.value === 1 ? 'update' : 'updates'}`)
 const entries = computed(() => appNav({ admin: isAdmin.value }))
 const tabs = computed(() => tabEntries(entries.value))

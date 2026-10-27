@@ -1,15 +1,17 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { reactive } from 'vue'
 import GuestTicketView from './GuestTicketView.vue'
 import { useSession } from '@/stores/session'
 
 vi.mock('qr-code-styling', () => ({ default: class { append(el: HTMLElement) { el.innerHTML = '<canvas data-qr></canvas>' } } }))
-vi.mock('vue-router', () => ({ useRoute: () => ({ params: { token: 'tok_abc-123' } }) }))
+const route = reactive({ params: { token: 'tok_abc-123' } })
+vi.mock('vue-router', () => ({ useRoute: () => route }))
 
 const ticket = {
   id: 'a1', status: 'confirmed', qrToken: 'qr', waitlistPosition: null, answers: {},
-  event: { slug: 'launch', name: 'Launch Night', eventDate: '2026-11-10', eventTime: '19:00', endTime: null, location: 'Hall', coverUrl: null, coverMeta: null },
+  event: { slug: 'launch', name: 'Launch Night', eventDate: '2099-11-10', eventTime: '19:00', endTime: null, location: 'Hall', coverUrl: null, coverMeta: null },
 }
 const json = (body: unknown, headers: Record<string, string> = {}, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } })
@@ -60,5 +62,20 @@ describe('GuestTicketView', () => {
     expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex')
     w.unmount()
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull()
+  })
+
+  it('reloads when the token in the address changes', async () => {
+    const fetchMock = vi.fn(async () => json({ ticket, passToken: null }))
+    vi.stubGlobal('fetch', fetchMock)
+    route.params.token = 'first'
+    mount(GuestTicketView)
+    await flushPromises()
+    route.params.token = 'second'
+    await flushPromises()
+    const urls = fetchMock.mock.calls.map((c) => String((c as unknown[])[0]))
+    // Components from earlier tests are still mounted and watch the same mocked route.
+    expect(urls.some((u) => u.endsWith('/guest/first'))).toBe(true)
+    expect(urls.some((u) => u.endsWith('/guest/second'))).toBe(true)
+    route.params.token = 'tok_abc-123'
   })
 })

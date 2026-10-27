@@ -99,6 +99,7 @@
           v-for="ticket in past"
           :key="ticket.id"
           :ticket="ticket"
+          @cancelled="query.refresh()"
         />
       </section>
     </template>
@@ -114,7 +115,7 @@ import { Card } from '@/components/ui/card'
 import { ApiError, api } from '@/lib/api'
 import { useQuery } from '@/lib/queryCache'
 import { offlineBanner, readOfflineInfo, type OfflineInfo } from '@/lib/tix/offline'
-import type { TicketDto } from '@/lib/tix/tickets'
+import { isPastEvent, type TicketDto } from '@/lib/tix/tickets'
 import { useSession } from '@/stores/session'
 
 type Loaded = { tickets: TicketDto[]; info: OfflineInfo }
@@ -132,11 +133,8 @@ const query = useQuery<Loaded>('tickets:list', async () => {
 const tickets = computed(() => query.data.value?.tickets ?? [])
 const banner = computed(() => (query.data.value ? offlineBanner(query.data.value.info) : ''))
 
-function manilaToday(): string {
-  return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)
-}
-const upcoming = computed(() => tickets.value.filter((t) => t.event.eventDate >= manilaToday()))
-const past = computed(() => tickets.value.filter((t) => t.event.eventDate < manilaToday()))
+const upcoming = computed(() => tickets.value.filter((t) => !isPastEvent(t)))
+const past = computed(() => tickets.value.filter((t) => isPastEvent(t)))
 
 // The server marks updates as seen on a live load; a cached copy proves nothing.
 watch(() => query.data.value, (data) => {

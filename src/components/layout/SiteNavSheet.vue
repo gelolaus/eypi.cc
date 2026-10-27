@@ -42,7 +42,7 @@
               v-if="entry.to === '/tickets' && ticketCount > 0"
               data-ticket-updates
             >
-              <span aria-hidden="true">{{ ticketCount }}</span>
+              <span aria-hidden="true">{{ ticketBadge }}</span>
               <span class="sr-only">{{ ticketCount }} new {{ ticketCount === 1 ? 'update' : 'updates' }}</span>
             </Badge>
           </router-link>
@@ -112,6 +112,7 @@ const signOut = useSignOut()
 const isAuthenticated = computed(() => session.user.value !== null)
 const inviteCount = computed(() => session.pendingInviteCount.value)
 const ticketCount = computed(() => session.ticketUpdates.value)
+const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
 const entries = computed(() => {
   const admin = session.user.value?.role === 'admin'
   return [...appNav({ admin }), ...menuEntries({ admin })]

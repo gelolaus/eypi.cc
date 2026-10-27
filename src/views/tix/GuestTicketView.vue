@@ -46,7 +46,7 @@
       <Button
         variant="outline"
         class="mt-4"
-        @click="load"
+        @click="load()"
       >
         Try again
       </Button>
@@ -56,13 +56,14 @@
       v-else
       :ticket="ticket"
       :pass-token="passToken"
+      :refresh-pass="refreshPass"
       guest
     />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TicketCard from '@/components/tix/TicketCard.vue'
 import { Button } from '@/components/ui/button'
@@ -82,24 +83,40 @@ const banner = computed(() => offlineBanner(info.value))
 // Private link: never put the ticket in the shared query cache, and keep it out of search results.
 let robots: HTMLMetaElement | null = null
 
-async function load(): Promise<void> {
-  state.value = 'loading'
+// A newer load wins: a slow answer for an old token must not overwrite the current one.
+let loadSeq = 0
+
+async function load(quiet = false): Promise<void> {
+  const mine = ++loadSeq
+  if (!quiet) state.value = 'loading'
   try {
     const res = await api.raw(`/api/tickets/guest/${encodeURIComponent(String(route.params.token ?? ''))}`)
+    if (mine !== loadSeq) return
     if (res.status === 404) {
       state.value = 'gone'
       return
     }
     if (!res.ok) throw new Error('failed')
     const body = await res.json() as { ticket: TicketDto; passToken: string | null }
+    if (mine !== loadSeq) return
     ticket.value = body.ticket
     passToken.value = body.passToken ?? null
     info.value = readOfflineInfo(res)
     state.value = 'ready'
   } catch {
-    state.value = 'error'
+    if (mine === loadSeq && !quiet) state.value = 'error'
   }
 }
+
+/** For an expired wallet token: reload the ticket quietly and hand back the new token. */
+async function refreshPass(): Promise<string | null> {
+  await load(true)
+  return passToken.value
+}
+
+watch(() => route.params.token, (now, before) => {
+  if (now !== before) void load()
+})
 
 onMounted(() => {
   robots = document.createElement('meta')

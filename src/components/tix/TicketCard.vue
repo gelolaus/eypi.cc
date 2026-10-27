@@ -25,7 +25,7 @@
         class="text-sm text-foreground"
         :class="ticket.status === 'waitlisted' ? 'font-semibold' : ''"
       >
-        {{ copy.text }}
+        {{ isPast && isLive ? 'This event has passed.' : copy.text }}
       </p>
 
       <div
@@ -100,7 +100,7 @@ import { useDialog } from '@/composables/useDialog'
 import { ApiError, api } from '@/lib/api'
 import { formatManilaDate } from '@/lib/manilaTime'
 import { buildIcs, icsFilename } from '@/lib/tix/ics'
-import type { TicketDto } from '@/lib/tix/tickets'
+import { isPastEvent, type TicketDto } from '@/lib/tix/tickets'
 import { TIX_QR_RENDER_OPTIONS } from '@/utils/tix-qr'
 
 const props = defineProps<{
@@ -109,6 +109,8 @@ const props = defineProps<{
   passToken?: string | null
   /** The private guest page: no cancelling there. */
   guest?: boolean
+  /** Guest page: fetches the ticket again and returns a fresh pass token (used once if the first has expired). */
+  refreshPass?: () => Promise<string | null>
 }>()
 const emit = defineEmits<{ cancelled: [] }>()
 
@@ -155,11 +157,15 @@ const copy = computed<{ label: string; text: string; variant: 'default' | 'secon
   }
 })
 
-const isConfirmed = computed(() => props.ticket.status === 'confirmed')
+const isPast = computed(() => isPastEvent(props.ticket))
+const isLive = computed(() => ['confirmed', 'waitlisted', 'pending', 'entered'].includes(props.ticket.status))
+const isConfirmed = computed(() => props.ticket.status === 'confirmed' && !isPast.value)
 const showQr = computed(() => isConfirmed.value && !!props.ticket.qrToken)
-const showWallet = computed(() => isConfirmed.value && !!props.passToken)
-const showCalendar = computed(() => ['confirmed', 'waitlisted', 'pending', 'entered'].includes(props.ticket.status))
-const canCancel = computed(() => !props.guest && ['confirmed', 'waitlisted', 'pending', 'entered'].includes(props.ticket.status))
+// Guests get a pass token with the ticket; signed-in owners ask for a link on demand.
+const showWallet = computed(() => isConfirmed.value && (!!props.passToken || !props.guest))
+const calendarIcs = computed(() => (isLive.value && !isPast.value ? buildIcs(props.ticket) : null))
+const showCalendar = computed(() => calendarIcs.value !== null)
+const canCancel = computed(() => !props.guest && isLive.value && !isPast.value)
 
 // qr-code-styling is heavy: it loads only when a confirmed ticket is on screen.
 watch(
@@ -176,17 +182,28 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
+type WalletResult = { url?: string; message?: string; expired?: boolean }
+
+async function requestWalletUrl(token: string | null | undefined): Promise<WalletResult> {
+  const res = token
+    ? await api.raw(`/api/events/${encodeURIComponent(props.ticket.event.slug)}/passes/google?token=${encodeURIComponent(token)}`)
+    : await api.raw(`/api/tickets/${encodeURIComponent(props.ticket.id)}/pass`, { method: 'POST' })
+  const body = await res.json().catch(() => ({})) as { url?: string; message?: string; error?: { message?: string } }
+  const message = body.message ?? body.error?.message
+  return { url: res.ok ? body.url : undefined, message, expired: res.status === 400 || res.status === 404 }
+}
+
 async function saveToGoogleWallet(): Promise<void> {
-  if (!props.passToken) return
   error.value = ''
   savingWallet.value = true
   try {
-    const res = await api.raw(
-      `/api/events/${encodeURIComponent(props.ticket.event.slug)}/passes/google?token=${encodeURIComponent(props.passToken)}`,
-    )
-    const data = await res.json().catch(() => ({})) as { message?: string; url?: string }
-    if (!res.ok || !data.url) throw new Error(data.message ?? 'Could not open Google Wallet. Try again later.')
-    window.location.href = data.url
+    let result = await requestWalletUrl(props.passToken)
+    if (!result.url && props.guest && result.expired && props.refreshPass) {
+      const fresh = await props.refreshPass()
+      if (fresh) result = await requestWalletUrl(fresh)
+    }
+    if (!result.url) throw new Error(result.message ?? 'Could not open Google Wallet. Try again later.')
+    window.location.href = result.url
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Could not open Google Wallet. Try again later.'
   } finally {
@@ -195,7 +212,9 @@ async function saveToGoogleWallet(): Promise<void> {
 }
 
 function addToCalendar(): void {
-  const blob = new Blob([buildIcs(props.ticket)], { type: 'text/calendar;charset=utf-8' })
+  const ics = calendarIcs.value
+  if (!ics) return
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

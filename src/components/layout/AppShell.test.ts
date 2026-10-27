@@ -339,4 +339,14 @@ describe('AppShell (public)', () => {
     expect(wrapper.find('[data-ticket-updates]').exists()).toBe(false)
     wrapper.unmount()
   })
+
+  it('caps the visible My tickets badge at 9+ but reads the exact count aloud', async () => {
+    signIn()
+    useSession().ticketUpdates.value = 12
+    const wrapper = await mountAt('/dashboard')
+    const badge = wrapper.get('[data-ticket-updates]')
+    expect(badge.get('[aria-hidden="true"]').text()).toBe('9+')
+    expect(badge.get('.sr-only').text()).toBe('12 new updates')
+    wrapper.unmount()
+  })
 })
