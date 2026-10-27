@@ -35,7 +35,7 @@
               class="font-mono text-sm font-bold"
               :class="isAtCapacity ? 'text-destructive' : 'text-muted-foreground'"
             >
-              {{ activeAttendeeCount }}{{ event.maxAttendees ? ` / ${event.maxAttendees}` : '' }} guests
+              {{ guestCount }}{{ event.maxAttendees ? ` / ${event.maxAttendees}` : '' }} guests
             </span>
             <template v-if="!editingMax">
               <Button
@@ -269,7 +269,8 @@
               :slug="slug"
               :questions="event.questions ?? []"
               :admission-mode="event.admissionMode ?? 'fcfs'"
-              @changed="fetchAttendees"
+              :waitlist-enabled="event.waitlistEnabled ?? false"
+              @counts="(c) => (confirmedCount = c.confirmed)"
             />
             <template v-else>
               <div class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -324,12 +325,21 @@
             </template>
           </template>
 
-          <LotteryPanel
-            v-else-if="mainTab === 'lottery' && event.admissionMode === 'lottery'"
-            :slug="slug"
-            :event="lotteryEvent"
-            @drawn="onDrawn"
-          />
+          <template v-else-if="mainTab === 'lottery' && event.admissionMode === 'lottery'">
+            <ClusterBars
+              v-if="event.isLead && clusters.length"
+              :slug="slug"
+              :clusters="clusters"
+              @updated="refreshAfterGuestChange"
+            />
+            <LotteryPanel
+              :slug="slug"
+              :event="lotteryEvent"
+              :clusters="clusters"
+              @drawn="onDrawn"
+              @go-overview="mainTab = 'overview'"
+            />
+          </template>
         </div>
       </div>
     </AppPage>
@@ -377,6 +387,7 @@ const slug = route.params.id as string
 interface EventInfo {
   name: string
   status?: string
+  confirmedCount?: number
   admissionMode?: AdmissionMode
   registrationOpensAt?: string | null
   registrationClosesAt?: string | null
@@ -468,9 +479,23 @@ const lotteryEvent = computed(() => ({
   questions: event.value?.questions ?? [],
 }))
 
+// Seats taken. Import events count everyone not removed; the other modes count confirmed guests only,
+// so pending, entered, waitlisted, declined and cancelled people never use up capacity.
+const confirmedCount = ref(0)
+const guestCount = computed(() => (isImport.value ? activeAttendeeCount.value : confirmedCount.value))
+
+async function refreshConfirmedCount() {
+  try {
+    const res = await api.raw(`/api/events/${slug}`)
+    if (!res.ok) return
+    const data = await res.json() as { event?: { confirmedCount?: number } }
+    confirmedCount.value = data.event?.confirmedCount ?? confirmedCount.value
+  } catch { /* the header count stays as it was */ }
+}
+
 function onDrawn() {
   if (event.value) event.value.lotteryDrawnAt = new Date().toISOString()
-  void fetchAttendees()
+  void refreshConfirmedCount()
 }
 
 const passColumns = computed(() => {
@@ -479,7 +504,7 @@ const passColumns = computed(() => {
 })
 
 const isAtCapacity = computed(() =>
-  event.value?.maxAttendees != null && activeAttendeeCount.value >= event.value.maxAttendees,
+  event.value?.maxAttendees != null && guestCount.value >= event.value.maxAttendees,
 )
 
 function countForTab(filter: string | null) {
@@ -565,7 +590,8 @@ async function fetchCsvMeta() {
 
 async function refreshAfterGuestChange() {
   inboxKey.value += 1
-  await fetchAttendees()
+  if (isImport.value) await fetchAttendees()
+  else await refreshConfirmedCount()
   await fetchClusters()
 }
 
@@ -617,6 +643,7 @@ onMounted(async () => {
       return
     }
     event.value = data.event!
+    confirmedCount.value = data.event!.confirmedCount ?? 0
     passFieldSelection.value = [...(data.event!.passFields ?? [])]
   } catch {
     event.value = null
@@ -624,7 +651,8 @@ onMounted(async () => {
     return
   }
   loadingEvent.value = false
-  fetchAttendees()
+  // The unpaged list is the import events' roster; its `status` is the latest check-in action, not admission.
+  if (isImport.value) fetchAttendees()
   fetchClusters()
   fetchCsvMeta()
 })

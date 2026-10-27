@@ -171,6 +171,53 @@ describe('EventDetailView tabs', () => {
     wrapper.unmount()
   })
 
+  it('counts only confirmed guests against capacity for a non-import event and skips the legacy list', async () => {
+    eventOverrides = { admissionMode: 'approval', selectionLocked: false, status: 'published', questions: [], maxAttendees: 2, confirmedCount: 1, attendeeCount: 6 }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('1 / 2 guests')
+    const add = wrapper.findAll('button').find((b) => b.text() === 'Add guest')!
+    expect(add.attributes('disabled')).toBeUndefined()
+    const legacy = vi.mocked(fetch).mock.calls.filter((call) => {
+      const url = new URL(String(call[0]))
+      return url.pathname === '/api/events/launch/attendees' && !url.searchParams.get('paged')
+    })
+    expect(legacy).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('disables Add guest once the confirmed guests fill the event', async () => {
+    eventOverrides = { admissionMode: 'approval', selectionLocked: false, status: 'published', questions: [], maxAttendees: 2, confirmedCount: 2 }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('2 / 2 guests')
+    expect(wrapper.findAll('button').find((b) => b.text() === 'Add guest')!.attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+  })
+
+  it('shows the Lottery tab quota bars and only quota questions in the draw form', async () => {
+    eventOverrides = {
+      admissionMode: 'lottery', selectionLocked: false, status: 'published',
+      questions: [{ id: 'diet', label: 'Dietary needs', type: 'choice', options: ['None', 'Vegan'] }],
+      registrationClosesAt: '2020-01-01 00:00:00', lotteryDrawnAt: null,
+    }
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
+      if (url.pathname === '/api/events/launch/clusters') return json({ clusters: [{ id: 'c1', clusterCol: 'diet', value: 'Vegan', maxCount: 5, currentCount: 0, remainingSlots: 5 }] })
+      if (url.pathname === '/api/events/launch' && (init?.method ?? 'GET') === 'GET') {
+        return json({ status: 'ok', event: { name: 'Launch', eventDate: '2026-11-01', eventTime: '09:00', location: 'Hall', isLead: true, maxAttendees: null, selectionLocked: false, passFields: [], ...eventOverrides } })
+      }
+      if (url.pathname === '/api/events/launch/attendees') return json({ status: 'ok', attendees: [], counts: { pending: 0, entered: 1, waitlisted: 0, confirmed: 0, declined: 0, cancelled: 0 }, nextCursor: null })
+      return json({ status: 'error', message: 'missing' }, 404)
+    }))
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await tab(wrapper, 'Lottery')
+    expect(wrapper.find('[data-cluster-bar]').exists() || wrapper.text().includes('Clusters')).toBe(true)
+    expect(wrapper.find('select[name="cluster"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
   it('adds a Lottery tab only for lottery events and shows the draw panel there', async () => {
     eventOverrides = {
       admissionMode: 'lottery', selectionLocked: false, status: 'published', questions: [],

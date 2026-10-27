@@ -52,7 +52,7 @@
       </div>
 
       <div
-        v-if="choiceQuestions.length"
+        v-if="quotaQuestions.length"
         class="space-y-1.5"
       >
         <Label for="lottery-cluster">Quotas from an answer (optional)</Label>
@@ -66,7 +66,7 @@
             No quotas (draw from everyone)
           </option>
           <option
-            v-for="question in choiceQuestions"
+            v-for="question in quotaQuestions"
             :key="question.id"
             :value="question.id"
           >
@@ -77,6 +77,20 @@
           Seats are split by the quotas you set for each answer.
         </p>
       </div>
+      <p
+        v-else-if="choiceQuestions.length"
+        class="text-sm text-muted-foreground"
+        data-quota-hint
+      >
+        To draw with quotas, set a limit for each answer first.
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-2"
+          @click="emit('goOverview')"
+        >
+          Go to the Overview tab
+        </button>
+      </p>
 
       <div>
         <Button
@@ -169,6 +183,7 @@ const SEED_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/
 
 const props = defineProps<{
   slug: string
+  clusters?: { clusterCol?: string | null }[]
   event: {
     status: string
     eventDate: string
@@ -181,7 +196,7 @@ const props = defineProps<{
   }
 }>()
 
-const emit = defineEmits<{ drawn: [] }>()
+const emit = defineEmits<{ drawn: []; goOverview: [] }>()
 
 const dialog = useDialog()
 const seed = ref('')
@@ -195,6 +210,11 @@ const now = ref(new Date())
 let timer: ReturnType<typeof setInterval> | undefined
 
 const choiceQuestions = computed(() => props.event.questions.filter((question) => question.type === 'choice'))
+// Only questions that already have quota rows can drive a quota draw.
+const quotaQuestions = computed(() => {
+  const withQuotas = new Set((props.clusters ?? []).map((cluster) => cluster.clusterCol).filter(Boolean))
+  return choiceQuestions.value.filter((question) => withQuotas.has(question.id))
+})
 const drawn = computed(() => drawnNow.value || props.event.lotteryDrawnAt != null)
 const seedInvalid = computed(() => seed.value !== '' && !SEED_PATTERN.test(seed.value))
 
@@ -243,7 +263,7 @@ async function startDraw() {
   if (!canDraw.value) return
   const ok = await dialog.confirm({
     title: 'Draw the winners?',
-    body: `This picks winners from ${entered.value ?? 'all'} entries and tells everyone their result. This can't be undone.`,
+    body: `This picks winners from ${entered.value ?? 'all'} entries. Results show up in each student's My tickets. This can't be undone.`,
     confirmLabel: 'Draw winners',
   })
   if (!ok) return

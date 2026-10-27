@@ -129,12 +129,20 @@ app.get('/api/events/:slug', async (c) => {
       args: [event.id],
     })).rows[0]?.cnt ?? 0)
     : 0
+  // Confirmed guests only: pending, entered, waitlisted, declined and cancelled rows do not hold a seat.
+  const confirmedCount = isLead
+    ? Number((await client.execute({
+      sql: `SELECT COUNT(*) AS cnt FROM attendees WHERE event_id = ? AND status = 'confirmed'`,
+      args: [event.id],
+    })).rows[0]?.cnt ?? 0)
+    : 0
   const text = (v: unknown) => (v == null ? null : String(v))
   // The settings the builder edits; only the owning org gets them.
   const settings = isLead ? {
     endTime: text(event.end_time),
     description: text(event.description),
     registrationCount,
+    confirmedCount,
     lotteryDrawnAt: text(event.lottery_drawn_at),
     admissionMode: event.admission_mode,
     visibility: event.visibility,

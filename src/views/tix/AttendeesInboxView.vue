@@ -49,13 +49,14 @@
     </p>
 
     <div
-      v-if="selectedIds.length"
+      v-if="selectedIds.length && (activeStatus === 'pending' || CANCELLABLE.has(activeStatus))"
       class="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3"
       role="group"
       aria-label="Bulk actions"
     >
       <span class="mr-auto text-sm font-semibold">{{ selectedIds.length }} selected</span>
       <Button
+        v-if="activeStatus === 'pending'"
         type="button"
         :disabled="bulkBusy"
         @click="runBulk('approve')"
@@ -63,6 +64,7 @@
         Approve
       </Button>
       <Button
+        v-if="activeStatus === 'pending'"
         type="button"
         variant="outline"
         :disabled="bulkBusy"
@@ -71,12 +73,13 @@
         Decline
       </Button>
       <Button
+        v-if="CANCELLABLE.has(activeStatus)"
         type="button"
         variant="destructive"
         :disabled="bulkBusy"
         @click="runBulk('cancel')"
       >
-        Cancel
+        Cancel registrations
       </Button>
       <Button
         type="button"
@@ -215,11 +218,11 @@
               v-if="LINKABLE.has(row.status)"
               type="button"
               variant="outline"
-              :aria-label="`Copy guest link for ${fullName(row)}`"
+              :aria-label="`New guest link for ${fullName(row)}`"
               :disabled="linkingId === row.id"
               @click="copyGuestLink(row)"
             >
-              Copy guest link
+              New guest link
             </Button>
             <Button
               v-if="row.status === 'cancelled'"
@@ -326,21 +329,24 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   declined: 'destructive',
   cancelled: 'destructive',
 }
+const CANCELLABLE = new Set<TicketStatus>(['pending', 'entered', 'waitlisted', 'confirmed'])
 const LINKABLE = new Set(['confirmed', 'pending', 'entered', 'waitlisted'])
 const SKIP_COPY: Record<string, string> = {
   not_found: 'no longer on the list',
   invalid_transition: "can't move from their current status",
   event_full: 'the event is full',
 }
+const SKIP_FALLBACK = 'could not be changed'
 const VERB: Record<BulkAction, string> = { approve: 'approved', decline: 'declined', cancel: 'cancelled' }
 
 const props = defineProps<{
   slug: string
   questions: EventQuestion[]
   admissionMode: AdmissionMode
+  waitlistEnabled?: boolean
 }>()
 
-const emit = defineEmits<{ changed: [] }>()
+const emit = defineEmits<{ changed: []; counts: [counts: Record<TicketStatus, number>] }>()
 
 const dialog = useDialog()
 const toast = useToast()
@@ -397,6 +403,7 @@ async function load(append = false) {
     if (id !== requestId) return
     rows.value = append ? [...rows.value, ...data.attendees] : data.attendees
     counts.value = data.counts
+    emit('counts', data.counts)
     nextCursor.value = data.nextCursor
   } catch (err: unknown) {
     if (id === requestId) error.value = messageOf(err, 'Could not load attendees. Try again.')
@@ -455,18 +462,21 @@ function answerText(row: InboxRow, questionId: string): string {
 async function runBulk(action: BulkAction) {
   const ids = selectedIds.value
   if (!ids.length || bulkBusy.value) return
+  bulkBusy.value = true
   if (action !== 'approve') {
     const noun = `${ids.length} ${ids.length === 1 ? 'registration' : 'registrations'}`
     const ok = await dialog.confirm({
       title: action === 'decline' ? `Decline ${noun}?` : `Cancel ${noun}?`,
       body: action === 'decline'
         ? 'These people are told they did not get a place.'
-        : 'Their tickets stop working. A confirmed guest\'s seat can go to the waitlist.',
+        : `Their tickets stop working.${props.waitlistEnabled ? ' A confirmed guest\'s seat can go to the next person on the waitlist.' : ''}`,
       confirmLabel: action === 'decline' ? 'Decline' : 'Cancel registrations',
     })
-    if (!ok) return
+    if (!ok) {
+      bulkBusy.value = false
+      return
+    }
   }
-  bulkBusy.value = true
   const names = new Map(rows.value.map((row) => [row.id, fullName(row)]))
   let updated = 0
   const skipped: { id: string; name: string; reason: string }[] = []
@@ -479,7 +489,7 @@ async function runBulk(action: BulkAction) {
       )
       updated += res.updated
       for (const item of res.skipped) {
-        skipped.push({ id: item.id, name: names.get(item.id) ?? 'Someone', reason: SKIP_COPY[item.reason] ?? item.reason })
+        skipped.push({ id: item.id, name: names.get(item.id) ?? 'Someone', reason: SKIP_COPY[item.reason] ?? SKIP_FALLBACK })
       }
     }
     toast.success(`${updated} ${VERB[action]}.`)
@@ -494,6 +504,13 @@ async function runBulk(action: BulkAction) {
 }
 
 async function copyGuestLink(row: InboxRow) {
+  // We cannot tell whether a link already exists, and a new one replaces it, so always ask first.
+  const ok = await dialog.confirm({
+    title: 'Create a new guest link?',
+    body: 'Any link you shared before stops working.',
+    confirmLabel: 'Create new link',
+  })
+  if (!ok) return
   linkingId.value = row.id
   try {
     const { url } = await api.post<{ url: string }>(`/api/events/${props.slug}/attendees/${row.id}/guest-link`)

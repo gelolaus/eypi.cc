@@ -556,6 +556,15 @@ describe('GET /api/events/:slug editor fields', () => {
     expect(event.registrationCount).toBe(1)
   })
 
+  it('counts only confirmed guests toward the seats taken', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await seedEvent(client, { slug: 'ev', status: 'published' })
+    const statuses = ['confirmed', 'confirmed', 'pending', 'declined', 'waitlisted', 'entered', 'cancelled']
+    for (const [i, st] of statuses.entries()) await seedAttendee(client, i + 1, st)
+    const { event } = await (await send(request, 'GET', '/api/events/ev')).json() as { event: { confirmedCount: number } }
+    expect(event.confirmedCount).toBe(2)
+  })
+
   it('reports when the lottery was drawn', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await seedEvent(client, { slug: 'draw', status: 'published' })
@@ -574,5 +583,7 @@ describe('GET /api/events/:slug editor fields', () => {
     expect(event.isLead).toBe(false)
     expect(event).not.toHaveProperty('description')
     expect(event).not.toHaveProperty('questions')
+    expect(event).not.toHaveProperty('lotteryDrawnAt')
+    expect(event).not.toHaveProperty('confirmedCount')
   })
 })

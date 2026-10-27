@@ -53,8 +53,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function mountPanel(event: Partial<typeof base> = {}) {
-  wrapper = mount(LotteryPanel, { props: { slug: 'launch', event: { ...base, ...event } } })
+const dietQuotas = [{ clusterCol: 'diet', value: 'Vegan' }, { clusterCol: 'diet', value: 'None' }]
+
+async function mountPanel(event: Partial<typeof base> = {}, clusters: { clusterCol?: string | null }[] = dietQuotas) {
+  wrapper = mount(LotteryPanel, { props: { slug: 'launch', clusters, event: { ...base, ...event } } })
   await flushPromises()
 }
 const drawButton = () => wrapper.get('[data-draw]')
@@ -114,6 +116,29 @@ describe('LotteryPanel', () => {
     await drawButton().trigger('click')
     await flushPromises()
     expect(calls.find((c) => c.path.endsWith('/draw'))!.body).toEqual({ seed: 'batch-1', clusterQuestionId: 'diet' })
+  })
+
+  it('hides the quota select and points to the Overview tab when no question has quotas', async () => {
+    await mountPanel({}, [])
+    expect(wrapper.find('select[name="cluster"]').exists()).toBe(false)
+    const hint = wrapper.get('[data-quota-hint]')
+    expect(hint.text()).toContain('set a limit for each answer first')
+    await hint.get('button').trigger('click')
+    expect(wrapper.emitted('goOverview')).toHaveLength(1)
+  })
+
+  it('lists only questions that have quotas', async () => {
+    await mountPanel({}, [{ clusterCol: 'other' }])
+    expect(wrapper.find('select[name="cluster"]').exists()).toBe(false)
+  })
+
+  it('says results show up in My tickets in the draw confirmation', async () => {
+    await mountPanel()
+    await drawButton().trigger('click')
+    await flushPromises()
+    const { body } = (confirm.mock.calls as unknown as [{ body: string }][])[0][0]
+    expect(body).toContain("Results show up in each student's My tickets")
+    expect(body).not.toContain('tells everyone')
   })
 
   it.each([
