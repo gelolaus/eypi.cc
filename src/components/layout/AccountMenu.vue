@@ -83,6 +83,24 @@
       </template>
 
       <DropdownMenuItem
+        v-for="entry in accountEntries"
+        :key="entry.to"
+        as-child
+        class="rounded-xl px-3 py-3 text-base"
+      >
+        <router-link
+          :to="entry.to"
+          :aria-current="isAppNavEntryActive(entry, route.path) ? 'page' : undefined"
+        >
+          <component
+            :is="entry.icon"
+            aria-hidden="true"
+          />
+          {{ entry.label }}
+        </router-link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
         v-for="link in legalLinks"
         :key="link.to"
         as-child
@@ -107,6 +125,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ChevronDown, LogOut } from 'lucide-vue-next'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -119,7 +138,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/cn'
 import { useSession } from '@/stores/session'
-import type { AppNavEntry } from './appNav'
+import { isAppNavEntryActive, menuEntries, type AppNavEntry } from './appNav'
 import { useSignOut } from './useSignOut'
 
 const props = withDefaults(
@@ -138,8 +157,10 @@ const legalLinks = [
 ]
 
 const session = useSession()
+const route = useRoute()
 const signOut = useSignOut()
 
+const accountEntries = computed(() => menuEntries({ admin: session.user.value?.role === 'admin' }))
 const header = computed(() => props.variant === 'header')
 const email = computed(() => session.user.value?.email ?? '')
 const inviteCount = computed(() => session.pendingInviteCount.value)

@@ -122,7 +122,7 @@ describe('AppShell (signed in)', () => {
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
     expect(links.map((link) => link.text().replace(/\d+$/, '').trim())).toEqual([
-      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites', 'Account',
+      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites',
     ])
     wrapper.unmount()
   })
@@ -191,10 +191,31 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
-  it('adds Admin for admins', async () => {
+  it('puts Admin in the account menu for admins only', async () => {
     signIn(0, 'admin')
     const wrapper = await mountAt('/admin/users')
-    expect(wrapper.get('aside [aria-current="page"]').text()).toBe('Admin')
+    expect(wrapper.find('aside nav a[href="/admin/users"]').exists()).toBe(false)
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    const admin = menu.querySelector<HTMLElement>('a[href="/admin/users"]')!
+    expect(admin.textContent).toContain('Admin')
+    expect(admin.getAttribute('aria-current')).toBe('page')
+    wrapper.unmount()
+  })
+
+  it('hides Admin from regular users', async () => {
+    signIn(0)
+    const wrapper = await mountAt('/links')
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    expect(menu.textContent).not.toContain('Admin')
+    wrapper.unmount()
+  })
+
+  it('lists Account, Contact, Privacy, Terms and Sign out in the sidebar menu', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    const items = Array.from(menu.querySelectorAll('[data-slot="dropdown-menu-item"]')).map((el) => el.textContent?.trim())
+    expect(items).toEqual(['Account', 'Contact', 'Privacy', 'Terms', 'Sign out'])
     wrapper.unmount()
   })
 

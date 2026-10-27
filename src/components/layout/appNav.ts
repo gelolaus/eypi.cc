@@ -32,14 +32,23 @@ const ICONS: Partial<Record<NavIconName, Component>> = {
   admin: ShieldCheck,
 }
 
-/** Signed-in module links, built from `@/config/nav` (the single source of nav items). */
+function toEntry(item: NavItem): AppNavEntry {
+  return { to: item.to, label: item.label, icon: ICONS[item.icon] ?? LayoutDashboard, item }
+}
+
+const MENU_ICONS = new Set<NavIconName>(['account', 'admin'])
+
+/** Signed-in module links for the rail and tabs. Account and Admin live in the account menu. */
 export function appNav({ admin }: { admin: boolean }): AppNavEntry[] {
-  return navItems({ authenticated: true, admin }).map((item) => ({
-    to: item.to,
-    label: item.label,
-    icon: ICONS[item.icon] ?? LayoutDashboard,
-    item,
-  }))
+  return navItems({ authenticated: true, admin })
+    .filter((item) => !MENU_ICONS.has(item.icon))
+    .map(toEntry)
+}
+
+/** Admin (admins only), then Account: the entries at the top of the account menu. */
+export function menuEntries({ admin }: { admin: boolean }): AppNavEntry[] {
+  const items = navItems({ authenticated: true, admin }).filter((item) => MENU_ICONS.has(item.icon))
+  return items.sort((a, b) => (a.icon === 'admin' ? -1 : 0) - (b.icon === 'admin' ? -1 : 0)).map(toEntry)
 }
 
 export const APP_NAV: AppNavEntry[] = appNav({ admin: false })
