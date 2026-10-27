@@ -243,7 +243,13 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: { name: 'admin-users' },
+          redirect: { name: 'admin-overview' },
+        },
+        {
+          path: 'overview',
+          name: 'admin-overview',
+          component: () => import('@/views/admin/AdminOverviewView.vue'),
+          meta: { title: 'Overview' },
         },
         {
           path: 'users',

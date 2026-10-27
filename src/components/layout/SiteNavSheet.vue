@@ -94,7 +94,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { navItems } from '@/config/nav'
 import { useSession } from '@/stores/session'
-import { appNav } from './appNav'
+import { appNav, menuEntries } from './appNav'
 import { useSignOut } from './useSignOut'
 
 const route = useRoute()
@@ -104,7 +104,10 @@ const signOut = useSignOut()
 
 const isAuthenticated = computed(() => session.user.value !== null)
 const inviteCount = computed(() => session.pendingInviteCount.value)
-const entries = computed(() => appNav({ admin: session.user.value?.role === 'admin' }))
+const entries = computed(() => {
+  const admin = session.user.value?.role === 'admin'
+  return [...appNav({ admin }), ...menuEntries({ admin })]
+})
 const publicLinks = navItems({ authenticated: false, admin: false })
 
 function onOpenChange(open: boolean) {

@@ -117,16 +117,6 @@
       </div>
     </div>
 
-    <section aria-labelledby="platform-heading">
-      <h2
-        id="platform-heading"
-        class="mb-3 font-heading text-xl font-semibold tracking-tight"
-      >
-        Across APC
-      </h2>
-      <LiveStats />
-    </section>
-
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
       <router-link
         v-for="mod in modules"
@@ -152,7 +142,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Card } from '@/components/ui/card'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
-import LiveStats from '@/components/marketing/LiveStats.vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { api } from '@/lib/api'
 import { useSession } from '@/stores/session'

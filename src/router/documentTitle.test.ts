@@ -37,6 +37,7 @@ const pages: Record<string, string> = {
   'org-catalog': 'Orgs',
   'org-profile': 'Organization',
   account: 'Account',
+  'admin-overview': 'Overview',
   'admin-users': 'Users',
   'admin-links': 'Links',
   'admin-reports': 'Reports',

@@ -15,7 +15,6 @@ vi.mock('@/composables/useActiveOrg', () => ({
 const summaries: Record<string, unknown> = {
   '/api/links/summary': { count: 2, clicks: 12, top: { slug: 'bb', clicks: 9 } },
   '/api/orgs/jpcs-apc/summary': { members: 4, events: 3, tickets: 20, frames: 2 },
-  '/api/stats': { users: 1, orgs: 1, members: 1, links: 1, clicks: 1, events: 1, tickets: 1, checkIns: 1, frames: 1, frameDownloads: 1 },
 }
 
 function stubApi(overrides: Record<string, unknown> = {}, failing: string[] = []) {
@@ -65,6 +64,13 @@ beforeEach(async () => {
 })
 
 describe('DashboardView invite banner', () => {
+  it('does not show platform-wide totals to every user', async () => {
+    const wrapper = mountDashboard(0)
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Across APC')
+    expect(wrapper.find('#platform-heading').exists()).toBe(false)
+  })
+
   it('links to the inbox when one invite is pending', () => {
     const wrapper = mountDashboard(1)
 
