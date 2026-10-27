@@ -70,9 +70,10 @@ export function doorActionStatements(input: DoorActionInput): InStatement[] {
     {
       sql: `SELECT a.status AS status,
                    ${LATEST_FOR_ATTENDEE} AS latest,
-                   EXISTS (SELECT 1 FROM check_ins WHERE id = ? AND attendee_id = a.id AND event_id = a.event_id AND action = ?) AS replay
+                   EXISTS (SELECT 1 FROM check_ins WHERE id = ? AND attendee_id = a.id AND event_id = a.event_id AND action = ?) AS replay,
+                   EXISTS (SELECT 1 FROM check_ins WHERE id = ?) AS id_taken
             FROM attendees a WHERE a.id = ? AND a.event_id = ?`,
-      args: [attendeeId, id, action, attendeeId, eventId],
+      args: [attendeeId, id, action, id, attendeeId, eventId],
     },
   ]
 }
@@ -82,6 +83,8 @@ export function doorOutcome(inserted: ResultSet, diagnostic: ResultSet, action: 
   const row = diagnostic.rows[0]
   if (!row) return { ok: false, code: 'unknown' }
   if (Number(row.replay) === 1) return { ok: true }
+  // The client id already belongs to a different attendee/action: not a replay, so don't mislabel it as a conflict.
+  if (Number(row.id_taken) === 1) return { ok: false, code: 'unknown' }
   if (row.status === 'cancelled') return { ok: false, code: 'cancelled' }
   if (row.status !== 'confirmed') return { ok: false, code: 'not_confirmed' }
   if (action === 'checked_in') return { ok: false, code: 'already_checked_in' }

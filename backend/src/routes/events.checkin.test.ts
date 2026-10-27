@@ -137,7 +137,7 @@ describe('check-in actions', () => {
       user: lead,
       seed: async (db) => {
         await seedDoor(db)
-        await db.execute("UPDATE attendees SET status = 'cancelled' WHERE id = 'att-1'")
+        await db.execute("UPDATE attendees SET status = 'cancelled', decided_by = 'user-lead' WHERE id = 'att-1'")
         await db.execute({
           sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
                 VALUES ('ci-removed', 'att-1', 'event-1', 'removed', '2026-10-26 01:00:00')`,

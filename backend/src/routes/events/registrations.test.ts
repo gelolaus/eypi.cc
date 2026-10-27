@@ -184,6 +184,8 @@ describe('student registration', () => {
     expect(rows.rows.map((r) => [r.user_id, r.status])).toEqual([
       ['stu-1', 'cancelled'], ['stu-2', 'confirmed'], ['stu-3', 'waitlisted'],
     ])
+    const own = await client.execute("SELECT decided_by FROM attendees WHERE user_id = 'stu-1'")
+    expect(own.rows[0].decided_by).toBeNull()
   })
 })
 

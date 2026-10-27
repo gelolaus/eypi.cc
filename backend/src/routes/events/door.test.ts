@@ -171,6 +171,85 @@ describe('POST /checkins/sync', () => {
   })
 })
 
+describe('sync id collisions', () => {
+  it('an existing client id used for another attendee is unknown, not a conflict', async () => {
+    const { request, client } = await setup()
+    await sync(request, [{ id: uuid(1), attendeeId: 'a1', action: 'checked_in', at: now() }])
+    const body = await (await sync(request, [{ id: uuid(1), attendeeId: 'a2', action: 'checked_in', at: now() }])).json() as Results
+    expect(body.results).toEqual([{ id: uuid(1), ok: false, code: 'unknown' }])
+    expect(await rowsFor(client, 'a2')).toHaveLength(0)
+  })
+})
+
+describe('remove and restore', () => {
+  const act = (request: Req, what: 'remove' | 'restore', attendeeId: string) =>
+    request(`/api/events/door/${what}`, { method: 'POST', headers: json, body: JSON.stringify({ attendeeId }) })
+  const row = async (client: Client, id: string) => (await client.execute({ sql: 'SELECT status, decided_by FROM attendees WHERE id = ?', args: [id] })).rows[0]
+  const codeOf = async (res: Response) => ((await res.json()) as { error?: { code: string } }).error?.code
+
+  it('remove sets decided_by, and promotes the waitlist when a confirmed seat frees up', async () => {
+    const { request, client } = await setup()
+    await client.execute("UPDATE events SET max_attendees = 2, waitlist_enabled = 1 WHERE id = 'id-door'")
+    await client.execute("UPDATE attendees SET status = 'waitlisted', registered_at = '2026-01-02 00:00:00.000' WHERE id = 'p1'")
+    expect((await act(request, 'remove', 'a1')).status).toBe(200)
+    expect(await row(client, 'a1')).toMatchObject({ status: 'cancelled', decided_by: 'mem-1' })
+    expect((await row(client, 'p1')).status).toBe('confirmed')
+    const audit = await client.execute("SELECT action FROM audit_events WHERE action = 'tix.remove'")
+    expect(audit.rows).toHaveLength(1)
+  })
+
+  it('remove refuses declined and already cancelled attendees', async () => {
+    const { request, client } = await setup()
+    await client.execute("UPDATE attendees SET status = 'declined' WHERE id = 'p1'")
+    const declined = await act(request, 'remove', 'p1')
+    expect(declined.status).toBe(409)
+    expect(await codeOf(declined)).toBe('invalid_transition')
+    const cancelled = await act(request, 'remove', 'c1')
+    expect(cancelled.status).toBe(409)
+    expect(await codeOf(cancelled)).toBe('invalid_transition')
+  })
+
+  it('remove does not promote when a pending attendee is removed', async () => {
+    const { request, client } = await setup()
+    await client.execute("UPDATE attendees SET status = 'waitlisted' WHERE id = 'a2'")
+    expect((await act(request, 'remove', 'p1')).status).toBe(200)
+    expect((await row(client, 'a2')).status).toBe('waitlisted')
+  })
+
+  it('restore reinstates an org-removed attendee', async () => {
+    const { request, client } = await setup()
+    await act(request, 'remove', 'a1')
+    expect((await act(request, 'restore', 'a1')).status).toBe(200)
+    expect(await row(client, 'a1')).toMatchObject({ status: 'confirmed', decided_by: 'mem-1' })
+    expect((await client.execute("SELECT 1 FROM audit_events WHERE action = 'tix.restore'")).rows).toHaveLength(1)
+  })
+
+  it('restore refuses a self-cancelled attendee (decided_by NULL)', async () => {
+    const { request, client } = await setup()
+    const res = await act(request, 'restore', 'c1')
+    expect(res.status).toBe(409)
+    expect(await codeOf(res)).toBe('self_cancelled')
+    expect((await row(client, 'c1')).status).toBe('cancelled')
+  })
+
+  it('restore refuses a non-cancelled attendee', async () => {
+    const { request } = await setup()
+    const res = await act(request, 'restore', 'a1')
+    expect(res.status).toBe(409)
+    expect(await codeOf(res)).toBe('not_removed')
+  })
+
+  it('restore is refused with event_full when no seat is free', async () => {
+    const { request, client } = await setup()
+    await act(request, 'remove', 'a1')
+    await client.execute("UPDATE events SET max_attendees = 1 WHERE id = 'id-door'")
+    const res = await act(request, 'restore', 'a1')
+    expect(res.status).toBe(409)
+    expect(await codeOf(res)).toBe('event_full')
+    expect((await row(client, 'a1')).status).toBe('cancelled')
+  })
+})
+
 describe('doorTimestamp', () => {
   const at = Date.parse('2026-10-27T12:00:00Z')
   it('keeps a sane client time in stored format', () => {

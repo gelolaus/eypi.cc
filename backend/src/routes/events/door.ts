@@ -1,9 +1,22 @@
 import { Hono } from 'hono'
+import type { Client, InStatement } from '@libsql/client/web'
+import { recordAudit } from '../../lib/audit'
 import { db, type Bindings } from '../../lib/db'
+import { canTransition, type AttendeeStatus } from '../../lib/tix/admission'
+import { NOW_SQL, promoteWaitlistStatement } from '../../lib/tix/registration'
 import { actionError, applyDoorAction, attendeeLabel, doorActionStatements, doorOutcome, doorTimestamp, performCheckIn, requireEventLead, type DoorAction } from './shared'
 
 
 const app = new Hono<{ Bindings: Bindings }>()
+
+// Best effort: the change is already committed, so a failed audit write must not turn it into a 500.
+async function auditDoor(client: Client, actorUserId: string, action: string, eventId: string, attendeeId: string) {
+  try {
+    await recordAudit(client, { actorUserId, action, targetType: 'event', targetId: eventId, meta: { attendeeId } })
+  } catch {
+    // swallowed on purpose
+  }
+}
 
 // ── POST /api/events/:slug/checkin ────────────────────────────────────────────
 app.post('/api/events/:slug/checkin', async (c) => {
@@ -108,18 +121,27 @@ app.post('/api/events/:slug/remove', async (c) => {
   const event = leadCheck.event
 
   const aRes = await client.execute({
-    sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
+    sql: 'SELECT id, first_name, last_name, status FROM attendees WHERE id = ? AND event_id = ?',
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
   const name = attendeeLabel(a.first_name, a.last_name)
-  // Removal is an admission status, not a check-in row.
-  const wrote = await client.execute({
-    sql: "UPDATE attendees SET status = 'cancelled' WHERE id = ? AND event_id = ? AND status != 'cancelled'",
-    args: [attendeeId, event.id],
-  })
-  if (Number(wrote.rowsAffected) !== 1) return c.json(actionError('not_removed', `${name} could not be removed.`), 409)
+  // Removal is an admission status, not a check-in row, and follows the same state machine as the inbox cancel.
+  const from = String(a.status) as AttendeeStatus
+  if (!canTransition(from, 'cancelled', 'org')) {
+    return c.json(actionError('invalid_transition', `${name} can no longer be removed.`), 409)
+  }
+  const capacity = event.max_attendees == null ? null : Number(event.max_attendees)
+  const statements: InStatement[] = [{
+    sql: `UPDATE attendees SET status = 'cancelled', decided_at = ${NOW_SQL}, decided_by = ?
+          WHERE id = ? AND event_id = ? AND status = ?`,
+    args: [user.id, attendeeId, event.id, from],
+  }]
+  if (from === 'confirmed') statements.push(promoteWaitlistStatement(String(event.id), capacity))
+  const [wrote] = await client.batch(statements, 'write')
+  if (Number(wrote.rowsAffected) !== 1) return c.json(actionError('invalid_transition', `${name} could not be removed.`), 409)
+  await auditDoor(client, user.id, 'tix.remove', String(event.id), attendeeId)
   return c.json({ status: 'ok', message: `${name} removed.` })
 })
 
@@ -138,17 +160,28 @@ app.post('/api/events/:slug/restore', async (c) => {
   const event = leadCheck.event
 
   const aRes = await client.execute({
-    sql: 'SELECT id, first_name, last_name FROM attendees WHERE id = ? AND event_id = ?',
+    sql: 'SELECT id, first_name, last_name, status, decided_by FROM attendees WHERE id = ? AND event_id = ?',
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
   const name = attendeeLabel(a.first_name, a.last_name)
+  // Deliberate org override of the terminal `cancelled` state (spec 5.2 has no cancelled -> confirmed arrow).
+  // Only attendees the org removed qualify (decided_by is set); self-cancelled ones stay cancelled.
+  // The seat guard is inside the UPDATE, so concurrent restores cannot oversell.
+  if (String(a.status) !== 'cancelled') return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  if (a.decided_by == null) {
+    return c.json(actionError('self_cancelled', `${name} cancelled their own registration.`), 409)
+  }
+  const capacity = event.max_attendees == null ? Number.MAX_SAFE_INTEGER : Number(event.max_attendees)
   const wrote = await client.execute({
-    sql: "UPDATE attendees SET status = 'confirmed' WHERE id = ? AND event_id = ? AND status = 'cancelled'",
-    args: [String(a.id), event.id],
+    sql: `UPDATE attendees SET status = 'confirmed', decided_at = ${NOW_SQL}, decided_by = ?
+          WHERE id = ? AND event_id = ? AND status = 'cancelled' AND decided_by IS NOT NULL
+            AND (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
+    args: [user.id, String(a.id), event.id, event.id, capacity],
   })
-  if (Number(wrote.rowsAffected) !== 1) return c.json(actionError('not_removed', `${name} is not removed.`), 409)
+  if (Number(wrote.rowsAffected) !== 1) return c.json(actionError('event_full', 'The event is full.'), 409)
+  await auditDoor(client, user.id, 'tix.restore', String(event.id), String(a.id))
   return c.json({
     status: 'ok',
     message: `${name} restored.`,
@@ -220,6 +253,7 @@ app.get('/api/events/:slug/live', async (c) => {
 // ── POST /api/events/:slug/checkins/sync ──────────────────────────────────────
 // Offline queue replay. Each item is a conditional INSERT keyed by the client's uuid,
 // so replays are idempotent and two devices cannot both check the same attendee in.
+// Stale offline actions are last-writer-wins by arrival time (actioned_at is lifted to the attendee's newest row).
 const MAX_SYNC_ITEMS = 100
 const SYNC_ID = /^[A-Za-z0-9_-]{8,64}$/
 
