@@ -6,6 +6,11 @@ export const NOW_SQL = "strftime('%Y-%m-%d %H:%M:%f', 'now')"
 
 const NO_LIMIT = Number.MAX_SAFE_INTEGER
 
+/** Waitlist order. Lottery losers carry a draw-order decided_at; FCFS waitlisters have none and use registered_at. */
+export const WAITLIST_KEY = 'COALESCE({t}.decided_at, {t}.registered_at)'
+const waitlistKey = (t: string) => WAITLIST_KEY.replaceAll('{t}', t)
+export const WAITLIST_ORDER = `${waitlistKey('attendees')}, attendees.rowid`
+
 export function promoteWaitlistStatement(eventId: string, capacity: number | null): InStatement {
   const cap = capacity ?? NO_LIMIT
   return {
@@ -13,7 +18,7 @@ export function promoteWaitlistStatement(eventId: string, capacity: number | nul
           WHERE id = (
             SELECT id FROM attendees
             WHERE event_id = ? AND status = 'waitlisted'
-            ORDER BY COALESCE(decided_at, registered_at), rowid LIMIT 1
+            ORDER BY ${WAITLIST_ORDER} LIMIT 1
           )
           AND (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
     args: [eventId, eventId, cap],
@@ -125,8 +130,8 @@ export const TICKET_SELECT = `
          CASE WHEN a.status = 'waitlisted' THEN (
            SELECT COUNT(*) FROM attendees w
            WHERE w.event_id = a.event_id AND w.status = 'waitlisted'
-             AND (w.registered_at < a.registered_at
-                  OR (w.registered_at = a.registered_at AND w.rowid <= a.rowid))
+             AND (${waitlistKey('w')} < ${waitlistKey('a')}
+                  OR (${waitlistKey('w')} = ${waitlistKey('a')} AND w.rowid <= a.rowid))
          ) END AS waitlist_position,
          e.slug, e.name AS event_name, e.event_date, e.event_time, e.end_time, e.location,
          e.cover_key, e.cover_meta

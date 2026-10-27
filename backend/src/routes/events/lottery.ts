@@ -11,7 +11,7 @@ import { requireEventLead } from './shared'
 const app = new Hono<{ Bindings: Bindings }>()
 
 const CLUSTER_COL = '__cluster'
-const MAX_SEED = 200
+const SEED_PATTERN = /^[A-Za-z0-9._:-]{1,64}$/
 
 function sqlTime(date: Date): string {
   return date.toISOString().replace('T', ' ').replace('Z', '')
@@ -83,15 +83,17 @@ app.post('/api/events/:slug/draw', async (c) => {
   } catch {
     body = {}
   }
-  if (body.seed !== undefined && (typeof body.seed !== 'string' || !body.seed.trim() || body.seed.length > MAX_SEED)) {
-    throw new ApiError(400, 'invalid_seed', 'The seed must be a short, non-empty string.')
+  // Restricted so personal data cannot end up in the stored seed and the audit log.
+  if (body.seed !== undefined && (typeof body.seed !== 'string' || !SEED_PATTERN.test(body.seed))) {
+    throw new ApiError(400, 'invalid_seed', 'The seed may use up to 64 letters, digits and . _ : -')
   }
   const seed = typeof body.seed === 'string' ? body.seed : crypto.randomUUID()
 
+  const questions = parseQuestions(row.questions)
   let clusterQuestionId: string | null = null
   if (body.clusterQuestionId !== undefined) {
     const question = typeof body.clusterQuestionId === 'string'
-      ? parseQuestions(row.questions).find((q) => q.id === body.clusterQuestionId)
+      ? questions.find((q) => q.id === body.clusterQuestionId)
       : undefined
     if (!question || question.type !== 'choice') {
       throw new ApiError(400, 'invalid_cluster_question', 'Pick a multiple choice question to set quotas from.')
@@ -102,10 +104,19 @@ app.post('/api/events/:slug/draw', async (c) => {
   let clusters: SelectionCluster[] = []
   if (clusterQuestionId) {
     const cl = await client.execute({
-      sql: 'SELECT value, max_count, filters FROM event_clusters WHERE event_id = ? ORDER BY rowid',
-      args: [eventId],
+      sql: 'SELECT value, max_count, filters FROM event_clusters WHERE event_id = ? AND cluster_col = ? ORDER BY rowid',
+      args: [eventId, clusterQuestionId],
     })
     clusters = cl.rows.map((r) => ({ value: String(r.value), maxCount: Number(r.max_count), filters: parseFilters(r.filters) }))
+    // Filters can only test text and choice answers, which are exposed to the selection rows by question id.
+    const filterable = new Set(questions.filter((q) => q.type === 'text' || q.type === 'choice').map((q) => q.id))
+    for (const cluster of clusters) {
+      for (const [col, vals] of Object.entries(cluster.filters)) {
+        if (Array.isArray(vals) && vals.length > 0 && !filterable.has(col)) {
+          throw new ApiError(422, 'unsupported_cluster_filter', 'A quota filter refers to something the draw cannot read. Remove it and try again.')
+        }
+      }
+    }
     if (clusters.length === 0) throw new ApiError(400, 'no_clusters', 'Set quotas for the answers before drawing by cluster.')
   }
 
@@ -126,6 +137,9 @@ app.post('/api/events/:slug/draw', async (c) => {
     const id = String(r.id)
     const raw: Record<string, string> = { email: id }
     if (clusterQuestionId) {
+      for (const q of questions) {
+        if (q.type === 'text' || q.type === 'choice') raw[q.id] = answerOf(r.answers, q.id)
+      }
       const value = answerOf(r.answers, clusterQuestionId)
       raw[CLUSTER_COL] = value
       if (value) clusterOf.set(id, value)
@@ -140,7 +154,10 @@ app.post('/api/events/:slug/draw', async (c) => {
     seed,
     maxAttendees: seats,
   })
-  const winners = (seats == null ? selected : selected.slice(0, seats)).map((r) => r.id)
+  // Cluster quotas can add up to more than the seats: pick which winners keep a seat with the seeded shuffle, so no
+  // cluster wins by insertion order. If quotas add up to fewer than the seats the spare seats stay unfilled.
+  const chosen = seats != null && selected.length > seats ? seededOrder(selected, `${seed}\0seats`).slice(0, seats) : selected
+  const winners = chosen.map((r) => r.id)
   const winnerSet = new Set(winners)
   const losers = seededOrder(rows.filter((r) => !winnerSet.has(r.id)).map((r) => r.id), `${seed}\0waitlist`)
   const waitlist = Number(row.waitlist_enabled ?? 0) === 1
@@ -156,14 +173,17 @@ app.post('/api/events/:slug/draw', async (c) => {
   const decide = (id: string, to: string, decidedAt: string): InStatement => ({
     sql: `UPDATE attendees SET status = ?, decided_at = ?, decided_by = ?, cluster_value = COALESCE(?, cluster_value)
           WHERE id = ? AND event_id = ? AND status = 'entered'
-            AND EXISTS (SELECT 1 FROM events WHERE id = ? AND lottery_drawn_at = ?)`,
-    args: [to, decidedAt, user.id, clusterOf.get(id) ?? null, id, eventId, eventId, stamp],
+            AND EXISTS (SELECT 1 FROM events WHERE id = ? AND lottery_drawn_at = ?)
+            AND (? <> 'confirmed' OR ? IS NULL OR (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?)`,
+    args: [to, decidedAt, user.id, clusterOf.get(id) ?? null, id, eventId, eventId, stamp, to, capacity, eventId, capacity],
   })
+  const loserStatus = waitlist ? 'waitlisted' : 'declined'
+  const loserAt = (rank: number) => (waitlist ? sqlTime(new Date(drawnAt.getTime() + rank + 1)) : stamp)
   for (const id of winners) statements.push(decide(id, 'confirmed', stamp))
-  losers.forEach((id, i) => {
-    // Waitlist promotion orders by decided_at, so each loser gets one more millisecond than the one before.
-    statements.push(decide(id, waitlist ? 'waitlisted' : 'declined', waitlist ? sqlTime(new Date(drawnAt.getTime() + i + 1)) : stamp))
-  })
+  losers.forEach((id, i) => statements.push(decide(id, loserStatus, loserAt(i))))
+  // A winner refused by the seat guard (a seat was taken after we counted) is still 'entered' here and falls
+  // behind the losers; for a winner that was confirmed these are no-ops.
+  winners.forEach((id, i) => statements.push(decide(id, loserStatus, loserAt(losers.length + i))))
 
   const results = await client.batch(statements, 'write')
   if (Number(results[0].rowsAffected) !== 1) throw conflict('already_drawn', 'This lottery has already been drawn.')

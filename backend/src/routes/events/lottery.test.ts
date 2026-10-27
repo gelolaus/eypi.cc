@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Client } from '@libsql/client'
-import { promoteWaitlist } from '../../lib/tix/registration'
+import { findTicket, promoteWaitlist } from '../../lib/tix/registration'
 import { createTestApp, type TestUser } from '../../test/createTestApp'
 
 const member: TestUser = { id: 'mem-1', email: 'mem@student.apc.edu.ph', name: 'Mem', role: 'user' }
@@ -143,7 +143,7 @@ describe('lottery draw', () => {
       user: member,
       seed: async (c) => {
         await seed(c)
-        await seedEvent(c, 'a', { max: 4, waitlist: 1, questions })
+        await seedEvent(c, 'a', { max: 3, waitlist: 1, questions })
         await entrants(c, 'a', 8, (i) => ({ q1: i < 6 ? '1st' : '2nd' }))
         for (const [v, n] of [['1st', 1], ['2nd', 2]] as const) {
           await c.execute({ sql: "INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count) VALUES (?, 'id-a', 'q1', ?, ?)", args: [`c-${v}`, v, n] })
@@ -159,6 +159,142 @@ describe('lottery draw', () => {
     expect(won.filter((id) => Number(id.slice(1)) >= 6)).toHaveLength(2)
     const cv = await client.execute("SELECT cluster_value FROM attendees WHERE id = 'a00'")
     expect(cv.rows[0].cluster_value).toBe('1st')
+  })
+
+  it('shuffles cluster winners with the seed when quotas exceed the seats, and leaves spare seats empty', async () => {
+    const questions = [{ id: 'q1', label: 'Year', type: 'choice', options: ['1st', '2nd'] }]
+    const setup = (max: number, quotas: [string, number][]) => async (c: Client) => {
+      await seed(c)
+      await seedEvent(c, 'a', { max, questions })
+      await entrants(c, 'a', 12, (i) => ({ q1: i < 6 ? '1st' : '2nd' }))
+      for (const [v, n] of quotas) {
+        await c.execute({ sql: "INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count) VALUES (?, 'id-a', 'q1', ?, ?)", args: [`c-${v}`, v, n] })
+      }
+    }
+    const over = await createTestApp({ user: member, seed: setup(4, [['1st', 4], ['2nd', 4]]) })
+    expect(await (await draw(over.request, 'a', { seed: 'x1', clusterQuestionId: 'q1' })).json()).toMatchObject({ confirmed: 4 })
+    const first = winnersOf(await statuses(over.client, 'a'))
+    expect(first).toHaveLength(4)
+    // across seeds the 2nd cluster must be able to win seats (not always crowded out by cluster order)
+    const second = new Set<string>()
+    for (const sd of ['s1', 's2', 's3', 's4', 's5', 's6']) {
+      const t = await createTestApp({ user: member, seed: setup(4, [['1st', 4], ['2nd', 4]]) })
+      await draw(t.request, 'a', { seed: sd, clusterQuestionId: 'q1' })
+      for (const id of winnersOf(await statuses(t.client, 'a'))) if (Number(id.slice(1)) >= 6) second.add(sd)
+    }
+    expect(second.size).toBeGreaterThan(0)
+    // deterministic for the same seed
+    const again = await createTestApp({ user: member, seed: setup(4, [['1st', 4], ['2nd', 4]]) })
+    await draw(again.request, 'a', { seed: 'x1', clusterQuestionId: 'q1' })
+    expect(winnersOf(await statuses(again.client, 'a'))).toEqual(first)
+    // quotas below the seats: seats stay unfilled
+    const under = await createTestApp({ user: member, seed: setup(10, [['1st', 1], ['2nd', 2]]) })
+    expect(await (await draw(under.request, 'a', { seed: 's', clusterQuestionId: 'q1' })).json()).toMatchObject({ confirmed: 3, declined: 9 })
+  })
+
+  it('only reads quotas for the chosen question and rejects filters it cannot read', async () => {
+    const questions = [
+      { id: 'q1', label: 'Year', type: 'choice', options: ['1st', '2nd'] },
+      { id: 'q2', label: 'Other', type: 'choice', options: ['x', 'y'] },
+    ]
+    const { request } = await createTestApp({
+      user: member,
+      seed: async (c) => {
+        await seed(c); await seedEvent(c, 'a', { max: 5, questions }); await entrants(c, 'a', 4, () => ({ q1: '1st', q2: 'x' }))
+        await c.execute("INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count) VALUES ('c1', 'id-a', 'q2', 'x', 3)")
+      },
+    })
+    const none = await draw(request, 'a', { clusterQuestionId: 'q1' })
+    expect(none.status).toBe(400)
+    expect(((await none.json()) as { error: { code: string } }).error.code).toBe('no_clusters')
+    const ok = await draw(request, 'a', { clusterQuestionId: 'q2', seed: 's' })
+    expect(await ok.json()).toMatchObject({ confirmed: 3, declined: 1 })
+  })
+
+  it('applies cluster filters on question answers and 422s on unreadable filter columns', async () => {
+    const questions = [
+      { id: 'q1', label: 'Year', type: 'choice', options: ['1st'] },
+      { id: 'q2', label: 'Dept', type: 'choice', options: ['x', 'y'] },
+    ]
+    const make = (filterCol: string) => createTestApp({
+      user: member,
+      seed: async (c) => {
+        await seed(c); await seedEvent(c, 'a', { max: 5, questions })
+        await entrants(c, 'a', 4, (i) => ({ q1: '1st', q2: i < 2 ? 'x' : 'y' }))
+        await c.execute({ sql: "INSERT INTO event_clusters (id, event_id, cluster_col, value, max_count, filters) VALUES ('c1', 'id-a', 'q1', '1st', 4, ?)", args: [JSON.stringify({ [filterCol]: ['x'] })] })
+      },
+    })
+    const good = await make('q2')
+    expect(await (await draw(good.request, 'a', { clusterQuestionId: 'q1', seed: 's' })).json()).toMatchObject({ confirmed: 2, declined: 2 })
+    const bad = await make('Dept')
+    const res = await draw(bad.request, 'a', { clusterQuestionId: 'q1' })
+    expect(res.status).toBe(422)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('unsupported_cluster_filter')
+    expect((await statuses(bad.client, 'a')).a00).toBe('entered')
+  })
+
+  it('rejects seeds outside the safe pattern', async () => {
+    const { request } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c, 'a'); await entrants(c, 'a', 2) } })
+    for (const sd of ['me@apc.edu.ph', 'has space', 'x'.repeat(65), '']) {
+      const res = await draw(request, 'a', { seed: sd })
+      expect(res.status).toBe(400)
+      expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_seed')
+    }
+    expect((await draw(request, 'a', { seed: 'ok.seed_1:2-3' })).status).toBe(200)
+  })
+
+  it('never exceeds capacity when a seat is taken after the count, and demotes the refused winner', async () => {
+    for (const waitlist of [1, 0]) {
+      const { request, client } = await createTestApp({
+        user: member,
+        seed: async (c) => {
+          await seed(c); await seedEvent(c, 'a', { max: 2, waitlist }); await entrants(c, 'a', 5)
+          // fires inside the draw batch, right after the guard: a seat is taken after the seat count was read
+          await c.execute(`CREATE TRIGGER take_seat AFTER UPDATE OF lottery_drawn_at ON events
+            BEGIN INSERT INTO attendees (id, event_id, first_name, email, qr_token, status) VALUES ('late', 'id-a', 'late', 'late@x.test', 'qr-late', 'confirmed'); END`)
+        },
+      })
+      const body = await (await draw(request, 'a', { seed: 's' })).json() as { confirmed: number; waitlisted: number; declined: number }
+      const s = await statuses(client, 'a')
+      expect(Object.values(s).filter((v) => v === 'confirmed')).toHaveLength(2)
+      expect(Object.values(s).filter((v) => v === 'entered')).toHaveLength(0)
+      expect(body.confirmed).toBe(1)
+      expect(body.waitlisted + body.declined).toBe(4)
+      expect(waitlist ? body.waitlisted : body.declined).toBe(4)
+    }
+  })
+
+  it('shows waitlist positions in draw order, mixing in rows without decided_at', async () => {
+    const { request, client } = await createTestApp({
+      user: member,
+      seed: async (c) => {
+        await seed(c); await seedEvent(c, 'a', { max: 1, waitlist: 1 }); await entrants(c, 'a', 5)
+        for (let i = 0; i < 5; i++) {
+          await c.execute({ sql: 'INSERT INTO users (id, email, name) VALUES (?, ?, ?)', args: [`u${i}`, `u${i}@student.apc.edu.ph`, `u${i}`] })
+          await c.execute({ sql: 'UPDATE attendees SET user_id = ? WHERE id = ?', args: [`u${i}`, `a0${i}`] })
+        }
+      },
+    })
+    await draw(request, 'a', { seed: 's' })
+    const positions = async () => {
+      const out: [string, number][] = []
+      const res = await client.execute("SELECT id, user_id FROM attendees WHERE status = 'waitlisted'")
+      for (const r of res.rows) {
+        const t = await findTicket(client as never, 'id-a', String(r.user_id))
+        out.push([String(r.id), t?.waitlistPosition ?? -1])
+      }
+      return out.sort((x, y) => x[1] - y[1])
+    }
+    const ordered = (await client.execute("SELECT id FROM attendees WHERE status = 'waitlisted' ORDER BY decided_at")).rows.map((r) => String(r.id))
+    expect((await positions()).map(([id]) => id)).toEqual(ordered)
+    expect((await positions()).map(([, p]) => p)).toEqual([1, 2, 3, 4])
+    // an FCFS-style waitlister with no decided_at and an older registered_at goes first, for display and promotion alike
+    await client.execute("INSERT INTO users (id, email, name) VALUES ('uold', 'uold@student.apc.edu.ph', 'old')")
+    await client.execute("INSERT INTO attendees (id, event_id, first_name, email, qr_token, status, user_id, registered_at) VALUES ('old', 'id-a', 'old', 'old@x.test', 'qr-old', 'waitlisted', 'uold', '2020-01-01 00:00:00.000')")
+    const after = await positions()
+    expect(after[0]).toEqual(['old', 1])
+    expect(after.map(([id]) => id).slice(1)).toEqual(ordered)
+    expect(after.map(([, p]) => p)).toEqual([1, 2, 3, 4, 5])
   })
 
   it('rejects a cluster question that is not a choice question', async () => {
