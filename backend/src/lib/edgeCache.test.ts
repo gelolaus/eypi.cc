@@ -101,3 +101,32 @@ describe('withEdgeCache', () => {
     expect(res.headers.get('Cache-Control')).toBe(CC)
   })
 })
+
+describe('withEdgeCache and CORS', () => {
+  it('keeps origin-specific headers out of the stored copy and the next response', async () => {
+    const { createTestApp } = await import('../test/createTestApp')
+    const map = installFakeCache()
+    try {
+      const { request } = await createTestApp()
+      const first = await request('/api/stats', { headers: { Origin: 'https://eypi.cc' } })
+      expect(first.headers.get('Access-Control-Allow-Origin')).toBe('https://eypi.cc')
+
+      const stored = [...map.values()][0]
+      expect(stored).toBeDefined()
+      const leaked = [...stored.headers.keys()].filter((h) => h.startsWith('access-control-') || h === 'vary')
+      expect(leaked).toEqual([])
+
+      const evil = await request('/api/stats', { headers: { Origin: 'https://evil.example' } })
+      expect(evil.status).toBe(200)
+      expect(evil.headers.get('Access-Control-Allow-Origin')).toBeNull()
+
+      const local = await request('/api/stats', { headers: { Origin: 'http://localhost:5173' } })
+      expect(local.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173')
+
+      const none = await request('/api/stats')
+      expect(none.headers.get('Access-Control-Allow-Origin')).toBeNull()
+    } finally {
+      delete (globalThis as { caches?: unknown }).caches
+    }
+  })
+})

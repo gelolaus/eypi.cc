@@ -22,6 +22,15 @@ function isPersonalized(c: Context): boolean {
   return names.some((name) => SESSION_COOKIE_NAMES.includes(name))
 }
 
+function withoutOriginHeaders(res: Response): Response {
+  const clone = res.clone()
+  const headers = new Headers(clone.headers)
+  for (const name of [...headers.keys()]) {
+    if (name.startsWith('access-control-') || name === 'vary') headers.delete(name)
+  }
+  return new Response(clone.body, { status: clone.status, headers })
+}
+
 function isCacheable(res: Response): boolean {
   if (res.status !== 200) return false
   if (res.headers.has('Set-Cookie')) return false
@@ -61,7 +70,7 @@ export async function withEdgeCache(
 
   res.headers.set('Cache-Control', `public, max-age=${ttlSec}, stale-while-revalidate=300`)
   if (store) {
-    const write = store.put(key, res.clone()).catch(() => {})
+    const write = store.put(key, withoutOriginHeaders(res)).catch(() => {})
     try {
       c.executionCtx.waitUntil(write)
     } catch {
