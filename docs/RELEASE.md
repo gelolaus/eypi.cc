@@ -259,6 +259,11 @@ Items from the October 2026 report that code cannot change. Do these in the dash
 - [ ] **Cloudflare.** Keep the managed WAF ruleset on, HSTS preload on, and Always Use HTTPS on for `eypi.cc`.
 - [ ] **Node.** CI and Workers build on Node 22. Keep it on 22.23.4 or later (Brotli and TLS fixes of 21 Oct 2026).
 - [ ] **Lockfiles.** `npm ls tensorlake @subql/common` in both packages must return nothing. Last checked 27 Oct 2026: clean.
+- [ ] **CAA records.** Restrict issuance to `pki.goog` (the current Cloudflare certificate issuer) and add `letsencrypt.org` if you want a fallback. Check Cloudflare's Universal SSL CA list first so renewals are not blocked.
+- [ ] **Domain renewal.** Turn on auto-renew at Spaceship. `eypi.cc` expires 2027-02-28.
+- [ ] **Passkeys.** Use passkeys or security keys on Google Workspace, GitHub and Cloudflare.
+- [ ] **Secrets.** Rotate any Worker or Cloudflare value that was ever stored as plain text instead of a secret.
+- [ ] **Local Node.** Update dev machines to Node 22.23.4, 24.22.1 or 26.12.1 or later.
 - [ ] **security.txt.** `public/.well-known/security.txt` expires 2027-10-27. Renew it before then.
 
 Known and accepted: `style-src 'unsafe-inline'` stays in `public/_headers`. The app uses inline `style` attributes and `vue-sonner` injects a `<style>` tag at runtime, so removing it breaks toasts and layout. `script-src 'self'` is strict, which is what blocks injected scripts. `exceljs` pulls `uuid` below 11.1.1 (moderate, only unsafe when a caller passes a buffer, which exceljs does not).
