@@ -1,4 +1,5 @@
 import type { OrgType } from '@/constants/orgTypes'
+import type { ImageMeta } from '@/lib/images/variants'
 
 export interface PublicOrgCatalogItem {
   slug: string
@@ -6,6 +7,7 @@ export interface PublicOrgCatalogItem {
   tagline: string | null
   orgType: OrgType | null
   logoUrl: string | null
+  logoMeta?: ImageMeta | null
 }
 
 export interface OrgSocialLinks {
@@ -25,6 +27,8 @@ export interface PublicOrgProfile {
   aboutMarkdown: string | null
   bannerUrl: string | null
   logoUrl: string | null
+  bannerMeta?: ImageMeta | null
+  logoMeta?: ImageMeta | null
   socialLinks: OrgSocialLinks
 }
 
@@ -52,6 +56,7 @@ export interface OrgListItem {
   org_id: string
   org_name: string
   logo_url?: string | null
+  logoMeta?: ImageMeta | null
   owner_id: string
   is_owner: number
   is_public_catalog?: number

@@ -302,7 +302,7 @@ onMounted(async () => {
     form.slug = data.campaign.slug
     form.description = data.campaign.description ?? ''
     form.captionTemplate = data.campaign.captionTemplate ?? ''
-    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url }))
+    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url, meta: f.imageMeta ?? null }))
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
   } finally {

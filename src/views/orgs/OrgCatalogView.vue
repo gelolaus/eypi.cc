@@ -104,11 +104,13 @@
               v-if="org.logoUrl"
               class="size-14 shrink-0 overflow-hidden rounded-2xl border border-border bg-card"
             >
-              <img
+              <AppImage
                 :src="org.logoUrl"
+                :meta="org.logoMeta"
+                sizes="56px"
                 :alt="`${org.name} logo`"
                 class="h-full w-full object-cover"
-              >
+              />
             </div>
             <div
               v-else
@@ -142,6 +144,7 @@
 </template>
 
 <script setup lang="ts">
+import AppImage from '@/components/AppImage.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

@@ -22,6 +22,13 @@ describe('Eypi mascot assets', () => {
     expect(pngSize(pub(name))).toEqual([size, size])
   })
 
+  it('ships a 192px WebP mark for the in-app logo', () => {
+    const buf = readFileSync(pub('eypi-mark.webp'))
+    expect(buf.subarray(0, 4).toString('latin1')).toBe('RIFF')
+    expect(buf.subarray(8, 12).toString('latin1')).toBe('WEBP')
+    expect(buf.byteLength).toBeLessThan(readFileSync(pub('eypi-mark.png')).byteLength)
+  })
+
   it('no longer ships the letter-mark favicon', () => {
     expect(existsSync(pub('favicon.svg'))).toBe(false)
   })

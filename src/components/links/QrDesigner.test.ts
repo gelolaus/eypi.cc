@@ -14,6 +14,10 @@ vi.mock('@/utils/normalizeQrLogo', () => ({
   normalizeQrLogoDataUrl: vi.fn(async () => 'data:image/png;base64,AAAA'),
 }))
 
+vi.mock('@/lib/images/variants', () => ({
+  makeVariants: vi.fn(async () => ({ meta: { w: 100, h: 100, fmt: 'png', widths: [], ph: '' }, variants: [] })),
+}))
+
 class ImmediateReader {
   result: string | null = null
   onload: null | (() => void) = null

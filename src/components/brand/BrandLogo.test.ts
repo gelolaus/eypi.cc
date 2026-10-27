@@ -19,7 +19,7 @@ describe('BrandLogo', () => {
   })
   it('uses the Eypi mascot as the mark', () => {
     const w = mount(BrandLogo, { global })
-    expect(w.get('img').attributes('src')).toBe('/eypi-mark.png')
+    expect(w.get('img').attributes('src')).toBe('/eypi-mark.webp')
   })
   it('hides the wordmark with markOnly and labels the element', () => {
     const w = mount(BrandLogo, { props: { markOnly: true, size: 'sm' }, global })

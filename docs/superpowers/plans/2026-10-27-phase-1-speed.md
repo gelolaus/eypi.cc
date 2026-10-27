@@ -242,11 +242,11 @@
 - Consumes: `ImageMeta`, `makeVariants`, `PUT /api/media/variants`, `variantKey` naming (mirror it client-side in `src/lib/images/variantUrl.ts`: `variantUrl(src: string, width: number, fmt: ImageMeta['fmt']): string`).
 - Produces: `<AppImage :src :meta :alt :sizes :priority />`.
 
-- [ ] **Step 1: Failing tests:** with meta → `srcset` lists every width with `w` descriptors, `width`/`height` attrs set, `loading="lazy"` and `decoding="async"`; `priority` → no `loading`, `fetchpriority="high"`; no meta → plain `src`, still lazy; placeholder background present until `load`. Upload test in `OrgModifyView.test.ts`: after save, `PUT /api/media/variants` is called with `orgLogo` widths.
-- [ ] **Step 2: Run** `npx vitest run src/components/AppImage.test.ts src/views/orgs` → FAIL.
-- [ ] **Step 3: Implement**; replace each listed `<img>`. Frames: the picker uses `AppImage`; the canvas merge keeps loading the original `url`. QR logos (`src/components/links/QrDesigner.vue`): resize to the `qrLogo` profile (512) with `makeVariants` before saving and save that single image as the logo (no variants call); add a test in `LinkEditorPanel.imageSave.test.ts` that a 2000 px logo is saved at 512 px.
-- [ ] **Step 4: Run** `npm test` → PASS.
-- [ ] **Step 5: Commit** `perf(media): serve right-sized images with srcset and placeholders`.
+- [x] **Step 1: Failing tests:** with meta → `srcset` lists every width with `w` descriptors, `width`/`height` attrs set, `loading="lazy"` and `decoding="async"`; `priority` → no `loading`, `fetchpriority="high"`; no meta → plain `src`, still lazy; placeholder background present until `load`. Upload test in `OrgModifyView.test.ts`: after save, `PUT /api/media/variants` is called with `orgLogo` widths.
+- [x] **Step 2: Run** `npx vitest run src/components/AppImage.test.ts src/views/orgs` → FAIL.
+- [x] **Step 3: Implement**; replace each listed `<img>`. Frames: the picker uses `AppImage`; the canvas merge keeps loading the original `url`. QR logos (`src/components/links/QrDesigner.vue`): resize to the `qrLogo` profile (512) with `makeVariants` before saving and save that single image as the logo (no variants call); add a test in `LinkEditorPanel.imageSave.test.ts` that a 2000 px logo is saved at 512 px.
+- [x] **Step 4: Run** `npm test` → PASS.
+- [x] **Step 5: Commit** `perf(media): serve right-sized images with srcset and placeholders`.
 
 ### Task 15: Edge media cache
 

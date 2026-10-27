@@ -28,12 +28,14 @@
         @dragend="onDragEnd"
       >
         <div class="overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
-          <img
+          <AppImage
             :src="frame.src"
+            :meta="frame.meta"
+            sizes="(min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
             alt=""
             draggable="false"
             class="block aspect-square w-full object-contain"
-          >
+          />
         </div>
         <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">{{ i + 1 }}</span>
         <span
@@ -170,6 +172,7 @@
 
 <script setup lang="ts">
 import { getCurrentInstance, ref } from 'vue'
+import AppImage from '@/components/AppImage.vue'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/composables/useToast'
 import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpUploaderFrame } from '@/types/dp'

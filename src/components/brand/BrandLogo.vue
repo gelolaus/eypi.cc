@@ -16,7 +16,7 @@ const props = withDefaults(
   { size: 'md', markOnly: false },
 )
 
-const markSrc = '/eypi-mark.png'
+const markSrc = '/eypi-mark.webp'
 const s = computed(() => sizes[props.size])
 const rowClass = computed(() => cn('inline-flex items-center', s.value.row))
 </script>

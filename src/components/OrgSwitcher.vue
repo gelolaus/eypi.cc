@@ -19,6 +19,7 @@
     >
       <OrgLogo
         :logo-url="activeOrg?.logo_url"
+        :logo-meta="activeOrg?.logoMeta"
         :name="activeOrg?.org_name ?? ''"
         size="sm"
       />
@@ -90,6 +91,7 @@
           >
             <OrgLogo
               :logo-url="org.logo_url"
+              :logo-meta="org.logoMeta"
               :name="org.org_name"
               size="sm"
             />

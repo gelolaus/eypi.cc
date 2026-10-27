@@ -287,6 +287,31 @@ function readFile(file: File): Promise<string> {
   })
 }
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(',')
+  const type = /^data:([^;,]+)/.exec(dataUrl)?.[1] ?? 'image/png'
+  const binary = atob(dataUrl.slice(comma + 1))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type })
+}
+
+/**
+ * Resizes to the qrLogo profile (512 px) before saving; that single image is the
+ * logo, with no variants call. Lazy-loaded, best-effort, and PNG only because the
+ * QR logo store accepts nothing else: any other result keeps the input.
+ */
+async function fitQrLogo(dataUrl: string): Promise<string> {
+  try {
+    const { makeVariants } = await import('@/lib/images/variants')
+    const { variants } = await makeVariants(dataUrlToBlob(dataUrl), 'qrLogo')
+    const resized = variants[0]?.dataUrl
+    return resized?.startsWith('data:image/png;base64,') ? resized : dataUrl
+  } catch {
+    return dataUrl
+  }
+}
+
 async function onLogo(event: Event) {
   const input = event.target
   if (!(input instanceof HTMLInputElement)) return
@@ -306,7 +331,7 @@ async function onLogo(event: Event) {
   beginLogoRequest()
   try {
     const raw = await readFile(file)
-    const normalized = await normalizeQrLogoDataUrl(raw)
+    const normalized = await fitQrLogo(await normalizeQrLogoDataUrl(raw))
     if (props.linkId) {
       const saved = await api.put<{ url: string }>(`/api/links/${props.linkId}/qr-logo`, {
         imageData: normalized,

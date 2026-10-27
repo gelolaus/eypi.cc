@@ -28,6 +28,7 @@
         <div class="flex min-w-0 items-start gap-4">
           <OrgLogo
             :logo-url="profileForm.logoUrl"
+            :logo-meta="profileForm.logoMeta"
             :name="org.org_name"
             size="md"
           />
@@ -145,12 +146,14 @@
                 class="relative h-28 overflow-hidden rounded-xl border border-border"
                 :class="profileForm.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted'"
               >
-                <img
+                <AppImage
                   v-if="profileForm.bannerUrl"
                   :src="profileForm.bannerUrl"
+                  :meta="profileForm.bannerMeta"
+                  sizes="(min-width: 768px) 50vw, 100vw"
                   alt="Banner preview"
                   class="h-full w-full object-cover"
-                >
+                />
               </div>
               <label class="flex min-h-11 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border px-4 py-3 text-center text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                 {{ uploadingBanner ? 'Uploading...' : 'Upload banner' }}
@@ -181,11 +184,13 @@
                   v-if="profileForm.logoUrl"
                   class="size-24 overflow-hidden rounded-2xl border border-border"
                 >
-                  <img
+                  <AppImage
                     :src="profileForm.logoUrl"
+                    :meta="profileForm.logoMeta"
+                    sizes="96px"
                     alt="Logo preview"
                     class="h-full w-full object-cover"
-                  >
+                  />
                 </div>
                 <div
                   v-else
@@ -515,6 +520,9 @@
 </template>
 
 <script setup lang="ts">
+import AppImage from '@/components/AppImage.vue'
+import { uploadVariants } from '@/lib/images/uploadVariants'
+import type { ImageMeta } from '@/lib/images/variants'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -563,6 +571,8 @@ interface ProfileFormState {
   aboutMarkdown: string
   bannerUrl: string
   logoUrl: string
+  bannerMeta: ImageMeta | null
+  logoMeta: ImageMeta | null
   socialHandles: Required<OrgSocialLinks>
 }
 
@@ -644,6 +654,8 @@ function mapProfileToForm(profile: OrgProfileSettings): ProfileFormState {
     aboutMarkdown: profile.aboutMarkdown ?? '',
     bannerUrl: profile.bannerUrl ?? '',
     logoUrl: profile.logoUrl ?? '',
+    bannerMeta: profile.bannerMeta ?? null,
+    logoMeta: profile.logoMeta ?? null,
     socialHandles: socialLinksToHandles({ ...EMPTY_SOCIAL_LINKS, ...profile.socialLinks }),
   }
 }
@@ -711,8 +723,14 @@ async function fetchMembers() {
 
 const ORG_IMAGE_MAX_BYTES = 10 * 1024 * 1024
 
-async function storeOrgImage(field: 'bannerUrl' | 'logoUrl', value: string | null, fallback: string) {
+async function storeOrgImage(
+  field: 'bannerUrl' | 'logoUrl',
+  value: string | null,
+  fallback: string,
+  variantsFrom?: File,
+) {
   if (!profileForm.value) return
+  const metaField = field === 'bannerUrl' ? 'bannerMeta' : 'logoMeta'
   const res = await api.raw(`/api/orgs/${slug.value}/profile`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -721,6 +739,12 @@ async function storeOrgImage(field: 'bannerUrl' | 'logoUrl', value: string | nul
   const data = await res.json() as { profile?: OrgProfileSettings }
   if (!res.ok || !data.profile) throw new Error(messageFrom(data, fallback))
   profileForm.value[field] = data.profile[field] ?? ''
+  profileForm.value[metaField] = data.profile[metaField] ?? null
+  // Variants are best-effort: the image is already saved, so a failure here changes nothing.
+  if (variantsFrom && data.profile[field]) {
+    const meta = await uploadVariants(variantsFrom, field === 'bannerUrl' ? 'banner' : 'orgLogo', data.profile[field])
+    if (meta && profileForm.value[field] === data.profile[field]) profileForm.value[metaField] = meta
+  }
 }
 
 async function onBannerPicked(e: Event) {
@@ -730,7 +754,7 @@ async function onBannerPicked(e: Event) {
   uploadingBanner.value = true
   try {
     const dataUrl = await readImageAsDataUrl(file, ORG_IMAGE_MAX_BYTES)
-    await storeOrgImage('bannerUrl', dataUrl, 'Upload failed.')
+    await storeOrgImage('bannerUrl', dataUrl, 'Upload failed.', file)
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Upload failed.')
   } finally {
@@ -746,7 +770,7 @@ async function onLogoPicked(e: Event) {
   uploadingLogo.value = true
   try {
     const dataUrl = await readImageAsDataUrl(file, ORG_IMAGE_MAX_BYTES)
-    await storeOrgImage('logoUrl', dataUrl, 'Upload failed.')
+    await storeOrgImage('logoUrl', dataUrl, 'Upload failed.', file)
   } catch (err) {
     toast.error(err instanceof Error ? err.message : 'Upload failed.')
   } finally {
