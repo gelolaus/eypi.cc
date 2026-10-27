@@ -4,8 +4,8 @@ import { IMAGE_PROFILES, type ImageProfile } from './profiles'
 export const WEBP_QUALITY = 0.86
 const FALLBACK_QUALITY = 0.86
 const PLACEHOLDER_WIDTH = 16
-const PLACEHOLDER_QUALITY = 0.5
 const PLACEHOLDER_MAX_CHARS = 1200
+const PLACEHOLDER_MAX_HEIGHT = 32
 
 export type ImageFormat = 'webp' | 'jpeg' | 'png'
 
@@ -54,8 +54,13 @@ export function planWidths(sourceWidth: number, profile: readonly number[]): num
   return profile.filter((w) => w < sourceWidth).sort((a, b) => a - b)
 }
 
-const defaultLoadBitmap = (file: Blob): Promise<BitmapLike> =>
-  createImageBitmap(file, { imageOrientation: 'from-image' })
+const defaultLoadBitmap = async (file: Blob): Promise<BitmapLike> => {
+  try {
+    return await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch {
+    return createImageBitmap(file)
+  }
+}
 
 const defaultCreateSurface = (w: number, h: number): DrawSurface => {
   const canvas: OffscreenCanvas | HTMLCanvasElement =
@@ -97,26 +102,62 @@ function formatOf(type: string): ImageFormat | null {
   return null
 }
 
+class FormatMismatch extends Error {}
+
 /**
  * WebP first. Safari ignores toBlob('image/webp') and returns PNG, so when the
  * blob is not WebP: JPEG for opaque images, PNG for images with alpha.
+ * `force` pins the output format (used to keep one format across a set).
  */
 async function encodeBest(
   encode: Encoder,
   surface: DrawSurface,
   alpha: boolean,
   quality: number,
-  fmt?: ImageFormat,
+  force?: ImageFormat,
 ): Promise<{ blob: Blob; fmt: ImageFormat }> {
-  if (!fmt || fmt === 'webp') {
+  if (!force || force === 'webp') {
     const webp = await encode(surface, 'image/webp', quality)
     if (webp && webp.type === 'image/webp') return { blob: webp, fmt: 'webp' }
+    if (force === 'webp') throw new FormatMismatch('webp not encoded')
   }
-  const type = alpha ? 'image/png' : 'image/jpeg'
-  const blob = await encode(surface, type, FALLBACK_QUALITY)
+  const type = force ? `image/${force}` : alpha ? 'image/png' : 'image/jpeg'
+  const blob = await encode(surface, type, Math.min(quality, FALLBACK_QUALITY))
   const out = blob && formatOf(blob.type)
   if (!blob || !out) throw new Error('image encoding failed')
   return { blob, fmt: out }
+}
+
+/** Placeholder never aborts an upload: shrink and retry, finally degrade to ''. */
+async function makePlaceholder(
+  bitmap: BitmapLike,
+  createSurface: (w: number, h: number) => DrawSurface,
+  encode: Encoder,
+): Promise<{ ph: string; fmt: ImageFormat | null; alpha: boolean }> {
+  const attempts = [
+    { w: PLACEHOLDER_WIDTH, q: 0.5 },
+    { w: PLACEHOLDER_WIDTH, q: 0.3 },
+    { w: 8, q: 0.3 },
+    { w: 4, q: 0.2 },
+  ]
+  let alpha = false
+  let fmt: ImageFormat | null = null
+  for (const [i, { w, q }] of attempts.entries()) {
+    try {
+      const ratio = bitmap.height / bitmap.width
+      const h = Math.min(PLACEHOLDER_MAX_HEIGHT, Math.max(w === PLACEHOLDER_WIDTH ? 4 : 1, Math.round(ratio * w)))
+      const surface = createSurface(w, h)
+      surface.ctx.drawImage(bitmap, 0, 0, w, h)
+      if (i === 0) alpha = hasAlpha(surface)
+      const out = await encodeBest(encode, surface, alpha, q)
+      fmt ??= out.fmt
+      const url = await blobToDataUrl(out.blob)
+      if (url.length <= PLACEHOLDER_MAX_CHARS) return { ph: url, fmt: out.fmt, alpha }
+    } catch {
+      // try the next, smaller attempt
+    }
+  }
+  return { ph: '', fmt, alpha }
 }
 
 export async function makeVariants(
@@ -132,28 +173,43 @@ export async function makeVariants(
   try {
     const w = bitmap.width
     const h = bitmap.height
-
-    const phH = Math.max(1, Math.round((h / w) * PLACEHOLDER_WIDTH))
-    const phSurface = createSurface(PLACEHOLDER_WIDTH, phH)
-    phSurface.ctx.drawImage(bitmap, 0, 0, PLACEHOLDER_WIDTH, phH)
-    const alpha = hasAlpha(phSurface)
-    const ph = await encodeBest(encode, phSurface, alpha, PLACEHOLDER_QUALITY)
-    const phUrl = await blobToDataUrl(ph.blob)
-    if (phUrl.length > PLACEHOLDER_MAX_CHARS) throw new Error('placeholder too large')
+    const placeholder = await makePlaceholder(bitmap, createSurface, encode)
+    const { alpha } = placeholder
 
     const widths = planWidths(w, IMAGE_PROFILES[profile])
-    const variants: Variant[] = []
-    let fmt: ImageFormat = ph.fmt
-    for (const width of widths) {
+    const surfaces = widths.map((width) => {
       const height = Math.max(1, Math.round((h / w) * width))
       const surface = createSurface(width, height)
       surface.ctx.drawImage(bitmap, 0, 0, width, height)
-      const out = await encodeBest(encode, surface, alpha, WEBP_QUALITY, fmt)
-      fmt = out.fmt
-      variants.push({ width, dataUrl: await blobToDataUrl(out.blob) })
+      return surface
+    })
+
+    const encodeSet = async (force?: ImageFormat) => {
+      const blobs: Blob[] = []
+      let fmt = force
+      for (const surface of surfaces) {
+        const out = await encodeBest(encode, surface, alpha, WEBP_QUALITY, fmt)
+        fmt ??= out.fmt
+        if (out.fmt !== fmt) throw new FormatMismatch('mixed formats')
+        blobs.push(out.blob)
+      }
+      return { blobs, fmt }
     }
 
-    return { meta: { w, h, fmt, widths, ph: phUrl }, variants }
+    let set: { blobs: Blob[]; fmt: ImageFormat | undefined }
+    try {
+      set = await encodeSet()
+    } catch (e) {
+      if (!(e instanceof FormatMismatch)) throw e
+      set = await encodeSet(alpha ? 'png' : 'jpeg')
+    }
+
+    const variants: Variant[] = []
+    for (const [i, blob] of set.blobs.entries()) {
+      variants.push({ width: widths[i], dataUrl: await blobToDataUrl(blob) })
+    }
+    const fmt: ImageFormat = set.fmt ?? placeholder.fmt ?? 'webp'
+    return { meta: { w, h, fmt, widths, ph: placeholder.ph }, variants }
   } finally {
     bitmap.close?.()
   }
