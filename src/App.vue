@@ -13,21 +13,33 @@
     </router-view>
   </component>
 
-  <ToastContainer />
-  <DialogHost />
+  <!-- Toasts and dialogs pull in vue-sonner and reka-ui. Mount them on first use. -->
+  <ToastContainer v-if="toastsNeeded" />
+  <DialogHost v-if="dialogNeeded" />
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, provide } from 'vue'
+import { computed, defineAsyncComponent, ref, provide, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { loadAppShell } from '@/components/layout/loadAppShell'
 import PublicShell from '@/components/layout/PublicShell.vue'
-import ToastContainer from '@/components/ToastContainer.vue'
-import DialogHost from '@/components/DialogHost.vue'
+import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import AppTransition from '@/components/AppTransition.vue'
 
 // The signed-in shell is only fetched on app pages. Public pages never pay for it.
 const AppShell = defineAsyncComponent(loadAppShell)
+const ToastContainer = defineAsyncComponent(() => import('@/components/ToastContainer.vue'))
+const DialogHost = defineAsyncComponent(() => import('@/components/DialogHost.vue'))
+
+// Latches stay true once set so an open overlay never unmounts mid-animation.
+const { toasts } = useToast()
+const { current: currentDialog } = useDialog()
+const toastsNeeded = ref(toasts.value.length > 0)
+const dialogNeeded = ref(currentDialog.value !== null)
+watch(() => toasts.value.length, (n) => { if (n > 0) toastsNeeded.value = true })
+watch(currentDialog, (d) => { if (d) dialogNeeded.value = true })
+
 const route = useRoute()
 const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 

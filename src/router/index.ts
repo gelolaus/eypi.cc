@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
-import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
@@ -20,7 +19,7 @@ const router = createRouter({
   },
   routes: [
     { path: '/', name: 'home', component: HomeView, meta: { layout: 'public', title: 'Home' } },
-    { path: '/login', name: 'login', component: LoginView, meta: { layout: 'public', title: 'Sign in' } },
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { layout: 'public', title: 'Sign in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {

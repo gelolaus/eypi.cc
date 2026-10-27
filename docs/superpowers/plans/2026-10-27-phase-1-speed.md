@@ -166,10 +166,10 @@
 **Interfaces:**
 - Produces: `checkBundleBudgets(manifest: Record<string, ManifestChunk>, gzSize: (file: string) => number): string[]` with budgets: entry JS ≤ 70 KB, entry CSS ≤ 22 KB, any route chunk ≤ 40 KB except names matching `/useDocxGenerator|exceljs|AttendeeSelection|jszip|papaparse|qr-scanner/`, and total JS for routes `dp-public`, tix public, `guest-ticket` (once it exists) ≤ 110 KB (entry + its static imports + the route chunk).
 
-- [ ] **Step 1: Failing tests:** over-budget entry → one problem string naming the file and size; exempt chunk ignored; within budget → `[]`.
-- [ ] **Step 2: Run** `npx vitest run scripts/lib/releaseChecks.test.mjs` → FAIL.
-- [ ] **Step 3: Implement**; call it in `release-check.mjs` step 5 using `zlib.gzipSync`.
-- [ ] **Step 4: Run** `npm run build && npm run release:check -- --allow-dirty` → budgets pass. If the entry is over 70 KB, find what Task 7 left in it (`npx vite-bundle-visualizer` is fine to run ad hoc, don't add it) and move it behind a lazy import in this task.
+- [x] **Step 1: Failing tests:** over-budget entry → one problem string naming the file and size; exempt chunk ignored; within budget → `[]`.
+- [x] **Step 2: Run** `npx vitest run scripts/lib/releaseChecks.test.mjs` → FAIL.
+- [x] **Step 3: Implement**; call it in `release-check.mjs` step 5 using `zlib.gzipSync`.
+- [x] **Step 4: Run** `npm run build && npm run release:check -- --allow-dirty` → budgets pass. If the entry is over 70 KB, find what Task 7 left in it (`npx vite-bundle-visualizer` is fine to run ad hoc, don't add it) and move it behind a lazy import in this task.
 - [ ] **Step 5: Commit** `build(perf): enforce gzip bundle budgets in the release check`.
 
 ### Task 10: Client query cache
