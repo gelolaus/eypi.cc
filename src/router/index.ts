@@ -277,6 +277,12 @@ const router = createRouter({
           meta: { title: 'Speed' },
         },
         {
+          path: 'maintenance',
+          name: 'admin-maintenance',
+          component: () => import('@/views/admin/AdminMaintenanceView.vue'),
+          meta: { title: 'Maintenance' },
+        },
+        {
           path: 'audit',
           name: 'admin-audit',
           component: () => import('@/views/admin/AdminAuditView.vue'),

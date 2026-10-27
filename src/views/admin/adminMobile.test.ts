@@ -79,7 +79,7 @@ describe('admin mobile layout', () => {
   })
 
   it('layout has no nested main and a snapping scrollable tab nav', async () => {
-    const router = createRouter({ history: createMemoryHistory(), routes: ['overview', 'users', 'links', 'reports', 'orgs', 'speed', 'audit'].map((n) => ({ path: n === 'overview' ? '/' : '/' + n, name: 'admin-' + n, component: { template: '<i />' } })) })
+    const router = createRouter({ history: createMemoryHistory(), routes: ['overview', 'users', 'links', 'reports', 'orgs', 'speed', 'maintenance', 'audit'].map((n) => ({ path: n === 'overview' ? '/' : '/' + n, name: 'admin-' + n, component: { template: '<i />' } })) })
     await router.push('/')
     const wrapper = mount(AdminLayout, { global: { plugins: [router] } })
     expect(wrapper.find('main').exists()).toBe(false)

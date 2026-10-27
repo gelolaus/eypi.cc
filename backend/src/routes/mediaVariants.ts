@@ -41,7 +41,7 @@ const FORMATS: readonly ImageFormat[] = ['webp', 'jpeg', 'png']
 
 type KeyKind = 'orgLogo' | 'banner' | 'frame'
 
-type KeyTarget =
+export type KeyTarget =
   | { kind: 'orgLogo' | 'banner'; column: 'logo' | 'banner' }
   | { kind: 'frame' }
 
@@ -57,7 +57,7 @@ function fail(status: ContentfulStatusCode, code: string, message: string): Resp
   })
 }
 
-function classifyKey(key: string): KeyTarget | null {
+export function classifyKey(key: string): KeyTarget | null {
   const org = ORG_KEY.exec(key)
   if (org) return org[1] === 'logo' ? { kind: 'orgLogo', column: 'logo' } : { kind: 'banner', column: 'banner' }
   if (FRAME_KEY.test(key)) return { kind: 'frame' }

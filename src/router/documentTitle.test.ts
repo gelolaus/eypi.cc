@@ -43,6 +43,7 @@ const pages: Record<string, string> = {
   'admin-reports': 'Reports',
   'admin-audit': 'Audit log',
   'admin-speed': 'Speed',
+  'admin-maintenance': 'Maintenance',
   'admin-orgs': 'Org management',
   'admin-orgs-new': 'New organization',
   'admin-orgs-edit': 'Edit organization',

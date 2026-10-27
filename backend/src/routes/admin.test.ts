@@ -127,6 +127,7 @@ describe('admin routes', () => {
       { path: '/api/admin/reports/report-1/resolve', init: json('POST', { action: 'dismiss' }) },
       { path: '/api/admin/audit', init: { method: 'GET' } },
       { path: '/api/admin/speed?days=7', init: { method: 'GET' } },
+      { path: '/api/admin/media/pending', init: { method: 'GET' } },
     ]
 
     for (const call of calls) {
@@ -754,5 +755,54 @@ describe('admin speed route', () => {
     expect(body.thresholds.LCP).toEqual([2500, 4000])
     expect(body.rows.map((r) => r.route).sort()).toEqual(['/a', '/b'])
     expect(body.trend).toEqual([{ metric: 'LCP', day: today, p75: 2500 }])
+  })
+})
+
+describe('admin media pending route', () => {
+  it('returns 401 when anonymous', async () => {
+    const { request } = await createTestApp()
+    const res = await request('/api/admin/media/pending')
+    expect(res.status).toBe(401)
+  })
+
+  it('lists only stored keys the variants endpoint accepts and that have no meta', async () => {
+    const meta = JSON.stringify({ w: 800, h: 400, fmt: 'webp', widths: [96], ph: '' })
+    const { request } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, admin)
+        const org = (id: string, logo: string | null, banner: string | null, logoMeta: string | null = null) =>
+          client.execute({
+            sql: 'INSERT INTO organizations (id, name, owner_id, logo_url, banner_url, logo_meta) VALUES (?, ?, ?, ?, ?, ?)',
+            args: [id, id, admin.id, logo, banner, logoMeta],
+          })
+        await org('org-a', 'orgs/org-a/logo-0123abcd.png', 'https://example.com/b.png')
+        await org('org-b', 'orgs/org-b/logo-0123abcd.png', 'orgs/org-b/banner-89abcdef.webp', meta)
+        await org('org-c', 'https://example.com/l.png', null)
+        await org('org-d', '/media/orgs/org-d/logo-0123abcd.jpg', 'not-a-key')
+        await client.execute({
+          sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, frame_image_url) VALUES (?, ?, ?, ?, ?)',
+          args: ['camp-1', admin.id, 'org-a', 'Camp', 'x'],
+        })
+        const frame = (id: string, url: string, imageMeta: string | null) =>
+          client.execute({
+            sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, image_meta) VALUES (?, ?, ?, ?)',
+            args: [id, 'camp-1', url, imageMeta],
+          })
+        await frame('f1', 'frames/camp-1/f1-0123abcd.png', null)
+        await frame('f2', 'frames/camp-1/f2-0123abcd.png', meta)
+        await frame('f3', 'https://example.com/f.png', null)
+      },
+    })
+    const res = await request('/api/admin/media/pending')
+    expect(res.status).toBe(200)
+    const body = await res.json() as { items: { key: string; profile: string }[] }
+    const sorted = [...body.items].sort((a, b) => a.key.localeCompare(b.key))
+    expect(sorted).toEqual([
+      { key: 'frames/camp-1/f1-0123abcd.png', profile: 'frame' },
+      { key: 'orgs/org-a/logo-0123abcd.png', profile: 'orgLogo' },
+      { key: 'orgs/org-b/banner-89abcdef.webp', profile: 'banner' },
+      { key: 'orgs/org-d/logo-0123abcd.jpg', profile: 'orgLogo' },
+    ])
   })
 })

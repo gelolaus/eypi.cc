@@ -268,11 +268,11 @@
 **Interfaces:**
 - Consumes: `makeVariants`, `PUT /api/media/variants`.
 
-- [ ] **Step 1: Failing tests:** pending list excludes rows with meta and external `https://` URLs; admin-only; view processes items one at a time, shows `n of m`, continues after a failure and lists failed keys; writes an audit event per item (`media.variants`).
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement**; fetch originals from `/media/{key}`.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(admin): add a one-click image optimizer for existing media`.
+- [x] **Step 1: Failing tests:** pending list excludes rows with meta and external `https://` URLs; admin-only; view processes items one at a time, shows `n of m`, continues after a failure and lists failed keys; writes an audit event per item (`media.variants`).
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement**; fetch originals from `/media/{key}`.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(admin): add a one-click image optimizer for existing media`.
 
 ### Task 17: Placement, public GET caching, Tix query fix
 
