@@ -211,6 +211,33 @@ describe('create and update', () => {
     expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval' })).status).toBe(200)
   })
 
+  it('does not lock the mode for imported rows, but does once the lottery is drawn', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await create(request, { admissionMode: 'lottery' })
+    const id = String((await row(client)).id)
+    await client.execute({ sql: "INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, source) VALUES ('i1', ?, 'A', 'B', 'a@x.test', 'q1', 'confirmed', 'import')", args: [id] })
+    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval' })).status).toBe(200)
+    await client.execute("UPDATE events SET lottery_drawn_at = CURRENT_TIMESTAMP WHERE slug = 'fest'")
+    const res = await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'fcfs' })
+    expect(res.status).toBe(409)
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('admission_locked')
+  })
+
+  it('applies none of a refused patch, and the guard holds without any earlier read', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await create(request, { admissionMode: 'fcfs', capacity: 5 })
+    await send(request, 'POST', '/api/events/fest/publish')
+    const id = String((await row(client)).id)
+    // The registrant exists before the request; the route holds no cached "nobody registered" answer,
+    // so the UPDATE guard is the only thing that can refuse.
+    await client.execute({ sql: "INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, source) VALUES ('s1', ?, 'A', 'B', 'a@x.test', 'q1', 'confirmed', 'self')", args: [id] })
+    const res = await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval', name: 'Renamed', capacity: 9 })
+    expect(res.status).toBe(409)
+    expect(await row(client)).toMatchObject({ admission_mode: 'fcfs', name: 'Fest', max_attendees: 5 })
+    // Same fields without the mode change still apply.
+    expect((await send(request, 'PATCH', '/api/events/fest', { name: 'Renamed', capacity: 9 })).status).toBe(200)
+  })
+
   it('reopens a closed event through publish', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await create(request, { admissionMode: 'fcfs' })

@@ -144,7 +144,7 @@ app.post('/api/events', async (c) => {
   })
   } catch (err) {
     // A concurrent create can win the unique slug between the check above and this insert.
-    if (/UNIQUE|constraint/i.test(String(err instanceof Error ? err.message : err))) {
+    if (/UNIQUE constraint failed:.*events\.slug|idx_events_slug/i.test(String(err instanceof Error ? err.message : err))) {
       return c.json(actionError('slug_taken', 'Slug already taken — choose another.'), 409)
     }
     throw err
@@ -640,16 +640,6 @@ app.patch('/api/events/:slug', async (c) => {
   if (event.status === 'cancelled') {
     throw new ApiError(409, 'event_cancelled', 'A cancelled event cannot be edited.')
   }
-  if (body.admissionMode !== undefined && body.admissionMode !== event.admission_mode) {
-    const registered = await client.execute({
-      sql: "SELECT 1 FROM attendees WHERE event_id = ? AND source = 'self' AND status != 'cancelled' LIMIT 1",
-      args: [event.id],
-    })
-    if (registered.rows.length > 0) {
-      throw new ApiError(409, 'admission_locked', 'The admission mode cannot change once people have registered.')
-    }
-  }
-
   const updates: string[] = []
   const args: InValue[] = []
   const set = (column: string, value: InValue) => { updates.push(`${column} = ?`); args.push(value) }
@@ -693,10 +683,19 @@ app.patch('/api/events/:slug', async (c) => {
     if (Object.keys(crossFields).length > 0) return c.json(invalidEvent(crossFields), 422)
   }
 
+  // The mode lock lives in the UPDATE itself: a registration that lands after any earlier
+  // read still blocks the change, and a refused change applies none of the other fields.
+  const modeChange = body.admissionMode !== undefined && body.admissionMode !== event.admission_mode
+  const guard = modeChange
+    ? ` AND lottery_drawn_at IS NULL AND NOT EXISTS (
+          SELECT 1 FROM attendees WHERE event_id = events.id AND source = 'self' AND status != 'cancelled')`
+    : ''
   const statements: InStatement[] = [
-    { sql: `UPDATE events SET ${updates.join(', ')} WHERE id = ?`, args: [...args, event.id] },
+    { sql: `UPDATE events SET ${updates.join(', ')} WHERE id = ? AND status != 'cancelled'${guard}`, args: [...args, event.id] },
   ]
-  if (capacityGiven || body.waitlistEnabled !== undefined) {
+  // Nobody can be waitlisted while the mode is allowed to change (waiting rows are self-registrations),
+  // so a mode change never needs promotion, and a refused one must not promote against an unapplied capacity.
+  if (!modeChange && (capacityGiven || body.waitlistEnabled !== undefined)) {
     // Each statement promotes at most one waitlisted row and only while a seat is free, so
     // asking for more than will fit is harmless.
     const counts = await client.execute({
@@ -710,7 +709,13 @@ app.patch('/api/events/:slug', async (c) => {
       statements.push(promoteWaitlistStatement(event.id, effectiveCapacity))
     }
   }
-  await client.batch(statements, 'write')
+  const results = await client.batch(statements, 'write')
+  if (Number(results[0].rowsAffected) !== 1) {
+    const now = await client.execute({ sql: 'SELECT status FROM events WHERE id = ?', args: [event.id] })
+    if (now.rows.length === 0) throw new ApiError(404, 'not_found', 'Event not found.')
+    if (now.rows[0].status === 'cancelled') throw new ApiError(409, 'event_cancelled', 'A cancelled event cannot be edited.')
+    throw new ApiError(409, 'admission_locked', 'The admission mode cannot change once people have registered or the lottery has been drawn.')
+  }
 
   return c.json({ status: 'ok', event: await managedEvent(client, event.id) })
 })
