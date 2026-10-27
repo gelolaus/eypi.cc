@@ -90,11 +90,11 @@
 **Interfaces:**
 - Produces props: `SparkLine { values: number[]; label: string }`; `LineChart { series: { label: string; points: { x: string; y: number }[] }[]; yLabel: string }`; `BarList { items: { label: string; value: number }[]; max?: number }`; `HeatGrid { cells: number[] /* length 168, Mon 00:00 first */; label: string }`; `StatTile { label: string; value: string; delta?: number | null }`. `scale.ts`: `linearScale(domain: [number, number], range: [number, number]): (v: number) => number`, `niceTicks(max: number, count?: number): number[]`.
 
-- [ ] **Step 1: Failing tests:** each chart renders an `<svg role="img" aria-label=...>` plus a visually hidden `<table>` with the same numbers; `HeatGrid` throws a dev warning and renders nothing when `cells.length !== 168`; `StatTile` shows `+12%`/`−5%` with text, not color only; `niceTicks(87)` → `[0, 20, 40, 60, 80, 100]`.
-- [ ] **Step 2: Run** `npx vitest run src/components/charts` → FAIL.
-- [ ] **Step 3: Implement** with plain SVG and CSS tokens from `DESIGN_SYSTEM.md`. Load the `dataviz` skill before choosing colors.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(ui): add lightweight svg chart components`.
+- [x] **Step 1: Failing tests:** each chart renders an `<svg role="img" aria-label=...>` plus a visually hidden `<table>` with the same numbers; `HeatGrid` throws a dev warning and renders nothing when `cells.length !== 168`; `StatTile` shows `+12%`/`−5%` with text, not color only; `niceTicks(87)` → `[0, 20, 40, 60, 80, 100]`.
+- [x] **Step 2: Run** `npx vitest run src/components/charts` → FAIL.
+- [x] **Step 3: Implement** with plain SVG and CSS tokens from `DESIGN_SYSTEM.md`. Load the `dataviz` skill before choosing colors.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(ui): add lightweight svg chart components`.
 
 ### Task 5: Admin → Speed page
 
