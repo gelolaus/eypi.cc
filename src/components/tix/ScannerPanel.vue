@@ -82,8 +82,10 @@ import { Card } from '@/components/ui/card'
 import { onUnmounted } from 'vue'
 import { useQrScanner } from '@/composables/useQrScanner'
 
-const props = defineProps<{ slug: string }>()
-const emit = defineEmits<{ checkedIn: [] }>()
+// With `emitOnly` the panel only reads codes and emits them (door mode shows results itself and queues
+// check-ins offline). Without it the panel checks people in one by one, as the attendee-list events do.
+const props = defineProps<{ slug: string; emitOnly?: boolean }>()
+const emit = defineEmits<{ checkedIn: []; scan: [token: string] }>()
 
 const {
   videoRef,
@@ -100,6 +102,7 @@ const {
 } = useQrScanner({
   slug: props.slug,
   onCheckedIn: () => emit('checkedIn'),
+  onToken: props.emitOnly ? (token) => emit('scan', token) : undefined,
 })
 
 onUnmounted(() => stopScanner())

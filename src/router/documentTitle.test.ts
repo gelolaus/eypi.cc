@@ -32,6 +32,7 @@ const pages: Record<string, string> = {
   'event-edit': 'Edit event',
   'event-select': 'Attendee selection',
   'event-manage': 'Event',
+  'event-door': 'Door mode',
   'event-page': 'Event',
   tickets: 'My tickets',
   'guest-ticket': 'Your ticket',

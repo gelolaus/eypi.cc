@@ -2,6 +2,7 @@ import { ref, type Ref } from 'vue'
 import { ApiError, api } from '@/lib/api'
 import { clearQueryCache } from '@/lib/queryCache'
 import { clearTicketsCache, noteSignedInUser } from '@/lib/registerSw'
+import { clearDoorData } from '@/lib/tix/doorCleanup'
 
 export type SessionUser = {
   id: string
@@ -74,6 +75,7 @@ function reset(): void {
   clearQueryCache()
   // The service worker keeps the last tickets for offline use. They belong to this session only.
   void clearTicketsCache()
+  void clearDoorData()
   user.value = null
   pendingInviteCount.value = 0
   ticketUpdates.value = 0
@@ -107,6 +109,7 @@ async function pull(): Promise<void> {
     if (startedIn !== generation) return
     if (isUnauthorized(error)) {
       void clearTicketsCache()
+      void clearDoorData()
       user.value = null
       pendingInviteCount.value = 0
       ticketUpdates.value = 0

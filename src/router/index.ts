@@ -144,6 +144,12 @@ const router = createRouter({
           meta: { title: 'Attendee selection' },
         },
         {
+          path: ':id/door',
+          name: 'event-door',
+          component: () => import('@/views/tix/DoorModeView.vue'),
+          meta: { requiresOrg: true, title: 'Door mode' },
+        },
+        {
           path: ':id',
           name: 'event-manage',
           component: () => import('@/views/tix/EventDetailView.vue'),

@@ -15,6 +15,8 @@ import {
 } from '@/utils/tix-scanner'
 
 export const SCAN_REMEMBER_MS = 5000
+/** Pause between codes when the caller handles results itself (door mode). */
+const TOKEN_COOLDOWN_MS = 700
 
 export interface ScanSubmission {
   ok: boolean
@@ -59,6 +61,8 @@ export function useQrScanner(options: {
   rememberMs?: number
   onCheckedIn?: () => void
   submit?: (token: string) => Promise<ScanSubmission>
+  /** Hand every decoded code to the caller instead of checking in; the caller shows the result. */
+  onToken?: (token: string) => void
 }) {
   const videoRef = ref<HTMLVideoElement | null>(null)
   const scannerError = ref('')
@@ -132,6 +136,14 @@ export function useQrScanner(options: {
   function onDecoded(raw: string | null) {
     if (!raw || scanCooldown) return
     const token = raw.trim()
+    if (options.onToken) {
+      if (sameTokenStillFresh(token)) return
+      remembered = { token, at: now() }
+      scanCooldown = true
+      options.onToken(token)
+      scheduleReset(TOKEN_COOLDOWN_MS)
+      return
+    }
     if (!isValidQrToken(token)) {
       scanCooldown = true
       scanStatus.value = 'error'

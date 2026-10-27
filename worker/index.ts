@@ -290,6 +290,7 @@ export function isSpaRoute(pathname: string): boolean {
     || /^\/manage\/tix\/[^/]+$/.test(path)
     || /^\/manage\/tix\/[^/]+\/select$/.test(path)
     || /^\/manage\/tix\/[^/]+\/edit$/.test(path)
+    || /^\/manage\/tix\/[^/]+\/door$/.test(path)
     || /^\/tix\/[^/]+$/.test(path)
     || /^\/t\/[^/]+$/.test(path)
     || /^\/orgs\/modify\/[^/]+$/.test(path)
