@@ -54,18 +54,6 @@ describe('accessibility surfaces', () => {
     wrapper.unmount()
   })
 
-  it('hides footer arrows from assistive tech', () => {
-    const wrapper = mount(MarketingFooter, {
-      global: { plugins: [router] },
-    })
-    const arrows = wrapper.findAll('[data-footer-arrow]')
-    expect(arrows.length).toBeGreaterThan(0)
-    for (const arrow of arrows) {
-      expect(arrow.attributes('aria-hidden')).toBe('true')
-      expect(arrow.text()).toBe('↗')
-    }
-  })
-
   it('does not skip heading levels on the contact page', () => {
     const wrapper = mount(ContactView)
     const tags = wrapper.findAll('h1, h2, h3, h4, h5, h6').map((heading) => heading.element.tagName)

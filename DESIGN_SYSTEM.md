@@ -164,7 +164,7 @@ section.relative isolate overflow-hidden px-5 pb-24 pt-12 sm:px-6 sm:pt-20
   div.mx-auto grid max-w-5xl grid-cols-1 items-center gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12
 ```
 
-Headline `mt-8 text-4xl font-semibold tracking-tight sm:text-5xl` with the accent word in `text-primary`. Lead paragraph `max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl`. Primary CTA is a `Button` `size="lg"` at `h-14 px-6`. The preview card is decorative (`aria-hidden`). Other marketing blocks: `FeatureStrip`, `ProofSection`, `CtaSection`, `MarketingHeader` (`sticky top-0 z-40 flex h-14 ... bg-background/90 backdrop-blur-md`), `MarketingFooter`.
+Headline `mt-8 text-4xl font-semibold tracking-tight sm:text-5xl` with the accent word in `text-primary`. Lead paragraph `max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl`. Primary CTA is a `Button` `size="lg"` at `h-14 px-6`. The preview card is decorative (`aria-hidden`). Other marketing blocks: `FeatureStrip`, `ProofSection`, `CtaSection`, `MarketingHeader` (`sticky top-0 z-40 flex h-14 ... bg-background/90 backdrop-blur-md`), `MarketingFooter` (a slim bar: copyright on the left, inline links on the right from `md` up, stacked on phones; links keep `min-h-11`).
 
 ### Auth screen
 

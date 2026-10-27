@@ -1,15 +1,13 @@
 <template>
   <footer
     id="footer"
-    class="relative overflow-hidden border-t border-border bg-background"
+    class="border-t border-border bg-background"
   >
-    <div class="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-12 sm:px-6">
-      <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Build with Eypi
-      </h2>
+    <div class="mx-auto flex w-full max-w-5xl flex-col gap-2 px-5 py-4 text-sm text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between">
+      <p>© {{ currentYear }} Eypi. Built by Angelo Laus.</p>
 
       <nav
-        class="flex flex-col divide-y divide-border border-y border-border"
+        class="flex flex-wrap items-center gap-x-4"
         aria-label="Footer navigation"
       >
         <template
@@ -21,31 +19,17 @@
             :href="link.to"
             target="_blank"
             rel="noopener noreferrer"
-            class="flex min-h-11 items-center justify-between gap-4 py-3 text-base font-medium text-muted-foreground transition hover:text-foreground"
-          >
-            <span>{{ link.label }}</span>
-            <span
-              data-footer-arrow
-              aria-hidden="true"
-            >↗</span>
-          </a>
+            class="inline-flex min-h-11 items-center transition hover:text-foreground"
+          >{{ link.label }}</a>
           <router-link
             v-else
             :to="link.to"
-            class="flex min-h-11 items-center justify-between gap-4 py-3 text-base font-medium text-muted-foreground transition hover:text-foreground"
+            class="inline-flex min-h-11 items-center transition hover:text-foreground"
           >
-            <span>{{ link.label }}</span>
-            <span
-              data-footer-arrow
-              aria-hidden="true"
-            >↗</span>
+            {{ link.label }}
           </router-link>
         </template>
       </nav>
-
-      <p class="text-base text-muted-foreground">
-        © {{ currentYear }} Eypi. Built by Angelo Laus.
-      </p>
     </div>
   </footer>
 </template>
