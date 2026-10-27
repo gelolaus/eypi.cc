@@ -264,3 +264,18 @@ export function parseImageMeta(raw: unknown): ImageMeta | null {
 export function mediaUrl(key: string): string {
   return `/media/${key}`
 }
+
+/** Bytes of a base64 `data:image/*` URL, or null when it is not one. Size and format are checked later by putImage. */
+export function decodeDataUrl(value: string): Uint8Array | null {
+  const match = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)$/i.exec(value.trim())
+  if (!match?.[1]) return null
+  let binary: string
+  try {
+    binary = atob(match[1].replace(/\s/g, ''))
+  } catch {
+    return null
+  }
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}

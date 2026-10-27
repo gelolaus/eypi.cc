@@ -366,6 +366,23 @@ describe('public media route', () => {
     expect(logLinkClick).not.toHaveBeenCalled()
   })
 
+  it('serves event covers and their variants publicly, but not other prefixes', async () => {
+    const cover = new Uint8Array([1, 2, 3])
+    const env = mediaEnv({
+      'events/ev-1/cover-0123abcd.png': cover,
+      'events/ev-1/cover-0123abcd-640.webp': new Uint8Array([4]),
+      'private/ev-1/cover.png': new Uint8Array([5]),
+    }, vi.fn(async () => new Response('asset')))
+    const hit = await worker.fetch(new Request('https://eypi.cc/media/events/ev-1/cover-0123abcd.png'), env, ctx())
+    expect(hit.status).toBe(200)
+    expect(hit.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(new Uint8Array(await hit.arrayBuffer())).toEqual(cover)
+    const variant = await worker.fetch(new Request('https://eypi.cc/media/events/ev-1/cover-0123abcd-640.webp'), env, ctx())
+    expect(variant.headers.get('Content-Type')).toBe('image/webp')
+    const traversal = await worker.fetch(new Request('https://eypi.cc/media/events/../private/ev-1/cover.png'), env, ctx())
+    expect(traversal.status).not.toBe(200)
+  })
+
   it('returns 404 when a public media object is missing', async () => {
     const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
     const response = await worker.fetch(

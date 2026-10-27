@@ -99,10 +99,17 @@ export type EventLeadRow = {
   org_id: string
   selection_locked: number | bigint | null
   max_attendees: number | bigint | null
+  status: string
+  admission_mode: string
+  waitlist_enabled: number | bigint | null
+  registration_opens_at: string | null
+  registration_closes_at: string | null
+  cover_key: string | null
+  cover_meta: string | null
 }
 
 export async function requireEventLead(client: Client, slug: string, orgId: string | undefined): Promise<{ ok: true, event: EventLeadRow } | { ok: false, status: 403 | 404, message: string }> {
-  const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees FROM events WHERE slug = ?', args: [slug] })
+  const evRes = await client.execute({ sql: 'SELECT id, org_id, selection_locked, max_attendees, status, admission_mode, waitlist_enabled, registration_opens_at, registration_closes_at, cover_key, cover_meta FROM events WHERE slug = ?', args: [slug] })
   if (evRes.rows.length === 0) return { ok: false, status: 404, message: 'Event not found.' }
   const event = evRes.rows[0] as unknown as EventLeadRow
 

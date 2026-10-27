@@ -46,12 +46,16 @@ app.get('/api/events/:slug', async (c) => {
   const client = db(c)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields FROM events WHERE slug = ?',
+    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields, status FROM events WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
 
   const event = result.rows[0]
+  // A draft is visible only to the org that owns it.
+  if (event.status === 'draft' && c.var.orgId !== event.org_id) {
+    return c.json({ status: 'error', message: 'Event not found.' }, 404)
+  }
 
   const countRes = await client.execute({
     sql: 'SELECT COUNT(*) as cnt FROM attendees WHERE event_id = ?',
@@ -68,6 +72,7 @@ app.get('/api/events/:slug', async (c) => {
       eventDate: event.event_date,
       eventTime: event.event_time,
       location: event.location,
+      status: event.status,
       isLead: c.var.orgId === event.org_id,
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,

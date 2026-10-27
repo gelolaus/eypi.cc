@@ -1,7 +1,12 @@
 import { Hono } from 'hono'
+import type { InStatement, InValue } from '@libsql/client/web'
 import { db, type Bindings } from '../../lib/db'
 import { noOrgBody } from '../../middleware/orgContext'
 import { selectAttendees } from '../../../../src/lib/tix/selection'
+import { ApiError } from '../../lib/errors'
+import { decodeDataUrl, deleteWithVariants, mediaUrl, parseImageMeta, putImage } from '../../lib/media'
+import { eventCreateSchema, eventPatchSchema, zodFields } from '../../lib/tix/eventSchema'
+import { NOW_SQL, promoteWaitlistStatement } from '../../lib/tix/registration'
 import { actionError, ALREADY_FINALIZED, attendeeHasFirstName, requireEventLead } from './shared'
 
 const SQL_IN_CHUNK = 200
@@ -44,6 +49,34 @@ function passFieldsFromBody(value: unknown): string[] | null {
   return names
 }
 
+function invalidEvent(fields: Record<string, string>) {
+  return {
+    status: 'error' as const,
+    message: 'Check the highlighted fields.',
+    error: { code: 'invalid_event', message: 'Check the highlighted fields.', fields },
+  }
+}
+
+/** Rules that span several fields, checked against the values the event will have after the write. */
+function crossFieldErrors(v: { mode: string; waitlist: boolean; opens: string | null; closes: string | null }): Record<string, string> | null {
+  const fields: Record<string, string> = {}
+  if (v.waitlist && (v.mode === 'approval' || v.mode === 'import')) {
+    fields.waitlistEnabled = 'A waitlist works with first come first served and lottery events only.'
+  }
+  if (v.opens && v.closes && Date.parse(`${v.closes.replace(' ', 'T')}Z`) <= Date.parse(`${v.opens.replace(' ', 'T')}Z`)) {
+    fields.registrationClosesAt = 'Registration must close after it opens.'
+  }
+  return Object.keys(fields).length > 0 ? fields : null
+}
+
+function leadFailure(check: { status: 403 | 404; message: string }): ApiError {
+  return check.status === 403
+    ? new ApiError(403, 'forbidden', 'You cannot manage this event.')
+    : new ApiError(404, 'not_found', 'Event not found.')
+}
+
+const COVER_MAX_BYTES = 10 * 1024 * 1024
+
 const app = new Hono<{ Bindings: Bindings }>()
 
 // ── POST /api/events ─────────────────────────────────────────────────────────
@@ -53,22 +86,23 @@ app.post('/api/events', async (c) => {
   const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
 
-  const body = await c.req.json() as {
-    name: string
-    slug: string
-    date: string
-    time: string
-    location: string
-    maxAttendees?: number | null
-    attendees?: { firstName: string; lastName: string; email: string }[]
+  let raw: unknown
+  try {
+    raw = await c.req.json()
+  } catch {
+    return c.json(invalidEvent({ body: 'Send a JSON body.' }), 422)
   }
+  const parsed = eventCreateSchema.safeParse(raw)
+  if (!parsed.success) return c.json(invalidEvent(zodFields(parsed.error)), 422)
+  const input = parsed.data
+  const attendeesIn = (raw as { attendees?: unknown }).attendees
+  const body = { ...input, attendees: attendeesIn as { firstName: string; lastName: string; email: string }[] | null | undefined }
 
-  if (!body.name?.trim() || !body.slug?.trim() || !body.date || !body.time || !body.location?.trim()) {
-    return c.json({ status: 'error', message: 'All event fields are required.' }, 400)
-  }
-  if (!/^[a-z0-9]+$/.test(body.slug)) {
-    return c.json({ status: 'error', message: 'Slug must be lowercase letters and numbers only.' }, 400)
-  }
+  const mode = input.admissionMode ?? 'import'
+  const opens = input.registrationOpensAt ?? null
+  const closes = input.registrationClosesAt ?? null
+  const crossFields = crossFieldErrors({ mode, waitlist: input.waitlistEnabled === true, opens, closes })
+  if (crossFields) return c.json(invalidEvent(crossFields), 422)
 
   const hasAttendees = Array.isArray(body.attendees) && body.attendees.length > 0
   // Legacy mode requires attendees; selection mode requires none
@@ -84,26 +118,33 @@ app.post('/api/events', async (c) => {
 
   const existing = await client.execute({ sql: 'SELECT id FROM events WHERE slug = ?', args: [body.slug] })
   if (existing.rows.length > 0) {
-    return c.json({ status: 'error', message: 'Slug already taken — choose another.' }, 409)
+    return c.json(actionError('slug_taken', 'Slug already taken — choose another.'), 409)
   }
 
   const eventId = crypto.randomUUID()
   const selectionLocked = hasAttendees ? 1 : 0
-  const maxAttendees = body.maxAttendees ?? null
+  const maxAttendees = input.capacity !== undefined ? input.capacity : (input.maxAttendees ?? null)
 
   if (hasAttendees && body.attendees!.some((attendee) => !attendeeHasFirstName(attendee))) {
     return c.json(actionError('missing_first_name', 'Every attendee needs a first name.'), 422)
   }
 
   await client.execute({
-    sql: 'INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, location, max_attendees, selection_locked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    args: [eventId, body.slug, user.id, orgId, body.name.trim(), body.date, body.time, body.location.trim(), maxAttendees, selectionLocked],
+    sql: `INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, end_time, location, description,
+            max_attendees, selection_locked, status, admission_mode, visibility, waitlist_enabled,
+            registration_opens_at, registration_closes_at, questions)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?)`,
+    args: [
+      eventId, body.slug, user.id, orgId, body.name, body.date, body.time, input.endTime ?? null, body.location,
+      input.description?.trim() ? input.description : null, maxAttendees, selectionLocked, mode,
+      input.visibility ?? 'unlisted', input.waitlistEnabled ? 1 : 0, opens, closes, JSON.stringify(input.questions ?? []),
+    ],
   })
 
   if (!hasAttendees) {
     return c.json({
       status: 'ok',
-      event: { id: eventId, slug: body.slug },
+      event: { id: eventId, slug: body.slug, status: 'draft' },
       selectionLocked: false,
       attendees: [],
     }, 201)
@@ -140,7 +181,7 @@ app.post('/api/events', async (c) => {
 
   return c.json({
     status: 'ok',
-    event: { id: eventId, slug: body.slug },
+    event: { id: eventId, slug: body.slug, status: 'draft' },
     selectionLocked: true,
     attendees: unique.map(({ id, firstName, lastName, email, qrToken }) => ({ id, firstName, lastName, email, qrToken })),
   }, 201)
@@ -156,7 +197,7 @@ app.get('/api/events', async (c) => {
   if (!orgId) return c.json(noOrgBody(), 403)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, created_at FROM events WHERE org_id = ? ORDER BY created_at DESC',
+    sql: 'SELECT id, slug, name, event_date, event_time, location, created_at, status, admission_mode, visibility FROM events WHERE org_id = ? ORDER BY created_at DESC',
     args: [orgId],
   })
 
@@ -556,11 +597,16 @@ app.delete('/api/events/:slug', async (c) => {
     { sql: 'DELETE FROM event_clusters WHERE event_id = ?',      args: [eventId] },
     { sql: 'DELETE FROM events WHERE id = ?',                    args: [eventId] },
   ])
+  if (event.cover_key) await deleteWithVariants(c.env, event.cover_key, parseImageMeta(event.cover_meta))
 
   return c.json({ status: 'ok', message: 'Event deleted.' })
 })
 
 // ── PATCH /api/events/:slug ───────────────────────────────────────────────────
+// Partial update. A capacity or waitlist change promotes waitlisted attendees in the
+// same batch as the UPDATE, so a newcomer's first-come registration (which does not look
+// at the waitlist) cannot jump the queue. Lowering capacity below the confirmed count never
+// cancels anyone: promotion simply stops until seats free up.
 app.patch('/api/events/:slug', async (c) => {
   const user = c.var.user
   if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
@@ -569,37 +615,201 @@ app.patch('/api/events/:slug', async (c) => {
   const client = db(c)
 
   const leadCheck = await requireEventLead(client, slug, c.var.orgId)
-  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
+  if (!leadCheck.ok) throw leadFailure(leadCheck)
   const event = leadCheck.event
 
-  const body = await c.req.json() as {
-    maxAttendees?: number | null
-    name?: string
-    date?: string
-    time?: string
-    location?: string
-    passFields?: unknown
+  let raw: unknown
+  try {
+    raw = await c.req.json()
+  } catch {
+    return c.json(invalidEvent({ body: 'Send a JSON body.' }), 422)
+  }
+  const parsed = eventPatchSchema.safeParse(raw)
+  if (!parsed.success) return c.json(invalidEvent(zodFields(parsed.error)), 422)
+  const body = parsed.data
+
+  if (event.status === 'cancelled') {
+    throw new ApiError(409, 'event_cancelled', 'A cancelled event cannot be edited.')
+  }
+  if (body.admissionMode !== undefined && body.admissionMode !== event.admission_mode && event.status !== 'draft') {
+    throw new ApiError(409, 'admission_locked', 'The admission mode can only change while the event is a draft.')
   }
 
   const updates: string[] = []
-  const args: unknown[] = []
-  if ('passFields' in body) {
+  const args: InValue[] = []
+  const set = (column: string, value: InValue) => { updates.push(`${column} = ?`); args.push(value) }
+
+  if (body.passFields !== undefined) {
     const fields = passFieldsFromBody(body.passFields)
-    if (!fields) return c.json({ status: 'error', message: 'Pass fields must be a list of column names.' }, 400)
-    updates.push('pass_fields = ?')
-    args.push(JSON.stringify(fields))
+    if (!fields) return c.json(actionError('invalid_pass_fields', 'Pass fields must be a list of column names.'), 400)
+    set('pass_fields', JSON.stringify(fields))
   }
-  if ('maxAttendees' in body) { updates.push('max_attendees = ?'); args.push(body.maxAttendees ?? null) }
-  if (body.name?.trim())     { updates.push('name = ?');           args.push(body.name.trim()) }
-  if (body.date)             { updates.push('event_date = ?');     args.push(body.date) }
-  if (body.time)             { updates.push('event_time = ?');     args.push(body.time) }
-  if (body.location?.trim()) { updates.push('location = ?');       args.push(body.location.trim()) }
+  if (body.name !== undefined) set('name', body.name)
+  if (body.date !== undefined) set('event_date', body.date)
+  if (body.time !== undefined) set('event_time', body.time)
+  if (body.endTime !== undefined) set('end_time', body.endTime)
+  if (body.location !== undefined) set('location', body.location)
+  if (body.description !== undefined) set('description', body.description?.trim() ? body.description : null)
+  if (body.admissionMode !== undefined) set('admission_mode', body.admissionMode)
+  if (body.visibility !== undefined) set('visibility', body.visibility)
+  if (body.waitlistEnabled !== undefined) set('waitlist_enabled', body.waitlistEnabled ? 1 : 0)
+  if (body.registrationOpensAt !== undefined) set('registration_opens_at', body.registrationOpensAt)
+  if (body.registrationClosesAt !== undefined) set('registration_closes_at', body.registrationClosesAt)
+  if (body.questions !== undefined) set('questions', JSON.stringify(body.questions))
 
-  if (!updates.length) return c.json({ status: 'error', message: 'Nothing to update.' }, 400)
+  const capacityGiven = body.capacity !== undefined || body.maxAttendees !== undefined
+  const capacity = body.capacity !== undefined ? body.capacity : body.maxAttendees
+  if (capacityGiven) set('max_attendees', capacity ?? null)
 
-  args.push(event.id)
-  await client.execute({ sql: `UPDATE events SET ${updates.join(', ')} WHERE id = ?`, args: args as import('@libsql/client').InValue[] })
+  if (!updates.length) return c.json(actionError('nothing_to_update', 'Nothing to update.'), 400)
 
+  const effectiveCapacity = capacityGiven ? (capacity ?? null) : (event.max_attendees === null ? null : Number(event.max_attendees))
+  const crossFields = crossFieldErrors({
+    mode: body.admissionMode ?? event.admission_mode,
+    waitlist: body.waitlistEnabled ?? Number(event.waitlist_enabled) === 1,
+    opens: body.registrationOpensAt !== undefined ? body.registrationOpensAt : event.registration_opens_at,
+    closes: body.registrationClosesAt !== undefined ? body.registrationClosesAt : event.registration_closes_at,
+  })
+  if (crossFields) return c.json(invalidEvent(crossFields), 422)
+
+  const statements: InStatement[] = [
+    { sql: `UPDATE events SET ${updates.join(', ')} WHERE id = ?`, args: [...args, event.id] },
+  ]
+  if (capacityGiven || body.waitlistEnabled !== undefined) {
+    // Each statement promotes at most one waitlisted row and only while a seat is free, so
+    // asking for more than will fit is harmless.
+    const counts = await client.execute({
+      sql: `SELECT SUM(status = 'waitlisted') AS waiting, SUM(status = 'confirmed') AS seated FROM attendees WHERE event_id = ?`,
+      args: [event.id],
+    })
+    const waiting = Number(counts.rows[0]?.waiting ?? 0)
+    const seated = Number(counts.rows[0]?.seated ?? 0)
+    const free = effectiveCapacity === null ? waiting : Math.max(0, effectiveCapacity - seated)
+    for (let i = 0; i < Math.min(waiting, free); i += 1) {
+      statements.push(promoteWaitlistStatement(event.id, effectiveCapacity))
+    }
+  }
+  await client.batch(statements, 'write')
+
+  return c.json({ status: 'ok', event: await managedEvent(client, event.id) })
+})
+
+async function managedEvent(client: ReturnType<typeof db>, id: string) {
+  const res = await client.execute({
+    sql: `SELECT id, slug, status, admission_mode, visibility, max_attendees, waitlist_enabled FROM events WHERE id = ?`,
+    args: [id],
+  })
+  const r = res.rows[0]
+  if (!r) return null
+  return {
+    id: r.id, slug: r.slug, status: r.status, admissionMode: r.admission_mode, visibility: r.visibility,
+    capacity: r.max_attendees, waitlistEnabled: Number(r.waitlist_enabled) === 1,
+  }
+}
+
+// ── POST /api/events/:slug/publish | close | cancel ──────────────────────────
+// draft -> published, published -> closed, published | closed -> cancelled. Drafts are
+// deleted rather than cancelled. Each transition is a conditional UPDATE, so two
+// concurrent requests cannot both win.
+const TRANSITIONS: Record<'publish' | 'close' | 'cancel', { from: string[]; to: string }> = {
+  publish: { from: ['draft'], to: 'published' },
+  close: { from: ['published'], to: 'closed' },
+  cancel: { from: ['published', 'closed'], to: 'cancelled' },
+}
+
+app.post('/api/events/:slug/:action{publish|close|cancel}', async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const action = c.req.param('action') as keyof typeof TRANSITIONS
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
+  if (!leadCheck.ok) throw leadFailure(leadCheck)
+  const event = leadCheck.event
+  const { from, to } = TRANSITIONS[action]
+  const refuse = () => new ApiError(409, 'invalid_transition', `A ${event.status} event cannot be ${action === 'publish' ? 'published' : action === 'close' ? 'closed' : 'cancelled'}.`)
+  if (!from.includes(event.status)) throw refuse()
+
+  const placeholders = from.map(() => '?').join(', ')
+  const move: InStatement = {
+    sql: `UPDATE events SET status = ? WHERE id = ? AND status IN (${placeholders})`,
+    args: [to, event.id, ...from],
+  }
+  if (action === 'cancel') {
+    // One batch: the attendee update only applies when the event update did.
+    const [moved] = await client.batch([
+      move,
+      {
+        sql: `UPDATE attendees SET status = 'cancelled', decided_at = ${NOW_SQL}, decided_by = ?
+              WHERE event_id = ? AND status != 'cancelled'
+                AND EXISTS (SELECT 1 FROM events WHERE id = ? AND status = 'cancelled')`,
+        args: [user.id, event.id, event.id],
+      },
+    ], 'write')
+    if (Number(moved.rowsAffected) !== 1) throw refuse()
+  } else {
+    const moved = await client.execute(move)
+    if (Number(moved.rowsAffected) !== 1) throw refuse()
+  }
+
+  return c.json({ status: 'ok', event: await managedEvent(client, event.id) })
+})
+
+// ── PUT | DELETE /api/events/:slug/cover ─────────────────────────────────────
+// PUT stores the original at events/{eventId}/cover-{sha8}.{ext}; the browser then
+// sends the resized variants to PUT /api/media/variants, which fills cover_meta.
+app.put('/api/events/:slug/cover', async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
+  if (!leadCheck.ok) throw leadFailure(leadCheck)
+  const event = leadCheck.event
+
+  let body: { image?: unknown } | null = null
+  try {
+    body = await c.req.json() as { image?: unknown } | null
+  } catch {
+    // Falls through to invalid_image.
+  }
+  const bytes = typeof body?.image === 'string' ? decodeDataUrl(body.image) : null
+  if (!bytes) throw new ApiError(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
+
+  const stored = await putImage(c.env, {
+    prefix: `events/${event.id}`,
+    id: 'cover',
+    bytes,
+    allowed: ['png', 'jpeg', 'webp'],
+    maxBytes: COVER_MAX_BYTES,
+  })
+  const previous = event.cover_key
+  const same = stored.key === previous
+  try {
+    if (!same) {
+      await client.execute({ sql: 'UPDATE events SET cover_key = ?, cover_meta = NULL WHERE id = ?', args: [stored.key, event.id] })
+    }
+  } catch (err) {
+    await deleteWithVariants(c.env, stored.key)
+    throw err
+  }
+  if (previous && !same) await deleteWithVariants(c.env, previous, parseImageMeta(event.cover_meta))
+
+  const meta = same ? parseImageMeta(event.cover_meta) : null
+  return c.json({ status: 'ok', coverKey: stored.key, coverUrl: mediaUrl(stored.key), coverMeta: meta })
+})
+
+app.delete('/api/events/:slug/cover', async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const client = db(c)
+  const leadCheck = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
+  if (!leadCheck.ok) throw leadFailure(leadCheck)
+  const event = leadCheck.event
+
+  await client.execute({ sql: 'UPDATE events SET cover_key = NULL, cover_meta = NULL WHERE id = ?', args: [event.id] })
+  if (event.cover_key) await deleteWithVariants(c.env, event.cover_key, parseImageMeta(event.cover_meta))
   return c.json({ status: 'ok' })
 })
 

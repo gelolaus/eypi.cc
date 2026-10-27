@@ -6,7 +6,7 @@ import { getOS, logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKv } from '../shared/linksKv'
 import { isReservedSlug } from '../shared/reservedSlugs'
 
-const PUBLIC_MEDIA_PREFIXES = ['frames/', 'orgs/', 'qr-logos/']
+const PUBLIC_MEDIA_PREFIXES = ['events/', 'frames/', 'orgs/', 'qr-logos/']
 const IMMUTABLE_MEDIA_CACHE = 'public, max-age=31536000, immutable'
 // The edge copy expires daily so removed media cannot linger there for a year.
 const EDGE_MEDIA_CACHE = 'public, max-age=86400'

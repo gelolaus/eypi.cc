@@ -43,11 +43,14 @@ type KeyKind = 'orgLogo' | 'banner' | 'frame'
 
 export type KeyTarget =
   | { kind: 'orgLogo' | 'banner'; column: 'logo' | 'banner' }
+  | { kind: 'banner'; column: 'cover' }
   | { kind: 'frame' }
 
 // Only these shapes can ever be written to. The original key patterns are
 // produced by putImage: `{prefix}/{id}-{sha8}.{ext}`.
 const ORG_KEY = /^orgs\/[a-z0-9-]{1,64}\/(logo|banner)-[0-9a-f]{8}\.(png|jpg|webp)$/
+// Event covers: `events/{eventId}/cover-{sha8}.{ext}` (eventId is a UUID).
+const EVENT_COVER_KEY = /^events\/[A-Za-z0-9-]{1,64}\/cover-[0-9a-f]{8}\.(png|jpg|webp)$/
 const FRAME_KEY = /^frames\/[A-Za-z0-9-]{1,64}\/[A-Za-z0-9-]{1,64}-[0-9a-f]{8}\.png$/
 
 function fail(status: ContentfulStatusCode, code: string, message: string): Response {
@@ -60,6 +63,7 @@ function fail(status: ContentfulStatusCode, code: string, message: string): Resp
 export function classifyKey(key: string): KeyTarget | null {
   const org = ORG_KEY.exec(key)
   if (org) return org[1] === 'logo' ? { kind: 'orgLogo', column: 'logo' } : { kind: 'banner', column: 'banner' }
+  if (EVENT_COVER_KEY.test(key)) return { kind: 'banner', column: 'cover' }
   if (FRAME_KEY.test(key)) return { kind: 'frame' }
   return null
 }
@@ -90,7 +94,7 @@ function decodeImageDataUrl(value: unknown, maxBytes: number): Uint8Array {
   return bytes
 }
 
-type Row = { orgId: string; column: 'logo_meta' | 'banner_meta' | 'image_meta'; table: 'organizations' | 'dp_frames'; id: string; keyColumn: string; meta: ImageMeta | null; rowKey: string }
+type Row = { orgId: string; column: 'logo_meta' | 'banner_meta' | 'image_meta' | 'cover_meta'; table: 'organizations' | 'dp_frames' | 'events'; id: string; keyColumn: string; meta: ImageMeta | null; rowKey: string }
 
 async function findRow(client: Client, key: string, target: KeyTarget): Promise<Row | null> {
   if (target.kind === 'frame') {
@@ -108,6 +112,23 @@ async function findRow(client: Client, key: string, target: KeyTarget): Promise<
       table: 'dp_frames',
       id: String(row.id),
       keyColumn: 'image_url',
+      meta: parseImageMeta(row.meta),
+      rowKey: String(row.stored),
+    }
+  }
+  if (target.column === 'cover') {
+    const res = await client.execute({
+      sql: `SELECT id, org_id, cover_meta AS meta, cover_key AS stored FROM events WHERE cover_key IN (?, ?) LIMIT 1`,
+      args: [key, `/media/${key}`],
+    })
+    const row = res.rows[0]
+    if (!row) return null
+    return {
+      orgId: String(row.org_id ?? ''),
+      column: 'cover_meta',
+      table: 'events',
+      id: String(row.id),
+      keyColumn: 'cover_key',
       meta: parseImageMeta(row.meta),
       rowKey: String(row.stored),
     }
@@ -304,7 +325,7 @@ app.put('/api/media/variants', async (c) => {
     await recordAudit(client, {
       actorUserId: user.id,
       action: 'media.variants',
-      targetType: row.table === 'organizations' ? 'organization' : 'dp_frame',
+      targetType: row.table === 'organizations' ? 'organization' : row.table === 'events' ? 'event' : 'dp_frame',
       targetId: row.id,
       meta: { key, widths: meta.widths, fmt },
     })

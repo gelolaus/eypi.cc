@@ -10,7 +10,7 @@ import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
 import { reportError } from '../lib/reportError'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
-import { deleteObject, deleteWithVariants, mediaUrl, parseImageMeta, putImage } from '../lib/media'
+import { decodeDataUrl, deleteObject, deleteWithVariants, mediaUrl, parseImageMeta, putImage } from '../lib/media'
 import { requireAdmin } from '../middleware/requireAdmin'
 import { enforceConsent } from '../middleware/requireConsent'
 import { requireAuth } from '../middleware/requireAuth'
@@ -54,20 +54,6 @@ function validateImageUrl(value: string): boolean {
     || prefix.startsWith('data:image/png;base64,')
     || prefix.startsWith('data:image/webp;base64,')
   return okPrefix && value.length <= IMAGE_DATA_URL_MAX
-}
-
-function decodeDataUrl(value: string): Uint8Array | null {
-  const match = /^data:image\/[a-z0-9.+-]+;base64,([a-z0-9+/=\s]+)$/i.exec(value.trim())
-  if (!match?.[1]) return null
-  let binary: string
-  try {
-    binary = atob(match[1].replace(/\s/g, ''))
-  } catch {
-    return null
-  }
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-  return bytes
 }
 
 function isOrgImageKey(orgId: string, kind: 'logo' | 'banner', key: string): boolean {
