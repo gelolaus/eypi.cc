@@ -57,7 +57,11 @@ async function servePublicMedia(request: Request, env: Env, pathname: string): P
   const object = await env.MEDIA.get(key)
   if (!object) return new Response(null, { status: 404 })
 
-  const headers = new Headers({ 'Cache-Control': IMMUTABLE_MEDIA_CACHE })
+  const headers = new Headers({
+    'Cache-Control': IMMUTABLE_MEDIA_CACHE,
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+  })
   const contentType = object.httpMetadata?.contentType || contentTypeForKey(key)
   if (contentType) headers.set('Content-Type', contentType)
   if (request.method === 'HEAD') return new Response(null, { status: 200, headers })

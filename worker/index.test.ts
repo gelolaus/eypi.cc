@@ -347,6 +347,8 @@ describe('public media route', () => {
     expect(new Uint8Array(await logoResponse.arrayBuffer())).toEqual(logo)
     expect(qrResponse.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
     expect(new Uint8Array(await qrResponse.arrayBuffer())).toEqual(qr)
+    expect(frameResponse.headers.get('X-Content-Type-Options')).toBe('nosniff')
+    expect(frameResponse.headers.get('Content-Security-Policy')).toBe("default-src 'none'; sandbox")
     expect(fetchAsset).not.toHaveBeenCalled()
     expect(logLinkClick).not.toHaveBeenCalled()
   })
