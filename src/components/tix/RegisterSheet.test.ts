@@ -89,6 +89,9 @@ describe('RegisterSheet', () => {
     expect(JSON.parse(String(init.body))).toEqual({ answers: { q1: '2023-001', q2: 'B', q3: ['Halal'] } })
     expect(document.body.textContent).toContain("You're in")
     expect(q<HTMLAnchorElement>('a[href="/tickets"]')).not.toBeNull()
+    expect(q('[data-register-result]')!.getAttribute('role')).toBe('status')
+    const heading = q<HTMLElement>('[data-register-result] [tabindex="-1"]')!
+    expect(document.activeElement).toBe(heading)
     expect(wrapper.emitted('registered')).toBeTruthy()
   })
 

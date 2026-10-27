@@ -97,7 +97,7 @@
         <dl class="grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt class="text-muted-foreground">
-              When
+              When (Manila time)
             </dt>
             <dd class="mt-0.5 font-medium">
               {{ when }}
@@ -197,13 +197,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppImage from '@/components/AppImage.vue'
-import RegisterSheet from '@/components/tix/RegisterSheet.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { sanitizeEventHtml } from '@/composables/useMarkdown'
+import { sanitizeEventHtml } from '@/lib/sanitizeEventHtml'
 import { useDialog } from '@/composables/useDialog'
 import { ApiError, api } from '@/lib/api'
 import { useQuery } from '@/lib/queryCache'
@@ -211,6 +210,9 @@ import { formatManilaDate, formatManilaDateTime } from '@/lib/manilaTime'
 import { primaryAction, registrationBlock, type PublicEventResponse } from '@/lib/tix/eventState'
 import type { ImageMeta } from '@/lib/images/variants'
 import { useSession } from '@/stores/session'
+
+// The sheet (dialog primitives, form) loads only when someone starts to register.
+const RegisterSheet = defineAsyncComponent(() => import('@/components/tix/RegisterSheet.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -236,11 +238,13 @@ const action = computed(() =>
 
 const block = computed(() => (event.value ? registrationBlock(event.value, now()) : null))
 const banner = computed(() => {
-  if (ticket.value && ticket.value.status !== 'cancelled' && ticket.value.status !== 'declined') return ''
+  if (ticket.value?.status === 'cancelled') return 'Your registration was cancelled. Ask the organisers if you want back in.'
+  if (ticket.value?.status === 'declined') return 'Your registration was not accepted for this event.'
+  if (ticket.value) return ''
   switch (block.value) {
     case 'cancelled': return 'This event was cancelled.'
     case 'closed': return 'Registration has closed.'
-    case 'not_open_yet': return `Registration opens ${event.value?.registrationOpensAt ? formatManilaDateTime(event.value.registrationOpensAt) : 'soon'} (Manila time).`
+    case 'not_open_yet': return `Registration opens ${event.value?.registrationOpensAt ? formatManilaDateTime(event.value.registrationOpensAt) : 'soon'}`
     case 'invite_only': return 'This event is invite only.'
     case 'full': return 'This event is full.'
     default: return ''
@@ -304,7 +308,9 @@ async function cancelRegistration(): Promise<void> {
   }
 }
 
+const previousTitle = document.title
 watch(event, (e) => {
   if (e) document.title = `${e.name} · Eypi`
-})
+}, { immediate: true })
+onBeforeUnmount(() => { document.title = previousTitle })
 </script>

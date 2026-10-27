@@ -113,7 +113,7 @@ Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and
 | Frames admin | `/manage/frames` |
 | Frames public | `/frames/:slug` |
 | Tix admin | `/manage/tix` |
-| Tix public ticket | `/tix/:eventId` (param is **event slug**) |
+| Tix public ticket | `/tix/:slug` |
 | Orgs | `/orgs`, `/orgs/:slug`, `/orgs/modify`, `/invites` |
 | Account | `/account` |
 | Admin panel | `/admin`, `/admin/users`, `/admin/links`, `/admin/reports`, `/admin/audit`, `/admin/orgs`, `/admin/speed`, `/admin/maintenance` |

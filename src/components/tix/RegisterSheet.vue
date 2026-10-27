@@ -14,8 +14,16 @@
       <div
         v-if="result"
         class="space-y-4"
+        role="status"
         data-register-result
       >
+        <p
+          ref="resultHeading"
+          tabindex="-1"
+          class="text-base font-semibold outline-none"
+        >
+          {{ resultTitle }}
+        </p>
         <p class="text-sm">
           {{ resultBody }}
         </p>
@@ -130,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -154,6 +162,7 @@ const submitting = ref(false)
 const formError = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const result = ref<Ticket | null>(null)
+const resultHeading = ref<HTMLElement | null>(null)
 
 const action = computed(() => primaryAction(props.event, null, new Date()))
 
@@ -215,6 +224,8 @@ async function submit(): Promise<void> {
     const res = await api.post<{ ticket: Ticket }>(`/api/events/${encodeURIComponent(props.event.slug)}/register`, { answers })
     result.value = res.ticket
     emit('registered', res.ticket)
+    await nextTick()
+    resultHeading.value?.focus()
   } catch (err) {
     if (err instanceof ApiError) {
       if (err.status === 422 && err.fields) {

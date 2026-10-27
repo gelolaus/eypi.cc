@@ -14,7 +14,7 @@ vi.mock('vue-router', () => ({
 // DOMPurify does not iterate happy-dom trees faithfully (it keeps <script>), so the sanitizer is
 // replaced by a marker here and only checked for being in the render path.
 const sanitize = vi.hoisted(() => vi.fn((html: string, ..._rest: unknown[]) => html.replace(/<script>.*<\/script>/, '').replace('<a ', '<a rel="noopener nofollow ugc" ')))
-vi.mock('@/composables/useMarkdown', () => ({ sanitizeEventHtml: sanitize }))
+vi.mock('@/lib/sanitizeEventHtml', () => ({ sanitizeEventHtml: sanitize }))
 
 const coverMeta = { w: 1000, h: 500, fmt: 'webp', widths: [256, 512], ph: 'data:image/webp;base64,AAAA' }
 
@@ -106,7 +106,7 @@ describe('EventPageView', () => {
     await w.get('[data-primary-action]').trigger('click')
     await flushPromises()
     expect(push).not.toHaveBeenCalled()
-    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
+    await vi.waitFor(() => expect(document.body.querySelector('[role="dialog"]')).not.toBeNull())
   })
 
   it('shows the ticket state and links to tickets once registered', async () => {
@@ -135,6 +135,15 @@ describe('EventPageView', () => {
     expect(w.get('[role="status"][data-banner]').text()).toContain('cancelled')
     expect(w.get('[data-primary-action]').text()).toBe('Registration closed')
     expect((w.get('[data-primary-action]').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('explains a cancelled viewer ticket', async () => {
+    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user' }
+    const ticket = { id: 't', status: 'cancelled', qrToken: null, waitlistPosition: null, answers: {}, event: {} }
+    vi.stubGlobal('fetch', vi.fn(async () => json(payload({}, ticket))))
+    const w = mountPage()
+    await flushPromises()
+    expect(w.get('[data-banner]').text()).toContain('Your registration was cancelled')
   })
 
   it('shows a closed banner when the window has passed', async () => {
