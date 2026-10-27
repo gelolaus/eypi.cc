@@ -2,7 +2,7 @@ const MANILA_OFFSET_HOURS = 8
 const MANILA_OFFSET_MS = MANILA_OFFSET_HOURS * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 
-function asUtc(input: string | Date): Date {
+export function asUtc(input: string | Date): Date {
   if (input instanceof Date) return new Date(input.getTime())
   const trimmed = input.trim()
   const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T')
@@ -65,4 +65,10 @@ export function manilaSql(column: string): string {
     throw new Error('Invalid column')
   }
   return `datetime(${column}, '+${MANILA_OFFSET_HOURS} hours')`
+}
+
+/** UTC instant of an event start given Manila `YYYY-MM-DD` and `HH:MM` (or `HH:MM:SS`). Invalid input gives an invalid Date. */
+export function manilaEventStart(date: string, time: string): Date {
+  const hhmmss = /^\d{2}:\d{2}$/.test(time) ? `${time}:00` : time
+  return new Date(`${date}T${hhmmss}+08:00`)
 }
