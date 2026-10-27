@@ -3,9 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventDetailView from './EventDetailView.vue'
 
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }))
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: 'launch' }, query: {} }),
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace, push: vi.fn() }),
 }))
 
 vi.mock('@/router', () => ({
@@ -23,8 +24,12 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+let eventOverrides: Record<string, unknown> = {}
+
 beforeEach(() => {
   localStorage.clear()
+  replace.mockClear()
+  eventOverrides = {}
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     const url = new URL(raw)
@@ -42,8 +47,12 @@ beforeEach(() => {
           selectionLocked: true,
           attendeeCount: 1,
           passFields: ['section'],
+          ...eventOverrides,
         },
       })
+    }
+    if (url.pathname === '/api/events/launch/attendees' && url.searchParams.get('paged')) {
+      return json({ status: 'ok', attendees: [], counts: { pending: 0, entered: 4, waitlisted: 0, confirmed: 0, declined: 0, cancelled: 0 }, nextCursor: null })
     }
     if (url.pathname === '/api/events/launch/attendees') {
       return json({
@@ -115,11 +124,63 @@ describe('EventDetailView pass field picker', () => {
       global: { stubs: { RouterLink: true } },
     })
     await flushPromises()
+    await tab(wrapper, 'Attendees')
 
     const labels = wrapper.findAll('button').map((button) => button.text())
     expect(labels.some((label) => label.includes('Download QR'))).toBe(true)
     expect(labels.some((label) => label.includes('Download all (ZIP)'))).toBe(true)
 
+    wrapper.unmount()
+  })
+})
+
+async function tab(wrapper: ReturnType<typeof mount>, label: string) {
+  await wrapper.findAll('[data-main-tab]').find((button) => button.text() === label)!.trigger('click')
+  await flushPromises()
+}
+
+describe('EventDetailView tabs', () => {
+  it('shows Overview, Attendees and a Door link for an import event, without a Lottery tab', async () => {
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees'])
+    expect(wrapper.get('[data-door-link]').attributes('href')).toBe('/manage/tix/launch/door')
+    await tab(wrapper, 'Attendees')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Scanner')).toBe(true)
+    expect(wrapper.find('[data-attendee-row]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('uses the paged inbox for an approval event and does not send it to the selection wizard', async () => {
+    eventOverrides = { admissionMode: 'approval', selectionLocked: false, status: 'published', questions: [] }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(replace).not.toHaveBeenCalled()
+    await tab(wrapper, 'Attendees')
+    expect(wrapper.findAll('[role="tab"]').some((t) => t.text() === 'Pending (0)')).toBe(true)
+    expect(wrapper.findAll('[role="tab"]').some((t) => t.text() === 'Entered (4)')).toBe(true)
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Scanner')).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('still sends an unfinalized import event to the selection wizard', async () => {
+    eventOverrides = { selectionLocked: false }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(replace).toHaveBeenCalledWith('/manage/tix/launch/select')
+    wrapper.unmount()
+  })
+
+  it('adds a Lottery tab only for lottery events and shows the draw panel there', async () => {
+    eventOverrides = {
+      admissionMode: 'lottery', selectionLocked: false, status: 'published', questions: [],
+      registrationClosesAt: '2020-01-01 00:00:00', waitlistEnabled: true, lotteryDrawnAt: null,
+    }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Lottery'])
+    await tab(wrapper, 'Lottery')
+    expect(wrapper.find('[data-draw]').exists()).toBe(true)
     wrapper.unmount()
   })
 })

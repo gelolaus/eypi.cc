@@ -556,6 +556,16 @@ describe('GET /api/events/:slug editor fields', () => {
     expect(event.registrationCount).toBe(1)
   })
 
+  it('reports when the lottery was drawn', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await seedEvent(client, { slug: 'draw', status: 'published' })
+    const before = await (await send(request, 'GET', '/api/events/draw')).json() as { event: { lotteryDrawnAt: string | null } }
+    expect(before.event.lotteryDrawnAt).toBeNull()
+    await client.execute("UPDATE events SET lottery_drawn_at = '2026-10-30 01:00:00' WHERE slug = 'draw'")
+    const after = await (await send(request, 'GET', '/api/events/draw')).json() as { event: { lotteryDrawnAt: string | null } }
+    expect(after.event.lotteryDrawnAt).toBe('2026-10-30 01:00:00')
+  })
+
   it('leaves the settings out for another org', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await seedEvent(client, { slug: 'other', org: 'org-2', status: 'published' })

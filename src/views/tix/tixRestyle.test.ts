@@ -50,11 +50,13 @@ import eventsView from './EventsView.vue?raw'
 import eventBuilderView from './EventBuilderView.vue?raw'
 import eventQuestionsEditor from '@/components/tix/EventQuestionsEditor.vue?raw'
 import eventPublishDialog from '@/components/tix/EventPublishDialog.vue?raw'
+import lotteryPanel from '@/components/tix/LotteryPanel.vue?raw'
+import inboxView from './AttendeesInboxView.vue?raw'
 import layoutView from './TixManageLayout.vue?raw'
 
 const sources = {
   addGuest, attendeeTable, clusterBars, scannerPanel, clustersStep, confirmStep, criteriaStep,
-  guaranteeStep, mapStep, uploadStep, selectionView, detailView, eventsView, eventBuilderView, eventQuestionsEditor, eventPublishDialog, layoutView,
+  guaranteeStep, mapStep, uploadStep, selectionView, detailView, eventsView, eventBuilderView, eventQuestionsEditor, eventPublishDialog, lotteryPanel, inboxView, layoutView,
 }
 
 const attendee = { id: 'a', first_name: 'Ana', last_name: 'Santos', email: 'a@x.com', status: null, actioned_at: null, cluster_value: null, qr_token: 'qr' }
