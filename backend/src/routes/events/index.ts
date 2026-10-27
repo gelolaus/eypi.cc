@@ -14,7 +14,13 @@ import registrations from './registrations'
 // centrally there, so this module only declares the /api/events/* handlers.
 const app = new Hono<{ Bindings: Bindings }>()
 
+// Student registration is open to any signed-in user, not just org members.
+function eventRouteIsStudent(path: string): boolean {
+  return /^\/api\/events\/[^/]+\/(register|registration)$/.test(path)
+}
+
 function eventRouteUsesOrg(path: string): boolean {
+  if (eventRouteIsStudent(path)) return false
   if (path === '/api/events') return true
   if (!path.startsWith('/api/events/')) return false
   if (path.endsWith('/lookup') || path.endsWith('/passes/google')) return false
@@ -26,6 +32,13 @@ function eventRouteUsesOrg(path: string): boolean {
 app.use('/api/events/*', async (c, next) => {
   const unavailable = await attachSession(c)
   if (unavailable) return unavailable
+  if (eventRouteIsStudent(c.req.path)) {
+    if (!c.var.userId) return c.json({ error: { code: 'unauthorized', message: 'Sign in to continue.' } }, 401)
+    const denied = await enforceConsent(c)
+    if (denied) return denied
+    await next()
+    return
+  }
   if (!eventRouteUsesOrg(c.req.path)) {
     await next()
     return
