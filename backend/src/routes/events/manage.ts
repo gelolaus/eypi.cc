@@ -105,6 +105,7 @@ app.post('/api/events', async (c) => {
   const crossFields = crossFieldErrors({ mode, waitlist: input.waitlistEnabled === true, opens, closes })
   if (crossFields) return c.json(invalidEvent(crossFields), 422)
 
+  // The event builder no longer sends `attendees`; this legacy branch stays for older callers and tests.
   const hasAttendees = Array.isArray(body.attendees) && body.attendees.length > 0
   // Legacy mode requires attendees; selection mode requires none
   if (!hasAttendees && body.attendees !== undefined && body.attendees !== null && Array.isArray(body.attendees) && body.attendees.length === 0) {

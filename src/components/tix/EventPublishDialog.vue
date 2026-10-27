@@ -7,7 +7,7 @@
       <DialogHeader>
         <DialogTitle>Publish this event?</DialogTitle>
         <DialogDescription>
-          Anyone with the link can open the event page and register.
+          {{ importMode ? 'People join through your attendee list, not a registration page.' : 'Anyone with the link can open the event page and register.' }}
         </DialogDescription>
       </DialogHeader>
 
@@ -58,6 +58,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 defineProps<{
   open: boolean
   busy: boolean
+  importMode?: boolean
   rows: { label: string; value: string }[]
 }>()
 const emit = defineEmits<{

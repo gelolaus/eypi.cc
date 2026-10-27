@@ -56,6 +56,7 @@ export interface ManagedEvent {
   registrationClosesAt: string | null
   questions: { id: string; label: string; type: QuestionType; options?: string[]; required?: boolean }[]
   status?: EventStatus
+  registrationCount?: number
   coverUrl?: string | null
   coverMeta?: unknown
 }

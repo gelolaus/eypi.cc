@@ -122,11 +122,19 @@ app.get('/api/events/:slug', async (c) => {
   const attendeeCount = Number(countRes.rows[0]?.cnt ?? 0)
 
   const isLead = c.var.orgId === event.org_id
+  // People who registered themselves and still hold a place: the same rows that lock the admission mode.
+  const registrationCount = isLead
+    ? Number((await client.execute({
+      sql: `SELECT COUNT(*) AS cnt FROM attendees WHERE event_id = ? AND source = 'self' AND status != 'cancelled'`,
+      args: [event.id],
+    })).rows[0]?.cnt ?? 0)
+    : 0
   const text = (v: unknown) => (v == null ? null : String(v))
   // The settings the builder edits; only the owning org gets them.
   const settings = isLead ? {
     endTime: text(event.end_time),
     description: text(event.description),
+    registrationCount,
     admissionMode: event.admission_mode,
     visibility: event.visibility,
     capacity: event.max_attendees,

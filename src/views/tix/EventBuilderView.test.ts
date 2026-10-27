@@ -235,15 +235,61 @@ describe('EventBuilderView', () => {
     expect(wrapper.get('[data-error-summary]').text()).toContain('Enter a location.')
   })
 
-  it('sends import events on to the attendee selection flow', async () => {
+  it('creates and publishes import events right away, then opens the attendee selection flow', async () => {
     await mountBuilder()
     await fillBasics()
     await wrapper.get('input[name="admissionMode"][value="import"]').setValue(true)
     expect(wrapper.find('[data-add-question]').exists()).toBe(false)
-    await button('Save draft')!.click()
+    expect(wrapper.text()).toContain('Import events go live right away')
+    expect(button('Publish')).toBeUndefined()
+    await button('Save event')!.click()
     await flushPromises()
+    expect(writes().map((c) => `${c.method} ${c.path}`)).toEqual(['POST /api/events', 'POST /api/events/launch/publish'])
     expect(writes()[0].body).toMatchObject({ admissionMode: 'import', questions: [] })
     expect(push).toHaveBeenCalledWith('/manage/tix/launch/select')
+  })
+
+  it('publishes an existing draft import event on save', async () => {
+    handlers['GET /api/events/launch'] = () => json({ status: 'ok', event: { ...managed, admissionMode: 'import' } })
+    await mountBuilder('launch')
+    await button('Save event')!.click()
+    await flushPromises()
+    expect(writes().map((c) => `${c.method} ${c.path}`)).toEqual(['POST /api/events/launch/publish'])
+  })
+
+  it('keeps registration events as drafts on save', async () => {
+    await mountBuilder()
+    await fillBasics()
+    await button('Save draft')!.click()
+    await flushPromises()
+    expect(writes().map((c) => `${c.method} ${c.path}`)).toEqual(['POST /api/events'])
+  })
+
+  it('uses publish copy that fits the mode', async () => {
+    await mountBuilder()
+    await fillBasics()
+    await button('Publish')!.click()
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"]')!.textContent).toContain('Anyone with the link can open the event page and register')
+  })
+
+  it('warns about changed questions and locks the admission mode once people registered', async () => {
+    handlers['GET /api/events/launch'] = () => json({ status: 'ok', event: { ...managed, status: 'published', registrationCount: 3, questions: [{ id: 'a', label: 'Why', type: 'text', required: false }] } })
+    await mountBuilder('launch')
+    expect(wrapper.find('[data-answers-warning]').exists()).toBe(false)
+    expect(wrapper.get('input[name="admissionMode"][value="lottery"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('input[name="admissionMode"][value="fcfs"]').attributes('disabled')).toBeUndefined()
+    await wrapper.get('[data-question] select[data-question-type]').setValue('choice')
+    expect(wrapper.get('[data-answers-warning]').text()).toContain('People already answered this')
+    await wrapper.get('[data-question] select[data-question-type]').setValue('text')
+    expect(wrapper.find('[data-answers-warning]').exists()).toBe(false)
+    await wrapper.get('[data-remove-question]').trigger('click')
+    expect(wrapper.find('[data-answers-warning]').exists()).toBe(true)
+  })
+
+  it('says that import clears questions, window and waitlist', async () => {
+    await mountBuilder()
+    expect(wrapper.text()).toContain('Choosing CSV import clears questions, the registration window and the waitlist')
   })
 
   it('uploads a picked cover once the event exists and makes variants from the returned key', async () => {

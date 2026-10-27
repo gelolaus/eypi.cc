@@ -325,6 +325,7 @@
                   type="radio"
                   name="admissionMode"
                   :value="mode.value"
+                  :disabled="modeLocked && mode.value !== savedMode"
                   class="mt-0.5 size-5 accent-primary"
                   :aria-describedby="errors.admissionMode ? 'err-admissionMode' : undefined"
                 >
@@ -342,7 +343,16 @@
               v-if="!selfRegistration"
               class="mt-3 text-sm text-muted-foreground"
             >
-              After you save, upload the attendee list and set clusters on the next page.
+              Import events go live right away. People don't register themselves. After you save, upload the attendee list and set clusters on the next page.
+            </p>
+            <p class="mt-3 text-sm text-muted-foreground">
+              Choosing CSV import clears questions, the registration window and the waitlist.
+            </p>
+            <p
+              v-if="modeLocked"
+              class="mt-3 text-sm text-muted-foreground"
+            >
+              The admission mode is locked because people have registered.
             </p>
 
             <fieldset class="mt-5 flex flex-col gap-3">
@@ -447,6 +457,14 @@
               tabindex="-1"
               class="outline-none"
             >
+              <p
+                v-if="answersAtRisk"
+                data-answers-warning
+                role="status"
+                class="mb-3 rounded-xl border border-border bg-muted p-3 text-sm font-medium"
+              >
+                People already answered this. Their answers will no longer show.
+              </p>
               <EventQuestionsEditor v-model="form.questions" />
               <FieldError
                 id="err-questions"
@@ -459,7 +477,7 @@
 
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <Button
-            v-if="canPublish"
+            v-if="canPublish && selfRegistration"
             type="button"
             size="lg"
             :disabled="busy || readOnly"
@@ -470,7 +488,7 @@
           <Button
             type="submit"
             size="lg"
-            :variant="canPublish ? 'outline' : 'default'"
+            :variant="canPublish && selfRegistration ? 'outline' : 'default'"
             :disabled="busy || readOnly"
           >
             {{ saveLabel }}
@@ -482,6 +500,7 @@
     <EventPublishDialog
       v-model:open="publishOpen"
       :busy="busy"
+      :import-mode="!selfRegistration"
       :rows="summaryRows"
       @confirm="confirmPublish"
     />
@@ -569,7 +588,19 @@ const waitlistAllowed = computed(() => allowsWaitlist(form.admissionMode))
 const canPublish = computed(() => !isEdit.value || status.value === 'draft')
 const saveLabel = computed(() => {
   if (busy.value) return 'SAVING...'
+  if (!selfRegistration.value) return status.value === 'draft' || !isEdit.value ? 'Save event' : 'Save changes'
   return canPublish.value ? 'Save draft' : 'Save changes'
+})
+
+// Registrations lock the admission mode (the API refuses a change) and tie answers to question ids and types.
+const registrationCount = ref(0)
+const savedMode = ref<AdmissionMode>('fcfs')
+const savedQuestions = ref<Record<string, string>>({})
+const modeLocked = computed(() => registrationCount.value > 0)
+const answersAtRisk = computed(() => {
+  if (registrationCount.value === 0) return false
+  const now = new Map(form.questions.map((q) => [q.id, q.type]))
+  return Object.entries(savedQuestions.value).some(([id, type]) => now.get(id) !== type)
 })
 
 // Compared with the last saved state to decide whether Publish needs a PATCH first.
@@ -664,6 +695,9 @@ async function load(slug: string) {
     coverRemoved.value = false
     pendingCover.value = null
     slugEdited.value = true
+    registrationCount.value = event.registrationCount ?? 0
+    savedMode.value = event.admissionMode
+    savedQuestions.value = Object.fromEntries(event.questions.map((q) => [q.id, q.type]))
     savedSnapshot.value = comparable()
   } catch (err) {
     loadError.value = err instanceof ApiError && err.status === 404
@@ -774,10 +808,23 @@ async function saveDraftOrChanges() {
     const wasNew = !loadedSlug.value
     const slug = await persist()
     if (!slug) return
-    if (!selfRegistration.value && wasNew) {
-      toast.success('Event saved. Add your attendees next.')
-      await router.push(`/manage/tix/${slug}/select`)
-      return
+    if (!selfRegistration.value) {
+      // Import events have no registration page to hold back, so they go live on save.
+      if (status.value === 'draft') {
+        try {
+          await api.post(`/api/events/${encodeURIComponent(slug)}/publish`)
+          status.value = 'published'
+        } catch (err) {
+          await showErrors(applyApiError(err))
+          if (wasNew) await router.replace(`/manage/tix/${slug}/edit`)
+          return
+        }
+      }
+      if (wasNew) {
+        toast.success('Event saved. Add your attendees next.')
+        await router.push(`/manage/tix/${slug}/select`)
+        return
+      }
     }
     toast.success(canPublish.value ? 'Draft saved.' : 'Changes saved.')
     if (wasNew) await router.replace(`/manage/tix/${slug}/edit`)

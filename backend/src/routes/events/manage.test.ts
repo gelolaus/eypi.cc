@@ -546,6 +546,16 @@ describe('GET /api/events/:slug editor fields', () => {
     })
   })
 
+  it('counts self registrations that still hold a place', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await seedEvent(client, { slug: 'ev', status: 'published' })
+    await seedAttendee(client, 1, 'confirmed')
+    await seedAttendee(client, 2, 'cancelled')
+    await client.execute("UPDATE attendees SET source = 'self'")
+    const { event } = await (await send(request, 'GET', '/api/events/ev')).json() as { event: { registrationCount: number } }
+    expect(event.registrationCount).toBe(1)
+  })
+
   it('leaves the settings out for another org', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await seedEvent(client, { slug: 'other', org: 'org-2', status: 'published' })
