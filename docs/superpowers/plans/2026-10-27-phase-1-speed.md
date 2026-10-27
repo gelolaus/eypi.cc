@@ -299,11 +299,11 @@
 **Interfaces:**
 - Produces: cache names `eypi-shell-<buildHash>`, `eypi-media-v1`, `eypi-tickets-v1`; `pickStrategy(url: URL, request: Request): 'shell-network-first' | 'asset-cache-first' | 'media-cache-first' | 'tickets-network-first' | 'bypass'`.
 
-- [ ] **Step 1: Failing tests:** `pickStrategy` table (`/assets/x.js` cache-first; navigation `html is network first`; `/media/...` media; `https://api.eypi.cc/api/tickets` tickets; any other API bypass); media LRU evicts beyond 150; `sw-precache` writes the entry chunks from `dist/client/.vite/manifest.json` into `dist/client/sw.js`; `registerSw` registers only when `import.meta.env.PROD`; `sw-kill.js` unregisters and deletes all `eypi-*` caches.
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement.** HTML network-first with a 3000 ms timeout then cached `/index.html`. Old `eypi-shell-*` caches deleted on `activate`.
-- [ ] **Step 4: Run** `npm test && npm run build` → PASS; `dist/client/sw.js` contains the precache list.
-- [ ] **Step 5: Commit** `feat(pwa): cache the app shell and media with a service worker`.
+- [x] **Step 1: Failing tests:** `pickStrategy` table (`/assets/x.js` cache-first; navigation `html is network first`; `/media/...` media; `https://api.eypi.cc/api/tickets` tickets; any other API bypass); media LRU evicts beyond 150; `sw-precache` writes the entry chunks from `dist/client/.vite/manifest.json` into `dist/client/sw.js`; `registerSw` registers only when `import.meta.env.PROD`; `sw-kill.js` unregisters and deletes all `eypi-*` caches.
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement.** HTML network-first with a 3000 ms timeout then cached `/index.html`. Old `eypi-shell-*` caches deleted on `activate`.
+- [x] **Step 4: Run** `npm test && npm run build` → PASS; `dist/client/sw.js` contains the precache list.
+- [x] **Step 5: Commit** `feat(pwa): cache the app shell and media with a service worker`.
 
 ### Task 19: Docs and phase verification
 

@@ -39,6 +39,14 @@ export default tseslint.config(
     },
   },
   {
+    // Classic service worker scripts: importScripts shares one global scope with sw-strategies.js.
+    files: ['public/sw*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: { ...globals.serviceworker, EypiSw: 'readonly' },
+    },
+  },
+  {
     files: ['src/**/*.{ts,vue}', 'worker/**/*.ts'],
     languageOptions: {
       globals: globals.browser,

@@ -1,6 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { ApiError, api } from '@/lib/api'
 import { clearQueryCache } from '@/lib/queryCache'
+import { clearTicketsCache } from '@/lib/registerSw'
 
 export type SessionUser = {
   id: string
@@ -68,6 +69,8 @@ function asUser(raw: MeResponse['user']): SessionUser | null {
 
 function reset(): void {
   clearQueryCache()
+  // The service worker keeps the last tickets for offline use. They belong to this session only.
+  void clearTicketsCache()
   user.value = null
   pendingInviteCount.value = 0
   needsConsent.value = []

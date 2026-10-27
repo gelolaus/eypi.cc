@@ -52,6 +52,17 @@ beforeEach(() => {
 })
 
 describe('useSession', () => {
+  it('deletes the service worker tickets cache when the session resets', () => {
+    const del = vi.fn(async () => true)
+    vi.stubGlobal('caches', { delete: del })
+    try {
+      useSession().reset()
+      expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('dedupes concurrent load() calls', async () => {
     fetchMock.mockResolvedValue(jsonResponse(401, {
       error: { code: 'unauthorized', message: 'Sign in to continue.' },
