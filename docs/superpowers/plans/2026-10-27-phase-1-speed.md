@@ -211,11 +211,11 @@
 **Interfaces:**
 - Produces: `IMAGE_PROFILES = { orgLogo: [96, 192, 384], banner: [640, 1280, 1920], frame: [256, 512, 1024], qrLogo: [512] } as const`; `planWidths(sourceWidth: number, profile: readonly number[]): number[]` (widths strictly below source; if none, `[]`); `makeVariants(file: Blob, profile: keyof typeof IMAGE_PROFILES, deps?: { encode?: Encoder }): Promise<{ meta: ImageMeta; variants: { width: number; dataUrl: string }[] }>`; type `ImageMeta = { w: number; h: number; fmt: 'webp'|'jpeg'|'png'; widths: number[]; ph: string }`; `WEBP_QUALITY = 0.86`.
 
-- [ ] **Step 1: Failing tests:** `planWidths(1000, [256,512,1024]) → [256, 512]`; `encodes webp at 0.86`; `falls back when webp is not encoded` (fake encoder returns `image/png` for webp request → opaque source re-encoded as `image/jpeg`, alpha source stays `image/png`, `meta.fmt` matches); placeholder data URL ≤ 1200 chars and 16 px wide.
-- [ ] **Step 2: Run** `npx vitest run src/lib/images` → FAIL.
-- [ ] **Step 3: Implement** with `createImageBitmap(file, { imageOrientation: 'from-image' })`, `OffscreenCanvas` when present else `document.createElement('canvas')`, `imageSmoothingQuality = 'high'`. Alpha detection: sample `getImageData` alpha channel on the 16 px placeholder canvas.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(media): make right-sized image variants in the browser`.
+- [x] **Step 1: Failing tests:** `planWidths(1000, [256,512,1024]) → [256, 512]`; `encodes webp at 0.86`; `falls back when webp is not encoded` (fake encoder returns `image/png` for webp request → opaque source re-encoded as `image/jpeg`, alpha source stays `image/png`, `meta.fmt` matches); placeholder data URL ≤ 1200 chars and 16 px wide.
+- [x] **Step 2: Run** `npx vitest run src/lib/images` → FAIL.
+- [x] **Step 3: Implement** with `createImageBitmap(file, { imageOrientation: 'from-image' })`, `OffscreenCanvas` when present else `document.createElement('canvas')`, `imageSmoothingQuality = 'high'`. Alpha detection: sample `getImageData` alpha channel on the 16 px placeholder canvas.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(media): make right-sized image variants in the browser`.
 
 ### Task 13: Variants API and meta in payloads
 
