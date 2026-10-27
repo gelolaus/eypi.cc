@@ -3,7 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventDetailView from './EventDetailView.vue'
 
-const { replace } = vi.hoisted(() => ({ replace: vi.fn() }))
+const { replace, confirm } = vi.hoisted(() => ({ replace: vi.fn(), confirm: vi.fn(async () => true) }))
+vi.mock('@/composables/useDialog', () => ({ useDialog: () => ({ confirm }) }))
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: 'launch' }, query: {} }),
   useRouter: () => ({ replace, push: vi.fn() }),
@@ -78,12 +79,21 @@ beforeEach(() => {
       })
     }
     if (url.pathname === '/api/events/launch' && method === 'PATCH') return json({ status: 'ok' })
+    if (method === 'POST' && /^\/api\/events\/launch\/(publish|close|cancel)$/.test(url.pathname)) {
+      const to = { publish: 'published', close: 'closed', cancel: 'cancelled' }[url.pathname.split('/').pop() as 'publish' | 'close' | 'cancel']
+      return json({ status: 'ok', event: { slug: 'launch', status: to } })
+    }
+    if (url.pathname === '/api/events/launch' && method === 'DELETE') {
+      return json({ status: 'error', message: 'This event has registrations. Cancel it instead of deleting it.', error: { code: 'has_registrations', message: 'This event has registrations. Cancel it instead of deleting it.' } }, 409)
+    }
     return json({ status: 'error', message: 'missing' }, 404)
   }))
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  confirm.mockReset()
+  confirm.mockResolvedValue(true)
 })
 
 describe('EventDetailView pass field picker', () => {
@@ -235,3 +245,64 @@ describe('EventDetailView tabs', () => {
 function checkbox(wrapper: ReturnType<typeof mount>, name: string) {
   return wrapper.findAll('label').find((label) => label.text().trim() === name)?.find('input[type="checkbox"]')
 }
+
+describe('EventDetailView status controls', () => {
+  const posts = () => vi.mocked(fetch).mock.calls
+    .filter((call) => (call[1] as RequestInit | undefined)?.method === 'POST')
+    .map((call) => new URL(String(call[0])).pathname)
+  const buttonText = (wrapper: ReturnType<typeof mount>, label: string) => wrapper.findAll('button').find((b) => b.text() === label)
+
+  it('closes registration after confirming, then offers Reopen', async () => {
+    eventOverrides = { admissionMode: 'fcfs', selectionLocked: false, status: 'published', questions: [] }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(wrapper.get('[data-event-status]').text()).toBe('Published')
+    await buttonText(wrapper, 'Close registration')!.trigger('click')
+    await flushPromises()
+    expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ title: 'Close registration?' }))
+    expect(posts()).toContain('/api/events/launch/close')
+    expect(wrapper.get('[data-event-status]').text()).toBe('Closed')
+    await buttonText(wrapper, 'Reopen registration')!.trigger('click')
+    await flushPromises()
+    expect(posts()).toContain('/api/events/launch/publish')
+    expect(wrapper.get('[data-event-status]').text()).toBe('Published')
+    wrapper.unmount()
+  })
+
+  it('does nothing when the confirm dialog is declined', async () => {
+    confirm.mockResolvedValue(false)
+    eventOverrides = { admissionMode: 'fcfs', selectionLocked: false, status: 'published', questions: [] }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await buttonText(wrapper, 'Cancel event')!.trigger('click')
+    await flushPromises()
+    expect(posts()).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('cancels the event and turns the page read-only', async () => {
+    eventOverrides = { admissionMode: 'fcfs', selectionLocked: false, status: 'published', questions: [], maxAttendees: 5 }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await buttonText(wrapper, 'Cancel event')!.trigger('click')
+    await flushPromises()
+    expect(posts()).toContain('/api/events/launch/cancel')
+    expect(wrapper.get('[data-event-status]').text()).toBe('Cancelled')
+    expect(buttonText(wrapper, 'Add guest')).toBeUndefined()
+    expect(buttonText(wrapper, 'Close registration')).toBeUndefined()
+    expect(buttonText(wrapper, 'Cancel event')).toBeUndefined()
+    expect(wrapper.text()).toContain('read-only')
+    wrapper.unmount()
+  })
+
+  it('publishes a draft', async () => {
+    eventOverrides = { admissionMode: 'fcfs', selectionLocked: false, status: 'draft', questions: [] }
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await buttonText(wrapper, 'Publish')!.trigger('click')
+    await flushPromises()
+    expect(posts()).toContain('/api/events/launch/publish')
+    expect(wrapper.get('[data-event-status]').text()).toBe('Published')
+    wrapper.unmount()
+  })
+})

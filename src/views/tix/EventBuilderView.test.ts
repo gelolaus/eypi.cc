@@ -209,6 +209,7 @@ describe('EventBuilderView', () => {
     handlers['PATCH /api/events/launch'] = () => json({ error: { code: 'admission_locked', message: 'locked' } }, 409)
     await mountBuilder('launch')
     await wrapper.get('input[name="admissionMode"][value="lottery"]').setValue(true)
+    await wrapper.get('#field-closesAt').setValue('2099-01-02T09:00')
     await button('Save draft')!.click()
     await flushPromises()
     expect(wrapper.get('[data-error-summary]').text()).toContain('cannot be changed once people have registered')

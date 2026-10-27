@@ -37,7 +37,8 @@
             >
               {{ guestCount }}{{ event.maxAttendees ? ` / ${event.maxAttendees}` : '' }} guests
             </span>
-            <template v-if="!editingMax">
+            <template v-if="isCancelled" />
+            <template v-else-if="!editingMax">
               <Button
                 type="button"
                 variant="ghost"
@@ -81,7 +82,7 @@
 
           <div class="flex flex-wrap gap-2 sm:ml-auto">
             <Button
-              v-if="event.isLead && (event.selectionLocked || !isImport)"
+              v-if="event.isLead && !isCancelled && (event.selectionLocked || !isImport)"
               type="button"
               :disabled="isAtCapacity"
               @click="showAddGuest = true"
@@ -150,6 +151,61 @@
         >
           <template v-if="mainTab === 'overview'">
             <AppSection
+              v-if="event.isLead"
+              title="Status"
+            >
+              <p
+                class="text-sm font-medium"
+                data-event-status
+              >
+                {{ statusLabel }}
+              </p>
+              <p class="mt-1 text-sm text-muted-foreground">
+                {{ statusHint }}
+              </p>
+              <div
+                v-if="!isCancelled"
+                class="mt-4 flex flex-wrap gap-2"
+              >
+                <Button
+                  v-if="event.status === 'draft'"
+                  type="button"
+                  :disabled="changingStatus"
+                  @click="changeStatus('publish')"
+                >
+                  Publish
+                </Button>
+                <Button
+                  v-if="event.status === 'published'"
+                  type="button"
+                  variant="outline"
+                  :disabled="changingStatus"
+                  @click="changeStatus('close')"
+                >
+                  Close registration
+                </Button>
+                <Button
+                  v-if="event.status === 'closed'"
+                  type="button"
+                  variant="outline"
+                  :disabled="changingStatus"
+                  @click="changeStatus('publish')"
+                >
+                  Reopen registration
+                </Button>
+                <Button
+                  v-if="event.status === 'published' || event.status === 'closed'"
+                  type="button"
+                  variant="destructive"
+                  :disabled="changingStatus"
+                  @click="changeStatus('cancel')"
+                >
+                  Cancel event
+                </Button>
+              </div>
+            </AppSection>
+
+            <AppSection
               v-if="!isImport"
               title="Event settings"
             >
@@ -157,14 +213,6 @@
                 class="grid gap-3 text-sm sm:grid-cols-2"
                 data-event-summary
               >
-                <div>
-                  <dt class="text-muted-foreground">
-                    Status
-                  </dt>
-                  <dd class="font-medium">
-                    {{ statusLabel }}
-                  </dd>
-                </div>
                 <div>
                   <dt class="text-muted-foreground">
                     Admission
@@ -183,6 +231,7 @@
                 </div>
               </dl>
               <Button
+                v-if="!isCancelled"
                 as-child
                 variant="outline"
                 class="mt-4"
@@ -225,7 +274,7 @@
                 <Button
                   type="button"
                   class="mt-4"
-                  :disabled="savingPassFields"
+                  :disabled="savingPassFields || isCancelled"
                   @click="savePassFields"
                 >
                   {{ savingPassFields ? 'Saving…' : 'Save pass fields' }}
@@ -249,7 +298,7 @@
                 Danger zone
               </p>
               <p class="mb-4 text-sm text-muted-foreground">
-                Permanently deletes this event and all attendee data. This cannot be undone.
+                Permanently deletes this event and all attendee data. This cannot be undone. An event with student registrations cannot be deleted once it is published: cancel it instead.
               </p>
               <Button
                 type="button"
@@ -466,6 +515,14 @@ const MODE_LABELS: Record<AdmissionMode, string> = {
   import: 'Invite only (attendee list)',
 }
 const statusLabel = computed(() => STATUS_LABELS[event.value?.status ?? ''] ?? 'Draft')
+const isCancelled = computed(() => event.value?.status === 'cancelled')
+const STATUS_HINTS: Record<string, string> = {
+  draft: 'Only your organization can see this event. Publish it when you are ready.',
+  published: 'The event page is live and registration follows your window.',
+  closed: 'Registration is closed. People who registered keep their place.',
+  cancelled: 'This event was cancelled and is read-only.',
+}
+const statusHint = computed(() => STATUS_HINTS[event.value?.status ?? ''] ?? STATUS_HINTS.draft)
 const modeLabel = computed(() => MODE_LABELS[event.value?.admissionMode ?? 'import'])
 
 const lotteryEvent = computed(() => ({
@@ -605,6 +662,59 @@ async function onSaveCluster(id: string, value: string | null) {
   }
 }
 
+function messageFrom(data: { message?: string; error?: { message?: string } } | null, fallback: string): string {
+  return data?.error?.message ?? data?.message ?? fallback
+}
+
+const changingStatus = ref(false)
+const STATUS_CHANGES = {
+  publish: {
+    title: 'Publish this event?',
+    body: 'The event page goes live and people can register while the window is open.',
+    confirmLabel: 'Publish',
+    done: 'Event published.',
+    fail: 'Could not publish the event.',
+  },
+  close: {
+    title: 'Close registration?',
+    body: 'No one new can register until you reopen it. People who registered keep their place.',
+    confirmLabel: 'Close registration',
+    done: 'Registration closed.',
+    fail: 'Could not close registration.',
+  },
+  cancel: {
+    title: 'Cancel this event?',
+    body: 'Registration closes and every registration is cancelled. The event becomes read-only. This cannot be undone.',
+    confirmLabel: 'Cancel event',
+    done: 'Event cancelled.',
+    fail: 'Could not cancel the event.',
+  },
+} as const
+
+async function changeStatus(action: keyof typeof STATUS_CHANGES) {
+  const copy = STATUS_CHANGES[action]
+  const reopening = action === 'publish' && event.value?.status === 'closed'
+  const ok = await dialog.confirm({
+    title: reopening ? 'Reopen registration?' : copy.title,
+    body: reopening ? 'People can register again while the registration window is open.' : copy.body,
+    confirmLabel: reopening ? 'Reopen registration' : copy.confirmLabel,
+  })
+  if (!ok) return
+  changingStatus.value = true
+  try {
+    const res = await api.raw(`/api/events/${slug}/${action}`, { method: 'POST' })
+    const data = await res.json().catch(() => null) as { message?: string; error?: { message?: string }; event?: { status?: string } } | null
+    if (!res.ok) throw new Error(messageFrom(data, copy.fail))
+    if (event.value) event.value.status = data?.event?.status ?? (action === 'cancel' ? 'cancelled' : action === 'close' ? 'closed' : 'published')
+    toast.success(reopening ? 'Registration reopened.' : copy.done)
+    if (action === 'cancel') await refreshAfterGuestChange()
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : copy.fail)
+  } finally {
+    changingStatus.value = false
+  }
+}
+
 async function confirmDeleteEvent() {
   const eventName = event.value?.name ?? slug
   const ok = await dialog.confirm({
@@ -617,8 +727,8 @@ async function confirmDeleteEvent() {
   deletingEvent.value = true
   try {
     const res = await api.raw(`/api/events/${slug}`, { method: 'DELETE' })
-    const data = await res.json() as { message?: string }
-    if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
+    const data = await res.json().catch(() => null) as { message?: string; error?: { message?: string } } | null
+    if (!res.ok) throw new Error(messageFrom(data, 'Delete failed.'))
     toast.success('Event deleted.')
     router.push('/manage/tix')
   } catch (err: unknown) {

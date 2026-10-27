@@ -157,6 +157,7 @@ export function validateForm(form: EventForm): Record<string, string> {
   if (parseCapacity(form.capacity) === 'invalid') errors.capacity = `Use a whole number from 1 to ${CAPACITY_MAX.toLocaleString('en-US')}, or leave it empty for no limit.`
 
   if (takesSelfRegistration(form.admissionMode)) {
+    if (form.admissionMode === 'lottery' && !form.closesAt) errors.closesAt = 'A lottery needs a closing time.'
     if (form.opensAt && form.closesAt && Date.parse(form.closesAt) <= Date.parse(form.opensAt)) {
       errors.closesAt = 'Registration must close after it opens.'
     }
