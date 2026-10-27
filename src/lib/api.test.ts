@@ -152,3 +152,32 @@ describe('query cache and sign-out', () => {
     expect(peekQuery('links:summary')).toBeUndefined()
   })
 })
+
+describe('cache invalidation after writes', () => {
+  const cases: Array<[string, string, string[]]> = [
+    ['POST', '/api/events', ['events:list:x', 'orgs:summary:x']],
+    ['PATCH', '/api/events/launch', ['events:list:x', 'orgs:summary:x']],
+    ['DELETE', '/api/events/launch', ['events:list:x', 'orgs:summary:x']],
+    ['POST', '/api/dp', ['dp:list:x', 'orgs:summary:x']],
+    ['POST', '/api/dp/1/frames', ['dp:list:x', 'orgs:summary:x']],
+    ['PATCH', '/api/orgs/jpcs/profile', ['orgs:catalog', 'orgs:summary:x']],
+    ['POST', '/api/links', ['links:summary']],
+  ]
+  for (const [method, path, keys] of cases) {
+    it(`${method} ${path} drops ${keys.join(', ')}`, async () => {
+      for (const k of keys) await prefetchQuery(k, async () => 1)
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, {}))
+      await api.raw(path, { method })
+      for (const k of keys) expect(peekQuery(k)).toBeUndefined()
+    })
+  }
+
+  it('keeps the cache on reads and failed writes', async () => {
+    await prefetchQuery('events:list:x', async () => 1)
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {}))
+    await api.raw('/api/events')
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, {}))
+    await api.raw('/api/events', { method: 'POST' })
+    expect(peekQuery('events:list:x')).toBeDefined()
+  })
+})

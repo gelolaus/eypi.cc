@@ -1,5 +1,8 @@
 import { getCurrentScope, onScopeDispose, ref, watch, type Ref } from 'vue'
 
+/** Thrown to callers whose request was overtaken by clearQueryCache; not a user-facing failure. */
+export class CacheClearedError extends Error {}
+
 type Entry = { data: unknown; at: number }
 type Sub = { key: () => string; refresh: () => Promise<void> }
 
@@ -15,7 +18,7 @@ function load<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   if (running) return running as Promise<T>
   const born = epoch
   const p: Promise<T> = fetcher().then((data) => {
-    if (born !== epoch) throw new Error('cache cleared')
+    if (born !== epoch) throw new CacheClearedError('cache cleared')
     // invalidate() unlinks a request that began before it, so its older data is not stored.
     if (inflight.get(key) === p) cache.set(key, { data, at: Date.now() })
     return data
@@ -37,19 +40,21 @@ export function useQuery<T>(
   const error = ref<unknown>(null)
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 
+  let seq = 0
   async function refresh(): Promise<void> {
     const k = keyOf()
     if (!k) return
     const born = epoch
+    const mine = ++seq
     if (data.value === undefined) status.value = 'loading'
     try {
       const result = await load(k, fetcher)
-      if (k !== keyOf() || born !== epoch) return
+      if (k !== keyOf() || born !== epoch || mine !== seq) return
       data.value = result
       error.value = null
       status.value = 'ready'
     } catch (err) {
-      if (k !== keyOf() || born !== epoch) return
+      if (k !== keyOf() || born !== epoch || mine !== seq) return
       error.value = err
       status.value = 'error'
     }
@@ -57,6 +62,7 @@ export function useQuery<T>(
 
   function start() {
     const k = keyOf()
+    seq += 1
     data.value = undefined
     error.value = null
     status.value = 'idle'

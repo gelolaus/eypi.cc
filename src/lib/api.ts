@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config/api'
+import { invalidate } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
 
 function pathnameOf(path: string): string {
@@ -55,6 +56,16 @@ async function redirectToLogin(): Promise<void> {
   void router.push({ name: 'login', query: { returnTo } })
 }
 
+/** A successful write makes the cached reads it can change stale. */
+function invalidateAfterWrite(path: string, method: string | undefined): void {
+  if (!method || method === 'GET' || method === 'HEAD') return
+  const p = pathnameOf(path)
+  if (p.startsWith('/api/links')) invalidate('links:')
+  else if (p.startsWith('/api/events')) { invalidate('events:'); invalidate('orgs:summary:') }
+  else if (p.startsWith('/api/dp')) { invalidate('dp:'); invalidate('orgs:summary:') }
+  else if (p.startsWith('/api/orgs')) invalidate('orgs:')
+}
+
 async function send(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = applyHeaders(init)
   const res = await fetch(resolveUrl(path), {
@@ -65,6 +76,7 @@ async function send(path: string, init: RequestInit = {}): Promise<Response> {
   if (res.status === 401 && !isSessionProbe(path)) {
     await redirectToLogin()
   }
+  if (res.ok) invalidateAfterWrite(path, init.method?.toUpperCase())
   return res
 }
 

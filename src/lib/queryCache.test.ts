@@ -106,3 +106,20 @@ describe('useQuery', () => {
     expect((q.error.value as Error).message).toBe('boom')
   })
 })
+
+describe('stale responses', () => {
+  it('keeps newer data when an older request resolves after invalidate', async () => {
+    const resolvers: Array<(v: string) => void> = []
+    const fetcher = vi.fn(() => new Promise<string>((r) => resolvers.push(r)))
+    const q = inScope(() => useQuery('links:race', fetcher))
+    invalidate('links:')
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    resolvers[1]('new')
+    await vi.advanceTimersByTimeAsync(0)
+    resolvers[0]('old')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(q.data.value).toBe('new')
+    const again = inScope(() => useQuery('links:race', fetcher))
+    expect(again.data.value).toBe('new')
+  })
+})

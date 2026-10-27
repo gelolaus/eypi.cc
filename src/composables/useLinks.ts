@@ -1,6 +1,6 @@
 import { ref, type InjectionKey } from 'vue'
 import { ApiError, api } from '@/lib/api'
-import { fetchQuery, invalidate, peekQuery } from '@/lib/queryCache'
+import { CacheClearedError, fetchQuery, invalidate, peekQuery } from '@/lib/queryCache'
 import type { LinkQrConfig } from '@shared/linkQrConfig'
 
 export type LinkSort = 'new' | 'old' | 'clicks'
@@ -94,6 +94,13 @@ export function useLinks() {
 
   let listGeneration = 0
 
+  /** After a mutation: drop cached lists and ignore any list load that began before it. */
+  function mutated() {
+    invalidate('links:')
+    listGeneration += 1
+    loading.value = false
+  }
+
   async function load(cursor?: string | null) {
     const generation = ++listGeneration
     const path = listPath(cursor)
@@ -114,6 +121,7 @@ export function useLinks() {
     } catch (err) {
       if (generation !== listGeneration) return
       if (err instanceof ApiError && err.status === 401) return
+      if (err instanceof CacheClearedError) return
       error.value = err instanceof Error ? err.message : 'Could not load links.'
     } finally {
       if (generation === listGeneration) loading.value = false
@@ -129,7 +137,7 @@ export function useLinks() {
     try {
       const created = await api.post<LinkDetail>('/api/links', body)
       quotaMessage.value = ''
-      invalidate('links:')
+      mutated()
       items.value = [created, ...items.value.filter((item) => item.id !== created.id)]
       return created
     } catch (err) {
@@ -142,20 +150,20 @@ export function useLinks() {
 
   async function update(id: string, body: LinkWrite): Promise<LinkDetail> {
     const updated = await api.patch<LinkDetail>(`/api/links/${id}`, body)
-    invalidate('links:')
+    mutated()
     replace(updated)
     return updated
   }
 
   async function remove(id: string): Promise<void> {
     await api.del(`/api/links/${id}`)
-    invalidate('links:')
+    mutated()
     items.value = items.value.filter((item) => item.id !== id)
   }
 
   async function bulk(action: 'delete' | 'disable' | 'enable', ids: string[]): Promise<void> {
     await api.post('/api/links/bulk', { action, ids })
-    invalidate('links:')
+    mutated()
     if (action === 'delete') {
       const drop = new Set(ids)
       items.value = items.value.filter((item) => !drop.has(item.id))
