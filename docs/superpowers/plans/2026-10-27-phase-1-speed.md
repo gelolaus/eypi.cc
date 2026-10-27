@@ -152,11 +152,11 @@
 **Interfaces:**
 - Consumes: Task 4 `LineChart`, `BarList`, `StatTile`.
 
-- [ ] **Step 1: Failing test:** `AnalyticsPanel renders timeline with LineChart and top lists with BarList` and `no chart.js import` (grep the module source in the test).
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement**; `npm uninstall chart.js vue-chartjs`.
-- [ ] **Step 4: Run** tests and `npm run build` → the AnalyticsPanel chunk is ≤ 15 KB gz.
-- [ ] **Step 5: Commit** `perf(links): draw analytics with svg instead of chart.js`.
+- [x] **Step 1: Failing test:** `AnalyticsPanel renders timeline with LineChart and top lists with BarList` and `no chart.js import` (grep the module source in the test).
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement**; `npm uninstall chart.js vue-chartjs`.
+- [x] **Step 4: Run** tests and `npm run build` → the AnalyticsPanel chunk is ≤ 15 KB gz.
+- [x] **Step 5: Commit** `perf(links): draw analytics with svg instead of chart.js`.
 
 ### Task 9: Bundle budgets
 

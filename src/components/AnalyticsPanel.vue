@@ -69,48 +69,21 @@
         >
           <p>Busiest hour: {{ peakLabel }}</p>
         </Card>
-        <dl class="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div>
-            <dt class="text-sm text-muted-foreground">
-              Total
-            </dt>
-            <dd class="font-mono text-2xl text-foreground">
-              {{ analytics.total }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-sm text-muted-foreground">
-              Unique visitors
-            </dt>
-            <dd class="font-mono text-2xl text-foreground">
-              {{ analytics.unique }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-sm text-muted-foreground">
-              QR scans
-            </dt>
-            <dd class="font-mono text-2xl text-foreground">
-              {{ analytics.qr }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-sm text-muted-foreground">
-              Direct
-            </dt>
-            <dd class="font-mono text-2xl text-foreground">
-              {{ analytics.direct }}
-            </dd>
-          </div>
-        </dl>
+        <div class="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatTile
+            v-for="tile in tiles"
+            :key="tile.label"
+            :label="tile.label"
+            :value="tile.value"
+          />
+        </div>
         <h3 class="mb-4 text-sm font-semibold text-muted-foreground">
           Clicks
         </h3>
-        <div class="mb-8 h-48">
-          <Line
-            v-if="chartData"
-            :data="chartData"
-            :options="chartOptions"
+        <div class="mb-8">
+          <LineChart
+            :series="timelineSeries"
+            y-label="Clicks"
           />
         </div>
         <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -118,19 +91,10 @@
             <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top operating systems
             </h3>
-            <ul
-              v-if="analytics.topOs.length"
-              class="space-y-2"
-            >
-              <li
-                v-for="item in analytics.topOs"
-                :key="item.os"
-                class="flex justify-between gap-2 font-mono text-base text-foreground"
-              >
-                <span class="min-w-0 break-words">{{ item.os }}</span>
-                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
-              </li>
-            </ul>
+            <BarList
+              v-if="topOsItems.length"
+              :items="topOsItems"
+            />
             <p
               v-else
               class="font-mono text-base text-muted-foreground"
@@ -142,19 +106,10 @@
             <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top countries
             </h3>
-            <ul
-              v-if="analytics.topCountries.length"
-              class="space-y-2"
-            >
-              <li
-                v-for="item in analytics.topCountries"
-                :key="item.country"
-                class="flex justify-between gap-2 font-mono text-base text-foreground"
-              >
-                <span class="min-w-0 break-words">{{ item.country }}</span>
-                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
-              </li>
-            </ul>
+            <BarList
+              v-if="topCountryItems.length"
+              :items="topCountryItems"
+            />
             <p
               v-else
               class="font-mono text-base text-muted-foreground"
@@ -166,19 +121,10 @@
             <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
               Top referrers
             </h3>
-            <ul
-              v-if="analytics.topReferrers.length"
-              class="space-y-2"
-            >
-              <li
-                v-for="item in analytics.topReferrers"
-                :key="item.referrer"
-                class="flex justify-between gap-2 font-mono text-base text-foreground"
-              >
-                <span class="min-w-0 break-words">{{ item.referrer }}</span>
-                <span class="shrink-0 text-muted-foreground">{{ item.count }}</span>
-              </li>
-            </ul>
+            <BarList
+              v-if="topReferrerItems.length"
+              :items="topReferrerItems"
+            />
             <p
               v-else
               class="font-mono text-base text-muted-foreground"
@@ -216,25 +162,14 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-} from 'chart.js'
-import { Line } from 'vue-chartjs'
 import { X } from 'lucide-vue-next'
+import BarList from '@/components/charts/BarList.vue'
+import LineChart from '@/components/charts/LineChart.vue'
+import StatTile from '@/components/charts/StatTile.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useFocusTrap } from '@/composables/useFocusTrap'
-
-ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
 type AnalyticsPayload = {
   total: number
@@ -278,62 +213,24 @@ const peakLabel = computed(() => {
   return `${hour12}:00 ${period}`
 })
 
-/** Fallbacks used only when the design tokens cannot be read (tests, SSR). */
-const CHART_FALLBACKS = {
-  line:'oklch(0.38 0.12 270)',
-  tick:'oklch(0.48 0 0)',
-  grid:'oklch(0.91 0 0)',
-}
-
-function readToken(name: string, fallback: string): string {
-  if (typeof document === 'undefined') return fallback
-  try {
-    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-    return value || fallback
-  } catch {
-    return fallback
-  }
-}
-
-const chartColors = computed(() => {
-  // Re-read when the panel opens so the tokens come from the live document.
-  void props.isOpen
-  return {
-    line: readToken('--chart-1', CHART_FALLBACKS.line),
-    tick: readToken('--muted-foreground', CHART_FALLBACKS.tick),
-    grid: readToken('--border', CHART_FALLBACKS.grid),
-  }
+const tiles = computed(() => {
+  const data = analytics.value
+  if (!data) return []
+  return [
+    { label: 'Total', value: String(data.total) },
+    { label: 'Unique visitors', value: String(data.unique) },
+    { label: 'QR scans', value: String(data.qr) },
+    { label: 'Direct', value: String(data.direct) },
+  ]
 })
 
-const chartData = computed(() => {
-  const timeline = analytics.value?.timeline
-  if (!timeline) return null
-  const { line } = chartColors.value
-  return {
-    labels: timeline.map((point) => point.day),
-    datasets: [{
-      label: 'Clicks',
-      data: timeline.map((point) => point.clicks),
-      borderColor: line,
-      backgroundColor: `color-mix(in srgb, ${line} 20%, transparent)`,
-      fill: true,
-      tension: 0.3,
-    }],
-  }
-})
-
-const chartOptions = computed(() => {
-  const { tick, grid } = chartColors.value
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 8, color: tick } },
-      y: { beginAtZero: true, grid: { color: grid }, ticks: { color: tick } },
-    },
-  }
-})
+const timelineSeries = computed(() => [{
+  label: 'Clicks',
+  points: (analytics.value?.timeline ?? []).map((point) => ({ x: point.day, y: point.clicks })),
+}])
+const topOsItems = computed(() => (analytics.value?.topOs ?? []).map((i) => ({ label: i.os, value: i.count })))
+const topCountryItems = computed(() => (analytics.value?.topCountries ?? []).map((i) => ({ label: i.country, value: i.count })))
+const topReferrerItems = computed(() => (analytics.value?.topReferrers ?? []).map((i) => ({ label: i.referrer, value: i.count })))
 
 let request = 0
 
