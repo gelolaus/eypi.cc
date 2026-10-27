@@ -16,7 +16,7 @@ const props = withDefaults(
   { size: 'md', markOnly: false },
 )
 
-const markSrc = '/favicon.svg'
+const markSrc = '/eypi-mark.png'
 const s = computed(() => sizes[props.size])
 const rowClass = computed(() => cn('inline-flex items-center', s.value.row))
 </script>

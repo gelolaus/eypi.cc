@@ -82,16 +82,16 @@ Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and
 | Current user, logout | `backend/src/routes/me.ts` |
 | Account (export, sessions, delete) | `backend/src/routes/account.ts` |
 | Legal consent | `backend/src/routes/legal.ts`, `middleware/requireConsent.ts` |
-| Links + link analytics | `backend/src/routes/links.ts` |
+| Links + link analytics (`GET /api/links/summary` for the dashboard) | `backend/src/routes/links.ts` |
 | Link reports (public) | `backend/src/routes/reports.ts` |
-| Orgs, members, invites, public catalog | `backend/src/routes/orgs.ts` |
+| Orgs, members, invites, public catalog (`GET /api/orgs/:org_id/summary` for the dashboard) | `backend/src/routes/orgs.ts` |
 | Org feature gate / org context | `backend/src/middleware/orgGuard.ts` (`isOrgFeature`), `orgContext.ts` |
 | Events / Tix | `backend/src/routes/events.ts` |
 | Frames / DP | `backend/src/routes/dp.ts` |
 | Forms catalog + templates | `backend/src/routes/forms.ts` |
 | Admin panel API, audit log | `backend/src/routes/admin.ts`, `lib/audit.ts` |
 | Media migration (admin) | `backend/src/routes/adminMigrations.ts` |
-| Platform stats | `backend/src/routes/stats.ts` |
+| Platform stats (public totals: users, orgs, members, links, clicks, events, tickets, check-ins, frames, frame downloads) | `backend/src/routes/stats.ts` |
 | Google Wallet pass | `backend/src/lib/passes/` |
 | Retention cron | `backend/src/jobs/retention.ts` |
 

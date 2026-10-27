@@ -26,7 +26,7 @@ The wantap design language (layout, components, type, motion) in the APC light p
 - The palette is the APC brand on warm neutrals: APC blue (`#35438c`) is the primary and APC gold (`#deac4b`) is the accent. Gold is used for fills and washes (`--accent`, `--chart-2`) and is never text on a light surface or the background of white text.
 - The app is light only. `index.html` declares `color-scheme: light`, the palette lives in the `:root` block of `tokens.css`, and no `dark:` utility exists anywhere (Tailwind's default `dark` variant follows the OS, so one stray `dark:` class would darken part of the UI). There is no dark theme and no theme toggle.
 - Components never hard-code colors. They use the token utilities (`bg-background`, `text-muted-foreground`, `border-border`, `bg-primary/15`). Two allowances exist, both enforced by `design.test.ts`: the Microsoft logo fills in `LoginView.vue` (fixed by Microsoft brand rules) and the camera viewfinder scrim in `ScannerPanel.vue`.
-- Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`).
+- Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`) shows the Eypi mascot (`public/eypi-mark.png`) beside the `eypi.cc` text. Eypi is a baby ram, the APC spirit animal: cream wool, royal blue horns and eyes, honey gold background. The source image is `docs/logo/eypi-icon-source.png`; the favicon, apple-touch icon and manifest icons in `public/` are resized from it.
 
 ## 2. Tokens
 
