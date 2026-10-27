@@ -40,8 +40,8 @@ describe('admin mobile layout', () => {
     const buttons = wrapper.findAll('[data-admin-row] button')
     expect(buttons.length).toBeGreaterThan(0)
     for (const b of buttons) {
-      expect(b.attributes('data-slot')).toBe('button')
-      expect(b.classes().join(' ')).toMatch(/h-(8|9|11|12)/)
+      expect(['button', 'tooltip-trigger']).toContain(b.attributes('data-slot'))
+      expect(b.classes().join(' ')).toMatch(/(h|size)-(8|9|11|12)/)
     }
     expect(wrapper.find('[data-admin-row]').element.closest('.overflow-x-auto')).not.toBeNull()
   })

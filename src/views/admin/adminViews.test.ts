@@ -191,3 +191,24 @@ describe('admin links disable retry', () => {
     expect(wrapper.text()).not.toContain('Disabled')
   })
 })
+
+describe('admin users icon actions', () => {
+  it('renders icon-only actions with accessible names on one line', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      items: [{ id: 'u2', email: 'bo@apc.edu.ph', name: 'Bo', role: 'user', disabled: false, createdAt: '2026-06-30 17:30:00' }],
+      nextCursor: null,
+    }), { headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(AdminUsersView)
+    await flushPromises()
+    const labels = wrapper.findAll('[data-admin-row] button').map((b) => b.attributes('aria-label'))
+    expect(labels).toEqual([
+      'Make bo@apc.edu.ph an admin',
+      'Disable bo@apc.edu.ph',
+      'Force logout for bo@apc.edu.ph',
+      'Delete bo@apc.edu.ph',
+    ])
+    for (const b of wrapper.findAll('[data-admin-row] button')) expect(b.text()).toBe('')
+    expect(wrapper.get('[data-admin-row] button').element.parentElement?.className).toContain('md:flex-nowrap')
+    vi.unstubAllGlobals()
+  })
+})

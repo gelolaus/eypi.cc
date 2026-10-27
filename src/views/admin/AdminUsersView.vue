@@ -69,7 +69,7 @@
             v-for="user in users"
             :key="user.id"
             data-admin-row
-            class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
+            class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:py-2 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
           >
             <div class="min-w-0 md:col-span-4">
               <p class="truncate text-sm font-semibold text-foreground">
@@ -94,55 +94,31 @@
             <div class="font-mono text-xs text-muted-foreground md:col-span-2">
               <span class="md:hidden">Joined </span>{{ formatDate(user.createdAt) }}
             </div>
-            <div class="flex flex-wrap gap-2 md:col-span-2 md:justify-end">
-              <Button
-                v-if="user.role === 'user'"
-                type="button"
-                variant="outline"
-                :disabled="busyId === user.id"
-                :aria-label="`Make ${user.email} an admin`"
-                @click="setRole(user, 'admin')"
-              >
-                Make admin
-              </Button>
-              <Button
-                v-else-if="!isSelf(user)"
-                type="button"
-                variant="outline"
-                :disabled="busyId === user.id"
-                :aria-label="`Make ${user.email} a regular user`"
-                @click="setRole(user, 'user')"
-              >
-                Make user
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                :disabled="busyId === user.id"
-                :aria-label="user.disabled ? `Enable ${user.email}` : `Disable ${user.email}`"
-                @click="toggleDisabled(user)"
-              >
-                {{ user.disabled ? 'Enable' : 'Disable' }}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                :disabled="busyId === user.id"
-                :aria-label="`Force logout for ${user.email}`"
-                @click="forceLogout(user)"
-              >
-                Log out
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                :disabled="busyId === user.id"
-                :aria-label="`Delete ${user.email}`"
-                @click="remove(user)"
-              >
-                Delete
-              </Button>
-            </div>
+            <TooltipProvider>
+              <div class="flex flex-wrap gap-1 md:col-span-2 md:flex-nowrap md:justify-end">
+                <Tooltip
+                  v-for="action in actionsFor(user)"
+                  :key="action.id"
+                >
+                  <TooltipTrigger as-child>
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      :variant="action.destructive ? 'destructive' : 'outline'"
+                      :disabled="busyId === user.id"
+                      :aria-label="action.label"
+                      @click="action.run"
+                    >
+                      <component
+                        :is="action.icon"
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ action.tip }}</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           </div>
         </div>
       </div>
@@ -167,6 +143,8 @@
 <script setup lang="ts">
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { LogOut, ShieldCheck, ShieldOff, Trash2, UserCheck, UserX, type LucideIcon } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
 import { formatManilaDate } from '@/lib/manilaTime'
@@ -204,6 +182,32 @@ let requestId = 0
 
 function messageOf(err: unknown, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback
+}
+
+interface UserAction {
+  id: string
+  label: string
+  tip: string
+  icon: LucideIcon
+  destructive?: boolean
+  run: () => void
+}
+
+function actionsFor(user: AdminUser): UserAction[] {
+  const list: UserAction[] = []
+  if (user.role === 'user') {
+    list.push({ id: 'role', label: `Make ${user.email} an admin`, tip: 'Make admin', icon: ShieldCheck, run: () => setRole(user, 'admin') })
+  } else if (!isSelf(user)) {
+    list.push({ id: 'role', label: `Make ${user.email} a regular user`, tip: 'Make user', icon: ShieldOff, run: () => setRole(user, 'user') })
+  }
+  list.push(
+    user.disabled
+      ? { id: 'disabled', label: `Enable ${user.email}`, tip: 'Enable', icon: UserCheck, run: () => void toggleDisabled(user) }
+      : { id: 'disabled', label: `Disable ${user.email}`, tip: 'Disable', icon: UserX, run: () => void toggleDisabled(user) },
+    { id: 'logout', label: `Force logout for ${user.email}`, tip: 'Log out', icon: LogOut, run: () => void forceLogout(user) },
+    { id: 'delete', label: `Delete ${user.email}`, tip: 'Delete', icon: Trash2, destructive: true, run: () => void remove(user) },
+  )
+  return list
 }
 
 function isSelf(user: AdminUser): boolean {
