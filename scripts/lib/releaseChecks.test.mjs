@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkGitState, checkFrontendBundle, checkBundleBudgets, isCiEnvironment } from './releaseChecks.mjs'
+import { checkGitState, checkFrontendBundle, checkBundleBudgets, checkServiceWorker, isCiEnvironment } from './releaseChecks.mjs'
 
 describe('checkFrontendBundle', () => {
   it('flags a bundle built against localhost', () => {
@@ -91,5 +91,17 @@ describe('checkBundleBudgets', () => {
   it('skips the guest-ticket route while it does not exist', () => {
     set({})
     expect(checkBundleBudgets(manifest(), gz)).toEqual([])
+  })
+})
+
+describe('checkServiceWorker', () => {
+  it('flags the dev hash marker', () => {
+    expect(checkServiceWorker("const BUILD = /*build*/ { hash: 'dev', precache: [] } /*end-build*/")).toHaveLength(1)
+  })
+  it('flags a missing file', () => {
+    expect(checkServiceWorker(null)).toHaveLength(1)
+  })
+  it('passes an injected build', () => {
+    expect(checkServiceWorker('const BUILD = /*build*/ { hash: "a1b2c3d4e5", precache: ["/assets/a.js"] } /*end-build*/')).toEqual([])
   })
 })

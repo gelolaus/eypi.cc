@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
-import { checkBundleBudgets, checkFrontendBundle, checkGitState, isCiEnvironment } from './lib/releaseChecks.mjs'
+import { checkBundleBudgets, checkFrontendBundle, checkGitState, checkServiceWorker, isCiEnvironment } from './lib/releaseChecks.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const backendDir = path.join(root, 'backend')
@@ -117,6 +117,11 @@ const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
 const budgetProblems = checkBundleBudgets(manifest, (file) => gzipSync(readFileSync(path.join(clientDir, file))).length)
 if (budgetProblems.length > 0) {
   fail(5, 'frontend bundle budgets', budgetProblems.join('\n'))
+}
+const swPath = path.join(clientDir, 'sw.js')
+const swProblems = checkServiceWorker(existsSync(swPath) ? readFileSync(swPath, 'utf8') : null)
+if (swProblems.length > 0) {
+  fail(5, 'service worker', swProblems.join('\n'))
 }
 ok(5, 'frontend bundle')
 

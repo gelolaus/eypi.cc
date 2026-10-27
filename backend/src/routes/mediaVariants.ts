@@ -32,7 +32,7 @@ const MAX_VARIANTS = 4
 // Three 2 MB variants as base64 plus the JSON wrapper. Anything larger is refused unread.
 const MAX_BODY_BYTES = 9 * 1024 * 1024
 // Mirrors src/lib/images/profiles.ts (the browser maker). Keep the two in step.
-const PROFILE_WIDTHS: Record<KeyKind, readonly number[]> = {
+export const PROFILE_WIDTHS: Record<KeyKind, readonly number[]> = {
   orgLogo: [96, 192, 384],
   banner: [640, 1280, 1920],
   frame: [256, 512, 1024],
@@ -95,10 +95,10 @@ type Row = { orgId: string; column: 'logo_meta' | 'banner_meta' | 'image_meta'; 
 async function findRow(client: Client, key: string, target: KeyTarget): Promise<Row | null> {
   if (target.kind === 'frame') {
     const res = await client.execute({
-      sql: `SELECT f.id AS id, f.image_meta AS meta, c.org_id AS org_id
+      sql: `SELECT f.id AS id, f.image_meta AS meta, f.image_url AS stored, c.org_id AS org_id
             FROM dp_frames f JOIN dp_campaigns c ON c.id = f.campaign_id
-            WHERE f.image_url = ? LIMIT 1`,
-      args: [key],
+            WHERE f.image_url IN (?, ?) LIMIT 1`,
+      args: [key, `/media/${key}`],
     })
     const row = res.rows[0]
     if (!row) return null
@@ -109,14 +109,14 @@ async function findRow(client: Client, key: string, target: KeyTarget): Promise<
       id: String(row.id),
       keyColumn: 'image_url',
       meta: parseImageMeta(row.meta),
-      rowKey: key,
+      rowKey: String(row.stored),
     }
   }
   const url = target.column === 'logo' ? 'logo_url' : 'banner_url'
   const metaColumn = target.column === 'logo' ? 'logo_meta' : 'banner_meta'
   const res = await client.execute({
-    sql: `SELECT id, ${metaColumn} AS meta FROM organizations WHERE ${url} = ? LIMIT 1`,
-    args: [key],
+    sql: `SELECT id, ${metaColumn} AS meta, ${url} AS stored FROM organizations WHERE ${url} IN (?, ?) LIMIT 1`,
+    args: [key, `/media/${key}`],
   })
   const row = res.rows[0]
   if (!row) return null
@@ -127,7 +127,7 @@ async function findRow(client: Client, key: string, target: KeyTarget): Promise<
     id: String(row.id),
     keyColumn: url,
     meta: parseImageMeta(row.meta),
-    rowKey: key,
+    rowKey: String(row.stored),
   }
 }
 
@@ -277,7 +277,7 @@ app.put('/api/media/variants', async (c) => {
       }
       const updated = await client.execute({
         sql: `UPDATE ${row.table} SET ${row.column} = ? WHERE id = ? AND ${row.keyColumn} = ?`,
-        args: [JSON.stringify(meta), row.id, key],
+        args: [JSON.stringify(meta), row.id, row.rowKey],
       })
       if (Number(updated.rowsAffected) !== 1) throw new ApiError(404, 'not_found', 'Image not found.')
     } catch (err) {

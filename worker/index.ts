@@ -231,6 +231,9 @@ const SPA_EXACT_PATHS = new Set([
   '/forms',
   '/orgs',
   '/settings',
+  '/account',
+  '/acceptable-use',
+  '/consent',
   '/privacy',
   '/terms',
   '/contact',
@@ -247,9 +250,12 @@ const SPA_EXACT_PATHS = new Set([
   '/settings/org-management',
   '/settings/org-management/new',
   '/admin',
+  '/admin/overview',
   '/admin/users',
   '/admin/links',
   '/admin/reports',
+  '/admin/speed',
+  '/admin/maintenance',
   '/admin/audit',
   '/admin/orgs',
   '/admin/orgs/new',
@@ -274,7 +280,7 @@ function normalizePath(pathname: string): string {
   return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
 }
 
-function isSpaRoute(pathname: string): boolean {
+export function isSpaRoute(pathname: string): boolean {
   const path = normalizePath(pathname)
   if (SPA_EXACT_PATHS.has(path)) return true
   return /^\/frames\/[^/]+$/.test(path)

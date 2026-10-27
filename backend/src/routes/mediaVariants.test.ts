@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createTestApp, type TestUser } from '../test/createTestApp'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { parseImageMeta, variantKey } from '../lib/media'
+import { PROFILE_WIDTHS } from './mediaVariants'
 
 const ORIGIN = 'https://eypi.cc'
 
@@ -465,5 +468,34 @@ describe('parseImageMeta bounds', () => {
     expect(parseImageMeta(JSON.stringify({ ...ok, widths: [5000] }))).toBeNull()
     expect(parseImageMeta(JSON.stringify({ ...ok, ph: 'javascript:alert(1)' }))).toBeNull()
     expect(parseImageMeta(JSON.stringify({ ...ok, ph: 'data:image/png;base64,AAAA' }))).not.toBeNull()
+  })
+})
+
+describe('legacy /media/-prefixed rows', () => {
+  it('records meta on org and frame rows stored with the prefix', async () => {
+    const app = await setup(admin)
+    await app.client.execute({ sql: 'UPDATE organizations SET logo_url = ? WHERE id = ?', args: [`/media/${LOGO_KEY}`, 'alpha'] })
+    await app.client.execute({ sql: 'UPDATE dp_frames SET image_url = ? WHERE id = ?', args: [`/media/${FRAME_KEY}`, 'frame-1'] })
+
+    expect((await put(app, validBody(LOGO_KEY))).status).toBe(200)
+    expect((await put(app, validBody(`/media/${LOGO_KEY}`))).status).toBe(200)
+    expect((await put(app, validBody(FRAME_KEY, [256]))).status).toBe(200)
+
+    const org = await app.client.execute("SELECT logo_url, logo_meta FROM organizations WHERE id = 'alpha'")
+    expect(org.rows[0].logo_url).toBe(`/media/${LOGO_KEY}`)
+    expect(JSON.parse(String(org.rows[0].logo_meta)).widths).toEqual([96, 192])
+    const frame = await app.client.execute("SELECT image_meta FROM dp_frames WHERE id = 'frame-1'")
+    expect(JSON.parse(String(frame.rows[0].image_meta)).widths).toEqual([256])
+  })
+})
+
+describe('image profiles', () => {
+  it('match the browser maker in src/lib/images/profiles.ts', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/lib/images/profiles.ts'), 'utf8')
+    for (const [kind, widths] of Object.entries(PROFILE_WIDTHS)) {
+      const match = new RegExp(`${kind}:\\s*\\[([^\\]]+)\\]`).exec(source)
+      expect(match, kind).not.toBeNull()
+      expect(match![1].split(',').map((n) => Number(n.trim()))).toEqual([...widths])
+    }
   })
 })

@@ -36,6 +36,15 @@ export function checkFrontendBundle(files) {
   return problems
 }
 
+/** The built sw.js must carry a real build hash, not the dev placeholder, or old shells never expire. */
+export function checkServiceWorker(text) {
+  if (text === null || text === undefined) return ['dist/client/sw.js is missing']
+  if (/hash:\s*['"]dev['"]/.test(text)) {
+    return ['dist/client/sw.js still has the dev build hash (the precache step did not run)']
+  }
+  return []
+}
+
 const KB = 1000
 const ENTRY_JS_BUDGET = 70 * KB
 const ENTRY_CSS_BUDGET = 22 * KB

@@ -56,7 +56,7 @@ Use these terms. Prefer them over invented synonyms.
 | **media** | Org logos and banners, QR logos and frames, in the R2 bucket `eypi-media` (binding `MEDIA`). |
 | **RUM** | Real-user monitoring. The SPA sends Web Vitals batches to `POST /api/rum` (`rum_samples`); hourly rollups write p75 per day, route, metric and device to `rum_daily`. Read in Admin → Speed. |
 | **image variants** | Resized copies of an uploaded image in R2, written by the browser (`PUT /api/media/variants`) and listed in the stored image metadata (`ImageMeta`). `AppImage` builds the `srcset`. Admin → Maintenance backfills existing media. |
-| **query cache** | In-memory cache of GET responses in `src/lib/queryCache.ts`. Writes through `src/lib/api.ts` invalidate it centrally; logout and org switch clear it. |
+| **query cache** | In-memory cache of GET responses in `src/lib/queryCache.ts`. Writes through `src/lib/api.ts` invalidate it centrally, but only under the `/api/links`, `/api/events`, `/api/dp` and `/api/orgs` prefixes (the media variants PUT is not covered); logout and org switch clear it. |
 | **public shell / app shell** | `PublicShell` renders public pages with no app chrome. `AppShell` (side rail, tab bar) is a lazy chunk loaded only for signed-in routes. |
 | **service worker** | `public/sw.js` caches the app shell, media and the ticket list for offline use. Kill switch: `public/sw-kill.js` (see `docs/operations.md`). |
 | **form** | Client-side document generator catalog item (DOCX fill). Not an HTML form builder. Templates are private objects in R2. |
@@ -147,7 +147,7 @@ Org gate: backend `isOrgFeature` + frontend `requiresOrg` / `useOrgMembership`.
 | Forms | Backend serves template bytes from R2 (`templates/`); **generation is client-only** | No server-side document storage |
 | Media | Images in R2 `eypi-media`, served through a cached same-origin route | Old data URLs migrated by the admin media endpoint |
 | Public shell ↔ app shell | Public routes render in `PublicShell`; signed-in routes lazy-load `AppShell` (`loadAppShell.ts`). Keep app-only code out of the entry chunk | Gzip budgets (entry JS ≤ 70,000 B, CSS ≤ 22,000 B, decimal kB) fail `npm run release:check` |
-| Query cache ↔ writes | Every non-GET through `src/lib/api.ts` invalidates cached GETs; `v-prefetch` warms a route's data on hover | A new write path that bypasses `api.ts` leaves stale reads |
+| Query cache ↔ writes | Every non-GET through `src/lib/api.ts` under `/api/links`, `/api/events`, `/api/dp` or `/api/orgs` invalidates the matching cached GETs (other paths, such as the media variants PUT, do not); `v-prefetch` warms a route's data on hover | A new write path that bypasses `api.ts` leaves stale reads |
 | Media delivery | Worker caches `/media/*` at the edge for 24 h; browsers get `immutable`. Images use variants through `AppImage` | Never reuse a media key for new content |
 | Public API reads | `withEdgeCache` caches public GETs for 30 s; the API Worker uses smart placement near Turso | CORS headers stay out of the cached copy |
 | Service worker | Network-first HTML, cached assets and media, ticket list kept for offline. `SPA_SEGMENTS` in `public/sw-strategies.js` must match `src/router/index.ts` (tested in `worker/sw.test.ts`) | Cache names are versioned (`eypi-shell-<hash>`, `eypi-media-v1`, `eypi-tickets-v1`) |

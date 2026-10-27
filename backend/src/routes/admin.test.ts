@@ -728,6 +728,15 @@ describe('admin speed route', () => {
     expect(await res.json()).toMatchObject({ error: { code: 'invalid' } })
   })
 
+  it('accepts days=28 and defaults to 7 when days is missing', async () => {
+    const { request } = await createTestApp({
+      user: admin,
+      seed: (client) => insertUser(client, admin),
+    })
+    expect((await request('/api/admin/speed?days=28')).status).toBe(200)
+    expect((await request('/api/admin/speed')).status).toBe(200)
+  })
+
   it('returns thresholds, per-route rows and a sample-weighted trend', async () => {
     const today = new Date().toISOString().slice(0, 10)
     const old = new Date(Date.now() - 20 * 86_400_000).toISOString().slice(0, 10)

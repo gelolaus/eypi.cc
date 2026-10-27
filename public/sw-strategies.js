@@ -82,7 +82,11 @@
   /** Runs a cache write after the response is returned, kept alive by waitUntil when the worker gave one. */
   function defer(deps, task) {
     var settled = task.catch(function () {})
-    if (deps.waitUntil) deps.waitUntil(settled)
+    try {
+      if (deps.waitUntil) deps.waitUntil(settled)
+    } catch {
+      // waitUntil throws once the event has finished; the write still runs, just unprotected.
+    }
   }
 
   async function trimCache(cache, limit) {

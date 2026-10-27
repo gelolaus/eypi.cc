@@ -225,6 +225,14 @@ describe('assets', () => {
     expect(await (await caches.open('eypi-shell-test')).match('/assets/b.js')).toBeDefined()
   })
 
+  it('still returns the response when waitUntil throws', async () => {
+    const caches = new FakeCaches()
+    const d = deps(async () => new Response('js', { headers: { 'Content-Type': 'text/javascript' } }), caches)
+    d.waitUntil = () => { throw new Error('event already finished') }
+    const res = await sw.assetCacheFirst(req('https://eypi.cc/assets/c.js'), d)
+    expect(await res.text()).toBe('js')
+  })
+
   it('does not cache the spa fallback html served for a missing chunk', async () => {
     const caches = new FakeCaches()
     const res = await sw.assetCacheFirst(req('https://eypi.cc/assets/gone.js'), deps(async () => html(), caches))
