@@ -45,11 +45,11 @@
 - Produces: `RUM_METRICS = ['LCP','INP','CLS','FCP','TTFB'] as const`, `RUM_ROUTES: ReadonlySet<string>` (built from router route names, kept in `shared/rumRoutes.ts` so client and server share it), `parseRumBatch(body: unknown): RumSample[] | null`, type `RumSample = { route: string; metric: RumMetric; value: number; rating: 'good'|'needs-improvement'|'poor'; device: 'mobile'|'tablet'|'desktop'; connection: string | null; navType: string | null }`.
 - Produces: `POST /api/rum` → 204.
 
-- [ ] **Step 1: Write failing tests.** `rum.test.ts`: `accepts a valid batch` (2 samples → 2 parsed); `rejects malformed batches` (unknown route, `value: NaN`, `value: -1`, `value: 1e9` for LCP, 11 samples, non-array → `null`). Route test: `stores samples and returns 204` (count rows = 2, `day` = UTC date); `returns 400 on malformed`; `rate limits at 60 per minute per IP` (61st → 429); body sent as `text/plain` is accepted.
-- [ ] **Step 2: Run** `npx vitest run backend/src/lib/rum.test.ts backend/src/routes/rum.test.ts` → FAIL (module not found).
-- [ ] **Step 3: Implement.** Migration as above. `parseRumBatch` caps values: CLS ≤ 10, others ≤ 120000 ms. Route reads `await c.req.text()` then `JSON.parse` (sendBeacon sends text/plain), rate-limits with `checkRateLimit(c.env.RATE_LIMIT_KV, { bucket: 'rum', subject: <ip hash>, limit: 60, windowSec: 60 })`, inserts in one `batch`. No session middleware on this route.
-- [ ] **Step 4: Run** the same command → PASS; then `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(perf): add real-user speed sample ingest`.
+- [x] **Step 1: Write failing tests.** `rum.test.ts`: `accepts a valid batch` (2 samples → 2 parsed); `rejects malformed batches` (unknown route, `value: NaN`, `value: -1`, `value: 1e9` for LCP, 11 samples, non-array → `null`). Route test: `stores samples and returns 204` (count rows = 2, `day` = UTC date); `returns 400 on malformed`; `rate limits at 60 per minute per IP` (61st → 429); body sent as `text/plain` is accepted.
+- [x] **Step 2: Run** `npx vitest run backend/src/lib/rum.test.ts backend/src/routes/rum.test.ts` → FAIL (module not found).
+- [x] **Step 3: Implement.** Migration as above. `parseRumBatch` caps values: CLS ≤ 10, others ≤ 120000 ms. Route reads `await c.req.text()` then `JSON.parse` (sendBeacon sends text/plain), rate-limits with `checkRateLimit(c.env.RATE_LIMIT_KV, { bucket: 'rum', subject: <ip hash>, limit: 60, windowSec: 60 })`, inserts in one `batch`. No session middleware on this route.
+- [x] **Step 4: Run** the same command → PASS; then `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(perf): add real-user speed sample ingest`.
 
 ### Task 2: RUM client
 

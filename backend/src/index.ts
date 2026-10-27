@@ -15,6 +15,7 @@ import linkRoutes from './routes/links'
 import accountRoutes from './routes/account'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
+import rumRoutes from './routes/rum'
 import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
 import orgsRoutes from './routes/orgs'
@@ -76,6 +77,7 @@ app.route('/', accountRoutes)
 app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)
+app.route('/', rumRoutes)
 app.route('/', eventRoutes)
 app.route('/', dpRoutes)
 app.route('/api/orgs', orgsRoutes)
