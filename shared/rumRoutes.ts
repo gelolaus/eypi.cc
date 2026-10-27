@@ -5,7 +5,7 @@ export const RUM_ROUTE_NAMES = [
   'dp-campaigns', 'dp-new', 'dp-edit', 'dp-public',
   'events', 'event-new', 'event-select', 'event-manage', 'ticket-lookup',
   'orgs-modify-index', 'orgs-modify', 'org-catalog', 'org-profile', 'account',
-  'admin-overview', 'admin-users', 'admin-links', 'admin-reports', 'admin-audit',
+  'admin-overview', 'admin-users', 'admin-links', 'admin-reports', 'admin-audit', 'admin-speed',
   'admin-orgs', 'admin-orgs-new', 'admin-orgs-edit',
   'privacy', 'terms', 'acceptable-use', 'consent', 'contact',
   'unlock', 'expired', 'report', 'redirect', 'not-found',

@@ -107,11 +107,11 @@
 - Consumes: `rum_daily`, Task 4 charts.
 - Produces: `GET /api/admin/speed?days=7|28` → `{ thresholds: { LCP: [2500, 4000], INP: [200, 500], CLS: [0.1, 0.25], FCP: [1800, 3000], TTFB: [800, 1800] }, rows: { route, metric, device, p75, samples }[], trend: { metric, day, p75 }[] }` (p75 across routes weighted by samples).
 
-- [ ] **Step 1: Failing tests:** authz (anonymous 401, user 403, admin 200); `days=99` → 400; view renders one tile per metric and marks values above the "good" threshold with text "Needs work".
-- [ ] **Step 2: Run** `npx vitest run backend/src/routes/admin.test.ts src/views/admin/AdminSpeedView.test.ts` → FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(admin): show real-user speed on an admin page`.
+- [x] **Step 1: Failing tests:** authz (anonymous 401, user 403, admin 200); `days=99` → 400; view renders one tile per metric and marks values above the "good" threshold with text "Needs work".
+- [x] **Step 2: Run** `npx vitest run backend/src/routes/admin.test.ts src/views/admin/AdminSpeedView.test.ts` → FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(admin): show real-user speed on an admin page`.
 
 ### Task 6: Stop blocking the first paint
 

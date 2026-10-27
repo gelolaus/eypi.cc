@@ -126,6 +126,7 @@ describe('admin routes', () => {
       { path: '/api/admin/reports?status=open', init: { method: 'GET' } },
       { path: '/api/admin/reports/report-1/resolve', init: json('POST', { action: 'dismiss' }) },
       { path: '/api/admin/audit', init: { method: 'GET' } },
+      { path: '/api/admin/speed?days=7', init: { method: 'GET' } },
     ]
 
     for (const call of calls) {
@@ -706,5 +707,52 @@ describe('admin routes', () => {
     const body = await res.json() as { items: { id: string; actorEmail: string | null }[] }
     expect(body.items).toHaveLength(1)
     expect(body.items[0]).toMatchObject({ id: 'audit-1', actorEmail: null })
+  })
+})
+
+describe('admin speed route', () => {
+  it('returns 401 when anonymous', async () => {
+    const { request } = await createTestApp()
+    const res = await request('/api/admin/speed?days=7')
+    expect(res.status).toBe(401)
+  })
+
+  it('rejects unsupported day windows', async () => {
+    const { request } = await createTestApp({
+      user: admin,
+      seed: (client) => insertUser(client, admin),
+    })
+    const res = await request('/api/admin/speed?days=99')
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: { code: 'invalid' } })
+  })
+
+  it('returns thresholds, per-route rows and a sample-weighted trend', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    const old = new Date(Date.now() - 20 * 86_400_000).toISOString().slice(0, 10)
+    const { request } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, admin)
+        const ins = (day: string, route: string, p75: number, samples: number) =>
+          client.execute({
+            sql: 'INSERT INTO rum_daily (day, route, metric, device, p75, samples) VALUES (?, ?, ?, ?, ?, ?)',
+            args: [day, route, 'LCP', 'mobile', p75, samples],
+          })
+        await ins(today, '/a', 1000, 1)
+        await ins(today, '/b', 3000, 3)
+        await ins(old, '/a', 9999, 5)
+      },
+    })
+    const res = await request('/api/admin/speed?days=7')
+    expect(res.status).toBe(200)
+    const body = await res.json() as {
+      thresholds: Record<string, number[]>
+      rows: { route: string; metric: string; device: string; p75: number; samples: number }[]
+      trend: { metric: string; day: string; p75: number }[]
+    }
+    expect(body.thresholds.LCP).toEqual([2500, 4000])
+    expect(body.rows.map((r) => r.route).sort()).toEqual(['/a', '/b'])
+    expect(body.trend).toEqual([{ metric: 'LCP', day: today, p75: 2500 }])
   })
 })

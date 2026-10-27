@@ -52,6 +52,7 @@ const tabs: AdminTab[] = [
   { name: 'admin-links', label: 'Links' },
   { name: 'admin-reports', label: 'Reports' },
   { name: 'admin-orgs', label: 'Orgs', prefix: '/admin/orgs' },
+  { name: 'admin-speed', label: 'Speed' },
   { name: 'admin-audit', label: 'Audit log' },
 ]
 
