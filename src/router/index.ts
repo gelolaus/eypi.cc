@@ -421,6 +421,7 @@ router.afterEach((to) => {
   if (!region && document.body) {
     region = document.createElement('div')
     region.id = 'route-announcer'
+    region.className = 'sr-only'
     region.setAttribute('role', 'status')
     region.setAttribute('aria-live', 'polite')
     region.setAttribute('aria-atomic', 'true')
