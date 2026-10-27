@@ -379,6 +379,9 @@ function redirectToConsent(): void {
 
 router.beforeEach(async (to, _from, next) => {
   if (routeNeedsSession(to)) {
+    // This navigation decides consent itself; a queued background redirect
+    // would supersede it and lose the target as returnTo.
+    session.offReady(redirectToConsent)
     await session.load()
   } else if (session.status.value !== 'ready') {
     void session.load()

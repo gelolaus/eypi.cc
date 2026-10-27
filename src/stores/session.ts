@@ -114,6 +114,11 @@ function onReady(cb: () => void): void {
   readyCallbacks.add(cb)
 }
 
+/** Cancels a callback queued with onReady. */
+function offReady(cb: () => void): void {
+  readyCallbacks.delete(cb)
+}
+
 function track(task: Promise<void>): Promise<void> {
   const tracked = task.finally(() => {
     if (inflight === tracked) inflight = null
@@ -158,10 +163,11 @@ const session: {
   needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
   onReady: (cb: () => void) => void
+  offReady: (cb: () => void) => void
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, pendingInviteCount, needsConsent, load, onReady, reload, reset, logout }
+} = { user, status, pendingInviteCount, needsConsent, load, onReady, offReady, reload, reset, logout }
 
 export function useSession() {
   return session

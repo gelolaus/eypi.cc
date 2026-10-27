@@ -104,4 +104,25 @@ describe('first paint guard', () => {
 
     expect(router.currentRoute.value.name).toBe('privacy')
   })
+
+  it('keeps the protected target as returnTo when it races the background load', async () => {
+    const release = pendingMe()
+    const replace = vi.spyOn(router, 'replace')
+
+    await router.push('/frames/x')
+    const navigation = router.push('/links')
+    await settle()
+
+    release(meResponse([{ document: 'privacy', version: '2026-11-01' }]))
+    await navigation
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('consent'))
+    await settle()
+
+    expect(router.currentRoute.value.name).toBe('consent')
+    expect(router.currentRoute.value.query.returnTo).toBe('/links')
+    // Whether the stale background redirect wins depends on microtask order,
+    // so assert it never fires rather than only the end state.
+    expect(replace).not.toHaveBeenCalled()
+    replace.mockRestore()
+  })
 })
