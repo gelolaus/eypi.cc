@@ -217,7 +217,7 @@ describe('frame campaigns', () => {
 
     const response = await request('/api/dp/launch-night')
     expect(response.status).toBe(200)
-    expect(response.headers.get('Cache-Control')).toBe('public, max-age=60')
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store') // signed-in viewers bypass the edge cache
     const body = await response.json() as {
       campaign: {
         id: string

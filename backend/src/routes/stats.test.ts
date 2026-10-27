@@ -37,7 +37,7 @@ describe('GET /api/stats', () => {
 
     const res = await request('/api/stats')
 
-    expect(res.headers.get('Cache-Control')).toBe('public, max-age=300')
+    expect(res.headers.get('Cache-Control')).toBe('public, max-age=30, stale-while-revalidate=300')
     expect(await res.json()).toEqual({
       users: 1, orgs: 1, members: 1, links: 2, clicks: 7, events: 1, tickets: 2, checkIns: 1, frames: 1, frameDownloads: 5,
     })

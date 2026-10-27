@@ -284,11 +284,11 @@
 **Interfaces:**
 - Produces: `withEdgeCache(c: Context, ttlSec: number, handler: () => Promise<Response>): Promise<Response>` — keyed by URL, skips when the request has a session cookie, sets `Cache-Control: public, max-age=30, stale-while-revalidate=300`.
 
-- [ ] **Step 1: Failing tests:** cached handler runs once for two anonymous requests; a request with a session cookie bypasses the cache; header value exact; attendees query test asserts `EXPLAIN QUERY PLAN` for the check_ins subquery uses an index with `event_id` (seed two events, assert results unchanged).
-- [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement**; in the attendees query, add `WHERE event_id = ?` inside the `ROW_NUMBER()` subquery.
-- [ ] **Step 4: Run** `npm test` → PASS; `npx wrangler deploy --dry-run` in `backend/` accepts `placement`.
-- [ ] **Step 5: Commit** `perf(api): place the api near turso and cache public reads`.
+- [x] **Step 1: Failing tests:** cached handler runs once for two anonymous requests; a request with a session cookie bypasses the cache; header value exact; attendees query test asserts `EXPLAIN QUERY PLAN` for the check_ins subquery uses an index with `event_id` (seed two events, assert results unchanged).
+- [x] **Step 2: Run** → FAIL.
+- [x] **Step 3: Implement**; in the attendees query, add `WHERE event_id = ?` inside the `ROW_NUMBER()` subquery.
+- [x] **Step 4: Run** `npm test` → PASS; `npx wrangler deploy --dry-run` in `backend/` accepts `placement`.
+- [x] **Step 5: Commit** `perf(api): place the api near turso and cache public reads`.
 
 ### Task 18: Service worker
 

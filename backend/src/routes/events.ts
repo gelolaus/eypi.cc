@@ -395,10 +395,11 @@ app.get('/api/events/:slug/attendees', async (c) => {
         SELECT attendee_id, action, actioned_at,
                ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
         FROM check_ins
+        WHERE event_id = ?
       ) ci ON ci.attendee_id = a.id AND ci.rn = 1
       WHERE a.event_id = ?
       ORDER BY a.first_name, a.last_name`,
-    args: [event.id],
+    args: [event.id, event.id],
   })
 
   return c.json({ status: 'ok', attendees: result.rows })
@@ -1016,9 +1017,10 @@ app.post('/api/events/:slug/add-guest', async (c) => {
               SELECT attendee_id, action,
                      ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
               FROM check_ins
+              WHERE event_id = ?
             ) ci ON ci.attendee_id = a.id AND ci.rn = 1
             WHERE a.event_id = ? AND (ci.action IS NULL OR ci.action != 'removed')`,
-      args: [event.id],
+      args: [event.id, event.id],
     })
     if (Number(countRes.rows[0]?.cnt ?? 0) >= Number(event.max_attendees)) {
       return c.json({ status: 'error', message: 'This event is at full capacity.' }, 409)

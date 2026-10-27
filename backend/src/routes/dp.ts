@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Client } from '@libsql/client/web'
 import { db, type Bindings } from '../lib/db'
+import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
 import { deleteWithVariants, mediaUrl, parseImageMeta, putImage, type ImageMeta } from '../lib/media'
 import { reportError } from '../lib/reportError'
@@ -612,7 +613,7 @@ app.post('/api/dp/:id/download', async (c) => {
 // Public page payload by slug, including every frame. Declared last so the more
 // specific /:id/* routes above are matched first by segment count (Hono matches
 // on segment count, so order is not strictly required, but this reads clearly).
-app.get('/api/dp/:slug', async (c) => {
+app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   const slug = c.req.param('slug')!
   const client = db(c)
   let result = await client.execute({
@@ -644,9 +645,7 @@ app.get('/api/dp/:slug', async (c) => {
       captionTemplate: row.caption_template,
       frames: await loadFrames(c.env, client, String(row.id)),
     },
-  }, 200, {
-    'Cache-Control': 'public, max-age=60',
   })
-})
+}))
 
 export default app

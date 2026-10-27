@@ -6,6 +6,7 @@ import { isApcEmail, normalizeEmail } from '../../../shared/apcIdentity'
 import { recordAudit } from '../lib/audit'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
+import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
 import { reportError } from '../lib/reportError'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
@@ -329,7 +330,7 @@ async function requireOrgCoordinator(
  * GET /api/orgs/public
  * List organizations opted into the public catalog.
  */
-app.get('/public', async (c) => {
+app.get('/public', (c) => withEdgeCache(c, 30, async () => {
   const database = db(c)
   try {
     const { rows } = await database.execute({
@@ -355,13 +356,13 @@ app.get('/public', async (c) => {
     reportError(c, error, { message: 'Error fetching public org catalog.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
-})
+}))
 
 /**
  * GET /api/orgs/public/:slug
  * Public organization profile with upcoming/past events.
  */
-app.get('/public/:slug', async (c) => {
+app.get('/public/:slug', (c) => withEdgeCache(c, 30, async () => {
   const database = db(c)
   const slug = c.req.param('slug')
 
@@ -416,7 +417,7 @@ app.get('/public/:slug', async (c) => {
     reportError(c, error, { message: 'Error fetching public org profile.' })
     return c.json({ error: 'Internal server error' }, 500)
   }
-})
+}))
 
 // Session required except the public catalog, which is registered above this middleware.
 // requireAuth does not return its next() result, so a consent 403 is returned from here.
