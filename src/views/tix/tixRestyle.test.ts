@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -33,7 +33,6 @@ vi.mock('qr-code-styling', () => ({
 import AttendeeTable from '@/components/tix/AttendeeTable.vue'
 import ClusterBars from '@/components/tix/ClusterBars.vue'
 import ScannerPanel from '@/components/tix/ScannerPanel.vue'
-import TicketLookupView from './TicketLookupView.vue'
 
 import addGuest from '@/components/tix/AddGuestPanel.vue?raw'
 import attendeeTable from '@/components/tix/AttendeeTable.vue?raw'
@@ -49,12 +48,11 @@ import selectionView from './AttendeeSelectionView.vue?raw'
 import detailView from './EventDetailView.vue?raw'
 import eventsView from './EventsView.vue?raw'
 import newEventView from './NewEventView.vue?raw'
-import lookupView from './TicketLookupView.vue?raw'
 import layoutView from './TixManageLayout.vue?raw'
 
 const sources = {
   addGuest, attendeeTable, clusterBars, scannerPanel, clustersStep, confirmStep, criteriaStep,
-  guaranteeStep, mapStep, uploadStep, selectionView, detailView, eventsView, newEventView, lookupView, layoutView,
+  guaranteeStep, mapStep, uploadStep, selectionView, detailView, eventsView, newEventView, layoutView,
 }
 
 const attendee = { id: 'a', first_name: 'Ana', last_name: 'Santos', email: 'a@x.com', status: null, actioned_at: null, cluster_value: null, qr_token: 'qr' }
@@ -87,22 +85,5 @@ describe('tix restyle', () => {
     expect(video.attributes('style')).toBeUndefined()
     const start = w.get('[data-scanner-actions] [data-slot="button"]')
     expect(start.text()).toContain('Enable camera')
-  })
-
-  it('ticket QR sits on a white padded wrapper', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-      status: 'ok',
-      ticket: { firstName: 'Ana', lastName: 'S', email: 'a@x.com', qrToken: 'tok', event: { name: 'E', eventDate: '2026-11-01', eventTime: '09:00', location: 'Hall' } },
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
-    const w = mount(TicketLookupView)
-    await w.get('input[type="text"]').setValue('Ana')
-    await w.findAll('input[type="text"]')[1].setValue('S')
-    await w.get('input[type="email"]').setValue('a@x.com')
-    await w.get('form').trigger('submit')
-    await flushPromises()
-    const wrap = w.get('[data-ticket-qr]')
-    expect(wrap.classes()).toContain('bg-white')
-    expect(wrap.classes().join(' ')).toMatch(/\bp-\d/)
-    vi.unstubAllGlobals()
   })
 })

@@ -146,11 +146,11 @@ const router = createRouter({
       ],
     },
     {
-      // Public attendee ticket lookup — STRICTLY NO auth
-      path: '/tix/:eventId',
-      name: 'ticket-lookup',
-      component: () => import('@/views/tix/TicketLookupView.vue'),
-      meta: { layout: 'public', title: 'Ticket lookup' },
+      // Public event page: readable signed out, registration needs sign-in
+      path: '/tix/:slug',
+      name: 'event-page',
+      component: () => import('@/views/tix/EventPageView.vue'),
+      meta: { layout: 'public', title: 'Event' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────
