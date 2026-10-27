@@ -86,13 +86,18 @@ function isPrivateIpv4(octets: number[]): boolean {
   if (a === 169 && b === 254) return true
   if (a === 0) return true
   if (a === 100 && b >= 64 && b <= 127) return true
+  if (a === 198 && (b === 18 || b === 19)) return true
+  if (a === 192 && b === 0 && octets[2] === 0) return true
+  if (a >= 224) return true
   return false
 }
 
 function isPrivateIpv6(host: string): boolean {
   const h = host.toLowerCase()
-  if (h === '::1') return true
-  if (h.startsWith('fe80:')) return true
+  if (h === '::1' || h === '::') return true
+  if (/^fe[89ab]/.test(h)) return true
+  if (h.startsWith('ff')) return true
+  if (h.startsWith('64:ff9b:')) return true
   if (h.startsWith('fc') || h.startsWith('fd')) return true
 
   const mappedMatch = h.match(/^::ffff:(.+)$/)
@@ -116,7 +121,7 @@ function isPrivateIpv6(host: string): boolean {
 }
 
 function hostKey(hostname: string): string {
-  return hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  return hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.+$/, '')
 }
 
 function isShortener(hostname: string): boolean {
@@ -132,7 +137,9 @@ function isSelfHost(hostname: string, selfHosts: readonly string[]): boolean {
 }
 
 function isNameBlocked(hostname: string): boolean {
-  return hostname === 'localhost' || hostname.endsWith('.localhost') || hostname.endsWith('.local')
+  return hostname === 'localhost' || hostname.endsWith('.localhost')
+    || hostname.endsWith('.local')
+    || hostname.endsWith('.internal')
 }
 
 export function validateDestination(url: string, opts: { selfHosts: readonly string[] }): DestinationResult {
