@@ -10,9 +10,16 @@ vi.mock('@/utils/renderLinkQr', () => ({
   downloadLinkQrPng: vi.fn(),
 }))
 
-vi.mock('@/utils/normalizeQrLogo', () => ({
-  normalizeQrLogoDataUrl: vi.fn(async () => 'data:image/png;base64,AAAA'),
-}))
+const normalizeMock = vi.hoisted(() => vi.fn())
+vi.mock('@/utils/normalizeQrLogo', () => ({ normalizeQrLogoDataUrl: normalizeMock }))
+
+/** A PNG data URL whose header declares the given width (enough for IHDR reads). */
+function pngOfWidth(width: number): string {
+  const bytes = new Uint8Array(24)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52])
+  new DataView(bytes.buffer).setUint32(16, width)
+  return `data:image/png;base64,${btoa(String.fromCharCode(...bytes))}`
+}
 
 const makeVariantsMock = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/images/variants', () => ({ makeVariants: makeVariantsMock }))
@@ -61,6 +68,33 @@ describe('LinkEditorPanel image save', () => {
     // A source no larger than the profile: nothing to resize.
     makeVariantsMock.mockReset()
     makeVariantsMock.mockResolvedValue({ meta: { w: 100, h: 100, fmt: 'png', widths: [], ph: '' }, variants: [] })
+    normalizeMock.mockReset()
+    normalizeMock.mockResolvedValue('data:image/png;base64,AAAA')
+  })
+
+  it('does not load the variants maker for a logo already within 512 px', async () => {
+    vi.stubGlobal('FileReader', ImmediateReader)
+    normalizeMock.mockResolvedValue(pngOfWidth(384))
+    const puts: Array<string | undefined> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = pathname(input)
+      const method = init?.method ?? 'GET'
+      if (path === '/api/links/link-1' && method === 'GET') return json(detail())
+      if (method === 'PUT') {
+        puts.push((JSON.parse(String(init?.body)) as { imageData?: string }).imageData)
+        return logoResponse('bbbbbbbb')
+      }
+      return json({ error: { code: 'not_found', message: 'Missing.' } })
+    }))
+    const wrapper = mount(LinkEditorPanel, { props: { open: true, linkId: 'link-1' }, attachTo: document.body })
+    await flushPromises()
+
+    pickLogo()
+    await flushPromises()
+
+    expect(makeVariantsMock).not.toHaveBeenCalled()
+    expect(puts).toEqual([pngOfWidth(384)])
+    wrapper.unmount()
   })
 
   afterEach(() => {
@@ -70,6 +104,7 @@ describe('LinkEditorPanel image save', () => {
 
   it('saves a 2000 px logo at 512 px as a single image with no variants call', async () => {
     vi.stubGlobal('FileReader', ImmediateReader)
+    normalizeMock.mockResolvedValue(pngOfWidth(2000))
     makeVariantsMock.mockImplementation(async (_blob: Blob, profile: keyof typeof IMAGE_PROFILES) => ({
       meta: { w: 2000, h: 2000, fmt: 'png', widths: [], ph: '' },
       variants: IMAGE_PROFILES[profile]
@@ -100,6 +135,7 @@ describe('LinkEditorPanel image save', () => {
 
   it('keeps the normalized logo when it cannot be resized', async () => {
     vi.stubGlobal('FileReader', ImmediateReader)
+    normalizeMock.mockResolvedValue(pngOfWidth(2000))
     makeVariantsMock.mockRejectedValue(new Error('no canvas'))
     const puts: Array<string | undefined> = []
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -118,7 +154,7 @@ describe('LinkEditorPanel image save', () => {
     pickLogo()
     await flushPromises()
 
-    expect(puts).toEqual(['data:image/png;base64,AAAA'])
+    expect(puts).toEqual([pngOfWidth(2000)])
     wrapper.unmount()
   })
 

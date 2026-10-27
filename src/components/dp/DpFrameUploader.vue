@@ -186,7 +186,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   /** Emitted with a fresh PNG data-URL for each accepted file. */
-  (e: 'add', dataUrl: string): void
+  (e: 'add', dataUrl: string, file?: File): void
   (e: 'remove', index: number): void
   /** Emitted when a frame is dragged from one position to another. */
   (e: 'reorder', from: number, to: number): void
@@ -231,17 +231,17 @@ function readFile(file: File): Promise<string> {
   })
 }
 
-async function emitAdd(dataUrl: string) {
+async function emitAdd(dataUrl: string, file: File) {
   const raw = instance?.vnode.props?.onAdd as
-    | ((value: string) => unknown)
-    | Array<(value: string) => unknown>
+    | ((value: string, file?: File) => unknown)
+    | Array<(value: string, file?: File) => unknown>
     | undefined
   const handlers = Array.isArray(raw) ? raw : raw ? [raw] : []
   if (handlers.length === 0) {
-    emit('add', dataUrl)
+    emit('add', dataUrl, file)
     return
   }
-  await Promise.all(handlers.map((handler) => handler(dataUrl)))
+  await Promise.all(handlers.map((handler) => handler(dataUrl, file)))
 }
 
 async function addSerial(list: File[]) {
@@ -263,7 +263,7 @@ async function addSerial(list: File[]) {
     }
     try {
       const dataUrl = await readFile(file)
-      await emitAdd(dataUrl)
+      await emitAdd(dataUrl, file)
     } catch {
       toast.error(`Could not read "${file.name}".`)
     }

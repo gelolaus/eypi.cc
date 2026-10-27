@@ -8,6 +8,8 @@ export interface DpUploaderFrame {
   id?: string
   src: string
   meta?: ImageMeta | null
+  /** The picked file, kept only until its variants are uploaded after the first save. */
+  file?: File
 }
 
 // Campaign list item (no heavy image payloads).

@@ -50,6 +50,39 @@ describe('AppImage', () => {
     expect(bare.get('img').attributes('style')).toBeUndefined()
   })
 
+  it('drops srcset and meta on error so the original is tried once', async () => {
+    const wrapper = mount(AppImage, { props: { src: '/media/a-1.png', meta } })
+    expect(wrapper.get('img').attributes('srcset')).toBeTruthy()
+    await wrapper.get('img').trigger('error')
+    const img = wrapper.get('img')
+    expect(img.attributes('srcset')).toBeUndefined()
+    expect(img.attributes('src')).toBe('/media/a-1.png')
+    expect(img.attributes('width')).toBeUndefined()
+    expect(img.attributes('style')).toBeUndefined()
+    await img.trigger('error')
+    expect(wrapper.get('img').attributes('src')).toBe('/media/a-1.png')
+  })
+
+  it('restores srcset when the src changes after an error', async () => {
+    const wrapper = mount(AppImage, { props: { src: '/media/a-1.png', meta } })
+    await wrapper.get('img').trigger('error')
+    await wrapper.setProps({ src: '/media/b-2.png' })
+    expect(wrapper.get('img').attributes('srcset')).toContain('/media/b-2-256.webp 256w')
+  })
+
+  it.each([
+    'data:image/webp;base64,AA")}body{display:none',
+    'data:image/webp;base64,AA\\AA',
+    "data:image/webp;base64,AA'AA",
+    'data:image/webp;base64,AA(AA)',
+    'data:image/webp;base64,AA\nAA',
+    'https://evil.example/x.png',
+    'data:text/html;base64,AAAA',
+  ])('ignores an unsafe placeholder %#', (ph) => {
+    const img = mount(AppImage, { props: { src: '/media/a-1.png', meta: { ...meta, ph } } }).get('img')
+    expect(img.attributes('style')).toBeUndefined()
+  })
+
   it('passes class through to the img', () => {
     const img = mount(AppImage, { props: { src: '/x.png' }, attrs: { class: 'object-cover' } }).get('img')
     expect(img.classes()).toContain('object-cover')

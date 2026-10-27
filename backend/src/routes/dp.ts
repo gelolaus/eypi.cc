@@ -297,7 +297,15 @@ app.post('/api/dp', isOrgFeature, async (c) => {
     return c.json({ status: 'error', message: 'Could not create the campaign.' }, 500)
   }
 
-  return c.json({ status: 'ok', campaign: { id, title, slug } }, 201)
+  return c.json({
+    status: 'ok',
+    campaign: {
+      id,
+      title,
+      slug,
+      frames: stored.map((frame) => ({ id: frame.id, key: frame.key, url: mediaUrl(frame.key) })),
+    },
+  }, 201)
 })
 
 // ── GET /api/dp ───────────────────────────────────────────────────────────────
@@ -400,7 +408,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
   const placed = await client.execute({ sql: 'SELECT position FROM dp_frames WHERE id = ?', args: [stored.id] })
 
-  return c.json({ status: 'ok', frame: { id: stored.id, position: Number(placed.rows[0]?.position ?? 0) } }, 201)
+  return c.json({ status: 'ok', frame: { id: stored.id, key: stored.key, url: mediaUrl(stored.key), position: Number(placed.rows[0]?.position ?? 0) } }, 201)
 })
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────

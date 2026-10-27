@@ -287,6 +287,21 @@ function readFile(file: File): Promise<string> {
   })
 }
 
+const QR_LOGO_PROFILE_WIDTH = 512
+
+/** Width from a PNG data URL's IHDR, or null when it cannot be read. */
+function pngDataUrlWidth(dataUrl: string): number | null {
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/]{32})/.exec(dataUrl)
+  if (!match) return null
+  try {
+    const bytes = atob(match[1])
+    if (bytes.slice(1, 4) !== 'PNG') return null
+    return (bytes.charCodeAt(16) << 24 | bytes.charCodeAt(17) << 16 | bytes.charCodeAt(18) << 8 | bytes.charCodeAt(19)) >>> 0
+  } catch {
+    return null
+  }
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const comma = dataUrl.indexOf(',')
   const type = /^data:([^;,]+)/.exec(dataUrl)?.[1] ?? 'image/png'
@@ -302,6 +317,9 @@ function dataUrlToBlob(dataUrl: string): Blob {
  * QR logo store accepts nothing else: any other result keeps the input.
  */
 async function fitQrLogo(dataUrl: string): Promise<string> {
+  const width = pngDataUrlWidth(dataUrl)
+  // Already within the profile: skip fetching the variants chunk for a no-op.
+  if (width !== null && width <= QR_LOGO_PROFILE_WIDTH) return dataUrl
   try {
     const { makeVariants } = await import('@/lib/images/variants')
     const { variants } = await makeVariants(dataUrlToBlob(dataUrl), 'qrLogo')

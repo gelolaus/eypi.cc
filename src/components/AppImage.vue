@@ -19,25 +19,34 @@ const props = withDefaults(
 
 const el = ref<HTMLImageElement | null>(null)
 const loaded = ref(false)
+/** A variant failed to load: fall back to the plain original, once. */
+const failed = ref(false)
+
+const meta = computed(() => (failed.value ? null : props.meta))
 
 const stored = computed(() => !props.src.startsWith('data:') && !props.src.startsWith('blob:'))
 
 const srcset = computed(() => {
-  const meta = props.meta
-  if (!meta || !stored.value || meta.widths.length === 0) return undefined
-  const parts = meta.widths.map((w) => `${variantUrl(props.src, w, meta.fmt)} ${w}w`)
-  parts.push(`${props.src} ${meta.w}w`)
+  const m = meta.value
+  if (!m || !stored.value || m.widths.length === 0) return undefined
+  const parts = m.widths.map((w) => `${variantUrl(props.src, w, m.fmt)} ${w}w`)
+  parts.push(`${props.src} ${m.w}w`)
   return parts.join(', ')
 })
 
+// Only a plain base64 image data URL goes into CSS url(); anything with quotes,
+// parens, backslashes or newlines is dropped rather than escaped.
+const SAFE_PLACEHOLDER = /^data:image\/(?:webp|jpeg|png);base64,[A-Za-z0-9+/]+={0,2}$/
+
 const placeholderStyle = computed(() => {
-  const ph = props.meta?.ph
-  if (loaded.value || !ph || !ph.startsWith('data:image/')) return undefined
+  const ph = meta.value?.ph
+  if (loaded.value || !ph || !SAFE_PLACEHOLDER.test(ph)) return undefined
   return { backgroundImage: `url("${ph}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
 })
 
 watch(() => props.src, () => {
   loaded.value = false
+  failed.value = false
 })
 
 onMounted(() => {
@@ -59,6 +68,7 @@ onMounted(() => {
     :fetchpriority="priority ? 'high' : undefined"
     decoding="async"
     :style="placeholderStyle"
+    @error="failed = true"
     @load="loaded = true"
   >
 </template>
