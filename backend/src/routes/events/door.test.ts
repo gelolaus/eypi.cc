@@ -224,8 +224,16 @@ describe('remove and restore', () => {
     expect((await client.execute("SELECT 1 FROM audit_events WHERE action = 'tix.restore'")).rows).toHaveLength(1)
   })
 
-  it('restore refuses a self-cancelled attendee (decided_by NULL)', async () => {
+  it('restore allows a legacy-removed imported attendee with decided_by NULL', async () => {
     const { request, client } = await setup()
+    await client.execute("UPDATE attendees SET source = 'import', decided_by = NULL WHERE id = 'c1'")
+    expect((await act(request, 'restore', 'c1')).status).toBe(200)
+    expect(await row(client, 'c1')).toMatchObject({ status: 'confirmed', decided_by: 'mem-1' })
+  })
+
+  it('restore refuses a self-cancelled attendee (self source, decided_by NULL)', async () => {
+    const { request, client } = await setup()
+    await client.execute("UPDATE attendees SET source = 'self', decided_by = NULL WHERE id = 'c1'")
     const res = await act(request, 'restore', 'c1')
     expect(res.status).toBe(409)
     expect(await codeOf(res)).toBe('self_cancelled')

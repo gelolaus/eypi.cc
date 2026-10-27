@@ -160,23 +160,24 @@ app.post('/api/events/:slug/restore', async (c) => {
   const event = leadCheck.event
 
   const aRes = await client.execute({
-    sql: 'SELECT id, first_name, last_name, status, decided_by FROM attendees WHERE id = ? AND event_id = ?',
+    sql: 'SELECT id, first_name, last_name, status, decided_by, source FROM attendees WHERE id = ? AND event_id = ?',
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return c.json({ status: 'error', message: 'Attendee not found.' }, 404)
   const a = aRes.rows[0]
   const name = attendeeLabel(a.first_name, a.last_name)
   // Deliberate org override of the terminal `cancelled` state (spec 5.2 has no cancelled -> confirmed arrow).
-  // Only attendees the org removed qualify (decided_by is set); self-cancelled ones stay cancelled.
+  // Self-cancelled means source = 'self' AND decided_by IS NULL and stays cancelled. Rows cancelled by the
+  // org, or by migration 0011 from a legacy 'removed' row (decided_by NULL, non-self source), may be restored.
   // The seat guard is inside the UPDATE, so concurrent restores cannot oversell.
   if (String(a.status) !== 'cancelled') return c.json(actionError('not_removed', `${name} is not removed.`), 409)
-  if (a.decided_by == null) {
+  if (a.decided_by == null && String(a.source) === 'self') {
     return c.json(actionError('self_cancelled', `${name} cancelled their own registration.`), 409)
   }
   const capacity = event.max_attendees == null ? Number.MAX_SAFE_INTEGER : Number(event.max_attendees)
   const wrote = await client.execute({
     sql: `UPDATE attendees SET status = 'confirmed', decided_at = ${NOW_SQL}, decided_by = ?
-          WHERE id = ? AND event_id = ? AND status = 'cancelled' AND decided_by IS NOT NULL
+          WHERE id = ? AND event_id = ? AND status = 'cancelled' AND (decided_by IS NOT NULL OR source <> 'self')
             AND (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
     args: [user.id, String(a.id), event.id, event.id, capacity],
   })
