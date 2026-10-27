@@ -10,7 +10,7 @@ describe('GET /api/stats', () => {
     const { request } = await createTestApp()
 
     const res = await request('/api/stats')
-    const body = await res.json()
+    const body = (await res.json()) as Record<string, number>
 
     expect(res.status).toBe(200)
     for (const key of KEYS) expect(body[key], key).toBe(0)

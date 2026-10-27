@@ -976,6 +976,34 @@ app.get('/:org_id/profile', async (c) => {
 })
 
 /**
+ * GET /api/orgs/:org_id/summary
+ */
+app.get('/:org_id/summary', async (c) => {
+  const database = db(c)
+  const orgId = c.req.param('org_id')
+
+  const access = await requireOrgCoordinator(database, orgId, c.var.userId)
+  if (!access.ok) return c.json({ error: access.message }, access.status)
+
+  try {
+    const count = async (sql: string): Promise<number> => {
+      const res = await database.execute({ sql, args: [orgId] })
+      return Number(res.rows[0]?.c ?? 0)
+    }
+    const [members, events, tickets, frames] = await Promise.all([
+      count('SELECT COUNT(*) AS c FROM org_members WHERE org_id = ? AND activated_at IS NOT NULL'),
+      count('SELECT COUNT(*) AS c FROM events WHERE org_id = ?'),
+      count('SELECT COUNT(*) AS c FROM attendees WHERE event_id IN (SELECT id FROM events WHERE org_id = ?)'),
+      count('SELECT COUNT(*) AS c FROM dp_campaigns WHERE org_id = ?'),
+    ])
+    return c.json({ members, events, tickets, frames })
+  } catch (error) {
+    reportError(c, error, { message: 'Error fetching org summary.' })
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+/**
  * PATCH /api/orgs/:org_id/profile
  */
 app.patch('/:org_id/profile', async (c) => {

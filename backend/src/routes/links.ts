@@ -492,6 +492,26 @@ app.get('/api/links', requireAuth, async (c) => {
   return c.json({ items: page.map(toListItem), nextCursor })
 })
 
+app.get('/api/links/summary', requireAuth, async (c) => {
+  const database = db(c)
+  const [totals, top] = await Promise.all([
+    database.execute({
+      sql: 'SELECT COUNT(*) AS count, COALESCE(SUM(clicks), 0) AS clicks FROM links WHERE user_id = ?',
+      args: [c.var.userId],
+    }),
+    database.execute({
+      sql: 'SELECT slug, COALESCE(clicks, 0) AS clicks FROM links WHERE user_id = ? ORDER BY COALESCE(clicks, 0) DESC, id DESC LIMIT 1',
+      args: [c.var.userId],
+    }),
+  ])
+  const row = top.rows[0]
+  return c.json({
+    count: Number(totals.rows[0]?.count ?? 0),
+    clicks: Number(totals.rows[0]?.clicks ?? 0),
+    top: row ? { slug: String(row.slug), clicks: Number(row.clicks) } : null,
+  })
+})
+
 app.get('/api/links/slug-available', requireAuth, async (c) => {
   const slug = normalizeSlugInput(c.req.query('slug') ?? '')
   const verdict = validateSlug(slug)
