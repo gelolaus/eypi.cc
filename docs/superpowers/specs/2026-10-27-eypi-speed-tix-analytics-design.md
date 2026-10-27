@@ -108,7 +108,7 @@ This spec is the "what and why" for the next round of work after the overhaul. W
 1. `createImageBitmap(file, { imageOrientation: 'from-image' })`.
 2. For each width in the profile that is smaller than the source, draw on an `OffscreenCanvas` (fallback `<canvas>`) with high-quality smoothing and encode per E3. Check the returned `blob.type`; fall back when the browser ignored WebP.
 3. Make a placeholder: a 16 px-wide WebP/JPEG as a data URL (about 300–600 bytes).
-4. Send the original plus the variants in one multipart request.
+4. Save the original through the existing route (unchanged), then send the variants and placeholder with `PUT /api/media/variants { key, placeholder, variants: [{ width, dataUrl }] }`. The same endpoint serves the admin backfill. Authorization follows the key's prefix: `orgs/{orgId}/…` needs an activated membership in that org, `frames/{campaignId}/…` needs membership in the campaign's org, and admins may write any key.
 
 | Profile | Shown at | Variant widths |
 |---|---|---|
@@ -185,6 +185,8 @@ Capacity keeps using `max_attendees`.
 | `registered_at` | DATETIME | backfilled to the migration time | orders the waitlist. Added as nullable (SQLite cannot add a column with a `CURRENT_TIMESTAMP` default), then `UPDATE attendees SET registered_at = CURRENT_TIMESTAMP WHERE registered_at IS NULL`; new rows set it explicitly |
 | `decided_at`, `decided_by` | DATETIME, TEXT | NULL | approval, decline, org cancel |
 | `guest_token_hash` | TEXT UNIQUE | NULL | sha256 of the guest link token |
+
+`users` gets `tickets_seen_at DATETIME` (NULL), which drives the My tickets badge (§5.5). Event covers use the R2 prefix `events/{eventId}/`, added to the public media prefixes.
 
 Indexes: unique `attendees(event_id, user_id) WHERE user_id IS NOT NULL`; `attendees(event_id, status, registered_at)`; `check_ins(event_id, attendee_id, actioned_at)`.
 
