@@ -120,7 +120,7 @@ describe('student registration', () => {
 
   it('refuses outside the window', async () => {
     const cases: [EventSeed, number, string][] = [
-      [{ status: 'draft' }, 404, 'not_published'],
+      [{ status: 'draft' }, 404, 'not_found'],
       [{ status: 'closed' }, 409, 'registration_closed'],
       [{ status: 'cancelled' }, 409, 'registration_closed'],
       [{ mode: 'import' }, 403, 'invite_only'],
@@ -186,6 +186,86 @@ describe('student registration', () => {
     ])
     const own = await client.execute("SELECT decided_by FROM attendees WHERE user_id = 'stu-1'")
     expect(own.rows[0].decided_by).toBeNull()
+  })
+})
+
+describe('imported rows and re-registration', () => {
+  const seedImported = async (c: Client, mode = 'fcfs') => {
+    await seedEvent(c, { mode, max: 5 })
+    await c.execute({
+      sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token) VALUES ('imp', 'id-ev', 'Sam', ?, 'qr-imp')`,
+      args: [student.email.toUpperCase()],
+    })
+  }
+
+  it('register links an unlinked imported row with the same email and returns it', async () => {
+    const { request, client } = await createTestApp({ user: student, seed: seedImported })
+    const res = await register(request, 'ev')
+    expect(res.status).toBe(200)
+    expect((await ticketOf(res)).id).toBe('imp')
+    const rows = await client.execute('SELECT id, user_id FROM attendees')
+    expect(rows.rows.map((r) => [r.id, r.user_id])).toEqual([['imp', student.id]])
+  })
+
+  it('the public page links the imported row and returns it as the viewer ticket', async () => {
+    const { request } = await createTestApp({ user: student, seed: (c) => seedImported(c, 'import') })
+    const res = await request('/api/events/ev/public')
+    const body = await res.json() as { viewer: { ticket: { id: string } | null } }
+    expect(body.viewer.ticket?.id).toBe('imp')
+  })
+
+  it('a student who cancelled can register again and goes to the back of the queue', async () => {
+    const { request, client, env } = await createTestApp({ user: student, seed: (c) => seedEvent(c, { max: 1, waitlist: 1 }) })
+    const other = await cookieFor(client, env, 'stu-2', 'stu2@student.apc.edu.ph')
+    await register(request, 'ev')
+    expect((await ticketOf(await register(request, 'ev', {}, other))).status).toBe('waitlisted')
+    await client.execute("UPDATE attendees SET decided_by = 'someone' WHERE user_id = 'stu-1'")
+    const del = await request('/api/events/ev/registration', { method: 'DELETE', headers: json })
+    expect((await ticketOf(del)).status).toBe('cancelled')
+    const cancelled = await client.execute("SELECT decided_by FROM attendees WHERE user_id = 'stu-1'")
+    expect(cancelled.rows[0].decided_by).toBeNull()
+    // stu-2 was promoted into the freed seat; stu-1 now joins the waitlist behind it
+    const again = await register(request, 'ev')
+    expect(again.status).toBe(201)
+    const ticket = await ticketOf(again)
+    expect(ticket.status).toBe('waitlisted')
+    const rows = await client.execute({ sql: 'SELECT COUNT(*) AS n FROM attendees WHERE user_id = ?', args: ['stu-1'] })
+    expect(Number(rows.rows[0].n)).toBe(1)
+  })
+
+  it('an organiser-cancelled registration stays cancelled', async () => {
+    const { request, client } = await createTestApp({ user: student, seed: (c) => seedEvent(c, { max: 5 }) })
+    await register(request, 'ev')
+    await client.execute("UPDATE attendees SET status = 'cancelled', decided_by = 'org-user' WHERE user_id = 'stu-1'")
+    const res = await register(request, 'ev')
+    expect(res.status).toBe(409)
+    const err = (await res.json() as { error: { code: string; message: string } }).error
+    expect(err.code).toBe('registration_cancelled')
+    expect(err.message).toBe('The organisers cancelled this registration.')
+  })
+
+  it('does not oversell when two cancelled students re-register for one seat', async () => {
+    const { request, client, env } = await createTestApp({ user: student, seed: (c) => seedEvent(c, { max: 1 }) })
+    const other = await cookieFor(client, env, 'stu-2', 'stu2@student.apc.edu.ph')
+    await warm(request)
+    await register(request, 'ev')
+    await request('/api/events/ev/registration', { method: 'DELETE', headers: json })
+    await register(request, 'ev', {}, other)
+    await request('/api/events/ev/registration', { method: 'DELETE', headers: { ...json, Cookie: other } })
+    const [a, b] = await Promise.all([register(request, 'ev'), register(request, 'ev', {}, other)])
+    expect([a.status, b.status].sort()).toEqual([201, 409])
+    const confirmed = await client.execute("SELECT COUNT(*) AS n FROM attendees WHERE status = 'confirmed'")
+    expect(Number(confirmed.rows[0].n)).toBe(1)
+  })
+
+  it('concurrent repeats by the same cancelled student reactivate once', async () => {
+    const { request, client } = await createTestApp({ user: student, seed: (c) => seedEvent(c, { max: 1 }) })
+    await register(request, 'ev')
+    await request('/api/events/ev/registration', { method: 'DELETE', headers: json })
+    const [a, b] = await Promise.all([register(request, 'ev'), register(request, 'ev')])
+    expect([a.status, b.status].sort()).toEqual([200, 201])
+    const rows = await client.execute("SELECT status FROM attendees WHERE user_id = 'stu-1'")
+    expect(rows.rows.map((r) => r.status)).toEqual(['confirmed'])
   })
 })
 

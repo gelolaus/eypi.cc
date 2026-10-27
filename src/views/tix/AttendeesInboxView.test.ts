@@ -259,7 +259,7 @@ describe('AttendeesInboxView', () => {
   })
 
   it('restores a cancelled attendee and reports the server reason when it refuses', async () => {
-    handlers['GET /api/events/launch/attendees'] = () => json({ status: 'ok', attendees: [row('c1', 'Cat', 'cancelled')], counts, nextCursor: null })
+    handlers['GET /api/events/launch/attendees'] = () => json({ status: 'ok', attendees: [{ ...row('c1', 'Cat', 'cancelled'), decided_by: 'org-user' }], counts, nextCursor: null })
     handlers['POST /api/events/launch/restore'] = () => json({ status: 'error', message: 'Cat cancelled their own registration.', error: { code: 'self_cancelled', message: 'Cat cancelled their own registration.' } }, 409)
     await mountInbox('fcfs')
     await button('Cancelled')!.trigger('click')
@@ -268,5 +268,13 @@ describe('AttendeesInboxView', () => {
     await flushPromises()
     expect(calls.find((c) => c.path.endsWith('/restore'))!.body).toEqual({ attendeeId: 'c1' })
     expect(toast.error).toHaveBeenCalledWith('Cat cancelled their own registration.')
+  })
+
+  it('offers no Restore for a student who cancelled their own registration', async () => {
+    handlers['GET /api/events/launch/attendees'] = () => json({ status: 'ok', attendees: [row('c1', 'Cat', 'cancelled')], counts, nextCursor: null })
+    await mountInbox('fcfs')
+    await button('Cancelled')!.trigger('click')
+    await flushPromises()
+    expect(button('Restore')).toBeUndefined()
   })
 })

@@ -64,10 +64,13 @@ describe('primaryAction with a ticket', () => {
     ['entered', 'Entered', 'view-ticket'],
     ['pending', 'Pending approval', 'view-ticket'],
     ['declined', 'Registration closed', 'none'],
-    ['cancelled', 'Registration closed', 'none'],
   ]
   it.each(rows)('%s -> %s', (status, label, kind) => {
     expect(primaryAction(event(), ticket(status), NOW)).toEqual({ label, kind })
+  })
+  it('a cancelled ticket can register again while registration is open', () => {
+    expect(primaryAction(event(), ticket('cancelled'), NOW)).toEqual({ label: 'Register', kind: 'register' })
+    expect(primaryAction(event({ status: 'closed' }), ticket('cancelled'), NOW)).toEqual({ label: 'Registration closed', kind: 'none' })
   })
   it('a ticket holder keeps their state after registration closes', () => {
     expect(primaryAction(event({ status: 'closed' }), ticket('confirmed'), NOW).label).toBe("You're in")

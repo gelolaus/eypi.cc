@@ -96,7 +96,8 @@ export function registrationBlock(event: PublicEvent, now: Date): RegistrationBl
 }
 
 export function primaryAction(event: PublicEvent, viewerTicket: Ticket | null, now: Date): PrimaryAction {
-  if (viewerTicket) {
+  // A cancelled ticket does not block registering again; the server refuses if the organisers cancelled it.
+  if (viewerTicket && viewerTicket.status !== 'cancelled') {
     switch (viewerTicket.status) {
       case 'confirmed': return { label: "You're in", kind: 'view-ticket' }
       case 'waitlisted': return { label: 'On the waitlist', kind: 'view-ticket' }

@@ -1,17 +1,15 @@
 import { Hono } from 'hono'
 import { db, type Bindings } from '../../lib/db'
 import { checkRateLimit } from '../../lib/rateLimit'
-import { notFound } from '../../lib/errors'
+import { notFound, unauthorized } from '../../lib/errors'
 import { withEdgeCache } from '../../lib/edgeCache'
 import { renderEventMarkdown } from '../../lib/markdownHtml'
-import { findTicket, parseQuestions } from '../../lib/tix/registration'
+import { findTicket, linkImportedRows, parseQuestions } from '../../lib/tix/registration'
 import { loadPassContext, parsePassFields, verifyPassToken } from '../../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../../lib/passes/googleWallet'
 
 const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
 const LOOKUP_LIMIT_MSG = 'Too many attempts. Wait a few minutes and try again.'
-const LOOKUP_RL_LIMIT = 10
-const LOOKUP_RL_WINDOW = 900
 const PASS_LIMIT = 20
 const PASS_WINDOW = 3600
 
@@ -52,6 +50,7 @@ app.get('/api/events/:slug/public', async (c) => {
     const cap = row.max_attendees == null ? null : Number(row.max_attendees)
     const seatsLeft = mode === 'fcfs' && cap != null ? Math.max(0, cap - Number(row.confirmed)) : null
     const userId = c.var.userId
+    if (userId) await linkImportedRows(client, userId, c.var.userEmail, String(row.id))
     const ticket = userId ? await findTicket(client, String(row.id), userId) : null
     const text = (v: unknown) => (v == null ? null : String(v))
 
@@ -85,19 +84,7 @@ app.get('/api/events/:slug', async (c) => {
   const slug = c.req.param('slug')
   const user = c.var.user
 
-  if (!user) {
-    const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-    const allowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-      bucket: 'tix-lookup',
-      subject: ip,
-      limit: LOOKUP_RL_LIMIT,
-      windowSec: LOOKUP_RL_WINDOW,
-    })
-    if (!allowed.ok) {
-      return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 429)
-    }
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-  }
+  if (!user) throw unauthorized()
 
   const client = db(c)
 

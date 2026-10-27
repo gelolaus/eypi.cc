@@ -238,7 +238,7 @@ const action = computed(() =>
 
 const block = computed(() => (event.value ? registrationBlock(event.value, now()) : null))
 const banner = computed(() => {
-  if (ticket.value?.status === 'cancelled') return 'Your registration was cancelled. Ask the organisers if you want back in.'
+  if (ticket.value?.status === 'cancelled') return 'Your registration was cancelled.'
   if (ticket.value?.status === 'declined') return 'Your registration was not accepted for this event.'
   if (ticket.value) return ''
   switch (block.value) {

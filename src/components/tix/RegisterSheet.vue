@@ -184,7 +184,7 @@ const COPY: Record<string, string> = {
   event_full: 'This event is full.',
   registration_closed: 'Registration has closed.',
   not_open_yet: 'Registration has not opened yet.',
-  registration_cancelled: 'You cancelled this registration. Ask the organisers if you want back in.',
+  registration_cancelled: 'The organisers cancelled this registration.',
   invite_only: 'This event is invite only. Ask the organisers for an invitation.',
 }
 

@@ -175,3 +175,25 @@ export async function findTicket(client: Client, eventId: string, userId: string
   })
   return res.rows[0] ? ticketFromRow(res.rows[0]) : null
 }
+
+/**
+ * Links imported (unlinked) attendee rows to the signed-in account by email. One row per event, and never a
+ * second for a user who already has one. Pass `eventId` to link just one event.
+ */
+export async function linkImportedRows(
+  client: Client,
+  userId: string,
+  email: string | undefined,
+  eventId?: string,
+): Promise<void> {
+  if (!email) return
+  await client.execute({
+    sql: `UPDATE attendees SET user_id = ?
+          WHERE user_id IS NULL AND lower(email) = lower(?)
+            ${eventId ? 'AND event_id = ?' : ''}
+            AND NOT EXISTS (SELECT 1 FROM attendees b WHERE b.event_id = attendees.event_id AND b.user_id = ?)
+            AND rowid = (SELECT MIN(x.rowid) FROM attendees x
+                         WHERE x.event_id = attendees.event_id AND x.user_id IS NULL AND lower(x.email) = lower(?))`,
+    args: eventId ? [userId, email, eventId, userId, email] : [userId, email, userId, email],
+  })
+}

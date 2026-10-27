@@ -122,7 +122,7 @@ describe('RegisterSheet', () => {
     ['registration_closed', 409, 'Registration has closed.'],
     ['not_open_yet', 409, 'Registration has not opened yet.'],
     ['invite_only', 403, 'invite only'],
-    ['registration_cancelled', 409, 'You cancelled this registration.'],
+    ['registration_cancelled', 409, 'The organisers cancelled this registration.'],
   ])('maps %s to clear copy', async (code, status, text) => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code, message: 'server text' } }, status)))
     await mountSheet({ ...event, questions: [] })

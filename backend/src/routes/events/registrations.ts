@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type { InStatement } from '@libsql/client/web'
+import type { Client, InStatement } from '@libsql/client/web'
 import { ApiError, conflict, notFound, tooMany, unauthorized } from '../../lib/errors'
 import { db, type Bindings } from '../../lib/db'
 import { canTransition, initialStatus, registrationOpen, type AdmissionMode } from '../../lib/tix/admission'
@@ -7,6 +7,7 @@ import {
   NOW_SQL,
   TICKET_SELECT,
   findTicket,
+  linkImportedRows,
   parseQuestions,
   promoteWaitlist,
   ticketFromRow,
@@ -36,7 +37,7 @@ type EventRow = {
 }
 
 const REFUSALS: Record<string, { status: number; message: string }> = {
-  not_published: { status: 404, message: 'This event is not open for registration.' },
+  not_published: { status: 404, message: 'Event not found.' }, // unreachable: loadEvent hides drafts
   not_open_yet: { status: 409, message: 'Registration has not opened yet.' },
   registration_closed: { status: 409, message: 'Registration is closed.' },
   invite_only: { status: 403, message: 'This event is invite only.' },
@@ -50,7 +51,8 @@ async function loadEvent(c: Parameters<typeof db>[0], slug: string): Promise<Eve
     args: [slug],
   })
   const row = res.rows[0]
-  if (!row) throw notFound('Event not found.')
+  // A draft looks exactly like an unknown slug.
+  if (!row || String(row.status) === 'draft') throw notFound('Event not found.')
   return {
     id: String(row.id),
     status: String(row.status),
@@ -77,13 +79,29 @@ function requireUserId(c: { var: { userId?: string; user?: { id: string } } }): 
   return id
 }
 
+// A student who cancelled their own registration may register again while registration is open.
+// Rows an organiser cancelled (decided_by set, or not self-registered) stay terminal.
+async function selfCancelledRow(client: Client, eventId: string, userId: string): Promise<string | null> {
+  const res = await client.execute({
+    sql: `SELECT id FROM attendees
+          WHERE event_id = ? AND user_id = ? AND status = 'cancelled' AND source = 'self' AND decided_by IS NULL`,
+    args: [eventId, userId],
+  })
+  return res.rows[0] ? String(res.rows[0].id) : null
+}
+
 app.post('/api/events/:slug/register', async (c) => {
   const userId = requireUserId(c)
   const client = db(c)
   const event = await loadEvent(c, c.req.param('slug'))
+  const email = c.var.userEmail || c.var.user?.email || ''
+
+  // An organiser-imported row with this email becomes the student's own ticket instead of a duplicate.
+  await linkImportedRows(client, userId, email, event.id)
 
   const existing = await findTicket(client, event.id, userId)
-  if (existing) return respondExisting(c, existing)
+  const reactivateId = existing?.status === 'cancelled' ? await selfCancelledRow(client, event.id, userId) : null
+  if (existing && !reactivateId) return respondExisting(c, existing)
 
   const open = registrationOpen(event, new Date())
   if (!open.ok) {
@@ -103,24 +121,52 @@ app.post('/api/events/:slug/register', async (c) => {
     throw new ApiError(422, 'invalid_answers', 'Check your answers and try again.', checked.fields)
   }
 
-  const email = c.var.userEmail || c.var.user?.email || ''
   const { first, last } = splitName(c.var.user?.name ?? '', email)
+  const answersJson = JSON.stringify(checked.answers)
+  const waitlistEnabled = event.waitlist_enabled === 1
+  const cap = event.max_attendees
+  const seatGuard = `? IS NULL OR (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`
+
+  if (reactivateId) {
+    // Same admission logic as a new registration, applied to the existing row; registered_at = now puts
+    // the student at the back of the queue. The WHERE clause makes a concurrent repeat a no-op.
+    const revive = (status: string, guarded: boolean): InStatement => ({
+      sql: `UPDATE attendees SET status = ?, answers = ?, registered_at = ${NOW_SQL}, decided_at = NULL, decided_by = NULL
+            WHERE id = ? AND user_id = ? AND status = 'cancelled' AND source = 'self' AND decided_by IS NULL
+            ${guarded ? `AND (${seatGuard})` : ''}`,
+      args: guarded
+        ? [status, answersJson, reactivateId, userId, cap, event.id, cap]
+        : [status, answersJson, reactivateId, userId],
+    })
+    if (event.admission_mode === 'fcfs') {
+      const won = await client.execute(revive('confirmed', true))
+      if (Number(won.rowsAffected) === 0) {
+        const now = await findTicket(client, event.id, userId)
+        if (now && now.status !== 'cancelled') return respondExisting(c, now)
+        if (initialStatus('fcfs', false, waitlistEnabled) === 'full') throw conflict('event_full', 'This event is full.')
+        await client.execute(revive('waitlisted', false))
+        await promoteWaitlist(client, event.id, cap)
+      }
+    } else {
+      const status = initialStatus(event.admission_mode, true, waitlistEnabled)
+      await client.execute(revive(status, false))
+    }
+    return c.json({ ticket: await findTicket(client, event.id, userId) }, 201)
+  }
+
   const attendeeId = crypto.randomUUID()
   const common = [
     attendeeId, event.id, first, last, email, crypto.randomUUID(), userId,
   ]
-  const answersJson = JSON.stringify(checked.answers)
   const insertColumns = `INSERT INTO attendees
       (id, event_id, first_name, last_name, email, qr_token, user_id, status, source, answers, registered_at, decided_at)`
 
   try {
-    const waitlistEnabled = event.waitlist_enabled === 1
     if (event.admission_mode === 'fcfs') {
-      const cap = event.max_attendees
       const won = await client.execute({
         sql: `${insertColumns}
               SELECT ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'self', ?, ${NOW_SQL}, NULL
-              WHERE ? IS NULL OR (SELECT COUNT(*) FROM attendees WHERE event_id = ? AND status = 'confirmed') < ?`,
+              WHERE ${seatGuard}`,
         args: [...common, answersJson, cap, event.id, cap],
       })
       if (Number(won.rowsAffected) === 0) {
@@ -155,7 +201,7 @@ app.post('/api/events/:slug/register', async (c) => {
 
 function respondExisting(c: { json: (body: unknown, status?: 200) => Response }, ticket: { status: string }) {
   if (ticket.status === 'cancelled') {
-    throw conflict('registration_cancelled', 'You cancelled this registration. Ask the organisers if you want back in.')
+    throw conflict('registration_cancelled', 'The organisers cancelled this registration.')
   }
   return c.json({ ticket }, 200)
 }
@@ -172,7 +218,8 @@ app.delete('/api/events/:slug/registration', async (c) => {
   }
 
   const cancel: InStatement = {
-    sql: `UPDATE attendees SET status = 'cancelled' WHERE id = ? AND user_id = ? AND status = ?`,
+    sql: `UPDATE attendees SET status = 'cancelled', decided_at = ${NOW_SQL}, decided_by = NULL
+          WHERE id = ? AND user_id = ? AND status = ?`,
     args: [ticket.id, userId, ticket.status],
   }
   // Only a confirmed seat frees capacity for the waitlist.
@@ -192,17 +239,9 @@ app.get('/api/tickets', requireAuth, async (c) => {
   const email = c.var.userEmail
   const client = db(c)
 
-  // Link imported rows to this account by email. One row per event, never a second for a user who already has one.
-  if (email) {
-    await client.execute({
-      sql: `UPDATE attendees SET user_id = ?
-            WHERE user_id IS NULL AND lower(email) = lower(?)
-              AND NOT EXISTS (SELECT 1 FROM attendees b WHERE b.event_id = attendees.event_id AND b.user_id = ?)
-              AND rowid = (SELECT MIN(x.rowid) FROM attendees x
-                           WHERE x.event_id = attendees.event_id AND x.user_id IS NULL AND lower(x.email) = lower(?))`,
-      args: [userId, email, userId, email],
-    })
-  }
+  await linkImportedRows(client, userId, email)
+  // Captured before the selects, so a decision made while they run still counts as new next time.
+  const seenAt = String((await client.execute(`SELECT ${NOW_SQL} AS t`)).rows[0].t)
 
   const [upcoming, past] = await Promise.all([
     client.execute({
@@ -219,8 +258,8 @@ app.get('/api/tickets', requireAuth, async (c) => {
     }),
   ])
   await client.execute({
-    sql: `UPDATE users SET tickets_seen_at = ${NOW_SQL} WHERE id = ?`,
-    args: [userId],
+    sql: 'UPDATE users SET tickets_seen_at = ? WHERE id = ?',
+    args: [seenAt, userId],
   })
   return c.json({ tickets: [...upcoming.rows, ...past.rows].map(ticketFromRow) })
 })

@@ -113,8 +113,8 @@ describe('GET /api/events/:slug/public', () => {
     expect(body.viewer.ticket).toMatchObject({ status: 'confirmed' })
   })
 
-  it('keeps the org-scoped GET /api/events/:slug unchanged for anonymous callers', async () => {
+  it('answers the org-scoped GET /api/events/:slug with 401 for anonymous callers', async () => {
     const { request } = await createTestApp({ seed: (c) => seed(c) })
-    expect((await request('/api/events/ev')).status).toBe(404)
+    expect((await request('/api/events/ev')).status).toBe(401)
   })
 })

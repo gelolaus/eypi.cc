@@ -225,7 +225,7 @@
               New guest link
             </Button>
             <Button
-              v-if="row.status === 'cancelled'"
+              v-if="row.status === 'cancelled' && !(row.source === 'self' && row.decided_by == null)"
               type="button"
               variant="outline"
               :aria-label="`Restore ${fullName(row)}`"
@@ -302,6 +302,7 @@ interface InboxRow {
   email: string | null
   status: TicketStatus
   source: string | null
+  decided_by?: string | null
   answers: Record<string, unknown>
   registered_at: string | null
 }
