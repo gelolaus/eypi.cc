@@ -303,6 +303,19 @@ describe('tickets', () => {
     expect(await store.match(url)).toBeUndefined()
   })
 
+  it('drops a cached guest ticket when the link now answers 404, but keeps /api/tickets on 404', async () => {
+    const guest = 'https://api.eypi.cc/api/tickets/guest/tok123'
+    const caches = new FakeCaches()
+    const store = await caches.open('eypi-tickets-v1')
+    await store.put(guest, new Response('{}'))
+    await store.put(url, new Response('[1]'))
+    const res = await sw.ticketsNetworkFirst(req(guest), deps(async () => new Response('no', { status: 404 }), caches))
+    expect(res.status).toBe(404)
+    expect(await store.match(guest)).toBeUndefined()
+    await sw.ticketsNetworkFirst(req(url), deps(async () => new Response('no', { status: 404 }), caches))
+    expect(await store.match(url)).toBeDefined()
+  })
+
   it('does not cache errors, set-cookie responses or opaque responses', async () => {
     for (const make of [
       () => new Response('boom', { status: 500 }),

@@ -104,6 +104,8 @@ describe('guest links', () => {
     const gone = await request(`/api/tickets/guest/${token}`)
     const unknown = await request(`/api/tickets/guest/${'z'.repeat(32)}`)
     expect(gone.status).toBe(404)
+    expect(gone.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(gone.headers.get('Referrer-Policy')).toBe('no-referrer')
     expect(await gone.text()).toBe(await unknown.text())
   })
 
@@ -122,6 +124,8 @@ describe('guest links', () => {
     const res = await request(`/api/tickets/guest/${'b'.repeat(32)}`, { headers: h })
     expect(res.status).toBe(429)
     expect(await res.json()).toMatchObject({ error: { code: 'too_many' } })
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(res.headers.get('Referrer-Policy')).toBe('no-referrer')
     const elsewhere = await request(`/api/tickets/guest/${'b'.repeat(32)}`, { headers: { 'CF-Connecting-IP': '203.0.113.8' } })
     expect(elsewhere.status).toBe(404)
   })
@@ -168,6 +172,49 @@ describe('attendees.csv export', () => {
     const foreign = await createTestApp({ user: other, seed })
     const res = await foreign.request('/api/events/ev/attendees.csv', { headers: { ...hdr, 'X-Active-Org-Id': 'org-2' } })
     expect(res.status).toBe(403)
+  })
+})
+
+describe('csv export hardening', () => {
+  it('requires the X-Active-Org-Id header and sends no-store', async () => {
+    const { request, client } = await createTestApp({ user: lead, seed })
+    const { 'X-Active-Org-Id': _drop, ...noOrg } = hdr
+    void _drop
+    const res = await request('/api/events/ev/attendees.csv', { headers: noOrg })
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: { code: 'org_header_required' } })
+    const issued = await client.execute('SELECT COUNT(*) AS n FROM attendees WHERE guest_token_hash IS NOT NULL')
+    expect(Number(issued.rows[0].n)).toBe(0)
+    const ok = await request('/api/events/ev/attendees.csv', { headers: hdr })
+    expect(ok.headers.get('Cache-Control')).toBe('no-store')
+  })
+
+  it('guards a leading tab', async () => {
+    const { request, client } = await createTestApp({ user: lead, seed })
+    await client.execute("UPDATE attendees SET first_name = char(9) || 'x' WHERE id = 'g2'")
+    const text = await (await request('/api/events/ev/attendees.csv', { headers: hdr })).text()
+    expect(text).toContain("'\tx,")
+  })
+})
+
+describe('wallet pass gating', () => {
+  it('issues passToken only for confirmed tickets', async () => {
+    const { request, client } = await createTestApp({ user: lead, seed })
+    await client.execute("UPDATE attendees SET status = 'pending' WHERE id = 'g2'")
+    const { url } = await (await issue(request, 'g2')).json() as { url: string }
+    const body = await (await request(`/api/tickets/guest/${tokenOf(url)}`)).json() as { passToken: string | null; ticket: { qrToken: string | null } }
+    expect(body.passToken).toBeNull()
+    expect(body.ticket.qrToken).toBeNull()
+  })
+
+  it('refuses a still-valid passToken once the attendee is cancelled', async () => {
+    const { request, client, env } = await createTestApp({ user: lead, seed })
+    const { url } = await (await issue(request, 'g2')).json() as { url: string }
+    const { passToken } = await (await request(`/api/tickets/guest/${tokenOf(url)}`)).json() as { passToken: string }
+    await client.execute("UPDATE attendees SET status = 'cancelled' WHERE id = 'g2'")
+    const res = await request(`/api/events/ev/passes/google?token=${encodeURIComponent(passToken)}`)
+    expect(res.status).toBe(404)
+    expect(env).toBeDefined()
   })
 })
 

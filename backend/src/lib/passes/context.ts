@@ -133,7 +133,7 @@ export async function loadPassContext(
 
   const aRes = await client.execute({
     sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value, csv_row_id FROM attendees
-          WHERE id = ? AND event_id = ?`,
+          WHERE id = ? AND event_id = ? AND status = 'confirmed'`,
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return null

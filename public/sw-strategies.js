@@ -174,6 +174,11 @@
       await cache.delete(request, { ignoreVary: true })
       return res
     }
+    // A rotated or cancelled guest link answers 404; the cached copy must not keep rendering offline.
+    if (res.status === 404 && /^\/api\/tickets\/guest\//.test(new URL(request.url).pathname)) {
+      await cache.delete(request, { ignoreVary: true })
+      return res
+    }
     if (cacheable(res)) {
       defer(deps, safePut(cache, request, stamped(res.clone())))
       return res

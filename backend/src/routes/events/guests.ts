@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { InStatement } from '@libsql/client/web'
 import { db, type Bindings } from '../../lib/db'
 import { recordAudit } from '../../lib/audit'
-import { conflict, forbidden, notFound, tooMany, unauthorized } from '../../lib/errors'
+import { badRequest, conflict, forbidden, notFound, tooMany, unauthorized } from '../../lib/errors'
 import { hmacIp } from '../../lib/ipHash'
 import { toCsv } from '../../lib/links/csv'
 import { signPassToken } from '../../lib/passes/context'
@@ -76,6 +76,10 @@ app.post('/api/events/:slug/attendees/:id/guest-link', async (c) => {
 app.get('/api/events/:slug/attendees.csv', async (c) => {
   const user = c.var.user
   if (!user) throw unauthorized()
+  // A custom header cannot ride a cross-site navigation, so a link or form elsewhere cannot trigger issuing.
+  if (!c.req.header('X-Active-Org-Id')?.trim()) {
+    throw badRequest('org_header_required', 'Send the X-Active-Org-Id header to export attendees.')
+  }
   const client = db(c)
   const lead = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
   if (!lead.ok) throw lead.status === 404 ? notFound('Event not found.') : forbidden('forbidden', 'Forbidden.')
@@ -138,7 +142,7 @@ app.get('/api/events/:slug/attendees.csv', async (c) => {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${safeSlug}-attendees.csv"`,
-      'Cache-Control': 'private, no-store',
+      'Cache-Control': 'no-store',
     },
   })
 })
@@ -174,11 +178,10 @@ app.get('/api/tickets/guest/:token', async (c) => {
   })
   if (!ticketRes.rows[0]) throw notFound('Ticket not found.')
   const ticket = ticketFromRow(ticketRes.rows[0])
-  const passToken = await signPassToken(c.env, {
-    attendeeId: ticket.id,
-    eventId: String(row.event_id),
-    slug: ticket.event.slug,
-  })
+  // Wallet passes are for confirmed seats only.
+  const passToken = ticket.status === 'confirmed'
+    ? await signPassToken(c.env, { attendeeId: ticket.id, eventId: String(row.event_id), slug: ticket.event.slug })
+    : null
   return c.json({ ticket, passToken })
 })
 

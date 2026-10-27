@@ -11,6 +11,11 @@ describe('toCsv', () => {
     expect(toCsv([['+1,2']])).toBe('"\'+1,2"\r\n')
   })
 
+  it('prefixes a leading tab or carriage return', () => {
+    expect(toCsv([['\tcmd']])).toBe("'\tcmd\r\n")
+    expect(toCsv([['\rcmd']])).toBe('"\'\rcmd"\r\n')
+  })
+
   it('quotes a cell that contains a newline', () => {
     expect(toCsv([['line\nbreak']])).toBe('"line\nbreak"\r\n')
   })
