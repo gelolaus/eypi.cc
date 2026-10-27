@@ -213,37 +213,6 @@ app.get('/api/events', async (c) => {
   return c.json({ status: 'ok', events: result.rows })
 })
 
-// ── GET /api/events/:slug/attendees ───────────────────────────────────────────
-app.get('/api/events/:slug/attendees', async (c) => {
-  const user = c.var.user
-  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
-
-  const slug = c.req.param('slug')
-  const client = db(c)
-
-  const leadCheck = await requireEventLead(client, slug, c.var.orgId)
-  if (!leadCheck.ok) return c.json({ status: 'error', message: leadCheck.message }, leadCheck.status)
-  const event = leadCheck.event
-
-  const result = await client.execute({
-    sql: `
-      SELECT a.id, a.first_name, a.last_name, a.email, a.qr_token, a.cluster_value,
-             ci.action AS status, ci.actioned_at
-      FROM attendees a
-      LEFT JOIN (
-        SELECT attendee_id, action, actioned_at,
-               ROW_NUMBER() OVER (PARTITION BY attendee_id ORDER BY actioned_at DESC, rowid DESC) AS rn
-        FROM check_ins
-        WHERE event_id = ?
-      ) ci ON ci.attendee_id = a.id AND ci.rn = 1
-      WHERE a.event_id = ?
-      ORDER BY a.first_name, a.last_name`,
-    args: [event.id, event.id],
-  })
-
-  return c.json({ status: 'ok', attendees: result.rows })
-})
-
 // ── POST /api/events/:slug/clusters ──────────────────────────────────────────
 // Save cluster configuration. Only before finalization.
 app.post('/api/events/:slug/clusters', async (c) => {

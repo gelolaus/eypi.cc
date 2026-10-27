@@ -4,6 +4,7 @@ import { orgContext } from '../../middleware/orgContext'
 import { enforceConsent } from '../../middleware/requireConsent'
 import { attachSession } from '../../middleware/requireAuth'
 import manage from './manage'
+import inbox from './inbox'
 import importRoutes from './import'
 import door from './door'
 import publicRoutes from './public'
@@ -50,6 +51,7 @@ app.use('/api/events/*', async (c, next) => {
   return orgContext(c, next)
 })
 
+app.route('/', inbox)
 app.route('/', manage)
 app.route('/', importRoutes)
 app.route('/', door)
