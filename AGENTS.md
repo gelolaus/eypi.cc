@@ -10,6 +10,8 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Design language (wantap tokens, components, layout), UI copy, accessibility | `DESIGN_SYSTEM.md` |
 | Current overhaul (what and why) | `docs/superpowers/specs/2026-10-25-eypi-overhaul-design.md` |
 | Current overhaul (task-by-task) | `docs/superpowers/plans/2026-10-25-eypi-overhaul.md` |
+| Next round: speed, Tix rework, analytics (what and why) | `docs/superpowers/specs/2026-10-27-eypi-speed-tix-analytics-design.md` |
+| Owner-only steps for that round | `docs/owner-guide-speed-tix-analytics.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
 | Live database schema | `docs/db/schema-baseline.md` (versioned migrations land in `backend/migrations/` with the overhaul) |
 | Deploys | `docs/RELEASE.md` |
