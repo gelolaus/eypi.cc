@@ -117,7 +117,7 @@ describe('AppShell (signed in)', () => {
     signIn()
     const wrapper = await mountAt('/links')
     const aside = wrapper.get('aside')
-    for (const cls of ['hidden', 'lg:flex', 'w-72', 'border-r', 'bg-background/95']) {
+    for (const cls of ['hidden', 'lg:flex', 'w-64', 'border-r', 'bg-background/95']) {
       expect(aside.classes()).toContain(cls)
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
@@ -131,10 +131,10 @@ describe('AppShell (signed in)', () => {
     signIn()
     const wrapper = await mountAt('/links')
     const aside = wrapper.get('aside')
-    expect(aside.classes()).toContain('w-72')
+    expect(aside.classes()).toContain('w-64')
     await aside.get('button[aria-label="Collapse sidebar"]').trigger('click')
     expect(aside.classes()).toContain('w-16')
-    expect(aside.classes()).not.toContain('w-72')
+    expect(aside.classes()).not.toContain('w-64')
     expect(localStorage.getItem('eypi.rail.collapsed')).toBe('true')
     const link = aside.get('nav a[href="/links"]')
     expect(link.attributes('title')).toBe('Links')

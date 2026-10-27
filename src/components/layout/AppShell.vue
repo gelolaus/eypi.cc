@@ -12,7 +12,7 @@
     >
       <aside
         class="sticky top-0 hidden h-full shrink-0 flex-col border-r border-border bg-background/95 transition-[width] duration-150 lg:flex"
-        :class="collapsed ? 'w-16' : 'w-72'"
+        :class="collapsed ? 'w-16' : 'w-64'"
       >
         <div
           class="flex h-16 shrink-0 items-center border-b border-border"
