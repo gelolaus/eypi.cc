@@ -25,6 +25,14 @@ type ImageSize = {
   height: number
 }
 
+export type ImageMeta = {
+  w: number
+  h: number
+  fmt: ImageFormat
+  widths: number[]
+  ph: string
+}
+
 type MediaBucket = {
   put(
     key: string,
@@ -133,7 +141,7 @@ function readWebp(bytes: Uint8Array): ImageSize | null {
   return null
 }
 
-function sniff(bytes: Uint8Array): { format: ImageFormat; width: number; height: number } | null {
+export function sniff(bytes: Uint8Array): { format: ImageFormat; width: number; height: number } | null {
   if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47])) {
     const size = readPng(bytes)
     return size ? { format: 'png', ...size } : null
@@ -185,6 +193,70 @@ export async function putImage(
 
 export async function deleteObject(env: { MEDIA: MediaBucket }, key: string): Promise<void> {
   await env.MEDIA.delete(key)
+}
+
+/** `{originalKeyWithoutExt}-{width}.{webp|jpg|png}`. */
+export function variantKey(originalKey: string, width: number, fmt: ImageFormat): string {
+  const slash = originalKey.lastIndexOf('/')
+  const dot = originalKey.lastIndexOf('.')
+  const base = dot > slash ? originalKey.slice(0, dot) : originalKey
+  return `${base}-${width}.${EXTENSION[fmt]}`
+}
+
+/** Writes one variant beside its original. The caller has already validated the bytes. */
+export async function putVariant(
+  env: { MEDIA: MediaBucket },
+  input: { originalKey: string; width: number; fmt: ImageFormat; bytes: Uint8Array },
+): Promise<string> {
+  const key = variantKey(input.originalKey, input.width, input.fmt)
+  await env.MEDIA.put(key, input.bytes, { httpMetadata: { contentType: CONTENT_TYPE[input.fmt] } })
+  return key
+}
+
+/** Keys of every variant a meta describes. */
+export function variantKeys(originalKey: string, meta: Pick<ImageMeta, 'fmt' | 'widths'> | null | undefined): string[] {
+  if (!meta) return []
+  return meta.widths.map((width) => variantKey(originalKey, width, meta.fmt))
+}
+
+/** Deletes the original and the variants its meta lists. Variant failures never block the original. */
+export async function deleteWithVariants(
+  env: { MEDIA: MediaBucket },
+  key: string,
+  meta?: Pick<ImageMeta, 'fmt' | 'widths'> | null,
+): Promise<void> {
+  await Promise.all(variantKeys(key, meta).map(async (variant) => {
+    try {
+      await env.MEDIA.delete(variant)
+    } catch {
+      // A leftover variant is harmless; the original must still go.
+    }
+  }))
+  await env.MEDIA.delete(key)
+}
+
+/** Reads a stored meta column. Anything that is not a well-formed meta reads as null. */
+export function parseImageMeta(raw: unknown): ImageMeta | null {
+  if (typeof raw !== 'string' || !raw) return null
+  let value: unknown
+  try {
+    value = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!value || typeof value !== 'object') return null
+  const meta = value as Record<string, unknown>
+  const fmt = meta.fmt
+  if (fmt !== 'webp' && fmt !== 'jpeg' && fmt !== 'png') return null
+  if (!Number.isInteger(meta.w) || !Number.isInteger(meta.h)) return null
+  if (!Array.isArray(meta.widths) || !meta.widths.every((n) => Number.isInteger(n) && n > 0)) return null
+  return {
+    w: meta.w as number,
+    h: meta.h as number,
+    fmt,
+    widths: meta.widths as number[],
+    ph: typeof meta.ph === 'string' ? meta.ph : '',
+  }
 }
 
 export function mediaUrl(key: string): string {

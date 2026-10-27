@@ -154,6 +154,7 @@ describe('GET /api/orgs/invites', () => {
         orgId: 'org-alpha',
         orgName: 'Alpha',
         logoUrl: 'https://cdn.example/alpha.png',
+        logoMeta: null,
         invitedByName: 'Owner Ada',
         invitedAt: '2026-10-01T00:00:00.000Z',
       },

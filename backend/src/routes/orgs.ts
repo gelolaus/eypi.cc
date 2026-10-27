@@ -9,7 +9,7 @@ import type { Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
 import { reportError } from '../lib/reportError'
 import { deliverOrgInviteEmail } from '../lib/emails/orgInviteEmail'
-import { deleteObject, mediaUrl, putImage } from '../lib/media'
+import { deleteObject, deleteWithVariants, mediaUrl, parseImageMeta, putImage } from '../lib/media'
 import { requireAdmin } from '../middleware/requireAdmin'
 import { enforceConsent } from '../middleware/requireConsent'
 import { requireAuth } from '../middleware/requireAuth'
@@ -86,6 +86,12 @@ function presentImage(value: unknown, catalog: boolean): string | null {
     return mediaUrl(trimmed)
   }
   return catalog ? null : trimmed
+}
+
+/** Meta only travels with a stored (/media) image; legacy and external URLs have none. */
+function presentMeta(meta: unknown, url: string | null) {
+  if (!url || !url.startsWith('/media/')) return null
+  return parseImageMeta(meta)
 }
 
 type ImageChange = {
@@ -279,6 +285,8 @@ function mapOrgProfileRow(row: Record<string, unknown>, options?: { catalog?: bo
     aboutMarkdown: (row.about_markdown as string | null) ?? null,
     bannerUrl: presentImage(row.banner_url, catalog),
     logoUrl: presentImage(row.logo_url, catalog),
+    bannerMeta: presentMeta(row.banner_meta, presentImage(row.banner_url, catalog)),
+    logoMeta: presentMeta(row.logo_meta, presentImage(row.logo_url, catalog)),
     socialLinks: parseSocialLinks(row.social_links),
     isPublicCatalog: Number(row.is_public_catalog ?? 0) === 1,
   }
@@ -326,7 +334,7 @@ app.get('/public', async (c) => {
   try {
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, org_type, logo_url
+        SELECT id, name, tagline, org_type, logo_url, logo_meta
         FROM organizations
         WHERE is_public_catalog = 1
         ORDER BY name ASC
@@ -340,6 +348,7 @@ app.get('/public', async (c) => {
         tagline: (row.tagline as string | null) ?? null,
         orgType: mapOrgProfileRow(row).orgType,
         logoUrl: presentImage(row.logo_url, true),
+        logoMeta: presentMeta(row.logo_meta, presentImage(row.logo_url, true)),
       })),
     })
   } catch (error) {
@@ -359,7 +368,7 @@ app.get('/public/:slug', async (c) => {
   try {
     const orgRes = await database.execute({
       sql: `
-        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, banner_meta, logo_meta, social_links, is_public_catalog
         FROM organizations
         WHERE id = ? AND is_public_catalog = 1
         LIMIT 1
@@ -453,6 +462,7 @@ app.get('/', async (c) => {
           o.id as org_id,
           o.name as org_name,
           o.logo_url as logo_url,
+          o.logo_meta as logo_meta,
           o.owner_id,
           o.is_public_catalog,
           CASE WHEN o.owner_id = ? THEN 1 ELSE 0 END as is_owner,
@@ -470,6 +480,7 @@ app.get('/', async (c) => {
         org_id: row.org_id,
         org_name: row.org_name,
         logo_url: presentImage(row.logo_url, false),
+        logoMeta: presentMeta(row.logo_meta, presentImage(row.logo_url, false)),
         owner_id: row.owner_id,
         is_public_catalog: row.is_public_catalog,
         is_owner: row.is_owner,
@@ -578,6 +589,7 @@ app.get('/invites', async (c) => {
         o.id AS org_id,
         o.name AS org_name,
         o.logo_url AS logo_url,
+        o.logo_meta AS logo_meta,
         u.name AS invited_by_name,
         m.invited_at AS invited_at
       FROM org_members m
@@ -595,6 +607,7 @@ app.get('/invites', async (c) => {
     orgId: String(row.org_id),
     orgName: String(row.org_name),
     logoUrl: presentImage(row.logo_url, false),
+    logoMeta: presentMeta(row.logo_meta, presentImage(row.logo_url, false)),
     invitedByName: row.invited_by_name == null ? null : String(row.invited_by_name),
     invitedAt: row.invited_at == null ? null : String(row.invited_at),
   })))
@@ -725,7 +738,8 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
     const existing = await database.execute({
       sql: `
         SELECT id, name, owner_id, created_at, is_public_catalog, tagline,
-               about_markdown, banner_url, logo_url, social_links, org_type
+               about_markdown, banner_url, logo_url, social_links, org_type,
+               banner_meta, logo_meta
         FROM organizations
         WHERE id = ?
         LIMIT 1
@@ -785,8 +799,9 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
           sql: `
             INSERT INTO organizations (
               id, name, owner_id, created_at, is_public_catalog, tagline,
-              about_markdown, banner_url, logo_url, social_links, org_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              about_markdown, banner_url, logo_url, social_links, org_type,
+              banner_meta, logo_meta
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           args: [
             newOrgId,
@@ -800,6 +815,8 @@ app.patch('/admin/:org_id', requireAdmin, async (c) => {
             current.logo_url,
             current.social_links,
             current.org_type,
+            current.banner_meta,
+            current.logo_meta,
           ],
         },
         { sql: 'UPDATE events SET org_id = ? WHERE org_id = ?', args: [newOrgId, orgId] },
@@ -957,7 +974,7 @@ app.get('/:org_id/profile', async (c) => {
   try {
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, banner_meta, logo_meta, social_links, is_public_catalog
         FROM organizations
         WHERE id = ?
         LIMIT 1
@@ -1053,13 +1070,13 @@ app.patch('/:org_id/profile', async (c) => {
   }
 
   const uploaded: string[] = []
-  const deletes: string[] = []
+  const deletes: { key: string; meta: ReturnType<typeof parseImageMeta> }[] = []
   let committed = false
 
   try {
     if (data.bannerUrl !== undefined || data.logoUrl !== undefined) {
       const current = await database.execute({
-        sql: 'SELECT banner_url, logo_url FROM organizations WHERE id = ? LIMIT 1',
+        sql: 'SELECT banner_url, logo_url, banner_meta, logo_meta FROM organizations WHERE id = ? LIMIT 1',
         args: [orgId],
       })
       const row = current.rows[0]
@@ -1068,16 +1085,19 @@ app.patch('/:org_id/profile', async (c) => {
       if (data.bannerUrl !== undefined) {
         const change = await resolveOrgImage(c.env, orgId, 'banner', data.bannerUrl, currentBanner)
         if (change.uploadedKey) uploaded.push(change.uploadedKey)
-        if (change.deleteKey) deletes.push(change.deleteKey)
+        if (change.deleteKey) deletes.push({ key: change.deleteKey, meta: parseImageMeta(row?.banner_meta) })
         updates.push('banner_url = ?')
         args.push(change.value)
+        // A new image has no variants until the browser sends them.
+        if (change.value !== currentBanner) updates.push('banner_meta = NULL')
       }
       if (data.logoUrl !== undefined) {
         const change = await resolveOrgImage(c.env, orgId, 'logo', data.logoUrl, currentLogo)
         if (change.uploadedKey) uploaded.push(change.uploadedKey)
-        if (change.deleteKey) deletes.push(change.deleteKey)
+        if (change.deleteKey) deletes.push({ key: change.deleteKey, meta: parseImageMeta(row?.logo_meta) })
         updates.push('logo_url = ?')
         args.push(change.value)
+        if (change.value !== currentLogo) updates.push('logo_meta = NULL')
       }
     }
 
@@ -1091,9 +1111,9 @@ app.patch('/:org_id/profile', async (c) => {
       args,
     })
     committed = true
-    await Promise.all(deletes.map(async (key) => {
+    await Promise.all(deletes.map(async ({ key, meta }) => {
       try {
-        await deleteObject(c.env, key)
+        await deleteWithVariants(c.env, key, meta)
       } catch {
         // The row already points at the new object.
       }
@@ -1101,7 +1121,7 @@ app.patch('/:org_id/profile', async (c) => {
 
     const { rows } = await database.execute({
       sql: `
-        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, social_links, is_public_catalog
+        SELECT id, name, tagline, org_type, about_markdown, banner_url, logo_url, banner_meta, logo_meta, social_links, is_public_catalog
         FROM organizations
         WHERE id = ?
         LIMIT 1

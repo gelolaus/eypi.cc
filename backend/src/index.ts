@@ -14,6 +14,7 @@ import authMicrosoft from './routes/authMicrosoft'
 import legalRoutes from './routes/legal'
 import linkRoutes from './routes/links'
 import accountRoutes from './routes/account'
+import mediaVariantRoutes from './routes/mediaVariants'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
 import rumRoutes from './routes/rum'
@@ -75,6 +76,7 @@ app.use('/api/*', csrf)
 app.route('/', authMicrosoft)
 app.route('/', meRoutes)
 app.route('/', accountRoutes)
+app.route('/', mediaVariantRoutes)
 app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)

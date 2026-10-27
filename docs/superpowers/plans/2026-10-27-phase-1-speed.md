@@ -226,11 +226,11 @@
 **Interfaces:**
 - Produces: `PUT /api/media/variants` body `{ key: string; placeholder: string; meta: { w, h, fmt, widths }; variants: { width: number; dataUrl: string }[] }` → `{ meta: ImageMeta }`. `variantKey(originalKey: string, width: number, fmt: ImageFormat): string` → `'{originalKeyWithoutExt}-{width}.{webp|jpg|png}'`. Writes meta to the column that holds `key` (`organizations.logo_url|banner_url` → `logo_meta|banner_meta`; `dp_frames.image_url` → `image_meta`).
 
-- [ ] **Step 1: Failing tests:** authz matrix (anonymous 401; member of the key's org 200; `rejects other org` 403; admin 200 for any key); `rejects a width not in the profile` 422; `rejects a variant wider than the original` 422; `rejects a non-image data URL` 422; `rejects a variant over 2 MB` 422; `key that matches no row` 404; org GET returns `logoMeta`; replacing a logo deletes old variants from R2.
-- [ ] **Step 2: Run** `npx vitest run backend/src/routes/mediaVariants.test.ts backend/src/routes/orgs*.test.ts backend/src/routes/dp.test.ts` → FAIL.
-- [ ] **Step 3: Implement**, reusing `sniff` from `media.ts` for magic bytes and dimensions.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(media): store image variants and return their metadata`.
+- [x] **Step 1: Failing tests:** authz matrix (anonymous 401; member of the key's org 200; `rejects other org` 403; admin 200 for any key); `rejects a width not in the profile` 422; `rejects a variant wider than the original` 422; `rejects a non-image data URL` 422; `rejects a variant over 2 MB` 422; `key that matches no row` 404; org GET returns `logoMeta`; replacing a logo deletes old variants from R2.
+- [x] **Step 2: Run** `npx vitest run backend/src/routes/mediaVariants.test.ts backend/src/routes/orgs*.test.ts backend/src/routes/dp.test.ts` → FAIL.
+- [x] **Step 3: Implement**, reusing `sniff` from `media.ts` for magic bytes and dimensions.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(media): store image variants and return their metadata`.
 
 ### Task 14: `<AppImage>` and upload wiring
 

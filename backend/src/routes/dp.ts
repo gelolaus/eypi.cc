@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { Client } from '@libsql/client/web'
 import { db, type Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
-import { deleteObject, mediaUrl, putImage } from '../lib/media'
+import { deleteWithVariants, mediaUrl, parseImageMeta, putImage, type ImageMeta } from '../lib/media'
 import { reportError } from '../lib/reportError'
 import { checkRateLimit } from '../lib/rateLimit'
 import { isOrgFeature } from '../middleware/orgGuard'
@@ -94,10 +94,13 @@ function isFrameKey(value: string): boolean {
   return value.startsWith('frames/') && !value.includes('..')
 }
 
-async function discardKeys(env: Bindings, keys: string[]) {
-  await Promise.all(keys.map(async (key) => {
+type DiscardItem = string | { key: string; meta: ImageMeta | null }
+
+async function discardKeys(env: Bindings, items: DiscardItem[]) {
+  await Promise.all(items.map(async (item) => {
+    const { key, meta } = typeof item === 'string' ? { key: item, meta: null } : item
     try {
-      await deleteObject(env, key)
+      await deleteWithVariants(env, key, meta)
     } catch {
       // The write already failed. A missing object should not hide that error.
     }
@@ -147,7 +150,7 @@ async function presentFrame(env: Bindings, stored: string): Promise<{ url: strin
 
 async function loadFrames(env: Bindings, client: Client, campaignId: string) {
   const frames = await client.execute({
-    sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    sql: 'SELECT id, image_url, image_meta, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
     args: [campaignId],
   })
   return Promise.all(frames.rows.map(async (frame) => {
@@ -156,6 +159,7 @@ async function loadFrames(env: Bindings, client: Client, campaignId: string) {
       id: String(frame.id),
       label: frame.label == null ? null : String(frame.label),
       url: presented.url,
+      imageMeta: presented.url.startsWith('/media/') ? parseImageMeta(frame.image_meta) : null,
       width: presented.width,
       height: presented.height,
       position: Number(frame.position ?? 0),
@@ -416,7 +420,7 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   }
 
   const existingFrame = await client.execute({
-    sql: 'SELECT image_url FROM dp_frames WHERE id = ? AND campaign_id = ?',
+    sql: 'SELECT image_url, image_meta FROM dp_frames WHERE id = ? AND campaign_id = ?',
     args: [frameId, id],
   })
   if (existingFrame.rows.length === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
@@ -425,7 +429,9 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   const del = await client.execute({ sql: 'DELETE FROM dp_frames WHERE id = ? AND campaign_id = ?', args: [frameId, id] })
   if (del.rowsAffected === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
-  if (isFrameKey(imageKey)) await discardKeys(c.env, [imageKey])
+  if (isFrameKey(imageKey)) {
+    await discardKeys(c.env, [{ key: imageKey, meta: parseImageMeta(existingFrame.rows[0]?.image_meta) }])
+  }
 
   return c.json({ status: 'ok' })
 })
@@ -553,14 +559,16 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
-  const frames = await client.execute({ sql: 'SELECT image_url FROM dp_frames WHERE campaign_id = ?', args: [id] })
+  const frames = await client.execute({ sql: 'SELECT image_url, image_meta FROM dp_frames WHERE campaign_id = ?', args: [id] })
   await client.batch([
     { sql: 'DELETE FROM dp_frames WHERE campaign_id = ?', args: [id] },
     { sql: 'DELETE FROM dp_campaigns WHERE id = ?', args: [id] },
   ], 'write')
   await discardKeys(
     c.env,
-    frames.rows.map((frame) => String(frame.image_url ?? '')).filter(isFrameKey),
+    frames.rows
+      .map((frame) => ({ key: String(frame.image_url ?? ''), meta: parseImageMeta(frame.image_meta) }))
+      .filter((frame) => isFrameKey(frame.key)),
   )
 
   return c.json({ status: 'ok', message: 'Campaign deleted.' })
