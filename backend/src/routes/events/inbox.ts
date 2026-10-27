@@ -232,13 +232,20 @@ app.post('/api/events/:slug/attendees/bulk', async (c) => {
     }
   }
 
-  await recordAudit(client, {
-    actorUserId: user.id,
-    action: 'tix.bulk',
-    targetType: 'event',
-    targetId: event.id,
-    meta: { action, requested: ids.length, updated: updatedIds.length, skipped: skipped.length, ids: updatedIds },
-  })
+  // Best effort: the decisions are already committed, so a failed audit write must not turn them into a 500.
+  if (updatedIds.length > 0) {
+    try {
+      await recordAudit(client, {
+        actorUserId: user.id,
+        action: 'tix.bulk',
+        targetType: 'event',
+        targetId: event.id,
+        meta: { action, requested: ids.length, updated: updatedIds.length, skipped: skipped.length, ids: updatedIds },
+      })
+    } catch {
+      // swallowed on purpose
+    }
+  }
 
   return c.json({ status: 'ok', updated: updatedIds.length, skipped })
 })

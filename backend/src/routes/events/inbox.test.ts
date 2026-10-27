@@ -194,4 +194,46 @@ describe('bulk decisions', () => {
     expect((await bulk(request, 'ev', { ids: Array.from({ length: 201 }, (_, i) => `x${i}`), action: 'approve' })).status).toBe(400)
     expect((await bulk(request, 'ev', { ids: ['a'], action: 'delete' })).status).toBe(400)
   })
+
+  it('skips an entered (lottery) attendee as invalid_transition', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c, 'ev', { mode: 'lottery' }); await att(c, 'e1', 'ev', 'entered') } })
+    const body = await (await bulk(request, 'ev', { ids: ['e1'], action: 'approve' })).json() as { updated: number; skipped: { id: string; reason: string }[] }
+    expect(body).toMatchObject({ updated: 0, skipped: [{ id: 'e1', reason: 'invalid_transition' }] })
+    expect(await statusOf(client, 'e1')).toBe('entered')
+    expect((await client.execute("SELECT COUNT(*) AS n FROM audit_events WHERE action = 'tix.bulk'")).rows[0].n).toBe(0)
+  })
+
+  it('still returns 200 when the audit write fails', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c, 'ev'); await att(c, 'p1', 'ev', 'pending') } })
+    await client.execute('DROP TABLE audit_events')
+    const res = await bulk(request, 'ev', { ids: ['p1'], action: 'decline' })
+    expect(res.status).toBe(200)
+    expect(await statusOf(client, 'p1')).toBe('declined')
+  })
+})
+
+describe('inbox authorization', () => {
+  const anon = { 'Content-Type': 'application/json', Origin: 'https://eypi.cc', 'X-Active-Org-Id': 'org-1' }
+  const outsider: TestUser = { id: 'out-1', email: 'out@student.apc.edu.ph', name: 'Out', role: 'user' }
+
+  it('answers 401 when signed out', async () => {
+    const { request } = await createTestApp({ seed: async (c) => { await seed(c); await seedEvent(c, 'ev') } })
+    expect((await request('/api/events/ev/attendees?status=pending', { headers: anon })).status).toBe(401)
+    expect((await request('/api/events/ev/attendees/bulk', { method: 'POST', headers: anon, body: JSON.stringify({ ids: ['a'], action: 'approve' }) })).status).toBe(401)
+  })
+
+  it('answers 403 for a signed-in user who is not in the org', async () => {
+    const { request, client } = await createTestApp({ user: outsider, seed: async (c) => { await seed(c); await seedEvent(c, 'ev'); await att(c, 'p1', 'ev', 'pending') } })
+    expect((await get(request, '/api/events/ev/attendees?status=pending')).status).toBe(403)
+    expect((await bulk(request, 'ev', { ids: ['p1'], action: 'approve' })).status).toBe(403)
+    expect(await statusOf(client, 'p1')).toBe('pending')
+  })
+
+  it('answers 403 for another org event and 404 for an unknown slug', async () => {
+    const { request } = await createTestApp({ user: member, seed: async (c) => { await seed(c); await seedEvent(c, 'other', { org: 'org-2' }) } })
+    expect((await get(request, '/api/events/other/attendees?status=pending')).status).toBe(403)
+    expect((await bulk(request, 'other', { ids: ['x'], action: 'approve' })).status).toBe(403)
+    expect((await get(request, '/api/events/missing/attendees?status=pending')).status).toBe(404)
+    expect((await bulk(request, 'missing', { ids: ['x'], action: 'approve' })).status).toBe(404)
+  })
 })
