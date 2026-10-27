@@ -8,15 +8,16 @@
         header
           ? 'relative flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-0.5 pr-2 hover:bg-muted'
           : 'flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-muted',
+        collapsed && !header ? 'justify-center' : '',
       )"
     >
-      <Avatar :class="header ? 'size-8' : 'size-11'">
+      <Avatar :class="header ? 'size-8' : collapsed ? 'size-9' : 'size-11'">
         <AvatarFallback class="text-sm font-medium">
           {{ initials }}
         </AvatarFallback>
       </Avatar>
       <span
-        v-if="!header"
+        v-if="!header && !collapsed"
         class="min-w-0 flex-1"
       >
         <span class="line-clamp-2 text-base font-semibold leading-snug tracking-tight">{{ displayName }}</span>
@@ -144,10 +145,12 @@ import { useSignOut } from './useSignOut'
 const props = withDefaults(
   defineProps<{
     variant?: 'sidebar' | 'header'
+    /** Show the avatar only (collapsed side rail). */
+    collapsed?: boolean
     /** Modules that do not fit in the bottom tabs (header menu only). */
     overflow?: AppNavEntry[]
   }>(),
-  { variant: 'sidebar', overflow: () => [] },
+  { variant: 'sidebar', collapsed: false, overflow: () => [] },
 )
 
 const legalLinks = [

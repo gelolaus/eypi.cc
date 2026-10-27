@@ -127,6 +127,30 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  it('collapses the sidebar to icons, labels them for assistive tech and remembers the choice', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const aside = wrapper.get('aside')
+    expect(aside.classes()).toContain('w-72')
+    await aside.get('button[aria-label="Collapse sidebar"]').trigger('click')
+    expect(aside.classes()).toContain('w-16')
+    expect(aside.classes()).not.toContain('w-72')
+    expect(localStorage.getItem('eypi.rail.collapsed')).toBe('true')
+    const link = aside.get('nav a[href="/links"]')
+    expect(link.attributes('title')).toBe('Links')
+    expect(link.get('span').classes()).toContain('sr-only')
+    expect(aside.find('button[aria-label="Expand sidebar"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('starts collapsed when the choice was saved', async () => {
+    localStorage.setItem('eypi.rail.collapsed', 'true')
+    signIn()
+    const wrapper = await mountAt('/links')
+    expect(wrapper.get('aside').classes()).toContain('w-16')
+    wrapper.unmount()
+  })
+
   it('highlights the sidebar link for the current route', async () => {
     signIn()
     const wrapper = await mountAt('/links')

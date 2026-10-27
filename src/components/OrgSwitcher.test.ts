@@ -30,25 +30,30 @@ describe('orgSlugLabel', () => {
 })
 
 describe('OrgSwitcher label', () => {
-  it('shows the full name wrapped and the CAPS slug in the rail', () => {
+  it('shows only the CAPS slug in the rail and keeps the full name for hover and screen readers', () => {
     const wrapper = mount(OrgSwitcher, { props: { block: true, autoFetch: false } })
     const trigger = wrapper.get('button')
-    expect(trigger.text()).toContain(longName)
-    expect(trigger.text()).toContain('JPCS-APC')
+    expect(wrapper.get('[data-org-label]').text()).toBe('JPCS-APC')
+    expect(trigger.text()).not.toContain(longName)
     expect(trigger.attributes('title')).toBe(longName)
-    const name = wrapper.get('[data-org-name]')
-    expect(name.classes()).toContain('line-clamp-2')
-    expect(name.classes()).toContain('break-words')
-    expect(name.classes()).not.toContain('truncate')
+    expect(trigger.attributes('aria-label')).toContain(longName)
     wrapper.unmount()
   })
 
-  it('shows name and CAPS slug on menu rows', async () => {
+  it('shows only the CAPS slug on menu rows, with the full name as the title', async () => {
     const wrapper = mount(OrgSwitcher, { props: { block: true, autoFetch: false }, attachTo: document.body })
     await wrapper.get('button').trigger('click')
-    const menu = document.body.querySelector('[data-org-switcher-menu]')
-    expect(menu?.textContent).toContain(longName)
-    expect(menu?.textContent).toContain('JPCS-APC')
+    const menu = document.body.querySelector('[data-org-switcher-menu]')!
+    expect(menu.textContent).toContain('JPCS-APC')
+    expect(menu.textContent).not.toContain(longName)
+    expect(menu.querySelector('button[title="' + longName + '"]')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('hides the label visually when the rail is collapsed', () => {
+    const wrapper = mount(OrgSwitcher, { props: { block: true, collapsed: true, autoFetch: false } })
+    expect(wrapper.get('[data-org-label]').classes()).toContain('sr-only')
+    expect(wrapper.get('button').classes()).toContain('justify-center')
     wrapper.unmount()
   })
 
