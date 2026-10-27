@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestApp, type TestUser } from '../test/createTestApp'
-import { variantKey } from '../lib/media'
+import { parseImageMeta, variantKey } from '../lib/media'
 
 const ORIGIN = 'https://eypi.cc'
 
@@ -375,5 +375,95 @@ describe('meta in payloads and cleanup', () => {
     expect(all).not.toContain(variantKey(FRAME_KEY, 256, 'webp'))
     expect(all).not.toContain(variantKey(FRAME_KEY, 512, 'webp'))
     expect(all).toContain(second)
+  })
+
+  it('campaign delete removes every frame variant', async () => {
+    const app = await setup(admin)
+    expect((await put(app, validBody(FRAME_KEY, [256, 512]))).status).toBe(200)
+    const del = await app.request('/api/dp/camp-1', {
+      method: 'DELETE',
+      headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'alpha' },
+    })
+    expect(del.status).toBe(200)
+    const all = await keys(app)
+    expect(all).not.toContain(FRAME_KEY)
+    expect(all).not.toContain(variantKey(FRAME_KEY, 256, 'webp'))
+    expect(all).not.toContain(variantKey(FRAME_KEY, 512, 'webp'))
+  })
+
+  it('replacing a banner deletes its old variants and clears bannerMeta', async () => {
+    const app = await setup(admin)
+    expect((await put(app, validBody(BANNER_KEY, [640, 1280]))).status).toBe(200)
+    const res = await app.request('/api/orgs/alpha/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Origin: ORIGIN },
+      body: JSON.stringify({ bannerUrl: dataUrl(png(1500, 500)) }),
+    })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { profile: { bannerMeta: unknown } }
+    expect(body.profile.bannerMeta).toBeNull()
+    const all = await keys(app)
+    expect(all).not.toContain(BANNER_KEY)
+    expect(all).not.toContain(variantKey(BANNER_KEY, 640, 'webp'))
+    expect(all).not.toContain(variantKey(BANNER_KEY, 1280, 'webp'))
+  })
+
+  it('corrupt stored meta reads as null in GET /api/orgs', async () => {
+    const app = await setup(admin)
+    await app.client.execute("UPDATE organizations SET logo_url = '/media/orgs/alpha/logo-0123abcd.png', logo_meta = '{nope' WHERE id = 'alpha'")
+    const res = await app.request('/api/orgs')
+    const body = await res.json() as { orgs: { org_id: string; logoMeta: unknown }[] }
+    const alpha = body.orgs.find((o) => o.org_id === 'alpha')
+    expect(alpha).toBeDefined()
+    expect(alpha?.logoMeta).toBeNull()
+  })
+
+  it('admin org delete removes logo and banner originals and variants', async () => {
+    const app = await setup(admin)
+    await app.client.execute({
+      sql: 'INSERT INTO organizations (id, name, owner_id, logo_url, banner_url) VALUES (?, ?, ?, ?, ?)',
+      args: ['gamma', 'Gamma', admin.id, 'orgs/gamma/logo-0123abcd.png', 'orgs/gamma/banner-0123abcd.png'],
+    })
+    await app.env.MEDIA.put('orgs/gamma/logo-0123abcd.png', png(1000, 1000))
+    await app.env.MEDIA.put('orgs/gamma/banner-0123abcd.png', png(2400, 800))
+    expect((await put(app, validBody('orgs/gamma/logo-0123abcd.png', [96, 192]))).status).toBe(200)
+    expect((await put(app, validBody('orgs/gamma/banner-0123abcd.png', [640]))).status).toBe(200)
+    expect((await keys(app)).filter((k) => k.startsWith('orgs/gamma/'))).toHaveLength(5)
+
+    const del = await app.request('/api/orgs/admin/gamma', { method: 'DELETE', headers: { Origin: ORIGIN } })
+    expect(del.status).toBe(200)
+    const all = await keys(app)
+    expect(all.filter((k) => k.startsWith('orgs/gamma/'))).toEqual([])
+    expect(all).toContain(LOGO_KEY)
+  })
+
+  it('stores the placeholder with the sniffed format, not the declared MIME', async () => {
+    const app = await setup(member)
+    const body = validBody(LOGO_KEY, [96])
+    body.placeholder = dataUrl(png(16, 16), 'image/webp')
+    const res = await put(app, body)
+    expect(res.status).toBe(200)
+    const out = await res.json() as { meta: { ph: string } }
+    expect(out.meta.ph.startsWith('data:image/png;base64,')).toBe(true)
+  })
+
+  it('rate limits variant writes per user', async () => {
+    const app = await setup(member)
+    let last = 0
+    for (let i = 0; i < 31; i += 1) last = (await put(app, null, 'not json')).status
+    expect(last).toBe(429)
+  })
+})
+
+describe('parseImageMeta bounds', () => {
+  const ok = { w: 100, h: 100, fmt: 'webp', widths: [96], ph: '' }
+  it('accepts a sane meta and rejects out-of-range values', () => {
+    expect(parseImageMeta(JSON.stringify(ok))).not.toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, w: 0 }))).toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, h: 20001 }))).toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, widths: [1, 2, 3, 4, 5] }))).toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, widths: [5000] }))).toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, ph: 'javascript:alert(1)' }))).toBeNull()
+    expect(parseImageMeta(JSON.stringify({ ...ok, ph: 'data:image/png;base64,AAAA' }))).not.toBeNull()
   })
 })

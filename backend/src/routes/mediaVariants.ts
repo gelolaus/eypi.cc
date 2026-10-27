@@ -13,6 +13,7 @@ import {
   type ImageFormat,
   type ImageMeta,
 } from '../lib/media'
+import { checkRateLimit } from '../lib/rateLimit'
 import { reportError } from '../lib/reportError'
 import { enforceConsent } from '../middleware/requireConsent'
 import { requireAuth } from '../middleware/requireAuth'
@@ -163,6 +164,14 @@ app.put('/api/media/variants', async (c) => {
   const user = c.var.user
   if (!user?.id) return fail(401, 'unauthorized', 'Sign in to continue.')
 
+  const limited = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'media-variants',
+    subject: user.id,
+    limit: 30,
+    windowSec: 60,
+  })
+  if (!limited.ok) return fail(429, 'rate_limited', 'Too many image uploads. Try again shortly.')
+
   const declared = Number(c.req.header('Content-Length') ?? 0)
   if (declared > MAX_BODY_BYTES) return fail(413, 'payload_too_large', 'That request is too large.')
   const text = await c.req.text()
@@ -210,8 +219,12 @@ app.put('/api/media/variants', async (c) => {
         return fail(422, 'invalid_placeholder', 'The placeholder is not valid.')
       }
       const bytes = decodeImageDataUrl(input.placeholder, MAX_PLACEHOLDER_CHARS)
-      if (!sniff(bytes)) return fail(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
-      placeholder = input.placeholder
+      const sniffed = sniff(bytes)
+      if (!sniffed) return fail(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
+      // Rebuild from the sniffed format so the client's declared MIME is never stored.
+      let binary = ''
+      for (const byte of bytes) binary += String.fromCharCode(byte)
+      placeholder = `data:image/${sniffed.format};base64,${btoa(binary)}`
     }
 
     const seen = new Set<number>()

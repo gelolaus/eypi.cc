@@ -930,7 +930,7 @@ app.delete('/admin/:org_id', requireAdmin, async (c) => {
     }
 
     const named = await database.execute({
-      sql: 'SELECT name FROM organizations WHERE id = ?',
+      sql: 'SELECT name, logo_url, banner_url, logo_meta, banner_meta FROM organizations WHERE id = ?',
       args: [orgId],
     })
 
@@ -938,6 +938,23 @@ app.delete('/admin/:org_id', requireAdmin, async (c) => {
       { sql: 'DELETE FROM org_members WHERE org_id = ?', args: [orgId] },
       { sql: 'DELETE FROM organizations WHERE id = ?', args: [orgId] },
     ])
+
+    // The row is gone; remove its stored images and variants. Failures never fail the delete.
+    const images = named.rows[0]
+      ? [
+          { url: named.rows[0].logo_url, meta: named.rows[0].logo_meta },
+          { url: named.rows[0].banner_url, meta: named.rows[0].banner_meta },
+        ]
+      : []
+    await Promise.all(images.map(async ({ url, meta }) => {
+      const key = typeof url === 'string' ? url : ''
+      if (!key.startsWith('orgs/') || key.includes('..') || key.includes('\\')) return
+      try {
+        await deleteWithVariants(c.env, key, parseImageMeta(meta))
+      } catch {
+        // A leftover object is harmless.
+      }
+    }))
 
     if (named.rows.length > 0) {
       await recordAudit(database, {

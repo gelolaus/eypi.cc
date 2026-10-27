@@ -248,8 +248,10 @@ export function parseImageMeta(raw: unknown): ImageMeta | null {
   const meta = value as Record<string, unknown>
   const fmt = meta.fmt
   if (fmt !== 'webp' && fmt !== 'jpeg' && fmt !== 'png') return null
-  if (!Number.isInteger(meta.w) || !Number.isInteger(meta.h)) return null
-  if (!Array.isArray(meta.widths) || !meta.widths.every((n) => Number.isInteger(n) && n > 0)) return null
+  const inRange = (n: unknown, max: number) => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= max
+  if (!inRange(meta.w, 20000) || !inRange(meta.h, 20000)) return null
+  if (!Array.isArray(meta.widths) || meta.widths.length > 4 || !meta.widths.every((n) => inRange(n, 1920))) return null
+  if (meta.ph !== undefined && meta.ph !== '' && !(typeof meta.ph === 'string' && meta.ph.startsWith('data:image/'))) return null
   return {
     w: meta.w as number,
     h: meta.h as number,
