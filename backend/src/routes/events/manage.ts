@@ -18,10 +18,10 @@ function inChunks<T>(items: readonly T[], size = SQL_IN_CHUNK): T[][] {
 }
 
 // Latest check-in wins, including ties at the same second (higher rowid).
-// A removed attendee does not occupy a cluster slot.
+// A removed attendee (cancelled, or a legacy 'removed' row) does not occupy a cluster slot.
 const ACTIVE_CLUSTER_COUNT_SQL = `SELECT COUNT(*) as cnt
     FROM attendees a
-    WHERE a.event_id = ? AND a.cluster_value = ?
+    WHERE a.event_id = ? AND a.cluster_value = ? AND a.status != 'cancelled'
       AND NOT EXISTS (
         SELECT 1 FROM check_ins ci
         WHERE ci.attendee_id = a.id
@@ -861,7 +861,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
               FROM check_ins
               WHERE event_id = ?
             ) ci ON ci.attendee_id = a.id AND ci.rn = 1
-            WHERE a.event_id = ? AND (ci.action IS NULL OR ci.action != 'removed')`,
+            WHERE a.event_id = ? AND a.status != 'cancelled' AND (ci.action IS NULL OR ci.action != 'removed')`,
       args: [event.id, event.id],
     })
     if (Number(countRes.rows[0]?.cnt ?? 0) >= Number(event.max_attendees)) {

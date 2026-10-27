@@ -1,29 +1,10 @@
-import type { Client } from '@libsql/client/web'
+import type { Client, InStatement, ResultSet } from '@libsql/client/web'
 
 export const ALREADY_FINALIZED = {
   status: 'error' as const,
   message: 'Event is already finalized.',
   error: { code: 'already_finalized', message: 'Event is already finalized.' },
 }
-
-export async function latestCheckInAction(client: Client, attendeeId: string): Promise<string | null> {
-  const res = await client.execute({
-    sql: `SELECT action FROM check_ins
-          WHERE attendee_id = ?
-          ORDER BY actioned_at DESC, rowid DESC
-          LIMIT 1`,
-    args: [attendeeId],
-  })
-  const action = res.rows[0]?.action
-  return typeof action === 'string' ? action : null
-}
-
-export const LATEST_ACTION_IS = `(
-            SELECT action FROM check_ins
-            WHERE attendee_id = ?
-            ORDER BY actioned_at DESC, rowid DESC
-            LIMIT 1
-          )`
 
 export function actionError(code: string, message: string) {
   return { status: 'error' as const, message, error: { code, message } }
@@ -37,21 +18,95 @@ export function attendeeLabel(first: unknown, last: unknown): string {
   return `${String(first ?? '')} ${String(last ?? '')}`.replace(/\s+/g, ' ').trim()
 }
 
-export async function writeCheckInAction(
+export type DoorAction = 'checked_in' | 'checked_out'
+export type DoorFailure = 'already_checked_in' | 'not_checked_in' | 'not_confirmed' | 'cancelled' | 'unknown'
+export type DoorOutcome = { ok: true } | { ok: false; code: DoorFailure }
+
+export interface DoorActionInput {
+  /** check_ins.id. Replaying the same id is an idempotent success. */
+  id: string
+  attendeeId: string
+  eventId: string
+  action: DoorAction
+  /** Already normalised with doorTimestamp(). */
+  at: string
+}
+
+const LATEST_FOR_ATTENDEE = `(SELECT action FROM check_ins WHERE attendee_id = ? ORDER BY actioned_at DESC, rowid DESC LIMIT 1)`
+
+/**
+ * Normalise a client timestamp to the stored `YYYY-MM-DD HH:MM:SS.fff` form.
+ * Unparseable values, anything more than 5 minutes ahead of the server, and anything
+ * older than 7 days fall back to the server clock: a wrong tablet clock must not
+ * rewrite history or hide a row at the "latest" end of an attendee's timeline.
+ */
+export function doorTimestamp(at: unknown, now: number = Date.now()): string {
+  let ms = typeof at === 'string' ? Date.parse(at) : Number.NaN
+  if (!Number.isFinite(ms) || ms > now + 5 * 60_000 || ms < now - 7 * 86_400_000) ms = now
+  return new Date(ms).toISOString().replace('T', ' ').replace('Z', '')
+}
+
+/**
+ * Two statements that must run back-to-back in one transaction: a conditional
+ * INSERT (the whole conflict check and the write are one statement, so concurrent
+ * devices cannot both win) and a diagnostic read that explains a no-op.
+ * actioned_at is raised to the attendee's newest row so a late-syncing offline
+ * action still lands at the latest end of the timeline (ties go to the higher rowid).
+ */
+export function doorActionStatements(input: DoorActionInput): InStatement[] {
+  const { id, attendeeId, eventId, action, at } = input
+  const condition = action === 'checked_in'
+    ? `COALESCE(${LATEST_FOR_ATTENDEE}, 'not_checked_in') != 'checked_in'`
+    : `${LATEST_FOR_ATTENDEE} = 'checked_in'`
+  return [
+    {
+      sql: `INSERT OR IGNORE INTO check_ins (id, attendee_id, event_id, action, actioned_at)
+            SELECT ?, a.id, a.event_id, ?,
+                   MAX(?, COALESCE((SELECT MAX(actioned_at) FROM check_ins WHERE attendee_id = a.id), ?))
+            FROM attendees a
+            WHERE a.id = ? AND a.event_id = ? AND a.status = 'confirmed' AND ${condition}`,
+      args: [id, action, at, at, attendeeId, eventId, attendeeId],
+    },
+    {
+      sql: `SELECT a.status AS status,
+                   ${LATEST_FOR_ATTENDEE} AS latest,
+                   EXISTS (SELECT 1 FROM check_ins WHERE id = ? AND attendee_id = a.id AND event_id = a.event_id AND action = ?) AS replay
+            FROM attendees a WHERE a.id = ? AND a.event_id = ?`,
+      args: [attendeeId, id, action, attendeeId, eventId],
+    },
+  ]
+}
+
+export function doorOutcome(inserted: ResultSet, diagnostic: ResultSet, action: DoorAction): DoorOutcome {
+  if (Number(inserted.rowsAffected) === 1) return { ok: true }
+  const row = diagnostic.rows[0]
+  if (!row) return { ok: false, code: 'unknown' }
+  if (Number(row.replay) === 1) return { ok: true }
+  if (row.status === 'cancelled') return { ok: false, code: 'cancelled' }
+  if (row.status !== 'confirmed') return { ok: false, code: 'not_confirmed' }
+  if (action === 'checked_in') return { ok: false, code: 'already_checked_in' }
+  return { ok: false, code: row.latest === 'checked_in' ? 'unknown' : 'not_checked_in' }
+}
+
+/** Single-action core shared by the scanner routes and the offline sync. */
+export async function applyDoorAction(
   client: Client,
-  attendeeId: string,
   eventId: string,
-  action: 'checked_in' | 'checked_out' | 'removed' | 'not_checked_in',
-  whenSql: string,
-  whenArgs: string[] = [],
-): Promise<boolean> {
-  const result = await client.execute({
-    sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
-          SELECT ?, ?, ?, ?, strftime('%Y-%m-%d %H:%M:%f', 'now')
-          WHERE ${whenSql}`,
-    args: [crypto.randomUUID(), attendeeId, eventId, action, ...whenArgs],
-  })
-  return Number(result.rowsAffected) === 1
+  attendeeId: string,
+  action: DoorAction,
+  opts: { id?: string; at?: unknown } = {},
+): Promise<DoorOutcome> {
+  const [inserted, diagnostic] = await client.batch(
+    doorActionStatements({
+      id: opts.id ?? crypto.randomUUID(),
+      attendeeId,
+      eventId,
+      action,
+      at: doorTimestamp(opts.at ?? new Date().toISOString()),
+    }),
+    'write',
+  )
+  return doorOutcome(inserted, diagnostic, action)
 }
 
 export type CheckInResult =
@@ -65,33 +120,21 @@ export async function performCheckIn(
 ): Promise<CheckInResult> {
   const attendeeId = String(attendee.id)
   const name = attendeeLabel(attendee.first_name, attendee.last_name)
-  const latest = await latestCheckInAction(client, attendeeId)
-  if (latest === 'checked_in') {
-    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  const outcome = await applyDoorAction(client, eventId, attendeeId, 'checked_in')
+  if (outcome.ok) {
+    return {
+      ok: true,
+      message: `${name} checked in.`,
+      attendee: { id: attendeeId, firstName: String(attendee.first_name ?? ''), lastName: String(attendee.last_name ?? '') },
+    }
   }
-  if (latest === 'removed') {
+  if (outcome.code === 'cancelled') {
     return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
   }
-  const wrote = await writeCheckInAction(
-    client,
-    attendeeId,
-    eventId,
-    'checked_in',
-    `COALESCE(${LATEST_ACTION_IS}, 'not_checked_in') NOT IN ('checked_in', 'removed')`,
-    [attendeeId],
-  )
-  if (!wrote) {
-    const again = await latestCheckInAction(client, attendeeId)
-    if (again === 'removed') {
-      return { ok: false, status: 403, body: actionError('removed', `${name} has been removed from this event.`) }
-    }
-    return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
+  if (outcome.code === 'not_confirmed') {
+    return { ok: false, status: 409, body: actionError('not_confirmed', `${name} is not confirmed for this event.`) }
   }
-  return {
-    ok: true,
-    message: `${name} checked in.`,
-    attendee: { id: attendeeId, firstName: String(attendee.first_name ?? ''), lastName: String(attendee.last_name ?? '') },
-  }
+  return { ok: false, status: 409, body: actionError('already_checked_in', `${name} is already checked in.`) }
 }
 
 export type EventLeadRow = {

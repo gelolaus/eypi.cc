@@ -132,11 +132,12 @@ describe('check-in actions', () => {
     expect(rows.rows.map((row) => row.action)).toEqual(['removed'])
   })
 
-  it('restore returns the attendee to not_checked_in', async () => {
-    const { request } = await createTestApp({
+  it('restore returns a cancelled attendee to not_checked_in (legacy removed row ignored)', async () => {
+    const { request, client } = await createTestApp({
       user: lead,
       seed: async (db) => {
         await seedDoor(db)
+        await db.execute("UPDATE attendees SET status = 'cancelled' WHERE id = 'att-1'")
         await db.execute({
           sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
                 VALUES ('ci-removed', 'att-1', 'event-1', 'removed', '2026-10-26 01:00:00')`,
@@ -150,6 +151,20 @@ describe('check-in actions', () => {
     const listed = await request('/api/events/door/attendees', { headers })
     const body = await listed.json() as { attendees: { id: string; status: string | null }[] }
     expect(body.attendees.find((row) => row.id === 'att-1')?.status).toBe('not_checked_in')
+    const written = await client.execute('SELECT action FROM check_ins')
+    expect(written.rows.map((row) => row.action)).toEqual(['removed'])
+  })
+
+  it('remove cancels the attendee without writing a check_ins row and lists as removed', async () => {
+    const { request, client } = await createTestApp({ user: lead, seed: (db) => seedDoor(db) })
+    const res = await request('/api/events/door/remove', post('/api/events/door/remove', { attendeeId: 'att-1' }))
+    expect(res.status).toBe(200)
+    expect((await client.execute('SELECT * FROM check_ins')).rows).toHaveLength(0)
+    const listed = await request('/api/events/door/attendees', { headers })
+    const body = await listed.json() as { attendees: { id: string; status: string | null }[] }
+    expect(body.attendees[0]?.status).toBe('removed')
+    const scan = await request('/api/events/door/checkin', post('/api/events/door/checkin', { qrToken: 'qr-ana' }))
+    expect(scan.status).toBe(403)
   })
 
   it('lets an org member who is not the lead add a guest', async () => {
@@ -179,14 +194,14 @@ describe('check-in actions', () => {
         })
         await db.execute({
           sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
-                VALUES ('ci-out', 'att-1', 'event-1', 'removed', '2026-10-26 01:00:00')`,
+                VALUES ('ci-out', 'att-1', 'event-1', 'checked_out', '2026-10-26 01:00:00')`,
         })
       },
     })
 
     const listed = await request('/api/events/door/attendees', { headers })
     const body = await listed.json() as { attendees: { status: string | null }[] }
-    expect(body.attendees[0]?.status).toBe('removed')
+    expect(body.attendees[0]?.status).toBe('checked_out')
 
     const checkout = await request('/api/events/door/checkout', post('/api/events/door/checkout', { attendeeId: 'att-1' }))
     expect(checkout.status).toBe(409)
