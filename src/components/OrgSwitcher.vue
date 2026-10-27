@@ -23,10 +23,18 @@
         size="sm"
       />
       <span
-        class="min-w-0 flex-1 truncate text-left text-sm font-medium leading-tight"
+        data-org-label
+        class="min-w-0 flex-1 text-left"
         :class="compact ? 'hidden sm:inline' : ''"
       >
-        {{ activeOrg ? activeOrg.org_name : 'Select org' }}
+        <span
+          data-org-name
+          class="line-clamp-2 break-words text-sm font-medium leading-tight"
+        >{{ activeOrg ? activeOrg.org_name : 'Select org' }}</span>
+        <span
+          v-if="activeOrg"
+          class="block truncate font-mono text-xs text-muted-foreground"
+        >{{ orgSlugLabel(activeOrg) }}</span>
       </span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -93,11 +101,12 @@
               :name="org.org_name"
               size="sm"
             />
-            <span
-              class="min-w-0 flex-1 truncate text-base leading-snug sm:text-sm"
-              :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
-            >
-              {{ org.org_name }}
+            <span class="min-w-0 flex-1">
+              <span
+                class="line-clamp-2 break-words text-base leading-snug sm:text-sm"
+                :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
+              >{{ org.org_name }}</span>
+              <span class="block truncate font-mono text-xs text-muted-foreground">{{ orgSlugLabel(org) }}</span>
             </span>
             <span
               v-if="activeOrg?.org_id === org.org_id"
@@ -116,7 +125,7 @@ import { ref, watch, nextTick, useId, onMounted, onBeforeUnmount } from 'vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 import OrgLogo from '@/components/OrgLogo.vue'
-import type { OrgListItem } from '@/types/orgs'
+import { orgSlugLabel, type OrgListItem } from '@/types/orgs'
 
 const props = withDefaults(
   defineProps<{

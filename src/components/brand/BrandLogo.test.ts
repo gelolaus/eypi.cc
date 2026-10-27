@@ -17,6 +17,10 @@ describe('BrandLogo', () => {
     expect(w.get('img').attributes('alt')).toBe('')
     expect(w.get('img').classes()).toContain('size-8')
   })
+  it('uses the Eypi mascot as the mark', () => {
+    const w = mount(BrandLogo, { global })
+    expect(w.get('img').attributes('src')).toBe('/eypi-mark.png')
+  })
   it('hides the wordmark with markOnly and labels the element', () => {
     const w = mount(BrandLogo, { props: { markOnly: true, size: 'sm' }, global })
     expect(w.text()).toBe('')

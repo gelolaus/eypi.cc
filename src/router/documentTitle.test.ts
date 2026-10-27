@@ -93,6 +93,11 @@ describe('route titles', () => {
     expect(document.getElementById('route-announcer')?.textContent).toBe('Contact · eypi.cc')
   })
 
+  it('hides the route announcer visually', async () => {
+    await router.push('/contact')
+    expect(document.getElementById('route-announcer')?.classList.contains('sr-only')).toBe(true)
+  })
+
   it('scrolls without smooth behavior when reduced motion is requested', () => {
     vi.stubGlobal('matchMedia', (query: string) => media(query.includes('prefers-reduced-motion')))
     const current = router.currentRoute.value

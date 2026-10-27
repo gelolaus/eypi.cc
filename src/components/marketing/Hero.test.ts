@@ -2,6 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import Hero from './Hero.vue'
+import LiveStats from './LiveStats.vue'
 
 const mountHero = () =>
   mount(Hero, {
@@ -40,14 +41,17 @@ describe('Hero', () => {
     expect(mountHero().html()).not.toContain('animate-bounce')
     })
 
-  it('lays out two columns from lg with an aria-hidden preview panel', () => {
+  it('lays out two columns from lg with the live stats panel', () => {
     const wrapper = mountHero()
     const grid = wrapper.get('.grid')
     for (const cls of ['max-w-5xl', 'lg:grid-cols-[1.05fr_0.95fr]', 'gap-16', 'lg:gap-12']) {
       expect(grid.classes()).toContain(cls)
     }
-    const panel = wrapper.get('[data-hero-panel]')
-    expect(panel.attributes('aria-hidden')).toBe('true')
+    expect(wrapper.get('[data-hero-panel]').findComponent(LiveStats).exists()).toBe(true)
     expect(wrapper.findAll('h1')).toHaveLength(1)
+  })
+
+  it('shows no placeholder example hosts', () => {
+    expect(mountHero().html()).not.toContain('example.com')
   })
 })

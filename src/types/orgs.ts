@@ -63,6 +63,11 @@ export function orgSlug(org: Pick<OrgListItem, 'org_id'>): string {
   return org.org_id
 }
 
+/** Organization slug in capitals, for compact labels. */
+export function orgSlugLabel(org: Pick<OrgListItem, 'org_id'>): string {
+  return org.org_id.toUpperCase()
+}
+
 export const EMPTY_SOCIAL_LINKS: Required<OrgSocialLinks> = {
   website: '',
   facebook: '',

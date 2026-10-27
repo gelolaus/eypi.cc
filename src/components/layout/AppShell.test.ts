@@ -117,7 +117,7 @@ describe('AppShell (signed in)', () => {
     signIn()
     const wrapper = await mountAt('/links')
     const aside = wrapper.get('aside')
-    for (const cls of ['hidden', 'lg:flex', 'w-56', 'border-r', 'bg-background/95']) {
+    for (const cls of ['hidden', 'lg:flex', 'w-72', 'border-r', 'bg-background/95']) {
       expect(aside.classes()).toContain(cls)
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')

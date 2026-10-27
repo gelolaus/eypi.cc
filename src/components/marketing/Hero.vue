@@ -47,30 +47,9 @@
 
       <div
         data-hero-panel
-        class="float-slow mx-auto w-full max-w-sm justify-self-center lg:justify-self-end"
-        aria-hidden="true"
+        class="mx-auto w-full max-w-md justify-self-center lg:justify-self-end"
       >
-        <Card class="gap-3 p-5">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium text-muted-foreground">Short links</span>
-            <Badge>Live</Badge>
-          </div>
-          <div
-            v-for="row in rows"
-            :key="row.slug"
-            class="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-3"
-          >
-            <div class="min-w-0">
-              <p class="truncate text-base font-medium">
-                eypi.cc/{{ row.slug }}
-              </p>
-              <p class="truncate text-sm text-muted-foreground">
-                {{ row.host }}
-              </p>
-            </div>
-            <Copy class="size-4 shrink-0 text-muted-foreground" />
-          </div>
-        </Card>
+        <LiveStats />
       </div>
     </div>
   </section>
@@ -79,16 +58,8 @@
 <script setup lang="ts">
 defineOptions({ name: 'MarketingHero' })
 import BrandLogo from '@/components/brand/BrandLogo.vue'
-import { Copy } from 'lucide-vue-next'
-import { Badge } from '@/components/ui/badge'
+import LiveStats from '@/components/marketing/LiveStats.vue'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-
-const rows = [
-  { slug: 'orgweek', host: 'docs.example.com' },
-  { slug: 'join', host: 'forms.example.com' },
-  { slug: 'tickets', host: 'events.example.com' },
-]
 
 function scrollToFeatures() {
   const target = document.getElementById('features')
