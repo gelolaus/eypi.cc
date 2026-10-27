@@ -151,6 +151,15 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  it('drops the account chevron when collapsed', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const footer = () => wrapper.get('aside > div:last-child')
+    await wrapper.get('button[aria-label="Collapse sidebar"]').trigger('click')
+    expect(footer().findAll('svg[class*="chevron"]')).toHaveLength(0)
+    wrapper.unmount()
+  })
+
   it('highlights the sidebar link for the current route', async () => {
     signIn()
     const wrapper = await mountAt('/links')

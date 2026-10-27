@@ -23,7 +23,7 @@
         <span class="line-clamp-2 text-base font-semibold leading-snug tracking-tight">{{ displayName }}</span>
       </span>
       <ChevronDown
-        v-else
+        v-else-if="header"
         aria-hidden="true"
         class="size-4 shrink-0 text-muted-foreground"
       />
