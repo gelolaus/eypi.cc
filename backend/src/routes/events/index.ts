@@ -1,0 +1,46 @@
+import { Hono } from 'hono'
+import type { Bindings } from '../../lib/db'
+import { orgContext } from '../../middleware/orgContext'
+import { enforceConsent } from '../../middleware/requireConsent'
+import { attachSession } from '../../middleware/requireAuth'
+import manage from './manage'
+import importRoutes from './import'
+import door from './door'
+import publicRoutes from './public'
+import registrations from './registrations'
+
+// Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
+// eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
+// centrally there, so this module only declares the /api/events/* handlers.
+const app = new Hono<{ Bindings: Bindings }>()
+
+function eventRouteUsesOrg(path: string): boolean {
+  if (path === '/api/events') return true
+  if (!path.startsWith('/api/events/')) return false
+  if (path.endsWith('/lookup') || path.endsWith('/passes/google')) return false
+  return true
+}
+
+// Scoped: this router is mounted at '/', so a bare '*' would run session and
+// org lookups for every public route in the API.
+app.use('/api/events/*', async (c, next) => {
+  const unavailable = await attachSession(c)
+  if (unavailable) return unavailable
+  if (!eventRouteUsesOrg(c.req.path)) {
+    await next()
+    return
+  }
+  if (c.var.userId) {
+    const denied = await enforceConsent(c)
+    if (denied) return denied
+  }
+  return orgContext(c, next)
+})
+
+app.route('/', manage)
+app.route('/', importRoutes)
+app.route('/', door)
+app.route('/', publicRoutes)
+app.route('/', registrations)
+
+export default app
