@@ -162,6 +162,19 @@ describe('edge short-link redirect', () => {
     expect(logLinkClick).not.toHaveBeenCalled()
   })
 
+  it.each(['/@vite/client', '/@id/__x00__plugin-vue:export-helper', '/@fs/C:/app/src/main.ts'])(
+    'passes the vite dev path %s through to ASSETS without a 404',
+    async (path) => {
+      const fetchAsset = vi.fn(async () => new Response('vite-module', { status: 200 }))
+      const request = new Request(`https://eypi.cc${path}`)
+      const response = await worker.fetch(request, makeEnv({}, fetchAsset), ctx())
+
+      expect(response.status).toBe(200)
+      expect(await response.text()).toBe('vite-module')
+      expect(fetchAsset).toHaveBeenCalledWith(request)
+    },
+  )
+
   it('serves /assets/x.js from ASSETS', async () => {
     const fetchAsset = vi.fn(async (request: RequestInfo | URL) => {
       const url = request instanceof Request ? request.url : String(request)

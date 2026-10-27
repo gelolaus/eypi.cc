@@ -521,7 +521,8 @@ export default {
       return serveSitemap(request, env)
     }
 
-    if (pathname.startsWith('/assets/') || /\.[a-z0-9]+$/i.test(pathname)) {
+    // `/@vite/client` and `/@id/...` are extensionless dev-server modules; the SPA 404 below would break local dev.
+    if (pathname.startsWith('/assets/') || pathname.startsWith('/@') || /\.[a-z0-9]+$/i.test(pathname)) {
       return env.ASSETS.fetch(request)
     }
 
