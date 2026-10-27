@@ -128,8 +128,14 @@ const router = createRouter({
         {
           path: 'new',
           name: 'event-new',
-          component: () => import('@/views/tix/NewEventView.vue'),
+          component: () => import('@/views/tix/EventBuilderView.vue'),
           meta: { title: 'New event' },
+        },
+        {
+          path: ':id/edit',
+          name: 'event-edit',
+          component: () => import('@/views/tix/EventBuilderView.vue'),
+          meta: { title: 'Edit event' },
         },
         {
           path: ':id/select',

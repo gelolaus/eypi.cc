@@ -102,7 +102,9 @@ app.get('/api/events/:slug', async (c) => {
   const client = db(c)
 
   const result = await client.execute({
-    sql: 'SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields, status FROM events WHERE slug = ?',
+    sql: `SELECT id, slug, name, event_date, event_time, location, lead_user_id, org_id, max_attendees, selection_locked, pass_fields, status,
+            end_time, description, admission_mode, visibility, waitlist_enabled, registration_opens_at, registration_closes_at,
+            questions, cover_key, cover_meta FROM events WHERE slug = ?`,
     args: [slug],
   })
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Event not found.' }, 404)
@@ -119,9 +121,27 @@ app.get('/api/events/:slug', async (c) => {
   })
   const attendeeCount = Number(countRes.rows[0]?.cnt ?? 0)
 
+  const isLead = c.var.orgId === event.org_id
+  const text = (v: unknown) => (v == null ? null : String(v))
+  // The settings the builder edits; only the owning org gets them.
+  const settings = isLead ? {
+    endTime: text(event.end_time),
+    description: text(event.description),
+    admissionMode: event.admission_mode,
+    visibility: event.visibility,
+    capacity: event.max_attendees,
+    waitlistEnabled: Number(event.waitlist_enabled) === 1,
+    registrationOpensAt: text(event.registration_opens_at),
+    registrationClosesAt: text(event.registration_closes_at),
+    questions: parseQuestions(event.questions),
+    coverUrl: event.cover_key ? `/media/${String(event.cover_key)}` : null,
+    coverMeta: parseCoverMeta(event.cover_meta),
+  } : {}
+
   return c.json({
     status: 'ok',
     event: {
+      ...settings,
       id: event.id,
       slug: event.slug,
       name: event.name,
@@ -129,7 +149,7 @@ app.get('/api/events/:slug', async (c) => {
       eventTime: event.event_time,
       location: event.location,
       status: event.status,
-      isLead: c.var.orgId === event.org_id,
+      isLead,
       maxAttendees: event.max_attendees,
       selectionLocked: event.selection_locked === 1,
       attendeeCount,

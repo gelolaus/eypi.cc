@@ -527,3 +527,32 @@ describe('cover images', () => {
     expect(await row(client, 'ev')).toBeUndefined()
   })
 })
+
+describe('GET /api/events/:slug editor fields', () => {
+  it('returns the settings the builder edits to the owning org only', async () => {
+    const { request } = await createTestApp({ user: member, seed })
+    const made = await create(request, {
+      description: 'Hello **there**', endTime: '11:00', admissionMode: 'lottery', visibility: 'public', capacity: 40,
+      waitlistEnabled: true, registrationOpensAt: '2099-01-01T00:00:00Z',
+      questions: [{ id: 'diet', label: 'Diet', type: 'choice', options: ['None', 'Vegan'], required: true }],
+    })
+    expect(made.res.status).toBe(201)
+    const res = await send(request, 'GET', '/api/events/fest')
+    const { event } = await res.json() as { event: Record<string, unknown> }
+    expect(event).toMatchObject({
+      isLead: true, status: 'draft', description: 'Hello **there**', endTime: '11:00', admissionMode: 'lottery',
+      visibility: 'public', capacity: 40, waitlistEnabled: true, registrationOpensAt: '2099-01-01 00:00:00',
+      registrationClosesAt: null, coverUrl: null, questions: [{ id: 'diet', label: 'Diet', type: 'choice', options: ['None', 'Vegan'], required: true }],
+    })
+  })
+
+  it('leaves the settings out for another org', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await seedEvent(client, { slug: 'other', org: 'org-2', status: 'published' })
+    const res = await send(request, 'GET', '/api/events/other')
+    const { event } = await res.json() as { event: Record<string, unknown> }
+    expect(event.isLead).toBe(false)
+    expect(event).not.toHaveProperty('description')
+    expect(event).not.toHaveProperty('questions')
+  })
+})

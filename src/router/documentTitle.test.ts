@@ -29,6 +29,7 @@ const pages: Record<string, string> = {
   'dp-public': 'Frame',
   events: 'Tix',
   'event-new': 'New event',
+  'event-edit': 'Edit event',
   'event-select': 'Attendee selection',
   'event-manage': 'Event',
   'event-page': 'Event',

@@ -3,12 +3,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventsView from './EventsView.vue'
 import { api } from '@/lib/api'
+import { clearQueryCache } from '@/lib/queryCache'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
 beforeEach(() => {
+  clearQueryCache()
   localStorage.clear()
   vi.stubGlobal('fetch', vi.fn(async () => json({
     status: 'ok',
@@ -35,6 +37,25 @@ describe('EventsView', () => {
     expect(wrapper.html()).not.toMatch(/min-w-\[\d+px\]/)
     expect(wrapper.html()).toContain('Launch')
     for (const b of row.findAll('button')) expect(b.attributes('data-slot')).toBe('button')
+  })
+
+  it('shows the status and the admission mode on each row, and links to the builder', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({
+      status: 'ok',
+      events: [
+        { id: '1', slug: 'a', name: 'Alpha', event_date: '2026-11-01', event_time: '09:00', location: 'Hall', created_at: '', status: 'draft', admission_mode: 'lottery' },
+        { id: '2', slug: 'b', name: 'Beta', event_date: '2026-11-02', event_time: '09:00', location: 'Hall', created_at: '', status: 'published', admission_mode: 'fcfs' },
+        { id: '3', slug: 'c', name: 'Gamma', event_date: '2026-11-03', event_time: '09:00', location: 'Hall', created_at: '', status: 'closed', admission_mode: 'approval' },
+        { id: '4', slug: 'd', name: 'Delta', event_date: '2026-11-04', event_time: '09:00', location: 'Hall', created_at: '', status: 'cancelled', admission_mode: 'import' },
+      ],
+    })))
+    const wrapper = mount(EventsView, { global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } })
+    await flushPromises()
+    const rows = wrapper.findAll('[data-event-row]')
+    const badges = rows.map((r) => r.findAll('[data-slot="badge"]').map((b) => b.text()))
+    expect(badges).toEqual([['Draft', 'Lottery'], ['Published', 'First come, first served'], ['Closed', 'Approval'], ['Cancelled', 'CSV import']])
+    expect(rows[0].find('a[href="/manage/tix/a/edit"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 
   it('shows an event created after the first visit when the list is opened again', async () => {
