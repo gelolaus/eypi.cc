@@ -468,6 +468,50 @@ describe('useSession', () => {
       expect(session.settled.value).toBe(false)
     })
 
+    it('leaves state signed out when a load resolves after reset()', async () => {
+      const pending = deferred<Response>()
+      fetchMock.mockReturnValue(pending.promise)
+      const session = useSession()
+      const cb = vi.fn()
+      const task = session.load()
+      session.onReady(cb)
+      session.reset()
+      pending.resolve(jsonResponse(200, { ...meBody(3), needsConsent: [{ document: 'terms', version: '1' }] }))
+      await task
+      expect(session.user.value).toBeNull()
+      expect(session.status.value).toBe('idle')
+      expect(session.pendingInviteCount.value).toBe(0)
+      expect(session.needsConsent.value).toEqual([])
+      expect(cb).not.toHaveBeenCalled()
+    })
+
+    it('clears the tickets cache when a different person signs in on this browser', async () => {
+      const del = vi.fn(async () => true)
+      vi.stubGlobal('caches', { delete: del })
+      try {
+        localStorage.setItem('eypi_last_user', 'someone-else')
+        fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+        await useSession().load()
+        expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+        expect(localStorage.getItem('eypi_last_user')).toBe(ada.id)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('keeps the tickets cache when the same person returns', async () => {
+      const del = vi.fn(async () => true)
+      vi.stubGlobal('caches', { delete: del })
+      try {
+        localStorage.setItem('eypi_last_user', ada.id)
+        fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+        await useSession().load()
+        expect(del).not.toHaveBeenCalled()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
     it('ignores a load that finishes after reset()', async () => {
       const pending = deferred<Response>()
       fetchMock.mockReturnValue(pending.promise)

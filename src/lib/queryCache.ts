@@ -49,12 +49,15 @@ export function useQuery<T>(
     if (data.value === undefined) status.value = 'loading'
     try {
       const result = await load(k, fetcher)
-      if (k !== keyOf() || born !== epoch || mine !== seq) return
+      if (k !== keyOf() || mine !== seq) return
+      if (born !== epoch) return refresh()
       data.value = result
       error.value = null
       status.value = 'ready'
     } catch (err) {
-      if (k !== keyOf() || born !== epoch || mine !== seq) return
+      if (k !== keyOf() || mine !== seq) return
+      // The cache was cleared mid-flight: this answer is void, so ask again rather than stay 'loading'.
+      if (born !== epoch) return refresh()
       error.value = err
       status.value = 'error'
     }

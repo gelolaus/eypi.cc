@@ -100,13 +100,13 @@ type Profile = 'orgLogo' | 'banner' | 'frame'
 interface PendingItem { key: string; profile: Profile }
 
 // The variants endpoint allows 30 requests a minute per user; one item every
-// 2.5 s stays well under it. A 429 still backs off and retries.
+// 2.5 s stays well under it. A 429 backs off and retries; 4 waits of 20 s outlast the 60 s window.
 const props = withDefaults(defineProps<{ paceMs?: number; backoffMs?: number }>(), {
   paceMs: 2500,
-  backoffMs: 15000,
+  backoffMs: 20000,
 })
 
-const MAX_RETRIES = 3
+const MAX_RETRIES = 4
 
 const items = ref<PendingItem[]>([])
 const total = ref(0)
@@ -125,15 +125,17 @@ const summary = computed(() => {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-async function load() {
-  loading.value = true
+async function load(quiet = false): Promise<boolean> {
+  if (!quiet) loading.value = true
   loadError.value = ''
   try {
     const data = await api.get<{ items: PendingItem[] }>('/api/admin/media/pending')
     items.value = data.items
     total.value = data.items.length
+    return true
   } catch {
     loadError.value = 'Could not load the image list. Try again.'
+    return false
   } finally {
     loading.value = false
   }
@@ -168,6 +170,11 @@ async function optimize(item: PendingItem): Promise<void> {
 async function start() {
   if (running.value) return
   running.value = true
+  // Re-read what is still pending so a re-run only processes what is left.
+  if (!(await load(true))) {
+    running.value = false
+    return
+  }
   started.value = true
   done.value = 0
   failed.value = []

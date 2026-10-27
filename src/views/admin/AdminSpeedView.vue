@@ -132,15 +132,21 @@ const slowest = computed(() => {
     .slice(0, 8)
 })
 
+let seq = 0
+
 async function load() {
+  const mine = ++seq
   loading.value = true
   error.value = ''
   try {
-    data.value = await api.get<SpeedData>(`/api/admin/speed?days=${days.value}`)
+    const result = await api.get<SpeedData>(`/api/admin/speed?days=${days.value}`)
+    if (mine === seq) data.value = result
   } catch {
+    if (mine !== seq) return
+    data.value = null
     error.value = 'Could not load speed data. Try again.'
   } finally {
-    loading.value = false
+    if (mine === seq) loading.value = false
   }
 }
 

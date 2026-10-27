@@ -13,6 +13,23 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
+describe('useQuery epoch', () => {
+  it('restarts the load when the cache is cleared mid-flight', async () => {
+    let release!: (v: string) => void
+    const fetcher = vi.fn()
+      .mockImplementationOnce(() => new Promise<string>((r) => { release = r }))
+      .mockResolvedValueOnce('fresh')
+    const q = inScope(() => useQuery('epoch:1', fetcher))
+    expect(q.status.value).toBe('loading')
+    clearQueryCache()
+    release('stale')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(q.status.value).toBe('ready')
+    expect(q.data.value).toBe('fresh')
+  })
+})
+
 describe('useQuery', () => {
   it('returns cached data immediately and refreshes when stale', async () => {
     const fetcher = vi.fn().mockResolvedValueOnce('one').mockResolvedValueOnce('two')

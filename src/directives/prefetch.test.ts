@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { vPrefetch } from './prefetch'
+import { vPrefetch, warmRoute } from './prefetch'
 import { useSession } from '@/stores/session'
 import { clearQueryCache, peekQuery } from '@/lib/queryCache'
 import { prefetchDashboard, prefetchLinks, prefetchOrgsCatalog, linksListKey, linksListPath, ORGS_CATALOG_KEY, LINKS_SUMMARY_KEY } from '@/lib/queries'
@@ -12,6 +12,7 @@ const loadLinks = vi.fn(async () => stub)
 const loadOrgs = vi.fn(async () => stub)
 const data = vi.fn(async () => {})
 const authData = vi.fn(async () => {})
+const throwing = vi.fn((): Promise<void> => { throw new Error('sync') })
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/', component: stub },
     { path: '/links', component: loadLinks, meta: { requiresAuth: true, prefetch: authData } },
     { path: '/orgs', component: loadOrgs, meta: { prefetch: data } },
+    { path: '/boom', component: stub, meta: { prefetch: throwing } },
   ],
 })
 
@@ -91,6 +93,38 @@ describe('v-prefetch', () => {
     await vi.advanceTimersByTimeAsync(2000)
     expect(data).not.toHaveBeenCalled()
     w.unmount()
+  })
+
+  it('survives a prefetch loader that throws synchronously', async () => {
+    await expect(warmRoute(router, '/boom')).resolves.toBeUndefined()
+    expect(throwing).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels a queued idle callback and pending timer on unmount', async () => {
+    vi.useFakeTimers()
+    let cb: IntersectionObserverCallback = () => {}
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(c: IntersectionObserverCallback) { cb = c }
+      observe() {}
+      disconnect() {}
+    })
+    const idle = vi.fn(() => 42)
+    const cancel = vi.fn()
+    vi.stubGlobal('requestIdleCallback', idle)
+    vi.stubGlobal('cancelIdleCallback', cancel)
+    const w = mountLink('/orgs')
+    cb([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver)
+    await vi.advanceTimersByTimeAsync(1001)
+    expect(idle).toHaveBeenCalledTimes(1)
+    w.unmount()
+    expect(cancel).toHaveBeenCalledWith(42)
+
+    const w2 = mountLink('/orgs')
+    cb([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver)
+    await vi.advanceTimersByTimeAsync(500)
+    w2.unmount()
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(idle).toHaveBeenCalledTimes(1)
   })
 
   it('saveData skips', async () => {

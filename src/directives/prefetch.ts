@@ -14,6 +14,7 @@ type State = {
   to: RouteLocationRaw
   router: Router | undefined
   timer: ReturnType<typeof setTimeout> | undefined
+  cancelIdle: (() => void) | undefined
   observer: IntersectionObserver | undefined
   off: () => void
 }
@@ -53,13 +54,20 @@ export async function warmRoute(router: Router, to: RouteLocationRaw): Promise<v
     const last = dataRuns.get(data)
     if (last !== undefined && Date.now() - last < DATA_TTL_MS) return
     dataRuns.set(data, Date.now())
-    await data().catch(() => {})
+    // A loader that throws synchronously must not break the caller.
+    await Promise.resolve().then(data).catch(() => {})
   }
 }
 
-function whenIdle(fn: () => void): void {
-  if (typeof requestIdleCallback === 'function') requestIdleCallback(fn)
-  else setTimeout(fn, 1)
+function whenIdle(fn: () => void): () => void {
+  if (typeof requestIdleCallback === 'function') {
+    const id = requestIdleCallback(fn)
+    return () => {
+      if (typeof cancelIdleCallback === 'function') cancelIdleCallback(id)
+    }
+  }
+  const id = setTimeout(fn, 1)
+  return () => clearTimeout(id)
 }
 
 function setup(el: HTMLElement, state: State) {
@@ -73,7 +81,11 @@ function setup(el: HTMLElement, state: State) {
       const visible = entries.some((e) => e.isIntersecting)
       clearTimeout(state.timer)
       state.timer = undefined
-      if (visible) state.timer = setTimeout(() => whenIdle(run), VISIBLE_MS)
+      if (visible) {
+        state.timer = setTimeout(() => {
+          state.cancelIdle = whenIdle(run)
+        }, VISIBLE_MS)
+      }
     })
     state.observer.observe(el)
   }
@@ -81,6 +93,7 @@ function setup(el: HTMLElement, state: State) {
     el.removeEventListener('pointerenter', run)
     el.removeEventListener('focus', run)
     clearTimeout(state.timer)
+    state.cancelIdle?.()
     state.observer?.disconnect()
   }
 }
@@ -92,6 +105,7 @@ export const vPrefetch: Directive<HTMLElement, RouteLocationRaw> = {
       to: binding.value,
       router: binding.instance?.$router,
       timer: undefined,
+      cancelIdle: undefined,
       observer: undefined,
       off: () => {},
     }

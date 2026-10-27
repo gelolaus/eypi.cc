@@ -35,4 +35,42 @@ describe('AdminSpeedView', () => {
     expect(inp.text()).not.toContain('Needs work')
     expect(inp.text()).toContain('Good')
   })
+
+  it('requests the chosen window and ignores a stale response', async () => {
+    const urls: string[] = []
+    const resolvers: Array<(r: Response) => void> = []
+    vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
+      urls.push(String(input))
+      return new Promise<Response>((resolve) => { resolvers.push(resolve) })
+    }))
+    const stale = { ...payload, rows: [{ route: '/stale', metric: 'LCP', device: 'mobile', p75: 1, samples: 1 }] }
+    const answer = (body: unknown) => new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json' } })
+    const wrapper = mount(AdminSpeedView)
+    await flushPromises()
+    await wrapper.findAll('button').find((b) => b.text().includes('28'))!.trigger('click')
+    await flushPromises()
+    expect(urls[0]).toContain('days=7')
+    expect(urls[1]).toContain('days=28')
+    resolvers[1](answer(payload))
+    await flushPromises()
+    resolvers[0](answer(stale))
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('/stale')
+    expect(wrapper.findAll('[data-testid="speed-tile"]')).toHaveLength(5)
+  })
+
+  it('clears old data when a reload fails', async () => {
+    let fail = false
+    vi.stubGlobal('fetch', vi.fn(async () => (fail
+      ? new Response('{}', { status: 500, headers: { 'Content-Type': 'application/json' } })
+      : new Response(JSON.stringify(payload), { headers: { 'Content-Type': 'application/json' } }))))
+    const wrapper = mount(AdminSpeedView)
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="speed-tile"]')).toHaveLength(5)
+    fail = true
+    await wrapper.findAll('button').find((b) => b.text().includes('28'))!.trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="speed-tile"]')).toHaveLength(0)
+    expect(wrapper.text()).toContain('Could not load speed data')
+  })
 })

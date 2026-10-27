@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { ApiError, api } from '@/lib/api'
 import { clearQueryCache } from '@/lib/queryCache'
-import { clearTicketsCache } from '@/lib/registerSw'
+import { clearTicketsCache, noteSignedInUser } from '@/lib/registerSw'
 
 export type SessionUser = {
   id: string
@@ -87,14 +87,19 @@ function isUnauthorized(error: unknown): boolean {
 
 async function pull(): Promise<void> {
   const hadUser = user.value !== null
+  const startedIn = generation
   try {
     const data = await api.get<MeResponse>('/api/me')
+    // A reset while this was in flight means the response belongs to a session that has ended.
+    if (startedIn !== generation) return
     user.value = asUser(data.user)
     if (!user.value) void clearTicketsCache()
+    noteSignedInUser(user.value?.id ?? null)
     pendingInviteCount.value = asCount(data.pendingInviteCount)
     needsConsent.value = asConsentList(data.needsConsent)
     status.value = 'ready'
   } catch (error) {
+    if (startedIn !== generation) return
     if (isUnauthorized(error)) {
       void clearTicketsCache()
       user.value = null

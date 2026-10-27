@@ -150,4 +150,44 @@ describe('AdminMaintenanceView', () => {
     expect(wrapper.text()).toContain('already optimized')
     expect(wrapper.find('button').exists()).toBe(false)
   })
+
+  it('re-reads the pending list on start so Run again only does what is left', async () => {
+    let pendingCalls = 0
+    const calls = stubFetch((url) => {
+      if (url.endsWith('/api/admin/media/pending')) {
+        pendingCalls += 1
+        return jsonRes({ items: pendingCalls === 1 ? items : [items[2]] })
+      }
+      if (url.startsWith('/media/')) return new Response(new Blob(['x']))
+      return jsonRes({ meta: {} })
+    })
+    const wrapper = mount(AdminMaintenanceView, { props: { paceMs: 0 } })
+    await flushPromises()
+    await run(wrapper)
+    expect(pendingCalls).toBe(2)
+    expect(calls.filter((c) => c.method === 'PUT')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="progress"]').text()).toContain('1 of 1 optimized')
+  })
+
+  it('keeps backing off for longer than the 60 s rate-limit window', async () => {
+    vi.useFakeTimers()
+    try {
+      const calls = stubFetch((url, init) => {
+        if (url.endsWith('/api/admin/media/pending')) return jsonRes({ items: [items[0]] })
+        if (url.startsWith('/media/')) return new Response(new Blob(['x']))
+        if (init?.method === 'PUT') return jsonRes({ error: { code: 'rate_limited', message: 'slow' } }, 429)
+        return jsonRes({})
+      })
+      const wrapper = mount(AdminMaintenanceView)
+      await vi.advanceTimersByTimeAsync(0)
+      await wrapper.find('button').trigger('click')
+      await vi.advanceTimersByTimeAsync(61_000)
+      expect(wrapper.find('[data-testid="failed"]').exists()).toBe(false)
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect(wrapper.find('[data-testid="failed"]').exists()).toBe(true)
+      expect(calls.filter((c) => c.method === 'PUT')).toHaveLength(5)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
