@@ -92,4 +92,20 @@ describe('runRetention', () => {
     const left = await client.execute('SELECT id FROM link_reports ORDER BY id')
     expect(ids(left.rows)).toEqual(['report-cutoff', 'report-open', 'report-recent'])
   })
+
+  it('deletes rum samples older than 30 days', async () => {
+    const client = await memoryDb()
+    await client.execute({
+      sql: `INSERT INTO rum_samples (day, route, metric, value, rating, device) VALUES
+            (?, '/', 'LCP', 1, 'good', 'mobile'),
+            (?, '/', 'LCP', 2, 'good', 'mobile'),
+            (?, '/', 'LCP', 3, 'good', 'mobile')`,
+      args: ['2026-09-25', CSV_CUTOFF, '2026-10-26'],
+    })
+
+    await runRetention(client as unknown as WebClient, NOW)
+
+    const left = await client.execute('SELECT day FROM rum_samples ORDER BY day')
+    expect(left.rows.map((row) => String(row.day))).toEqual([CSV_CUTOFF, '2026-10-26'])
+  })
 })

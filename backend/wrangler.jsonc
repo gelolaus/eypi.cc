@@ -26,7 +26,7 @@
     "enabled": true
   },
   "triggers": {
-    "crons": ["0 19 * * *"]
+    "crons": ["0 19 * * *", "15 * * * *"]
   },
   // "vars": {
   //   "MY_VAR": "my-variable"

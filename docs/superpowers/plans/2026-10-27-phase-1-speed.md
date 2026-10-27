@@ -76,11 +76,11 @@
 **Interfaces:**
 - Produces: `runHourlyRollups(db: Client, now: Date): Promise<void>` (Phase 3 adds link and module rollups to it), `p75(values: number[]): number` (nearest-rank: sort ascending, index `ceil(0.75 * n) - 1`).
 
-- [ ] **Step 1: Failing tests:** `p75([1,2,3,4]) === 3`, `p75([5]) === 5`; `rolls up yesterday and today` (seed samples on 2 days, run, assert `rum_daily` rows and p75 values); `is idempotent` (run twice → same rows); retention test `deletes rum samples older than 30 days`; `scheduled dispatches hourly cron to rollups and daily cron to retention`.
-- [ ] **Step 2: Run** `npx vitest run backend/src/jobs` → FAIL.
-- [ ] **Step 3: Implement.** For each of yesterday/today (UTC days, same as `rum_samples.day`): read samples grouped in JS by `(route, metric, device)`, compute p75, then one batch: `DELETE FROM rum_daily WHERE day = ?` + inserts.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(perf): roll up speed samples every hour`.
+- [x] **Step 1: Failing tests:** `p75([1,2,3,4]) === 3`, `p75([5]) === 5`; `rolls up yesterday and today` (seed samples on 2 days, run, assert `rum_daily` rows and p75 values); `is idempotent` (run twice → same rows); retention test `deletes rum samples older than 30 days`; `scheduled dispatches hourly cron to rollups and daily cron to retention`.
+- [x] **Step 2: Run** `npx vitest run backend/src/jobs` → FAIL.
+- [x] **Step 3: Implement.** For each of yesterday/today (UTC days, same as `rum_samples.day`): read samples grouped in JS by `(route, metric, device)`, compute p75, then one batch: `DELETE FROM rum_daily WHERE day = ?` + inserts.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(perf): roll up speed samples every hour`.
 
 ### Task 4: SVG chart components
 

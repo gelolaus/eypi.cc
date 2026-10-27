@@ -12,7 +12,7 @@ function utcDateBefore(now: Date, days: number): string {
   return cutoff.toISOString().slice(0, 10)
 }
 
-/** Deletes expired sessions, old event CSV rows, and long-resolved link reports. */
+/** Deletes expired sessions, old event CSV rows, old speed samples, and long-resolved link reports. */
 export async function runRetention(database: Client, now: Date): Promise<void> {
   const csvCutoff = utcDateBefore(now, 30)
   const reportCutoff = new Date(now.getTime() - 180 * DAY_MS).toISOString()
@@ -27,6 +27,10 @@ export async function runRetention(database: Client, now: Date): Promise<void> {
           WHERE event_id IN (
             SELECT id FROM events WHERE substr(event_date, 1, 10) < ?
           )`,
+    args: [csvCutoff],
+  })
+  await database.execute({
+    sql: 'DELETE FROM rum_samples WHERE day < ?',
     args: [csvCutoff],
   })
   await database.execute({
