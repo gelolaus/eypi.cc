@@ -76,6 +76,7 @@ function leadFailure(check: { status: 403 | 404; message: string }): ApiError {
 }
 
 const COVER_MAX_BYTES = 10 * 1024 * 1024
+const COVER_DATA_URL_MAX = 14 * 1024 * 1024
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -84,7 +85,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 // (selection_locked=0) and returns selectionLocked:false for frontend redirect.
 app.post('/api/events', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   let raw: unknown
   try {
@@ -129,6 +130,7 @@ app.post('/api/events', async (c) => {
     return c.json(actionError('missing_first_name', 'Every attendee needs a first name.'), 422)
   }
 
+  try {
   await client.execute({
     sql: `INSERT INTO events (id, slug, lead_user_id, org_id, name, event_date, event_time, end_time, location, description,
             max_attendees, selection_locked, status, admission_mode, visibility, waitlist_enabled,
@@ -140,6 +142,13 @@ app.post('/api/events', async (c) => {
       input.visibility ?? 'unlisted', input.waitlistEnabled ? 1 : 0, opens, closes, JSON.stringify(input.questions ?? []),
     ],
   })
+  } catch (err) {
+    // A concurrent create can win the unique slug between the check above and this insert.
+    if (/UNIQUE|constraint/i.test(String(err instanceof Error ? err.message : err))) {
+      return c.json(actionError('slug_taken', 'Slug already taken — choose another.'), 409)
+    }
+    throw err
+  }
 
   if (!hasAttendees) {
     return c.json({
@@ -190,7 +199,7 @@ app.post('/api/events', async (c) => {
 // ── GET /api/events ───────────────────────────────────────────────────────────
 app.get('/api/events', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const client = db(c)
   const orgId = c.var.orgId
@@ -207,7 +216,7 @@ app.get('/api/events', async (c) => {
 // ── GET /api/events/:slug/attendees ───────────────────────────────────────────
 app.get('/api/events/:slug/attendees', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -239,7 +248,7 @@ app.get('/api/events/:slug/attendees', async (c) => {
 // Save cluster configuration. Only before finalization.
 app.post('/api/events/:slug/clusters', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -276,7 +285,7 @@ app.post('/api/events/:slug/clusters', async (c) => {
 // Returns cluster configs with live fill status.
 app.get('/api/events/:slug/clusters', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -335,7 +344,7 @@ app.get('/api/events/:slug/clusters', async (c) => {
 // Create attendees from selected CSV row IDs. Locks the event.
 app.post('/api/events/:slug/finalize', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -464,7 +473,7 @@ app.post('/api/events/:slug/finalize', async (c) => {
 // Re-raffle a cluster to fill remaining slots from unselected eligible rows.
 app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const clusterValue = decodeURIComponent(c.req.param('value'))
@@ -579,7 +588,7 @@ app.post('/api/events/:slug/clusters/:value/raffle', async (c) => {
 // ── DELETE /api/events/:slug ──────────────────────────────────────────────────
 app.delete('/api/events/:slug', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -609,7 +618,7 @@ app.delete('/api/events/:slug', async (c) => {
 // cancels anyone: promotion simply stops until seats free up.
 app.patch('/api/events/:slug', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -631,8 +640,14 @@ app.patch('/api/events/:slug', async (c) => {
   if (event.status === 'cancelled') {
     throw new ApiError(409, 'event_cancelled', 'A cancelled event cannot be edited.')
   }
-  if (body.admissionMode !== undefined && body.admissionMode !== event.admission_mode && event.status !== 'draft') {
-    throw new ApiError(409, 'admission_locked', 'The admission mode can only change while the event is a draft.')
+  if (body.admissionMode !== undefined && body.admissionMode !== event.admission_mode) {
+    const registered = await client.execute({
+      sql: "SELECT 1 FROM attendees WHERE event_id = ? AND source = 'self' AND status != 'cancelled' LIMIT 1",
+      args: [event.id],
+    })
+    if (registered.rows.length > 0) {
+      throw new ApiError(409, 'admission_locked', 'The admission mode cannot change once people have registered.')
+    }
   }
 
   const updates: string[] = []
@@ -670,7 +685,13 @@ app.patch('/api/events/:slug', async (c) => {
     opens: body.registrationOpensAt !== undefined ? body.registrationOpensAt : event.registration_opens_at,
     closes: body.registrationClosesAt !== undefined ? body.registrationClosesAt : event.registration_closes_at,
   })
-  if (crossFields) return c.json(invalidEvent(crossFields), 422)
+  if (crossFields) {
+    const touchedWaitlist = body.waitlistEnabled !== undefined || body.admissionMode !== undefined
+    const touchedWindow = body.registrationOpensAt !== undefined || body.registrationClosesAt !== undefined
+    if (!touchedWaitlist) delete crossFields.waitlistEnabled
+    if (!touchedWindow) delete crossFields.registrationClosesAt
+    if (Object.keys(crossFields).length > 0) return c.json(invalidEvent(crossFields), 422)
+  }
 
   const statements: InStatement[] = [
     { sql: `UPDATE events SET ${updates.join(', ')} WHERE id = ?`, args: [...args, event.id] },
@@ -712,14 +733,14 @@ async function managedEvent(client: ReturnType<typeof db>, id: string) {
 // deleted rather than cancelled. Each transition is a conditional UPDATE, so two
 // concurrent requests cannot both win.
 const TRANSITIONS: Record<'publish' | 'close' | 'cancel', { from: string[]; to: string }> = {
-  publish: { from: ['draft'], to: 'published' },
+  publish: { from: ['draft', 'closed'], to: 'published' },
   close: { from: ['published'], to: 'closed' },
   cancel: { from: ['published', 'closed'], to: 'cancelled' },
 }
 
 app.post('/api/events/:slug/:action{publish|close|cancel}', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const action = c.req.param('action') as keyof typeof TRANSITIONS
   const client = db(c)
@@ -741,7 +762,7 @@ app.post('/api/events/:slug/:action{publish|close|cancel}', async (c) => {
       move,
       {
         sql: `UPDATE attendees SET status = 'cancelled', decided_at = ${NOW_SQL}, decided_by = ?
-              WHERE event_id = ? AND status != 'cancelled'
+              WHERE event_id = ? AND status NOT IN ('cancelled', 'declined')
                 AND EXISTS (SELECT 1 FROM events WHERE id = ? AND status = 'cancelled')`,
         args: [user.id, event.id, event.id],
       },
@@ -760,7 +781,7 @@ app.post('/api/events/:slug/:action{publish|close|cancel}', async (c) => {
 // sends the resized variants to PUT /api/media/variants, which fills cover_meta.
 app.put('/api/events/:slug/cover', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const client = db(c)
   const leadCheck = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
@@ -773,7 +794,7 @@ app.put('/api/events/:slug/cover', async (c) => {
   } catch {
     // Falls through to invalid_image.
   }
-  const bytes = typeof body?.image === 'string' ? decodeDataUrl(body.image) : null
+  const bytes = typeof body?.image === 'string' && body.image.length <= COVER_DATA_URL_MAX ? decodeDataUrl(body.image) : null
   if (!bytes) throw new ApiError(422, 'invalid_image', 'Use a PNG, JPEG, or WebP image.')
 
   const stored = await putImage(c.env, {
@@ -801,7 +822,7 @@ app.put('/api/events/:slug/cover', async (c) => {
 
 app.delete('/api/events/:slug/cover', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const client = db(c)
   const leadCheck = await requireEventLead(client, c.req.param('slug'), c.var.orgId)
@@ -816,7 +837,7 @@ app.delete('/api/events/:slug/cover', async (c) => {
 // ── GET /api/events/:slug/csv-rows/search ─────────────────────────────────────
 app.get('/api/events/:slug/csv-rows/search', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const q = (c.req.query('q') ?? '').trim()
@@ -845,7 +866,7 @@ app.get('/api/events/:slug/csv-rows/search', async (c) => {
 // ── POST /api/events/:slug/add-guest ─────────────────────────────────────────
 app.post('/api/events/:slug/add-guest', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const client = db(c)
@@ -949,7 +970,7 @@ app.post('/api/events/:slug/add-guest', async (c) => {
 // Update attendee cluster_value (lead only).
 app.patch('/api/events/:slug/attendees/:id', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const attendeeId = c.req.param('id')
@@ -974,7 +995,7 @@ app.patch('/api/events/:slug/attendees/:id', async (c) => {
 // Set (or create) the max_count for a cluster. Creates the cluster row if ad-hoc.
 app.patch('/api/events/:slug/clusters/:value/max-count', async (c) => {
   const user = c.var.user
-  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+  if (!user) return c.json(actionError('unauthorized', 'Authentication required.'), 401)
 
   const slug = c.req.param('slug')
   const value = decodeURIComponent(c.req.param('value'))

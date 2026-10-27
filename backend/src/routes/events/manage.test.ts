@@ -194,15 +194,45 @@ describe('create and update', () => {
     expect(res.status).toBe(422)
   })
 
-  it('locks the admission mode once the event is published', async () => {
+  it('allows an admission mode change after publishing while nobody has registered, then locks it', async () => {
     const { request, client } = await createTestApp({ user: member, seed })
     await create(request, { admissionMode: 'fcfs' })
-    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery' })).status).toBe(200)
     await send(request, 'POST', '/api/events/fest/publish')
+    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'lottery' })).status).toBe(200)
+    expect((await row(client)).admission_mode).toBe('lottery')
+    const id = String((await row(client)).id)
+    await client.execute({ sql: "INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, source) VALUES ('s1', ?, 'A', 'B', 'a@x.test', 'q1', 'entered', 'self')", args: [id] })
     const res = await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval' })
     expect(res.status).toBe(409)
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('admission_locked')
     expect((await row(client)).admission_mode).toBe('lottery')
+    // A cancelled self-registration or an imported row does not lock it.
+    await client.execute("UPDATE attendees SET status = 'cancelled' WHERE id = 's1'")
+    expect((await send(request, 'PATCH', '/api/events/fest', { admissionMode: 'approval' })).status).toBe(200)
+  })
+
+  it('reopens a closed event through publish', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await create(request, { admissionMode: 'fcfs' })
+    await send(request, 'POST', '/api/events/fest/publish')
+    await send(request, 'POST', '/api/events/fest/close')
+    expect((await send(request, 'POST', '/api/events/fest/publish')).status).toBe(200)
+    expect((await row(client)).status).toBe('published')
+  })
+
+  it('answers a slug that is taken with 409 slug_taken', async () => {
+    const { request } = await createTestApp({ user: member, seed })
+    await create(request)
+    const again = await create(request)
+    expect(again.res.status).toBe(409)
+    expect(again.body.error?.code).toBe('slug_taken')
+  })
+
+  it('ignores a stale invalid pair the patch does not touch', async () => {
+    const { request, client } = await createTestApp({ user: member, seed })
+    await create(request, { admissionMode: 'fcfs' })
+    await client.execute("UPDATE events SET waitlist_enabled = 1, admission_mode = 'approval' WHERE slug = 'fest'")
+    expect((await send(request, 'PATCH', '/api/events/fest', { name: 'Renamed' })).status).toBe(200)
   })
 
   it('refuses edits to a cancelled event', async () => {
@@ -280,11 +310,13 @@ describe('state changes', () => {
     })
     const res = await send(request, 'POST', '/api/events/ev/cancel')
     expect(res.status).toBe(200)
-    for (let i = 1; i <= 6; i += 1) expect(await statusOf(client, `a${i}`)).toBe('cancelled')
+    for (const i of [1, 2, 3, 4, 6]) expect(await statusOf(client, `a${i}`)).toBe('cancelled')
+    expect(await statusOf(client, 'a5')).toBe('declined')
     expect(await statusOf(client, 'a9')).toBe('confirmed')
     const decided = await client.execute("SELECT id, decided_at, decided_by FROM attendees WHERE id IN ('a1', 'a5', 'a6') ORDER BY id")
     expect(decided.rows[0].decided_at).toBeTruthy()
     expect(decided.rows[0].decided_by).toBe('mem-1')
+    expect(decided.rows[1].decided_at).toBeNull()
     expect(decided.rows[2].decided_at).toBeNull()
   })
 
@@ -390,7 +422,14 @@ describe('authorization and errors', () => {
     expect(res.status).toBe(404)
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('not_found')
     const anon = await createTestApp({ seed })
-    expect((await send(anon.request, 'POST', '/api/events/nope/publish')).status).toBe(401)
+    for (const [method, path, body] of [
+      ['POST', '/api/events/nope/publish'], ['POST', '/api/events/nope/close'], ['POST', '/api/events/nope/cancel'],
+      ['PATCH', '/api/events/nope', { name: 'x' }], ['PUT', '/api/events/nope/cover', {}], ['DELETE', '/api/events/nope/cover'],
+    ] as [string, string, unknown?][]) {
+      const out = await send(anon.request, method, path, body)
+      expect(out.status, `${method} ${path}`).toBe(401)
+      expect(await out.json(), path).toMatchObject({ error: { code: 'unauthorized' } })
+    }
   })
 })
 
@@ -436,6 +475,8 @@ describe('cover images', () => {
     expect(res.status).toBe(422)
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('invalid_image')
     expect((await send(request, 'PUT', '/api/events/ev/cover', {})).status).toBe(422)
+    const huge = await send(request, 'PUT', '/api/events/ev/cover', { image: `data:image/png;base64,${'A'.repeat(15 * 1024 * 1024)}` })
+    expect(huge.status).toBe(422)
     expect(await objectKeys(env as never)).toEqual([])
     expect((await row(client, 'ev')).cover_key).toBeNull()
   })
