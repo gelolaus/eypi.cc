@@ -61,11 +61,11 @@
 - Consumes: `RUM_ROUTES`, `POST /api/rum`.
 - Produces: `startRum(router: Router, send?: (url: string, body: string) => boolean): void`, `deviceClass(width: number, coarsePointer: boolean): 'mobile'|'tablet'|'desktop'` (<768 mobile, <1024 tablet when coarse, else desktop).
 
-- [ ] **Step 1: Write failing tests:** `deviceClass` table cases; `flushes one batch on visibilitychange hidden` (mock `web-vitals` callbacks, fake `send`, assert one call to `${API_BASE}/api/rum` with route name `'links'`, not the path); `does nothing in dev` (`import.meta.env.PROD` false → no listeners).
-- [ ] **Step 2: Run** `npx vitest run src/lib/rum.test.ts` → FAIL.
-- [ ] **Step 3: Implement** with `onLCP/onINP/onCLS/onFCP/onTTFB` from `web-vitals`, buffer per page, flush on `visibilitychange`→hidden and on route change via `navigator.sendBeacon`. Call `startRum(router)` in `main.ts` after mount.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(perf): send core web vitals from the browser`.
+- [x] **Step 1: Write failing tests:** `deviceClass` table cases; `flushes one batch on visibilitychange hidden` (mock `web-vitals` callbacks, fake `send`, assert one call to `${API_BASE}/api/rum` with route name `'links'`, not the path); `does nothing in dev` (`import.meta.env.PROD` false → no listeners).
+- [x] **Step 2: Run** `npx vitest run src/lib/rum.test.ts` → FAIL.
+- [x] **Step 3: Implement** with `onLCP/onINP/onCLS/onFCP/onTTFB` from `web-vitals`, buffer per page, flush on `visibilitychange`→hidden and on route change via `navigator.sendBeacon`. Call `startRum(router)` in `main.ts` after mount.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(perf): send core web vitals from the browser`.
 
 ### Task 3: Hourly rollups cron
 

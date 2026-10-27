@@ -1,0 +1,79 @@
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { API_BASE_URL } from '@/config/api'
+
+type Cb = (m: { name: string; value: number; rating: string; navigationType: string }) => void
+const callbacks: Record<string, Cb> = {}
+vi.mock('web-vitals', () => {
+  const reg = (name: string) => (cb: Cb) => { callbacks[name] = cb }
+  return { onLCP: reg('LCP'), onINP: reg('INP'), onCLS: reg('CLS'), onFCP: reg('FCP'), onTTFB: reg('TTFB') }
+})
+
+import { deviceClass, startRum } from './rum'
+
+function fakeRouter(name: string) {
+  const hooks: Array<() => void> = []
+  return {
+    router: {
+      currentRoute: { value: { name, fullPath: '/links?token=secret', path: '/links' } },
+      afterEach: (fn: () => void) => { hooks.push(fn) },
+    } as never,
+    hooks,
+  }
+}
+
+describe('deviceClass', () => {
+  it.each([
+    [375, true, 'mobile'],
+    [767, false, 'mobile'],
+    [768, true, 'tablet'],
+    [1023, true, 'tablet'],
+    [1023, false, 'desktop'],
+    [1024, true, 'desktop'],
+    [1920, false, 'desktop'],
+  ] as const)('%i wide, coarse=%s -> %s', (w, coarse, expected) => {
+    expect(deviceClass(w, coarse)).toBe(expected)
+  })
+})
+
+describe('startRum', () => {
+  beforeEach(() => { for (const k of Object.keys(callbacks)) delete callbacks[k] })
+  afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks() })
+
+  it('flushes one batch on visibilitychange hidden', () => {
+    vi.stubEnv('PROD', true)
+    const send = vi.fn(() => true)
+    const { router } = fakeRouter('links')
+    startRum(router, send)
+    callbacks.LCP({ name: 'LCP', value: 1200, rating: 'good', navigationType: 'navigate' })
+    callbacks.CLS({ name: 'CLS', value: 0.02, rating: 'good', navigationType: 'navigate' })
+    expect(send).not.toHaveBeenCalled()
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(send).toHaveBeenCalledTimes(1)
+    const [url, body] = send.mock.calls[0] as unknown as [string, string]
+    expect(url).toBe(`${API_BASE_URL}/api/rum`)
+    const parsed = JSON.parse(body)
+    const samples = Array.isArray(parsed) ? parsed : parsed.samples
+    expect(samples).toHaveLength(2)
+    expect(samples[0].route).toBe('links')
+    expect(body).not.toContain('/links')
+    expect(body).not.toContain('secret')
+
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+
+  it('does nothing in dev', () => {
+    vi.stubEnv('PROD', false)
+    const add = vi.spyOn(document, 'addEventListener')
+    const send = vi.fn(() => true)
+    const { router, hooks } = fakeRouter('links')
+    startRum(router, send)
+    expect(add).not.toHaveBeenCalled()
+    expect(hooks).toHaveLength(0)
+    expect(Object.keys(callbacks)).toHaveLength(0)
+  })
+})
