@@ -393,6 +393,126 @@ describe('public media route', () => {
     expect(fetchAsset).not.toHaveBeenCalled()
   })
 
+  describe('edge cache', () => {
+    class MediaMemoryCache {
+      store = new Map<string, Response>()
+      async match(request: Request): Promise<Response | undefined> {
+        return this.store.get(request.url)?.clone()
+      }
+      async put(request: Request, response: Response): Promise<void> {
+        this.store.set(request.url, response)
+      }
+    }
+
+    function etagEnv(get: ReturnType<typeof vi.fn>): Env {
+      return { ...makeEnv({}, vi.fn()), MEDIA: { get } } as unknown as Env
+    }
+
+    function waitingCtx(): { context: ExecutionContext; settle: () => Promise<void> } {
+      const pending: Promise<unknown>[] = []
+      return {
+        context: {
+          waitUntil(promise: Promise<unknown>) {
+            pending.push(promise)
+          },
+          passThroughOnException() {},
+        } as unknown as ExecutionContext,
+        settle: async () => {
+          await Promise.all(pending)
+        },
+      }
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    it('second request is served from cache without R2', async () => {
+      const cache = new MediaMemoryCache()
+      vi.stubGlobal('caches', { default: cache })
+      const get = vi.fn(async () => ({
+        body: new Uint8Array([1, 2, 3]),
+        httpEtag: '"abc"',
+        httpMetadata: { contentType: 'image/png' },
+      }))
+      const env = etagEnv(get)
+      const first = waitingCtx()
+
+      const one = await worker.fetch(new Request('https://eypi.cc/media/frames/camp/a.png'), env, first.context)
+      expect(one.headers.get('ETag')).toBe('"abc"')
+      await one.arrayBuffer()
+      await first.settle()
+
+      const two = await worker.fetch(new Request('https://eypi.cc/media/frames/camp/a.png'), env, ctx())
+      expect(two.status).toBe(200)
+      expect(two.headers.get('ETag')).toBe('"abc"')
+      expect(two.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+      expect(new Uint8Array(await two.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]))
+      expect(get).toHaveBeenCalledTimes(1)
+    })
+
+    it('responds 304 to a matching If-None-Match', async () => {
+      vi.stubGlobal('caches', { default: new MediaMemoryCache() })
+      const get = vi.fn(async () => ({ body: new Uint8Array([1]), httpEtag: '"abc"' }))
+      const env = etagEnv(get)
+
+      const response = await worker.fetch(
+        new Request('https://eypi.cc/media/frames/camp/a.png', { headers: { 'If-None-Match': '"abc"' } }),
+        env,
+        ctx(),
+      )
+      expect(response.status).toBe(304)
+      expect(response.headers.get('ETag')).toBe('"abc"')
+      expect(await response.arrayBuffer()).toEqual(new ArrayBuffer(0))
+
+      const stale = await worker.fetch(
+        new Request('https://eypi.cc/media/frames/camp/a.png', { headers: { 'If-None-Match': '"zzz"' } }),
+        env,
+        ctx(),
+      )
+      expect(stale.status).toBe(200)
+    })
+
+    it('HEAD has no body and is never written to the cache', async () => {
+      const cache = new MediaMemoryCache()
+      vi.stubGlobal('caches', { default: cache })
+      const get = vi.fn(async () => ({ body: new Uint8Array([1, 2]), httpEtag: '"abc"' }))
+      const response = await worker.fetch(
+        new Request('https://eypi.cc/media/frames/camp/a.png', { method: 'HEAD' }),
+        etagEnv(get),
+        ctx(),
+      )
+      expect(response.status).toBe(200)
+      expect(await response.arrayBuffer()).toEqual(new ArrayBuffer(0))
+      expect(cache.store.size).toBe(0)
+    })
+
+    it('bypasses the cache for Range requests', async () => {
+      const cache = new MediaMemoryCache()
+      vi.stubGlobal('caches', { default: cache })
+      const get = vi.fn(async () => ({ body: new Uint8Array([1, 2]), httpEtag: '"abc"' }))
+      const response = await worker.fetch(
+        new Request('https://eypi.cc/media/frames/camp/a.png', { headers: { Range: 'bytes=0-0' } }),
+        etagEnv(get),
+        ctx(),
+      )
+      expect(response.status).toBe(200)
+      expect(cache.store.size).toBe(0)
+    })
+
+    it('does not cache a missing object', async () => {
+      const cache = new MediaMemoryCache()
+      vi.stubGlobal('caches', { default: cache })
+      const response = await worker.fetch(
+        new Request('https://eypi.cc/media/frames/none.png'),
+        etagEnv(vi.fn(async () => null)),
+        ctx(),
+      )
+      expect(response.status).toBe(404)
+      expect(cache.store.size).toBe(0)
+    })
+  })
+
   it('redirects retired password routes to /login with 301', async () => {
     const fetchAsset = vi.fn(async () => new Response('app-shell', { status: 200 }))
     const env = makeEnv({ verify: slugEntry(), 'reset-password': slugEntry() }, fetchAsset)

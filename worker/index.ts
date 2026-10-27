@@ -51,9 +51,47 @@ function publicMediaKey(pathname: string): string | null {
   return key
 }
 
-async function servePublicMedia(request: Request, env: Env, pathname: string): Promise<Response> {
+function etagMatches(header: string | null, etag: string): boolean {
+  if (!header) return false
+  if (header.trim() === '*') return true
+  const weak = (value: string) => value.trim().replace(/^W\//, '')
+  return header.split(',').some((candidate) => weak(candidate) === weak(etag))
+}
+
+function notModified(etag: string): Response {
+  return new Response(null, {
+    status: 304,
+    headers: { ETag: etag, 'Cache-Control': IMMUTABLE_MEDIA_CACHE },
+  })
+}
+
+async function servePublicMedia(
+  request: Request,
+  env: Env,
+  pathname: string,
+  ctx: ExecutionContext,
+): Promise<Response> {
   const key = publicMediaKey(pathname)
   if (!key) return new Response(null, { status: 404 })
+
+  // Only whole-object GETs touch the edge cache; HEAD and Range always go to R2.
+  const cache = request.method === 'GET' && !request.headers.has('Range') ? edgeCache() : null
+  const cacheKey = new Request(request.url, { method: 'GET' })
+  const ifNoneMatch = request.headers.get('If-None-Match')
+
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey)
+      if (hit) {
+        const etag = hit.headers.get('ETag')
+        if (etag && etagMatches(ifNoneMatch, etag)) return notModified(etag)
+        return hit
+      }
+    } catch {
+      // Fall through to R2 when the cache cannot be read.
+    }
+  }
+
   const object = await env.MEDIA.get(key)
   if (!object) return new Response(null, { status: 404 })
 
@@ -64,8 +102,17 @@ async function servePublicMedia(request: Request, env: Env, pathname: string): P
   })
   const contentType = object.httpMetadata?.contentType || contentTypeForKey(key)
   if (contentType) headers.set('Content-Type', contentType)
+  if (object.httpEtag) headers.set('ETag', object.httpEtag)
   if (request.method === 'HEAD') return new Response(null, { status: 200, headers })
-  return new Response(object.body, { status: 200, headers })
+
+  const etag = headers.get('ETag')
+  if (etag && etagMatches(ifNoneMatch, etag)) return notModified(etag)
+
+  const response = new Response(object.body, { status: 200, headers })
+  if (cache) {
+    ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}))
+  }
+  return response
 }
 
 type FrameSharePreview = {
@@ -514,7 +561,7 @@ export default {
     }
 
     if (pathname.startsWith('/media/') && pathname.length > '/media/'.length) {
-      return servePublicMedia(request, env, pathname)
+      return servePublicMedia(request, env, pathname, ctx)
     }
 
     if (pathname === '/sitemap.xml') {

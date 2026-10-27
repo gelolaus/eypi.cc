@@ -253,11 +253,11 @@
 **Files:**
 - Modify: `worker/index.ts` (`servePublicMedia`), `worker/index.test.ts`
 
-- [ ] **Step 1: Failing tests:** `second request is served from cache without R2` (fake `caches.default`, R2 `get` called once); `responds 304 to a matching If-None-Match` using the object's `httpEtag`; HEAD still has no body.
-- [ ] **Step 2: Run** `npx vitest run worker/index.test.ts` → FAIL.
-- [ ] **Step 3: Implement**: `cache.match(request)` → hit returns; miss reads R2, sets `ETag`, `ctx.waitUntil(cache.put(request, response.clone()))`.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `perf(media): cache r2 media at the edge with etags`.
+- [x] **Step 1: Failing tests:** `second request is served from cache without R2` (fake `caches.default`, R2 `get` called once); `responds 304 to a matching If-None-Match` using the object's `httpEtag`; HEAD still has no body.
+- [x] **Step 2: Run** `npx vitest run worker/index.test.ts` → FAIL.
+- [x] **Step 3: Implement**: `cache.match(request)` → hit returns; miss reads R2, sets `ETag`, `ctx.waitUntil(cache.put(request, response.clone()))`.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `perf(media): cache r2 media at the edge with etags`.
 
 ### Task 16: Optimize images backfill
 
