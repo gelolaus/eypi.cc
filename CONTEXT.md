@@ -193,3 +193,9 @@ Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run
 | `docs/superpowers/specs/` | Feature design specs |
 | `docs/superpowers/plans/` | Implementation plans (preferred output for planning skills) |
 | `.cursor/rules/local-dev.mdc` | Local prod-DB workflow + safety rules |
+
+## UI conventions
+
+- The product is called **Eypi** in the UI; `eypi.cc` is the domain and appears only in URLs and legal text.
+- **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. They are not on the member dashboard.
+- The side rail collapses to icons; the org switcher shows the capitalised org slug only.
