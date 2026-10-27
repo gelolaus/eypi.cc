@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
+import { routeNeedsSession, routeSkipsConsent } from './guards'
 
 const { checkOrgMembership } = useOrgMembership()
 const session = useSession()
@@ -366,8 +367,25 @@ const router = createRouter({
   ],
 })
 
+// A public page renders before /api/me answers. Once the session resolves,
+// a signed-in user who still owes consent is sent to /consent from wherever
+// they are, with the page they were on as returnTo.
+function redirectToConsent(): void {
+  const current = router.currentRoute.value
+  if (!session.user.value || session.needsConsent.value.length === 0) return
+  if (routeSkipsConsent(current)) return
+  void router.replace({ name: 'consent', query: { returnTo: current.fullPath } })
+}
+
 router.beforeEach(async (to, _from, next) => {
-  await session.load()
+  if (routeNeedsSession(to)) {
+    await session.load()
+  } else if (session.status.value !== 'ready') {
+    void session.load()
+    session.onReady(redirectToConsent)
+    next()
+    return
+  }
   const signedIn = session.user.value
 
   if (to.name === 'login' && signedIn) {
@@ -380,15 +398,7 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
-  const skipsConsent = to.matched.some((record) => (
-    record.name === 'consent'
-    || record.name === 'privacy'
-    || record.name === 'terms'
-    || record.name === 'acceptable-use'
-    || record.name === 'contact'
-    || record.name === 'login'
-    || record.name === 'account'
-  ))
+  const skipsConsent = routeSkipsConsent(to)
   if (signedIn && session.needsConsent.value.length > 0 && !skipsConsent) {
     next({ name: 'consent', query: { returnTo: to.fullPath } })
     return

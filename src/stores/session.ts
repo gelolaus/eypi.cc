@@ -29,6 +29,7 @@ const status = ref<'idle' | 'loading' | 'ready'>('idle')
 const pendingInviteCount = ref(0)
 const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
+let readyCallbacks = new Set<() => void>()
 
 function asCount(value: unknown): number {
   const count = typeof value === 'number' ? value : Number(value)
@@ -66,6 +67,7 @@ function reset(): void {
   needsConsent.value = []
   status.value = 'idle'
   inflight = null
+  readyCallbacks = new Set()
 }
 
 function isUnauthorized(error: unknown): boolean {
@@ -96,9 +98,26 @@ async function pull(): Promise<void> {
   }
 }
 
+function flushReady(): void {
+  if (status.value !== 'ready') return
+  const callbacks = readyCallbacks
+  readyCallbacks = new Set()
+  for (const cb of callbacks) cb()
+}
+
+/** Runs cb once, as soon as the session has resolved (now, if it already has). The same function registered twice runs once. */
+function onReady(cb: () => void): void {
+  if (status.value === 'ready') {
+    cb()
+    return
+  }
+  readyCallbacks.add(cb)
+}
+
 function track(task: Promise<void>): Promise<void> {
   const tracked = task.finally(() => {
     if (inflight === tracked) inflight = null
+    flushReady()
   })
   inflight = tracked
   return tracked
@@ -138,10 +157,11 @@ const session: {
   pendingInviteCount: Ref<number>
   needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
+  onReady: (cb: () => void) => void
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, pendingInviteCount, needsConsent, load, reload, reset, logout }
+} = { user, status, pendingInviteCount, needsConsent, load, onReady, reload, reset, logout }
 
 export function useSession() {
   return session

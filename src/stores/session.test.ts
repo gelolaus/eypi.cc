@@ -410,4 +410,42 @@ describe('useSession', () => {
 
     expect(hits).toEqual([])
   })
+
+  describe('onReady', () => {
+    it('runs once when the load resolves', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      expect(cb).not.toHaveBeenCalled()
+      await session.load()
+      expect(cb).toHaveBeenCalledTimes(1)
+      await session.reload()
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('runs immediately when the session is already ready', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      await session.load()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits through a failed load until one succeeds', async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: { code: 'x', message: 'x' } }))
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      await session.load()
+      expect(cb).not.toHaveBeenCalled()
+      await session.load()
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+  })
 })

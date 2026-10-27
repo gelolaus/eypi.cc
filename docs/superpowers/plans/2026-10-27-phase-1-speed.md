@@ -122,11 +122,11 @@
 **Interfaces:**
 - Produces: `routeNeedsSession(to: RouteLocationNormalized): boolean` exported from `src/router/guards.ts` (true if any matched record has `requiresAuth`, `requiresAdmin` or `requiresOrg`, or name is `login`/`consent`); session store `onReady(cb: () => void): void`.
 
-- [ ] **Step 1: Failing tests:** `public route resolves without waiting for /api/me` (pending fetch; navigation to `/frames/x` completes); `protected route waits`; `routes to consent after a background load` (user needing consent on `/frames/x` → after load resolves, router is at `consent` with `returnTo`); home renders stat placeholders with fixed height before `/api/stats` resolves.
-- [ ] **Step 2: Run** `npx vitest run src/router src/stores/session.test.ts` → FAIL.
-- [ ] **Step 3: Implement.** Guard: `if (routeNeedsSession(to)) await session.load(); else void session.load()`. Consent redirect for the background case runs from `session.onReady`. Add `<link rel="preconnect" href="https://api.eypi.cc" crossorigin>` to `index.html`.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `perf(routing): render public pages without waiting for the session`.
+- [x] **Step 1: Failing tests:** `public route resolves without waiting for /api/me` (pending fetch; navigation to `/frames/x` completes); `protected route waits`; `routes to consent after a background load` (user needing consent on `/frames/x` → after load resolves, router is at `consent` with `returnTo`); home renders stat placeholders with fixed height before `/api/stats` resolves.
+- [x] **Step 2: Run** `npx vitest run src/router src/stores/session.test.ts` → FAIL.
+- [x] **Step 3: Implement.** Guard: `if (routeNeedsSession(to)) await session.load(); else void session.load()`. Consent redirect for the background case runs from `session.onReady`. Add `<link rel="preconnect" href="https://api.eypi.cc" crossorigin>` to `index.html`.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `perf(routing): render public pages without waiting for the session`.
 
 ### Task 7: Public shell and lazy app shell
 
