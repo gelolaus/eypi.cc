@@ -10,6 +10,7 @@ import door from './door'
 import publicRoutes from './public'
 import registrations from './registrations'
 import lottery from './lottery'
+import guests from './guests'
 
 // Ticketing routes (formerly the tix.eypi.cc backend). Mounted into the unified
 // eypi.cc Worker in index.ts. CORS, preflight, and security headers are applied
@@ -25,7 +26,7 @@ function eventRouteUsesOrg(path: string): boolean {
   if (eventRouteIsStudent(path)) return false
   if (path === '/api/events') return true
   if (!path.startsWith('/api/events/')) return false
-  if (path.endsWith('/lookup') || path.endsWith('/passes/google')) return false
+  if (path.endsWith('/passes/google')) return false
   return true
 }
 
@@ -52,6 +53,8 @@ app.use('/api/events/*', async (c, next) => {
   return orgContext(c, next)
 })
 
+// guests registers /attendees.csv and /attendees/:id/guest-link ahead of any parametrised attendee route.
+app.route('/', guests)
 app.route('/', inbox)
 app.route('/', lottery)
 app.route('/', manage)

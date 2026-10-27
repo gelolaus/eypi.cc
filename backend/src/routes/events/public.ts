@@ -1,26 +1,15 @@
 import { Hono } from 'hono'
 import { db, type Bindings } from '../../lib/db'
-import { missingRequiredEnv, requiredEnvError } from '../../lib/env'
 import { checkRateLimit } from '../../lib/rateLimit'
-import { loadPassContext, parsePassFields, signPassToken, verifyPassToken } from '../../lib/passes/context'
+import { loadPassContext, parsePassFields, verifyPassToken } from '../../lib/passes/context'
 import { buildGoogleWalletSaveUrl } from '../../lib/passes/googleWallet'
-import { latestCheckInAction } from './shared'
 
 const LOOKUP_FAIL_MSG = 'No ticket found. Check your details and try again.'
 const LOOKUP_LIMIT_MSG = 'Too many attempts. Wait a few minutes and try again.'
 const LOOKUP_RL_LIMIT = 10
 const LOOKUP_RL_WINDOW = 900
-const LOOKUP_EMAIL_LIMIT = 10
-const LOOKUP_EMAIL_WINDOW = 900
-const LOOKUP_IP_LIMIT = 60
-const LOOKUP_IP_WINDOW = 900
 const PASS_LIMIT = 20
 const PASS_WINDOW = 3600
-
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
-}
 
 const app = new Hono<{ Bindings: Bindings }>()
 
@@ -78,86 +67,6 @@ app.get('/api/events/:slug', async (c) => {
       selectionLocked: event.selection_locked === 1,
       attendeeCount,
       passFields: parsePassFields(event.pass_fields),
-    },
-  })
-})
-
-// ── POST /api/events/:slug/lookup ─────────────────────────────────────────────
-app.post('/api/events/:slug/lookup', async (c) => {
-  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  const slug = c.req.param('slug')
-  const body = await c.req.json() as { firstName: string; lastName: string; email: string }
-
-  if (!body.firstName?.trim() || !body.lastName?.trim() || !body.email?.trim()) {
-    return c.json({ status: 'error', message: 'First name, last name, and email are required.' }, 400)
-  }
-
-  const client = db(c)
-  const evRes = await client.execute({
-    sql: 'SELECT id, name, event_date, event_time, location FROM events WHERE slug = ?',
-    args: [slug],
-  })
-  if (evRes.rows.length === 0) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-  }
-  const event = evRes.rows[0]
-  const eventId = event.id as string
-  const email = body.email.trim().toLowerCase()
-
-  const ipAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-    bucket: 'lookup',
-    subject: `${eventId}:ip:${ip}`,
-    limit: LOOKUP_IP_LIMIT,
-    windowSec: LOOKUP_IP_WINDOW,
-  })
-  if (!ipAllowed.ok) {
-    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
-  }
-
-  const emailAllowed = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-    bucket: 'lookup',
-    subject: `${eventId}:${await sha256Hex(email)}`,
-    limit: LOOKUP_EMAIL_LIMIT,
-    windowSec: LOOKUP_EMAIL_WINDOW,
-  })
-  if (!emailAllowed.ok) {
-    return c.json({ status: 'error', message: LOOKUP_LIMIT_MSG }, 429)
-  }
-
-  const aRes = await client.execute({
-    sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value FROM attendees
-          WHERE event_id = ? AND LOWER(email) = LOWER(?) AND LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)`,
-    args: [eventId, email, body.firstName.trim(), body.lastName.trim()],
-  })
-  if (aRes.rows.length === 0) {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-  }
-
-  const a = aRes.rows[0]
-  if (await latestCheckInAction(client, a.id as string) === 'removed') {
-    return c.json({ status: 'error', message: LOOKUP_FAIL_MSG }, 404)
-  }
-  const missingEnv = missingRequiredEnv(c.env)
-  if (missingEnv.includes('PASS_TOKEN_SECRET')) {
-    console.error(requiredEnvError(missingEnv))
-    return c.json({ status: 'error', message: 'Server misconfigured: add PASS_TOKEN_SECRET to backend/.dev.vars.' }, 503)
-  }
-  const passToken = await signPassToken(c.env, {
-    attendeeId: a.id as string,
-    eventId: event.id as string,
-    slug,
-  })
-
-  return c.json({
-    status: 'ok',
-    passToken,
-    ticket: {
-      firstName: a.first_name,
-      lastName: a.last_name,
-      email: a.email,
-      qrToken: a.qr_token,
-      clusterValue: a.cluster_value ?? null,
-      event: { slug, name: event.name, eventDate: event.event_date, eventTime: event.event_time, location: event.location },
     },
   })
 })

@@ -61,8 +61,9 @@ describe('consent gate on org-gated routers', () => {
 
   it('leaves public routes open', async () => {
     const { request } = await appWithoutConsent()
-    const lookup = await request('/api/events/none/lookup', json)
-    expect(await lookup.json()).not.toEqual(CONSENT_REQUIRED)
+    const guest = await request(`/api/tickets/guest/${'a'.repeat(32)}`)
+    expect(guest.status).toBe(404)
+    expect(await guest.json()).not.toEqual(CONSENT_REQUIRED)
     const page = await request('/api/dp/none')
     expect(page.status).toBe(404)
     const download = await request('/api/dp/none/download', json)

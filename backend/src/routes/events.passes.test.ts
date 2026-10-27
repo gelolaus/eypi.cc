@@ -59,57 +59,7 @@ async function seedEvent(
   })))
 }
 
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
-describe('ticket lookup rate limits', () => {
-  it('allows 60 different students from one IP and rejects the next', async () => {
-    const people = Array.from({ length: 61 }, (_, index) => person(index))
-    const { request } = await createTestApp({
-      seed: (db) => seedEvent(db, { id: 'event-ip', slug: 'door' }, people),
-    })
-
-    const statuses: number[] = []
-    for (const attendee of people.slice(0, 60)) {
-      const res = await lookup(request, 'door', attendee)
-      statuses.push(res.status)
-    }
-
-    expect(statuses.every((status) => status === 200)).toBe(true)
-
-    const blocked = await lookup(request, 'door', people[60])
-    expect(blocked.status).toBe(429)
-    expect(await blocked.json()).toMatchObject({ status: 'error', message: TOO_MANY })
-  })
-
-  it('rejects the 11th lookup of one email and still allows a different email', async () => {
-    const ada = person(0)
-    ada.email = 'ada@x.com'
-    const grace = person(1)
-    grace.email = 'grace@x.com'
-    const { request, env } = await createTestApp({
-      seed: (db) => seedEvent(db, { id: 'event-email', slug: 'door' }, [ada, grace]),
-    })
-
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const res = await lookup(request, 'door', ada)
-      expect(res.status).toBe(200)
-    }
-
-    const blocked = await lookup(request, 'door', ada)
-    expect(blocked.status).toBe(429)
-    expect(await blocked.json()).toMatchObject({ status: 'error', message: TOO_MANY })
-
-    const other = await lookup(request, 'door', grace)
-    expect(other.status).toBe(200)
-
-    const emailHash = await sha256Hex('ada@x.com')
-    const stored = await env.RATE_LIMIT_KV.get(`rl:lookup:event-email:${emailHash}`)
-    expect(stored?.startsWith('10:')).toBe(true)
-  })
-
+describe('pass download rate limits', () => {
   it('allows 20 pass downloads for one attendee and rejects the next without blocking another', async () => {
     const ada = { ...person(0), id: 'att-a', email: 'ada@x.com' }
     const grace = { ...person(1), id: 'att-b', email: 'grace@x.com' }
@@ -141,13 +91,12 @@ describe('ticket lookup rate limits', () => {
   })
 })
 
-describe('removed attendee lookup', () => {
-  it('returns 404 for a removed attendee and still finds an active one', async () => {
-    const active = { ...person(0), id: 'att-active', email: 'active@x.com', first: 'Active', last: 'One' }
+describe('removed attendee pass', () => {
+  it('returns 404 for a removed attendee pass download', async () => {
     const removed = { ...person(1), id: 'att-removed', email: 'removed@x.com', first: 'Removed', last: 'Two' }
     const { request, env } = await createTestApp({
       seed: async (db) => {
-        await seedEvent(db, { id: 'event-removed', slug: 'door' }, [active, removed])
+        await seedEvent(db, { id: 'event-removed', slug: 'door' }, [removed])
         await db.execute({
           sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at)
                 VALUES (?, ?, ?, 'removed', ?)`,
@@ -155,20 +104,7 @@ describe('removed attendee lookup', () => {
         })
       },
     })
-
-    const denied = await lookup(request, 'door', removed)
-    expect(denied.status).toBe(404)
-    const deniedBody = await denied.json() as { passToken?: string }
-    expect(deniedBody.passToken).toBeUndefined()
-
-    const allowed = await lookup(request, 'door', active)
-    expect(allowed.status).toBe(200)
-
-    const token = await signPassToken(env, {
-      attendeeId: removed.id,
-      eventId: 'event-removed',
-      slug: 'door',
-    })
+    const token = await signPassToken(env, { attendeeId: removed.id, eventId: 'event-removed', slug: 'door' })
     const pass = await passDownload(request, 'door', 'google', token)
     expect(pass.status).toBe(404)
   })
@@ -237,26 +173,6 @@ describe('google wallet outage', () => {
     }
   })
 })
-
-function lookup(
-  request: (path: string, init?: RequestInit) => Promise<Response>,
-  slug: string,
-  attendee: Pick<Person, 'first' | 'last' | 'email'>,
-) {
-  return request(`/api/events/${slug}/lookup`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Origin: 'https://eypi.cc',
-      'CF-Connecting-IP': IP,
-    },
-    body: JSON.stringify({
-      firstName: attendee.first,
-      lastName: attendee.last,
-      email: attendee.email,
-    }),
-  })
-}
 
 function passDownload(
   request: (path: string, init?: RequestInit) => Promise<Response>,

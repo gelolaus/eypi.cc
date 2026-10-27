@@ -47,7 +47,8 @@ app.use('*', async (c, next) => {
   await next()
   c.header('X-Content-Type-Options', 'nosniff')
   c.header('X-Frame-Options', 'DENY')
-  c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  // Routes that set their own policy (private guest tickets use no-referrer) keep it.
+  if (!c.res.headers.has('Referrer-Policy')) c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   // API responses only — do not deny camera here; the SPA sets its own policy via _headers.
   c.header('Permissions-Policy', 'microphone=(), geolocation=()')
