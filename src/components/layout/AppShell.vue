@@ -10,7 +10,7 @@
       data-shell-body
       class="flex min-h-0 flex-1 flex-col lg:flex-row"
     >
-      <aside class="sticky top-0 hidden h-full w-56 shrink-0 flex-col border-r border-border bg-background/95 lg:flex">
+      <aside class="sticky top-0 hidden h-full w-72 shrink-0 flex-col border-r border-border bg-background/95 lg:flex">
         <div class="flex h-16 shrink-0 items-center border-b border-border px-4">
           <BrandLogo to="/dashboard" />
         </div>
