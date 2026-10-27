@@ -138,12 +138,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { Card } from '@/components/ui/card'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { api } from '@/lib/api'
+import { useQuery } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
 import { orgSlugLabel } from '@/types/orgs'
 
@@ -151,9 +152,6 @@ type LinkSummary = { count: number; clicks: number; top: { slug: string; clicks:
 type OrgSummary = { members: number; events: number; tickets: number; frames: number }
 
 const { activeOrg } = useActiveOrg()
-const linkSummary = ref<LinkSummary | 'error' | null>(null)
-const orgSummary = ref<OrgSummary | 'error' | null>(null)
-
 const orgItems: { key: keyof OrgSummary; label: string }[] = [
   { key: 'members', label: 'Members' },
   { key: 'events', label: 'Events' },
@@ -161,26 +159,15 @@ const orgItems: { key: keyof OrgSummary; label: string }[] = [
   { key: 'frames', label: 'Frames' },
 ]
 
-async function loadLinks() {
-  try {
-    linkSummary.value = await api.get<LinkSummary>('/api/links/summary')
-  } catch {
-    linkSummary.value = 'error'
-  }
-}
-
-async function loadOrg(orgId: string | undefined) {
-  orgSummary.value = null
-  if (!orgId) return
-  try {
-    orgSummary.value = await api.get<OrgSummary>(`/api/orgs/${orgId}/summary`)
-  } catch {
-    orgSummary.value = 'error'
-  }
-}
-
-onMounted(loadLinks)
-watch(() => activeOrg.value?.org_id, loadOrg, { immediate: true })
+const linkQuery = useQuery('links:summary', () => api.get<LinkSummary>('/api/links/summary'))
+const orgQuery = useQuery(
+  () => (activeOrg.value?.org_id ? `orgs:summary:${activeOrg.value.org_id}` : ''),
+  () => api.get<OrgSummary>(`/api/orgs/${activeOrg.value?.org_id}/summary`),
+)
+const linkSummary = computed<LinkSummary | 'error' | null>(() =>
+  linkQuery.status.value === 'error' ? 'error' : linkQuery.data.value ?? null)
+const orgSummary = computed<OrgSummary | 'error' | null>(() =>
+  orgQuery.status.value === 'error' ? 'error' : orgQuery.data.value ?? null)
 
 const session = useSession()
 

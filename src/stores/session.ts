@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { ApiError, api } from '@/lib/api'
+import { clearQueryCache } from '@/lib/queryCache'
 
 export type SessionUser = {
   id: string
@@ -66,6 +67,7 @@ function asUser(raw: MeResponse['user']): SessionUser | null {
 }
 
 function reset(): void {
+  clearQueryCache()
   user.value = null
   pendingInviteCount.value = 0
   needsConsent.value = []

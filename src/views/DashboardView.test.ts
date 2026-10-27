@@ -156,3 +156,15 @@ describe('DashboardView summaries', () => {
     expect(wrapper.findAll('a > [data-slot="card"]')).toHaveLength(5)
   })
 })
+
+describe('DashboardView query cache', () => {
+  it('shows cached summaries on a second mount without an empty state', async () => {
+    const first = mountDashboard(0)
+    await flushPromises()
+    first.unmount()
+    const second = mountDashboard(0)
+    const card = second.get('[data-card="links"]')
+    expect(card.text()).toContain('eypi.cc/bb')
+    expect(card.text()).not.toContain('No links yet')
+  })
+})

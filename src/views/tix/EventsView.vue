@@ -120,7 +120,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { invalidate, useQuery } from '@/lib/queryCache'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import OrgLockout from '@/components/OrgLockout.vue'
@@ -140,10 +141,25 @@ interface Event {
   created_at: unknown
 }
 
+const query = useQuery(
+  () => `events:list:${localStorage.getItem('active_org_id') ?? ''}`,
+  async () => {
+    const res = await api.raw(`/api/events`)
+    if (res.status === 403) return { locked: true, events: [] as Event[] }
+    const data = await res.json() as { status: string; message?: string; events?: Event[] }
+    if (!res.ok) throw new Error(data.message ?? 'Failed to load events.')
+    return { locked: false, events: data.events ?? [] }
+  },
+)
 const events = ref<Event[]>([])
-const loading = ref(true)
-const error = ref('')
-const isLocked = ref(false)
+const loading = computed(() => query.status.value === 'loading')
+const error = computed(() => {
+  if (query.status.value !== 'error') return ''
+  return query.error.value instanceof Error ? query.error.value.message : 'Failed to load events.'
+})
+const isLocked = computed(() => query.data.value?.locked === true)
+watch(query.data, (d) => { events.value = d?.events ?? [] }, { immediate: true })
+watch(error, (message) => { if (message) toast.error(message) })
 const deletingSlug = ref<string | null>(null)
 const searchQuery = ref('')
 
@@ -180,6 +196,7 @@ async function deleteEvent(slug: string, name: string) {
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     events.value = events.value.filter(e => e.slug !== slug)
+    invalidate('events:')
     toast.success(`"${name}" deleted.`)
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
@@ -188,22 +205,5 @@ async function deleteEvent(slug: string, name: string) {
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await api.raw(`/api/events`)
-    if (res.status === 403) {
-      isLocked.value = true
-      return
-    }
-    const data = await res.json() as { status: string; message?: string; events?: Event[] }
-    if (!res.ok) throw new Error(data.message ?? 'Failed to load events.')
-    events.value = data.events ?? []
-  } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Failed to load events.'
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 

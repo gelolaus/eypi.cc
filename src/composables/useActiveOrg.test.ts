@@ -25,6 +25,7 @@ vi.mock('@/composables/useToast', () => ({
 }))
 
 import { useActiveOrg } from './useActiveOrg'
+import { peekQuery, prefetchQuery } from '@/lib/queryCache'
 import type { OrgListItem } from '@/types/orgs'
 
 const jpcs: OrgListItem = {
@@ -115,5 +116,16 @@ describe('useActiveOrg', () => {
     expect(localStorage.getItem('active_org_id')).toBe('test')
     expect(push).not.toHaveBeenCalled()
     expect(reloadSpy).toHaveBeenCalledOnce()
+  })
+})
+
+describe('query cache on org switch', () => {
+  it('drops cached reads when the active org changes', async () => {
+    const { setActiveOrg } = useActiveOrg()
+    setActiveOrg(jpcs)
+    await prefetchQuery('events:list:jpcs', async () => ({ events: [{ id: 'e1' }] }))
+    expect(peekQuery('events:list:jpcs')).toBeDefined()
+    setActiveOrg(testOrg)
+    expect(peekQuery('events:list:jpcs')).toBeUndefined()
   })
 })

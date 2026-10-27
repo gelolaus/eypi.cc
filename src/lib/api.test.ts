@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { API_BASE_URL } from '@/config/api'
 import { api, ApiError } from '@/lib/api'
 import { useSession } from '@/stores/session'
+import { peekQuery, prefetchQuery } from '@/lib/queryCache'
 
 const { push, currentRoute } = vi.hoisted(() => ({
   push: vi.fn(),
@@ -128,5 +129,26 @@ describe('api client', () => {
     expect(reset).not.toHaveBeenCalled()
     expect(push).not.toHaveBeenCalled()
     reset.mockRestore()
+  })
+})
+
+describe('query cache and sign-out', () => {
+  it('is cleared when an API call returns 401', async () => {
+    await prefetchQuery('links:list:', async () => ({ items: [{ id: 'private' }] }))
+    expect(peekQuery('links:list:')).toBeDefined()
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, { error: { code: 'unauthorized', message: 'No.' } }))
+    await expect(api.get('/api/links')).rejects.toBeInstanceOf(ApiError)
+    expect(peekQuery('links:list:')).toBeUndefined()
+  })
+
+  it('is cleared on logout and on session reset', async () => {
+    await prefetchQuery('links:summary', async () => 1)
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await useSession().logout()
+    expect(peekQuery('links:summary')).toBeUndefined()
+
+    await prefetchQuery('links:summary', async () => 1)
+    useSession().reset()
+    expect(peekQuery('links:summary')).toBeUndefined()
   })
 })

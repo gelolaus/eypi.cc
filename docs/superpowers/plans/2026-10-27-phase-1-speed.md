@@ -181,11 +181,11 @@
 **Interfaces:**
 - Produces: `useQuery<T>(key: string | (() => string), fetcher: () => Promise<T>, opts?: { staleMs?: number }): { data: Ref<T | undefined>; error: Ref<unknown>; status: Ref<'idle'|'loading'|'ready'|'error'>; refresh: () => Promise<void> }` (default `staleMs` 30000), `invalidate(prefix: string): void`, `clearQueryCache(): void`, `prefetchQuery(key: string, fetcher: () => Promise<unknown>): Promise<void>`. Key convention: `'<area>:<detail>'`, e.g. `links:list:<cursor>`, `orgs:catalog`, `events:list:<orgId>`.
 
-- [ ] **Step 1: Failing tests:** `returns cached data immediately and refreshes when stale` (fake timers); `dedupes in-flight requests`; `invalidate('links:') refetches links keys only`; `clearQueryCache empties everything`; dashboard test: second mount shows data without a loading state.
-- [ ] **Step 2: Run** `npx vitest run src/lib/queryCache.test.ts` → FAIL.
-- [ ] **Step 3: Implement** and migrate the listed views; mutations in `useLinks` call `invalidate('links:')`.
-- [ ] **Step 4: Run** `npm test` → PASS.
-- [ ] **Step 5: Commit** `perf(api): cache reads with stale-while-revalidate`.
+- [x] **Step 1: Failing tests:** `returns cached data immediately and refreshes when stale` (fake timers); `dedupes in-flight requests`; `invalidate('links:') refetches links keys only`; `clearQueryCache empties everything`; dashboard test: second mount shows data without a loading state.
+- [x] **Step 2: Run** `npx vitest run src/lib/queryCache.test.ts` → FAIL.
+- [x] **Step 3: Implement** and migrate the listed views; mutations in `useLinks` call `invalidate('links:')`.
+- [x] **Step 4: Run** `npm test` → PASS.
+- [x] **Step 5: Commit** `perf(api): cache reads with stale-while-revalidate`.
 
 ### Task 11: Prefetch directive
 

@@ -148,6 +148,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
+import { useQuery } from '@/lib/queryCache'
 import { ref, computed, onMounted } from 'vue'
 import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
@@ -157,9 +158,18 @@ import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTyp
 const session = useSession()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
-const orgs = ref<PublicOrgCatalogItem[]>([])
-const loading = ref(true)
-const error = ref('')
+const catalog = useQuery('orgs:catalog', async () => {
+  const res = await api.raw(`/api/orgs/public`)
+  const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
+  if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
+  return data.orgs ?? []
+})
+const orgs = computed(() => catalog.data.value ?? [])
+const loading = computed(() => catalog.status.value === 'loading')
+const error = computed(() => {
+  if (catalog.status.value !== 'error') return ''
+  return catalog.error.value instanceof Error ? catalog.error.value.message : 'Failed to load organizations.'
+})
 const searchQuery = ref('')
 const selectedOrgType = ref<OrgType | null>(null)
 
@@ -188,20 +198,9 @@ const filteredOrgs = computed(() => {
   )
 })
 
-onMounted(async () => {
+onMounted(() => {
   if (isAuthenticated.value) {
     fetchOrgs()
-  }
-
-  try {
-    const res = await api.raw(`/api/orgs/public`)
-    const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
-    if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
-    orgs.value = data.orgs ?? []
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load organizations.'
-  } finally {
-    loading.value = false
   }
 })
 </script>

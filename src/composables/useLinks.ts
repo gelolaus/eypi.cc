@@ -1,5 +1,6 @@
 import { ref, type InjectionKey } from 'vue'
 import { ApiError, api } from '@/lib/api'
+import { fetchQuery, invalidate, peekQuery } from '@/lib/queryCache'
 import type { LinkQrConfig } from '@shared/linkQrConfig'
 
 export type LinkSort = 'new' | 'old' | 'clicks'
@@ -95,10 +96,17 @@ export function useLinks() {
 
   async function load(cursor?: string | null) {
     const generation = ++listGeneration
-    loading.value = true
+    const path = listPath(cursor)
+    const key = `links:list:${path}`
+    const cached = cursor ? undefined : peekQuery<Page>(key)
+    if (cached) {
+      items.value = cached.items ?? []
+      nextCursor.value = cached.nextCursor ?? null
+    }
+    loading.value = !cached
     error.value = ''
     try {
-      const data = await api.get<Page>(listPath(cursor))
+      const data = await fetchQuery(key, () => api.get<Page>(path))
       if (generation !== listGeneration) return
       const page = data.items ?? []
       items.value = cursor ? [...items.value, ...page] : page
@@ -121,6 +129,7 @@ export function useLinks() {
     try {
       const created = await api.post<LinkDetail>('/api/links', body)
       quotaMessage.value = ''
+      invalidate('links:')
       items.value = [created, ...items.value.filter((item) => item.id !== created.id)]
       return created
     } catch (err) {
@@ -133,17 +142,20 @@ export function useLinks() {
 
   async function update(id: string, body: LinkWrite): Promise<LinkDetail> {
     const updated = await api.patch<LinkDetail>(`/api/links/${id}`, body)
+    invalidate('links:')
     replace(updated)
     return updated
   }
 
   async function remove(id: string): Promise<void> {
     await api.del(`/api/links/${id}`)
+    invalidate('links:')
     items.value = items.value.filter((item) => item.id !== id)
   }
 
   async function bulk(action: 'delete' | 'disable' | 'enable', ids: string[]): Promise<void> {
     await api.post('/api/links/bulk', { action, ids })
+    invalidate('links:')
     if (action === 'delete') {
       const drop = new Set(ids)
       items.value = items.value.filter((item) => !drop.has(item.id))
