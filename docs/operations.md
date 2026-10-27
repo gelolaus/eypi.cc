@@ -165,3 +165,5 @@ Findings or review notes that are deferred or unfixed. Each is **pending owner s
 | Safe Browsing | MED | The malware check fails open on timeout or an unexpected response shape. | pending owner sign-off |
 | F-SEO-1 (residual) | MED | `HEAD` requests skip meta rewriting; frames still stored as `data:` URLs get the generic page shell until migrated. | pending owner sign-off |
 | Privacy copy | LOW | The privacy page says the session cookie is the only cookie; sign-in also sets the short-lived `eypi_oauth` cookie. | pending owner sign-off |
+
+Removed or replaced media (`/media/*`) can stay cached at the Cloudflare edge for up to 24 hours; purge it by URL in Cloudflare to take it down sooner. Browsers may keep their copy for a year (immutable), so reuse no media keys for new content.

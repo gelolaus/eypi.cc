@@ -8,6 +8,8 @@ import { isReservedSlug } from '../shared/reservedSlugs'
 
 const PUBLIC_MEDIA_PREFIXES = ['frames/', 'orgs/', 'qr-logos/']
 const IMMUTABLE_MEDIA_CACHE = 'public, max-age=31536000, immutable'
+// The edge copy expires daily so removed media cannot linger there for a year.
+const EDGE_MEDIA_CACHE = 'public, max-age=86400'
 
 export interface Env {
   ASSETS: Fetcher
@@ -76,7 +78,8 @@ async function servePublicMedia(
 
   // Only whole-object GETs touch the edge cache; HEAD and Range always go to R2.
   const cache = request.method === 'GET' && !request.headers.has('Range') ? edgeCache() : null
-  const cacheKey = new Request(request.url, { method: 'GET' })
+  const requestUrl = new URL(request.url)
+  const cacheKey = new Request(`${requestUrl.origin}${requestUrl.pathname}`, { method: 'GET' })
   const ifNoneMatch = request.headers.get('If-None-Match')
 
   if (cache) {
@@ -85,7 +88,9 @@ async function servePublicMedia(
       if (hit) {
         const etag = hit.headers.get('ETag')
         if (etag && etagMatches(ifNoneMatch, etag)) return notModified(etag)
-        return hit
+        const servedHeaders = new Headers(hit.headers)
+        servedHeaders.set('Cache-Control', IMMUTABLE_MEDIA_CACHE)
+        return new Response(hit.body, { status: hit.status, headers: servedHeaders })
       }
     } catch {
       // Fall through to R2 when the cache cannot be read.
@@ -110,7 +115,9 @@ async function servePublicMedia(
 
   const response = new Response(object.body, { status: 200, headers })
   if (cache) {
-    ctx.waitUntil(cache.put(cacheKey, response.clone()).catch(() => {}))
+    const stored = new Response(response.clone().body, { status: 200, headers: new Headers(response.headers) })
+    stored.headers.set('Cache-Control', EDGE_MEDIA_CACHE)
+    ctx.waitUntil(cache.put(cacheKey, stored).catch(() => {}))
   }
   return response
 }
