@@ -27,7 +27,7 @@ describe('Hero', () => {
   it('shows the large brand', () => {
     const wrapper = mountHero()
     const brand = wrapper.get('.font-display')
-    expect(brand.text()).toBe('eypi.cc')
+    expect(brand.text()).toBe('Eypi')
     expect(brand.classes()).toContain('text-5xl')
   })
 

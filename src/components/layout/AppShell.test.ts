@@ -154,7 +154,7 @@ describe('AppShell (signed in)', () => {
     const wrapper = await mountAt('/links')
     const header = wrapper.get('header')
     for (const cls of ['sticky', 'top-0', 'h-14', 'lg:hidden', 'border-b']) expect(header.classes()).toContain(cls)
-    expect(header.find('a[aria-label="eypi.cc"]').exists()).toBe(true)
+    expect(header.find('a[aria-label="Eypi"]').exists()).toBe(true)
     expect(header.find('[data-account-menu="header"]').exists()).toBe(true)
     wrapper.unmount()
   })

@@ -18,7 +18,7 @@ describe('handleClientError', () => {
     handleClientError(new TypeError('Failed to fetch'))
 
     expect(useToast().toasts.value.map((toast) => toast.message)).toEqual([
-      "Can't reach eypi.cc. Check your connection.",
+      "Can't reach Eypi. Check your connection.",
     ])
     expect(useToast().toasts.value[0]?.type).toBe('error')
   })

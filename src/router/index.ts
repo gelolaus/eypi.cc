@@ -414,7 +414,7 @@ router.beforeEach(async (to, _from, next) => {
 router.afterEach((to) => {
   const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')
   const page = typeof titled?.meta.title === 'string' ? titled.meta.title : 'Page'
-  const title = `${page} · eypi.cc`
+  const title = `${page} · Eypi`
   document.title = title
 
   let region = document.getElementById('route-announcer')

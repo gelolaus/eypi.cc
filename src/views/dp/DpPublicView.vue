@@ -23,7 +23,7 @@
           class="mx-auto mt-6"
         >
           <router-link to="/">
-            ← Back to eypi.cc
+            ← Back to Eypi
           </router-link>
         </Button>
       </Card>

@@ -13,7 +13,7 @@ const global = { plugins: [router] }
 describe('BrandLogo', () => {
   it('renders the wordmark by default with a decorative mark', () => {
     const w = mount(BrandLogo, { global })
-    expect(w.text()).toContain('eypi.cc')
+    expect(w.text()).toContain('Eypi')
     expect(w.get('img').attributes('alt')).toBe('')
     expect(w.get('img').classes()).toContain('size-8')
   })
@@ -24,13 +24,13 @@ describe('BrandLogo', () => {
   it('hides the wordmark with markOnly and labels the element', () => {
     const w = mount(BrandLogo, { props: { markOnly: true, size: 'sm' }, global })
     expect(w.text()).toBe('')
-    expect(w.attributes('aria-label')).toBe('eypi.cc')
+    expect(w.attributes('aria-label')).toBe('Eypi')
     expect(w.get('img').classes()).toContain('size-5')
   })
   it('renders a labelled router-link when to is set', () => {
     const w = mount(BrandLogo, { props: { to: '/', size: 'lg' }, global })
     expect(w.element.tagName).toBe('A')
-    expect(w.attributes('aria-label')).toBe('eypi.cc')
+    expect(w.attributes('aria-label')).toBe('Eypi')
     expect(w.attributes('href')).toBe('/')
     expect(w.get('img').classes()).toContain('size-14')
   })

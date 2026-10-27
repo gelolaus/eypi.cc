@@ -44,13 +44,13 @@ describe('fetchFormTemplate', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       error: {
         code: 'template_missing',
-        message: "This form's template is missing. Tell the eypi.cc admin.",
+        message: "This form's template is missing. Tell the Eypi admin.",
       },
     }), { status: 404, headers: { 'Content-Type': 'application/json' } })))
 
     await expect(fetchFormTemplate('waiver_form.docx')).rejects.toMatchObject({
       code: 'template_missing',
-      message: "This form's template is missing. Tell the eypi.cc admin.",
+      message: "This form's template is missing. Tell the Eypi admin.",
     })
   })
 })

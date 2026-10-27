@@ -5,7 +5,7 @@
   >
     <div class="mx-auto flex w-full max-w-5xl flex-col gap-10 px-5 py-12 sm:px-6">
       <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">
-        Build with eypi.cc
+        Build with Eypi
       </h2>
 
       <nav
@@ -44,7 +44,7 @@
       </nav>
 
       <p class="text-base text-muted-foreground">
-        © {{ currentYear }} eypi.cc. Built by Angelo Laus.
+        © {{ currentYear }} Eypi. Built by Angelo Laus.
       </p>
     </div>
   </footer>
