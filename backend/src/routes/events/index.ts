@@ -22,8 +22,14 @@ function eventRouteIsStudent(path: string): boolean {
   return /^\/api\/events\/[^/]+\/(register|registration)$/.test(path)
 }
 
+// The public event page is readable by anyone, signed in or not. A session is still attached so the
+// handler can fill `viewer.ticket`; consent and org membership are not required to look at a page.
+function eventRouteIsPublic(path: string): boolean {
+  return /^\/api\/events\/[^/]+\/public$/.test(path)
+}
+
 function eventRouteUsesOrg(path: string): boolean {
-  if (eventRouteIsStudent(path)) return false
+  if (eventRouteIsStudent(path) || eventRouteIsPublic(path)) return false
   if (path === '/api/events') return true
   if (!path.startsWith('/api/events/')) return false
   if (path.endsWith('/passes/google')) return false

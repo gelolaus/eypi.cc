@@ -1024,3 +1024,72 @@ describe('seo surface', () => {
     expect(logLinkClick).not.toHaveBeenCalled()
   })
 })
+
+describe('event share preview', () => {
+  const EVENT_ROW = {
+    slug: 'fest',
+    name: 'Fest "2099" <script>alert(1)</script>',
+    event_date: '2099-01-01',
+    event_time: '09:00',
+    location: 'Hall & Court',
+    description: '# Welcome\n\n**Join** us <img src=x onerror=alert(1)> at "the" hall. ' + 'long '.repeat(80),
+    cover_key: 'events/id-1/cover-ab.webp',
+    org_name: 'Alpha',
+  }
+
+  beforeEach(() => {
+    execute.mockReset()
+    execute.mockImplementation(async (query?: { sql?: string; args?: unknown[] }) => {
+      if (/from events/i.test(String(query?.sql)) && query?.args?.[0] === 'fest') return { rows: [EVENT_ROW] }
+      return { rows: [] }
+    })
+    createClient.mockClear()
+    vi.stubGlobal('HTMLRewriter', SharePreviewHTMLRewriter)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('adds escaped title, description and og:image on /tix/fest', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/fest'), makeEnv({}, frameShellFetch()), ctx())
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(html).toContain('<title>Fest &quot;2099&quot; &lt;script&gt;alert(1)&lt;/script&gt;</title>'.replace(/&quot;/g, '"'))
+    expect(html).toContain('<meta property="og:title" content="Fest &quot;2099&quot; &lt;script&gt;alert(1)&lt;/script&gt;">')
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/events/id-1/cover-ab.webp">')
+    expect(html).toContain('<meta property="og:url" content="https://eypi.cc/tix/fest">')
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">')
+    const description = /<meta property="og:description" content="([^"]*)">/.exec(html)?.[1] ?? ''
+    expect(description.startsWith('Welcome Join us')).toBe(true)
+    expect(description).toContain('&quot;the&quot;')
+    expect(description).not.toMatch(/[<>]|onerror|\*\*/)
+    expect([...description.replace(/&quot;/g, '"')].length).toBeLessThanOrEqual(200)
+    expect(html).not.toContain('<script>alert')
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+      sql: expect.stringMatching(/status\s*!=\s*'draft'/i),
+      args: ['fest'],
+    }))
+  })
+
+  it('serves the plain shell for a draft or unknown event without leaking a name', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/ghost'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe(FRAME_SHELL)
+  })
+
+  it('falls back to the plain shell when the database throws', async () => {
+    execute.mockRejectedValue(new Error('down'))
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/fest'), makeEnv({}, frameShellFetch()), ctx())
+    expect(await response.text()).toBe(FRAME_SHELL)
+  })
+
+  it('leaves /tix and /tix/new untouched', async () => {
+    for (const path of ['/tix', '/tix/new']) {
+      execute.mockClear()
+      const response = await worker.fetch(new Request(`https://eypi.cc${path}`), makeEnv({}, frameShellFetch()), ctx())
+      expect(response.status).toBe(200)
+    }
+  })
+})

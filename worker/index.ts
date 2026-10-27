@@ -4,6 +4,7 @@ import { visitorHash } from '../backend/src/lib/ipHash'
 import { isBot } from '../backend/src/lib/links/bots'
 import { getOS, logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKv } from '../shared/linksKv'
+import { markdownToPlainText } from '../shared/plainText'
 import { isReservedSlug } from '../shared/reservedSlugs'
 
 const PUBLIC_MEDIA_PREFIXES = ['events/', 'frames/', 'orgs/', 'qr-logos/']
@@ -307,6 +308,16 @@ function orgProfileSlug(pathname: string): string | null {
   }
 }
 
+function eventPageSlug(pathname: string): string | null {
+  const match = normalizePath(pathname).match(/^\/tix\/([^/]+)$/)
+  if (!match) return null
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return null
+  }
+}
+
 function isHtmlDocument(response: Response): boolean {
   if (response.status !== 200) return false
   const contentType = response.headers.get('Content-Type') ?? ''
@@ -425,6 +436,58 @@ async function loadPublicOrg(env: Env, slug: string): Promise<PublicOrg | null> 
   } catch {
     return null
   }
+}
+
+type PublicEvent = {
+  slug: string
+  name: string
+  description: string
+  coverKey: string | null
+}
+
+// Drafts never leave the database through here: the preview must not reveal a name before publish.
+async function loadPublicEvent(env: Env, slug: string): Promise<PublicEvent | null> {
+  try {
+    return await withTurso(env, async (client) => {
+      const result = await client.execute({
+        sql: `SELECT slug, name, event_date, event_time, location, description, cover_key
+              FROM events
+              WHERE slug = ? AND status != 'draft'
+              LIMIT 1`,
+        args: [slug],
+      })
+      const row = result.rows[0]
+      if (!row) return null
+      const name = textCell(row.name).trim()
+      if (!name) return null
+      const plain = markdownToPlainText(textCell(row.description))
+      const fallback = `${textCell(row.event_date)} ${textCell(row.event_time)} · ${textCell(row.location)}`.trim()
+      return {
+        slug: textCell(row.slug) || slug,
+        name,
+        description: plain || fallback,
+        coverKey: textCell(row.cover_key).trim() || null,
+      }
+    })
+  } catch {
+    return null
+  }
+}
+
+function eventMeta(event: PublicEvent, origin: string): string {
+  const pageUrl = `${origin}/tix/${encodeURIComponent(event.slug)}`
+  const cover = absolutePublicMedia(origin, event.coverKey)
+  const title = escapeHtmlAttr(event.name)
+  const description = escapeHtmlAttr(event.description)
+  return [
+    description ? `<meta name="description" content="${description}">` : '',
+    `<meta property="og:title" content="${title}">`,
+    description ? `<meta property="og:description" content="${description}">` : '',
+    `<meta property="og:url" content="${escapeHtmlAttr(pageUrl)}">`,
+    `<meta property="og:type" content="website">`,
+    cover ? `<meta property="og:image" content="${escapeHtmlAttr(cover)}">` : '',
+    `<meta name="twitter:card" content="${cover ? 'summary_large_image' : 'summary'}">`,
+  ].join('')
 }
 
 function sitemapDocument(origin: string, catalog: SitemapCatalog | null): string {
@@ -610,6 +673,15 @@ export default {
         const org = await loadPublicOrg(env, orgSlug)
         if (!org) return asset
         return rewriteDocument(asset, org.name, orgMeta(org, origin))
+      })
+    }
+
+    const eventSlug = eventPageSlug(path)
+    if (eventSlug) {
+      return rewrittenShell(request, env, async (asset, origin) => {
+        const event = await loadPublicEvent(env, eventSlug)
+        if (!event) return asset
+        return rewriteDocument(asset, event.name, eventMeta(event, origin))
       })
     }
 
