@@ -143,13 +143,11 @@ import { Card } from '@/components/ui/card'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { api } from '@/lib/api'
+import { LINKS_SUMMARY_KEY, fetchLinksSummary, fetchOrgSummary, orgSummaryKey, type LinkSummary, type OrgSummary } from '@/lib/queries'
 import { useQuery } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
 import { orgSlugLabel } from '@/types/orgs'
 
-type LinkSummary = { count: number; clicks: number; top: { slug: string; clicks: number } | null }
-type OrgSummary = { members: number; events: number; tickets: number; frames: number }
 
 const { activeOrg } = useActiveOrg()
 const orgItems: { key: keyof OrgSummary; label: string }[] = [
@@ -159,10 +157,10 @@ const orgItems: { key: keyof OrgSummary; label: string }[] = [
   { key: 'frames', label: 'Frames' },
 ]
 
-const linkQuery = useQuery('links:summary', () => api.get<LinkSummary>('/api/links/summary'))
+const linkQuery = useQuery(LINKS_SUMMARY_KEY, fetchLinksSummary)
 const orgQuery = useQuery(
-  () => (activeOrg.value?.org_id ? `orgs:summary:${activeOrg.value.org_id}` : ''),
-  () => api.get<OrgSummary>(`/api/orgs/${activeOrg.value?.org_id}/summary`),
+  () => (activeOrg.value?.org_id ? orgSummaryKey(activeOrg.value.org_id) : ''),
+  () => fetchOrgSummary(activeOrg.value?.org_id ?? ''),
 )
 const linkSummary = computed<LinkSummary | 'error' | null>(() =>
   linkQuery.status.value === 'error' ? 'error' : linkQuery.data.value ?? null)

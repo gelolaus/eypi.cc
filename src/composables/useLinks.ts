@@ -1,5 +1,6 @@
 import { ref, type InjectionKey } from 'vue'
 import { ApiError, api } from '@/lib/api'
+import { linksListKey, linksListPath } from '@/lib/queries'
 import { CacheClearedError, fetchQuery, invalidate, peekQuery } from '@/lib/queryCache'
 import type { LinkQrConfig } from '@shared/linkQrConfig'
 
@@ -71,14 +72,7 @@ export function useLinks() {
   const status = ref<LinkStatusFilter>('all')
 
   function listPath(cursor?: string | null): string {
-    const params = new URLSearchParams()
-    const q = query.value.trim()
-    if (q) params.set('q', q)
-    if (sort.value !== 'new') params.set('sort', sort.value)
-    if (status.value !== 'all') params.set('status', status.value)
-    if (cursor) params.set('cursor', cursor)
-    const qs = params.toString()
-    return qs ? `/api/links?${qs}` : '/api/links'
+    return linksListPath({ q: query.value, sort: sort.value, status: status.value, cursor })
   }
 
   function replace(detail: LinkListItem) {
@@ -104,7 +98,7 @@ export function useLinks() {
   async function load(cursor?: string | null) {
     const generation = ++listGeneration
     const path = listPath(cursor)
-    const key = `links:list:${path}`
+    const key = linksListKey(path)
     const cached = cursor ? undefined : peekQuery<Page>(key)
     if (cached) {
       items.value = cached.items ?? []

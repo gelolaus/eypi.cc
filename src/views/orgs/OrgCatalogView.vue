@@ -147,23 +147,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { api } from '@/lib/api'
 import { useQuery } from '@/lib/queryCache'
 import { ref, computed, onMounted } from 'vue'
 import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
+import { ORGS_CATALOG_KEY, fetchOrgsCatalog } from '@/lib/queries'
+import { orgInitials } from '@/types/orgs'
 import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 const session = useSession()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
-const catalog = useQuery('orgs:catalog', async () => {
-  const res = await api.raw(`/api/orgs/public`)
-  const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
-  if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
-  return data.orgs ?? []
-})
+const catalog = useQuery(ORGS_CATALOG_KEY, fetchOrgsCatalog)
 const orgs = computed(() => catalog.data.value ?? [])
 const loading = computed(() => catalog.status.value === 'loading')
 const error = computed(() => {

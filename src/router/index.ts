@@ -26,7 +26,7 @@ const router = createRouter({
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true, title: 'Dashboard' },
+      meta: { requiresAuth: true, title: 'Dashboard', prefetch: () => import('@/lib/queries').then((m) => m.prefetchDashboard()) },
     },
     {
       path: '/invites',
@@ -40,7 +40,7 @@ const router = createRouter({
       path: '/links',
       name: 'links',
       component: () => import('@/views/links/LinksView.vue'),
-      meta: { requiresAuth: true, title: 'Links' },
+      meta: { requiresAuth: true, title: 'Links', prefetch: () => import('@/lib/queries').then((m) => m.prefetchLinks()) },
     },
 
     // ── Forms module ─────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ const router = createRouter({
       path: '/orgs',
       name: 'org-catalog',
       component: () => import('@/views/orgs/OrgCatalogView.vue'),
-      meta: { title: 'Orgs' },
+      meta: { title: 'Orgs', prefetch: () => import('@/lib/queries').then((m) => m.prefetchOrgsCatalog()) },
     },
     {
       path: '/orgs/:slug',

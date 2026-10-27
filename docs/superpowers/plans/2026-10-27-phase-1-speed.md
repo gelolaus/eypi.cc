@@ -197,11 +197,11 @@
 - Consumes: `prefetchQuery`.
 - Produces: `v-prefetch="routeLocation"`; `RouteMeta.prefetch?: () => Promise<void>`.
 
-- [ ] **Step 1: Failing tests:** `pointerenter loads the route component once`; `visible for 1 s triggers on idle` (mock IntersectionObserver + requestIdleCallback); `saveData skips`.
-- [ ] **Step 2: Run** `npx vitest run src/directives` → FAIL.
-- [ ] **Step 3: Implement** using `router.resolve(to).matched` and calling each lazy `components.default` loader.
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `perf(nav): prefetch routes and data before the click`.
+- [x] **Step 1: Failing tests:** `pointerenter loads the route component once`; `visible for 1 s triggers on idle` (mock IntersectionObserver + requestIdleCallback); `saveData skips`.
+- [x] **Step 2: Run** `npx vitest run src/directives` → FAIL.
+- [x] **Step 3: Implement** using `router.resolve(to).matched` and calling each lazy `components.default` loader.
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `perf(nav): prefetch routes and data before the click`.
 
 ### Task 12: Image variant maker (browser)
 
