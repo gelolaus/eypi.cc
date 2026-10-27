@@ -3,7 +3,7 @@ import 'fake-indexeddb/auto'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
-import { deleteAllDoorStores } from '@/lib/tix/doorStore'
+import { wipeDoorStores } from '@/lib/tix/doorStore'
 import DoorModeView from './DoorModeView.vue'
 
 vi.mock('vue-router', () => ({
@@ -52,7 +52,7 @@ async function mountView() {
 }
 
 beforeEach(async () => {
-  await deleteAllDoorStores()
+  await wipeDoorStores('all')
   localStorage.clear()
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   syncBodies = []
@@ -213,6 +213,83 @@ describe('DoorModeView', () => {
     await button.trigger('click')
     await settle()
     expect(wrapper.get('[data-door-result]').text()).toContain('Ana Reyes')
+  })
+
+  it('warns when the device can not save check-ins and syncs at once', async () => {
+    const wrapper = await mountView()
+    const spy = vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(() => { throw new Error('quota') })
+    await wrapper.get('[data-scan-stub]').trigger('click')
+    await settle()
+    spy.mockRestore()
+    expect(wrapper.get('[data-door-save-warning]').text()).toBe("This device can't save check-ins — keep this tab open until they sync")
+    expect(syncBodies).toHaveLength(1)
+  })
+
+  it('still opens when IndexedDB is refused, with the same warning', async () => {
+    const spy = vi.spyOn(indexedDB, 'open').mockImplementation(() => { throw new Error('denied') })
+    const wrapper = await mountView()
+    spy.mockRestore()
+    expect(wrapper.find('[data-scan-stub]').exists()).toBe(true) // the roster came from the network
+    expect(wrapper.find('[data-door-save-warning]').exists()).toBe(true)
+  })
+
+  it('isolates a 400 batch one item at a time', async () => {
+    const wrapper = await mountView()
+    setOnline(false)
+    window.dispatchEvent(new Event('offline'))
+    wrapper.findComponent(ScannerStub).vm.$emit('scan', 'tok-ana')
+    await settle()
+    syncResponder = () => json({ error: { code: 'invalid_items' } }, { status: 400 })
+    setOnline(true)
+    window.dispatchEvent(new Event('online'))
+    await settle()
+    expect(wrapper.get('[data-door-conflicts]').text()).toContain('Could not sync — check this guest manually')
+    expect(wrapper.find('[data-door-banner]').exists()).toBe(false)
+  })
+
+  it('stops syncing when access is gone', async () => {
+    const wrapper = await mountView()
+    syncResponder = () => json({}, { status: 403 })
+    await wrapper.get('[data-scan-stub]').trigger('click')
+    await settle()
+    expect(wrapper.get('[data-door-sync-stopped]').text()).toBe('Sync stopped — you no longer have access to this event')
+    vi.advanceTimersByTime(30_000)
+    await settle()
+    expect(syncBodies).toHaveLength(1)
+  })
+
+  it('says so after five failed syncs in a row', async () => {
+    const wrapper = await mountView()
+    syncResponder = () => json({}, { status: 500 })
+    await wrapper.get('[data-scan-stub]').trigger('click')
+    await settle()
+    const realNow = Date.now
+    let clock = realNow()
+    vi.spyOn(Date, 'now').mockImplementation(() => clock)
+    for (let i = 0; i < 6; i += 1) {
+      clock += 120_000
+      vi.advanceTimersByTime(5000)
+      await settle()
+    }
+    expect(wrapper.get('[data-door-sync-stuck]').text()).toContain('Sync keeps failing')
+    vi.mocked(Date.now).mockRestore()
+  })
+
+  it('treats a reply that settles nothing as a failure instead of looping', async () => {
+    const wrapper = await mountView()
+    syncResponder = () => json({ results: [] })
+    await wrapper.get('[data-scan-stub]').trigger('click')
+    await settle()
+    expect(syncBodies).toHaveLength(1)
+    expect(wrapper.get('[data-door-banner]').text()).toContain('1 check-in waiting')
+  })
+
+  it('adds waiting check-ins to the live count', async () => {
+    const wrapper = await mountView()
+    syncResponder = () => json({}, { status: 500 })
+    await wrapper.get('[data-scan-stub]').trigger('click')
+    await settle()
+    expect(wrapper.get('[data-door-counters]').text()).toContain('2 of 2 checked in')
   })
 
   it('stops its timers when it goes away', async () => {

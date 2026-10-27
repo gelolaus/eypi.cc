@@ -32,7 +32,7 @@ export function noteSignedInUser(id: string | null): void {
     if (id === null) return
     if (previous !== null && previous !== id) {
       void clearTicketsCache()
-      void clearDoorData({ keepUnsynced: false })
+      void clearDoorData('account')
     }
     localStorage.setItem(LAST_USER_KEY, id)
   } catch {

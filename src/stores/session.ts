@@ -75,7 +75,6 @@ function reset(): void {
   clearQueryCache()
   // The service worker keeps the last tickets for offline use. They belong to this session only.
   void clearTicketsCache()
-  void clearDoorData()
   user.value = null
   pendingInviteCount.value = 0
   ticketUpdates.value = 0
@@ -109,8 +108,7 @@ async function pull(): Promise<void> {
     if (startedIn !== generation) return
     if (isUnauthorized(error)) {
       void clearTicketsCache()
-      void clearDoorData()
-      user.value = null
+          user.value = null
       pendingInviteCount.value = 0
       ticketUpdates.value = 0
       needsConsent.value = []
@@ -183,6 +181,8 @@ async function logout(): Promise<void> {
   const { useOrgMembership } = await import('@/composables/useOrgMembership')
   useOrgMembership().clearOrgMembershipCache()
   reset()
+  // Only an explicit sign-out removes guest lists; an expired session keeps them so syncing can finish.
+  void clearDoorData('logout')
 }
 
 const session: {

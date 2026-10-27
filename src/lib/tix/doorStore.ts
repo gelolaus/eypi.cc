@@ -2,7 +2,7 @@
  * Offline store for door mode. One IndexedDB database per event holds the downloaded roster
  * (names and QR tokens) and the queue of check-ins that have not reached the server yet.
  * The roster is personal data: it lives only on the door device, is removed with the
- * "Clear offline data" button, and is wiped whenever the session resets (see doorCleanup.ts).
+ * "Clear offline data" button, and is wiped when a different person signs in, and on sign-out only unsent check-ins stay (see doorCleanup.ts).
  *
  * State is mirrored in memory so a scan answers instantly; every change is also written to
  * IndexedDB straight away. `flush()` resolves once those writes have landed.
@@ -62,6 +62,9 @@ export interface DoorStore {
   applyServerResults(results: SyncResult[]): DoorConflict[]
   conflicts(): DoorConflict[]
   dismissConflicts(): void
+  persistFailed(): boolean
+  onPersistFailed(cb: () => void): void
+  reportUnsyncable(id: string): DoorConflict | null
   flush(): Promise<void>
   clear(): Promise<void>
   close(): void
@@ -107,9 +110,9 @@ function openDatabase(slug: string): Promise<IDBDatabase> {
     const request = indexedDB.open(dbName(slug), 1)
     request.onupgradeneeded = () => {
       const db = request.result
-      db.createObjectStore(ROSTER, { keyPath: 'id' })
-      db.createObjectStore(QUEUE, { keyPath: 'id' })
-      db.createObjectStore(META, { keyPath: 'key' })
+      if (!db.objectStoreNames.contains(ROSTER)) db.createObjectStore(ROSTER, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(QUEUE)) db.createObjectStore(QUEUE, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(META)) db.createObjectStore(META, { keyPath: 'key' })
     }
     request.onsuccess = () => {
       // A delete from another tab or the cleanup must not wait on this connection.
@@ -118,6 +121,16 @@ function openDatabase(slug: string): Promise<IDBDatabase> {
     }
     request.onerror = () => reject(request.error)
   })
+}
+
+/** A random v4 id; crypto.randomUUID is missing on older browsers and over plain http. */
+function newId(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0'))
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`
 }
 
 function rememberSlug(slug: string): void {
@@ -152,31 +165,55 @@ export async function deleteDoorStore(slug: string): Promise<void> {
   forgetSlug(slug)
 }
 
-async function hasQueuedItems(name: string): Promise<boolean> {
+/** Stores open in this tab; the cleanup waits for their pending writes so nothing unsynced is lost. */
+const openStores = new Set<DoorStore>()
+
+/** Opens an existing database read-only. Never creates one: a missing database aborts its own upgrade. */
+async function openExisting(name: string): Promise<IDBDatabase | null> {
   try {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+    return await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(name)
+      request.onupgradeneeded = () => request.transaction?.abort()
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
-    try {
-      if (!db.objectStoreNames.contains(QUEUE)) return false
-      return (await wrap(db.transaction(QUEUE).objectStore(QUEUE).count())) > 0
-    } finally {
-      db.close()
-    }
   } catch {
-    return false
+    return null
   }
 }
 
-/**
- * Removes every event's offline data (sign-out, account switch). With `keepUnsynced`, a store that still
- * holds check-ins the server has not seen survives, so a session that expired mid-event does not lose them;
- * the next person to sign in on this device wipes it for good.
- */
-export async function deleteAllDoorStores(options: { keepUnsynced?: boolean } = {}): Promise<void> {
+async function queuedCount(db: IDBDatabase): Promise<number> {
+  if (!db.objectStoreNames.contains(QUEUE)) return 0
+  return wrap(db.transaction(QUEUE).objectStore(QUEUE).count())
+}
+
+/** Drops names, QR tokens and conflict notes; the queued check-ins (ids and times) stay. */
+async function purgeRoster(name: string): Promise<void> {
+  const db = await openExisting(name)
+  if (!db) return
+  try {
+    if ((await queuedCount(db)) === 0) {
+      db.close()
+      await deleteDatabase(name)
+      return
+    }
+    const tx = db.transaction([ROSTER, META], 'readwrite')
+    tx.objectStore(ROSTER).clear()
+    tx.objectStore(META).clear()
+    await done(tx)
+  } catch { /* best effort */ } finally {
+    db.close()
+  }
+}
+
+/** Removes one event's guest list from this device, keeping check-ins that have not synced. */
+export async function purgeDoorRoster(slug: string): Promise<void> {
   if (typeof indexedDB === 'undefined') return
+  await Promise.all([...openStores].map((s) => s.flush()))
+  await purgeRoster(dbName(slug))
+}
+
+async function doorDatabaseNames(): Promise<Set<string>> {
   const names = new Set<string>()
   try {
     for (const info of (await indexedDB.databases?.()) ?? []) {
@@ -186,10 +223,23 @@ export async function deleteAllDoorStores(options: { keepUnsynced?: boolean } = 
   try {
     for (const slug of JSON.parse(localStorage.getItem(DOOR_SLUGS_KEY) ?? '[]') as string[]) names.add(dbName(slug))
   } catch { /* no registry */ }
+  return names
+}
+
+/**
+ * Cleanup for the end of a session. `all` deletes every event's data (a different person signed in).
+ * `logout` removes the guest lists (names, QR tokens) but keeps check-ins that have not synced.
+ * Pending writes of stores open in this tab are flushed first, so an unsynced check-in is never wiped.
+ */
+export async function wipeDoorStores(mode: 'all' | 'logout'): Promise<void> {
+  if (typeof indexedDB === 'undefined') return
+  await Promise.all([...openStores].map((s) => s.flush()))
+  const names = await doorDatabaseNames()
   const kept: string[] = []
   await Promise.all([...names].map(async (name) => {
-    if (options.keepUnsynced && await hasQueuedItems(name)) { kept.push(name.slice(DOOR_DB_PREFIX.length)); return }
-    await deleteDatabase(name)
+    if (mode === 'all') { await deleteDatabase(name); return }
+    await purgeRoster(name)
+    if (await databaseExists(name)) kept.push(name.slice(DOOR_DB_PREFIX.length))
   }))
   try {
     if (kept.length) localStorage.setItem(DOOR_SLUGS_KEY, JSON.stringify(kept))
@@ -197,9 +247,28 @@ export async function deleteAllDoorStores(options: { keepUnsynced?: boolean } = 
   } catch { /* nothing to update */ }
 }
 
+async function databaseExists(name: string): Promise<boolean> {
+  const db = await openExisting(name)
+  db?.close()
+  return db !== null
+}
+
 export async function openDoorStore(slug: string): Promise<DoorStore> {
-  const db = await openDatabase(slug)
-  rememberSlug(slug)
+  // Private windows and some locked-down browsers refuse IndexedDB. Door mode still works from memory then.
+  let db: IDBDatabase | null = null
+  let failed = false
+  try {
+    db = await openDatabase(slug)
+    rememberSlug(slug)
+  } catch {
+    failed = true
+  }
+  const failureListeners: (() => void)[] = []
+  function markFailed() {
+    if (failed && failureListeners.length === 0) return
+    failed = true
+    for (const cb of failureListeners.splice(0)) cb()
+  }
 
   const rows = new Map<string, RosterRow>()
   const byToken = new Map<string, string>()
@@ -209,11 +278,13 @@ export async function openDoorStore(slug: string): Promise<DoorStore> {
   let chain: Promise<unknown> = Promise.resolve()
   const recent = new Map<string, { at: number; out: ScanReturn }>()
 
-  const [storedRows, storedQueue, storedMeta] = await Promise.all([
-    wrap(db.transaction(ROSTER).objectStore(ROSTER).getAll() as IDBRequest<RosterRow[]>),
-    wrap(db.transaction(QUEUE).objectStore(QUEUE).getAll() as IDBRequest<QueuedCheckIn[]>),
-    wrap(db.transaction(META).objectStore(META).getAll() as IDBRequest<{ key: string; value: unknown }[]>),
-  ])
+  const [storedRows, storedQueue, storedMeta] = db
+    ? await Promise.all([
+      wrap(db.transaction(ROSTER).objectStore(ROSTER).getAll() as IDBRequest<RosterRow[]>),
+      wrap(db.transaction(QUEUE).objectStore(QUEUE).getAll() as IDBRequest<QueuedCheckIn[]>),
+      wrap(db.transaction(META).objectStore(META).getAll() as IDBRequest<{ key: string; value: unknown }[]>),
+    ])
+    : [[], [], []] as [RosterRow[], QueuedCheckIn[], { key: string; value: unknown }[]]
   for (const row of storedRows) { rows.set(row.id, row); byToken.set(row.qrToken, row.id) }
   queue = storedQueue.sort((a, b) => a.at.localeCompare(b.at))
   for (const meta of storedMeta) {
@@ -222,11 +293,13 @@ export async function openDoorStore(slug: string): Promise<DoorStore> {
   }
 
   function persist(work: (tx: IDBTransaction) => void, stores: string[]): void {
+    if (!db) { markFailed(); return }
+    const open = db
     chain = chain.then(() => {
-      const tx = db.transaction(stores, 'readwrite')
+      const tx = open.transaction(stores, 'readwrite')
       work(tx)
       return done(tx)
-    }).catch(() => { /* a failed write keeps the in-memory state; the next write retries nothing */ })
+    }).catch(() => markFailed()) // the in-memory state stays; the view tells the door and syncs at once
   }
 
   function saveMeta(): void {
@@ -241,7 +314,7 @@ export async function openDoorStore(slug: string): Promise<DoorStore> {
     if (row.status !== 'confirmed') return { result: 'not_confirmed', attendee }
     if (row.checkedIn) return { result: 'already', attendee }
     row.checkedIn = true
-    const item: QueuedCheckIn = { id: crypto.randomUUID(), attendeeId: row.id, action: 'checked_in', at: now.toISOString() }
+    const item: QueuedCheckIn = { id: newId(), attendeeId: row.id, action: 'checked_in', at: now.toISOString() }
     queue.push(item)
     persist((tx) => {
       tx.objectStore(ROSTER).put({ ...row })
@@ -256,7 +329,7 @@ export async function openDoorStore(slug: string): Promise<DoorStore> {
     persist((tx) => { for (const id of gone) tx.objectStore(QUEUE).delete(id) }, [QUEUE])
   }
 
-  return {
+  const api: DoorStore = {
     loadRoster(next, generatedAt) {
       rows.clear()
       byToken.clear()
@@ -352,17 +425,44 @@ export async function openDoorStore(slug: string): Promise<DoorStore> {
       saveMeta()
     },
 
+    persistFailed: () => failed,
+    onPersistFailed(cb) {
+      if (failed) cb()
+      else failureListeners.push(cb)
+    },
+    reportUnsyncable(id) {
+      const item = queue.find((q) => q.id === id)
+      if (!item) return null
+      const row = rows.get(item.attendeeId)
+      const conflict: DoorConflict = {
+        id: item.id,
+        attendeeId: item.attendeeId,
+        name: row ? `${row.firstName} ${row.lastName}`.trim() : 'Unknown guest',
+        code: 'unsyncable',
+        message: 'Could not sync — check this guest manually',
+      }
+      removeFromQueue([id])
+      conflictList = [...conflictList, conflict]
+      saveMeta()
+      return conflict
+    },
+
     async flush() {
       await chain
     },
     async clear() {
       rows.clear(); byToken.clear(); queue = []; conflictList = []; loadedAt = null; recent.clear()
       await chain
-      db.close()
+      openStores.delete(self)
+      db?.close()
       await deleteDoorStore(slug)
     },
     close() {
-      db.close()
+      openStores.delete(self)
+      db?.close()
     },
   }
+  const self = api
+  openStores.add(self)
+  return self
 }

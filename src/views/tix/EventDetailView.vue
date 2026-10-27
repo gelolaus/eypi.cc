@@ -629,6 +629,8 @@ async function confirmDeleteEvent() {
 }
 
 onMounted(async () => {
+  // Door mode must load offline later; fetching its chunk now lets the service worker cache it.
+  void import('@/views/tix/DoorModeView.vue').catch(() => undefined)
   try {
     const res = await api.raw(`/api/events/${slug}`)
     const data = await res.json() as { message?: string; event?: EventInfo }

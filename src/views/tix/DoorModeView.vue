@@ -33,6 +33,32 @@
         {{ banner }}
       </div>
 
+      <div
+        v-if="saveFailed"
+        data-door-save-warning
+        role="alert"
+        class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base font-medium text-destructive"
+      >
+        This device can't save check-ins — keep this tab open until they sync
+      </div>
+
+      <div
+        v-if="syncStopped"
+        data-door-sync-stopped
+        role="alert"
+        class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base font-medium text-destructive"
+      >
+        Sync stopped — you no longer have access to this event
+      </div>
+      <p
+        v-else-if="syncStuck"
+        data-door-sync-stuck
+        role="alert"
+        class="rounded-2xl border border-border bg-accent px-4 py-3 text-base font-medium"
+      >
+        Sync keeps failing — check-ins are saved on this device and will keep retrying
+      </p>
+
       <p
         v-if="notice"
         data-door-notice
@@ -222,6 +248,7 @@ import {
   openDoorStore,
   type DoorConflict,
   type DoorStore,
+  type QueuedCheckIn,
   type RosterRow,
   type ScanOutcome,
   type ScanReturn,
@@ -231,6 +258,8 @@ import {
 const SYNC_EVERY_MS = 5000
 const LIVE_EVERY_MS = 10_000
 const SYNC_BATCH = 100
+const MAX_ROUNDS = 50
+const STUCK_AFTER = 5
 const MAX_BACKOFF_MS = 60_000
 
 const RESULT_TEXT: Record<ScanOutcome, string> = {
@@ -272,6 +301,9 @@ const conflicts = ref<DoorConflict[]>([])
 const result = ref<ShownResult | null>(null)
 const query = ref('')
 const hits = ref<RosterRow[]>([])
+const saveFailed = ref(false)
+const syncStopped = ref(false)
+const syncStuck = ref(false)
 
 let seq = 0
 let syncing = false
@@ -283,7 +315,10 @@ let liveTimer: ReturnType<typeof setInterval> | null = null
 let wakeLock: { release: () => Promise<void> } | null = null
 let unmounted = false
 
-const shown = computed(() => (online.value && live.value ? live.value : local.value))
+// The server has not seen the queued check-ins yet, so add them or the number dips after each scan.
+const shown = computed(() => (online.value && live.value
+  ? { ...live.value, checkedIn: live.value.checkedIn + pendingCount.value }
+  : local.value))
 
 const banner = computed(() => {
   const n = pendingCount.value
@@ -298,6 +333,7 @@ function refreshLocal() {
   local.value = s.counts()
   pendingCount.value = s.pendingCount()
   conflicts.value = s.conflicts()
+  if (s.persistFailed()) saveFailed.value = true
   hits.value = s.search(query.value)
 }
 
@@ -359,6 +395,10 @@ async function start() {
     const s = await openDoorStore(slug)
     if (unmounted) { s.close(); return }
     store.value = s
+    s.onPersistFailed(() => {
+      saveFailed.value = true
+      void syncOnce()
+    })
     const usable = await loadRoster(s)
     refreshLocal()
     state.value = usable ? 'ready' : 'failed'
@@ -372,30 +412,58 @@ async function start() {
   }
 }
 
+function postSync(items: QueuedCheckIn[]): Promise<Response> {
+  return api.raw(`/api/events/${slug}/checkins/sync`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
+}
+
+/** The server refused the batch as malformed: find the item it dislikes and set it aside. Returns false when sync must stop. */
+async function syncOneByOne(s: DoorStore, items: QueuedCheckIn[]): Promise<boolean> {
+  for (const item of items) {
+    const res = await postSync([item])
+    if (res.status === 403 || res.status === 404) return false
+    if (res.status === 400) { s.reportUnsyncable(item.id); continue }
+    if (!res.ok) throw new Error('sync failed')
+    const data = await res.json() as { results?: SyncResult[] }
+    s.applyServerResults(data.results ?? [])
+  }
+  return true
+}
+
 async function syncOnce() {
   const s = store.value
-  if (!s || syncing || !navigator.onLine || Date.now() < backoffUntil) return
+  if (!s || syncing || syncStopped.value || !navigator.onLine || Date.now() < backoffUntil) return
   syncing = true
   try {
-    for (;;) {
+    for (let round = 0; round < MAX_ROUNDS; round += 1) {
       const items = (await s.pending()).slice(0, SYNC_BATCH)
       if (!items.length) break
-      const res = await api.raw(`/api/events/${slug}/checkins/sync`, {
-        method: 'POST',
-        body: JSON.stringify({ items }),
-      })
-      if (!res.ok) throw new Error('sync failed')
-      const data = await res.json() as { results?: SyncResult[] }
-      s.applyServerResults(data.results ?? [])
-      failures = 0
+      const before = s.pendingCount()
+      const res = await postSync(items)
+      if (res.status === 403 || res.status === 404) { syncStopped.value = true; break }
+      if (res.status === 400) {
+        if (!(await syncOneByOne(s, items))) { syncStopped.value = true; break }
+      } else {
+        if (!res.ok) throw new Error('sync failed')
+        const data = await res.json() as { results?: SyncResult[] }
+        s.applyServerResults(data.results ?? [])
+      }
       refreshLocal()
+      // An answer that settles nothing would repeat forever.
+      if (s.pendingCount() >= before) throw new Error('sync made no progress')
       if (items.length < SYNC_BATCH) break
     }
+    failures = 0
+    syncStuck.value = false
   } catch {
     failures += 1
     backoffUntil = Date.now() + Math.min(MAX_BACKOFF_MS, SYNC_EVERY_MS * 2 ** failures)
+    if (failures >= STUCK_AFTER) syncStuck.value = true
   } finally {
     syncing = false
+    refreshLocal()
   }
 }
 
@@ -413,6 +481,8 @@ async function requestWakeLock() {
   try {
     const nav = navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } }
     if (!nav.wakeLock || document.hidden) return
+    await wakeLock?.release().catch(() => undefined)
+    wakeLock = null
     wakeLock = await nav.wakeLock.request('screen')
   } catch { /* the screen may sleep; scanning still works */ }
 }
