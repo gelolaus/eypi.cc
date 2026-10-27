@@ -9,7 +9,17 @@
  *    (src/lib/registerSw.ts clearTicketsCache), and the worker deletes a cached copy when the
  *    network answers 401 or 403, so one person's tickets are never shown to the next.
  *  - Opaque, error, partial (206) and Set-Cookie responses are never stored.
- *  - HTML is network first, so a stale worker can never pin old HTML.
+ *  - HTML is network first, so a stale worker can never pin old HTML. Only known SPA routes get the
+ *    cached-shell fallback; short links (/slug, /unlock/..) go straight to the network, because the
+ *    Worker answers them with redirects and the shell would be wrong.
+ *
+ * Hard-coded on purpose: API_ORIGIN below must match src/config/api.ts and the CSP connect-src in
+ * public/_headers. SPA_SEGMENTS must match src/router/index.ts (tied by a test in worker/sw.test.ts).
+ *
+ * Kill switch churn: after public/sw.js is replaced by sw-kill.js, a browser that already unregistered
+ * may register /sw.js again on its next visit (registerSw runs every load) and receive the kill worker
+ * once more, which unregisters again. This settles once the normal sw.js is deployed again; keep the
+ * kill switch deployed only while the problem is being fixed.
  */
 ;(function () {
   var API_ORIGIN = 'https://api.eypi.cc'
@@ -25,10 +35,16 @@
     return /^\/api\/tickets\/guest\/[^/]+$/.test(pathname)
   }
 
+  // First path segment of every SPA route in src/router/index.ts, except "unlock" (the Worker redirects
+  // short links there, so it must hit the network). Anything else extensionless may be a short link.
+  var SPA_SEGMENTS = [
+    'login', 'dashboard', 'invites', 'links', 'forms', 'manage', 'frames', 'tix', 'orgs', 'account',
+    'settings', 'admin', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact', 'expired', 'report',
+  ]
+
   function looksLikeRoute(pathname) {
-    if (pathname.indexOf('/api/') === 0 || pathname.indexOf('/@') === 0) return false
-    if (pathname.indexOf('/assets/') === 0 || pathname.indexOf('/media/') === 0) return false
-    return !/\.[a-z0-9]+$/i.test(pathname)
+    if (pathname === '/') return true
+    return SPA_SEGMENTS.indexOf(pathname.split('/')[1]) !== -1
   }
 
   function pickStrategy(url, request) {
@@ -63,6 +79,12 @@
     }
   }
 
+  /** Runs a cache write after the response is returned, kept alive by waitUntil when the worker gave one. */
+  function defer(deps, task) {
+    var settled = task.catch(function () {})
+    if (deps.waitUntil) deps.waitUntil(settled)
+  }
+
   async function trimCache(cache, limit) {
     var keys = await cache.keys()
     var excess = keys.length - limit
@@ -71,8 +93,8 @@
 
   async function shellNetworkFirst(request, deps) {
     var cache = await deps.caches.open(deps.shellCache)
-    var network = deps.fetch(request).then(async function (res) {
-      if (cacheable(res) && !res.redirected && isHtml(res)) await safePut(cache, SHELL_KEY, res.clone())
+    var network = deps.fetch(request).then(function (res) {
+      if (cacheable(res) && !res.redirected && isHtml(res)) defer(deps, safePut(cache, SHELL_KEY, res.clone()))
       return res
     })
     network.catch(function () {})
@@ -102,7 +124,7 @@
     if (hit) return hit
     var res = await deps.fetch(request)
     // A missing chunk comes back as the SPA shell with status 200. Never pin that to a script URL.
-    if (cacheable(res) && !isHtml(res)) await safePut(cache, request, res.clone())
+    if (cacheable(res) && !isHtml(res)) defer(deps, safePut(cache, request, res.clone()))
     return res
   }
 
@@ -111,14 +133,13 @@
     var hit = await cache.match(request)
     if (hit) {
       // Re-insert so the entry counts as recently used (cache.keys() is in insertion order).
-      await cache.delete(request)
-      await safePut(cache, request, hit.clone())
+      var copy = hit.clone()
+      defer(deps, cache.delete(request).then(function () { return safePut(cache, request, copy) }))
       return hit
     }
     var res = await deps.fetch(request)
     if (cacheable(res) && !isHtml(res)) {
-      await safePut(cache, request, res.clone())
-      await trimCache(cache, MEDIA_LIMIT)
+      defer(deps, safePut(cache, request, res.clone()).then(function () { return trimCache(cache, MEDIA_LIMIT) }))
     }
     return res
   }
@@ -150,7 +171,7 @@
       return res
     }
     if (cacheable(res)) {
-      await safePut(cache, request, stamped(res.clone()))
+      defer(deps, safePut(cache, request, stamped(res.clone())))
       return res
     }
     if (res.status >= 500) {
@@ -166,6 +187,7 @@
     MEDIA_LIMIT: MEDIA_LIMIT,
     HTML_TIMEOUT_MS: HTML_TIMEOUT_MS,
     SHELL_KEY: SHELL_KEY,
+    SPA_SEGMENTS: SPA_SEGMENTS,
     pickStrategy: pickStrategy,
     cacheable: cacheable,
     trimCache: trimCache,

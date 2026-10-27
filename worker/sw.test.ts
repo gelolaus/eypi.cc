@@ -5,6 +5,7 @@ import { runInNewContext } from 'node:vm'
 type Strategy = 'shell-network-first' | 'asset-cache-first' | 'media-cache-first' | 'tickets-network-first' | 'bypass'
 type FakeCache = ReturnType<typeof makeCache>
 type Sw = {
+  SPA_SEGMENTS: string[]
   CACHE_NAMES: { media: string; tickets: string; shellPrefix: string }
   MEDIA_LIMIT: number
   HTML_TIMEOUT_MS: number
@@ -16,7 +17,7 @@ type Sw = {
   trimCache: (cache: FakeCache, limit: number) => Promise<void>
   cacheable: (response: Response) => boolean
 }
-type Deps = { caches: FakeCaches; fetch: (r: Request) => Promise<Response>; shellCache: string; wait?: (ms: number) => Promise<void> }
+type Deps = { caches: FakeCaches; fetch: (r: Request) => Promise<Response>; shellCache: string; waitUntil: (p: Promise<unknown>) => void; pending: Promise<unknown>[] }
 
 function keyOf(input: Request | string): string {
   const raw = typeof input === 'string' ? input : input.url
@@ -75,7 +76,12 @@ function html(body = '<html></html>', init: ResponseInit = {}) {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'text/html' }, ...init })
 }
 function deps(fetchImpl: Deps['fetch'], caches = new FakeCaches()): Deps {
-  return { caches, fetch: fetchImpl, shellCache: 'eypi-shell-test' }
+  const pending: Promise<unknown>[] = []
+  return { caches, fetch: fetchImpl, shellCache: 'eypi-shell-test', waitUntil: (p) => { pending.push(p) }, pending }
+}
+/** Cache writes run after the response is returned; wait for them before reading the cache. */
+async function settle(d: Deps) {
+  await Promise.all(d.pending)
 }
 
 describe('pickStrategy', () => {
@@ -96,8 +102,33 @@ describe('pickStrategy', () => {
   })
 
   it('treats a navigation as the network-first shell (html is network first)', () => {
-    const request = { url: 'https://eypi.cc/tickets', method: 'GET', mode: 'navigate', headers: new Headers() } as unknown as Request
+    const request = { url: 'https://eypi.cc/dashboard', method: 'GET', mode: 'navigate', headers: new Headers() } as unknown as Request
     expect(sw.pickStrategy(new URL(request.url), request)).toBe('shell-network-first')
+  })
+
+  it.each([
+    ['https://eypi.cc/', true],
+    ['https://eypi.cc/links', true],
+    ['https://eypi.cc/frames/spring', true],
+    ['https://eypi.cc/orgs/apc-mc', true],
+    ['https://eypi.cc/admin/users', true],
+    ['https://eypi.cc/abc123', false],
+    ['https://eypi.cc/unlock/abc123', false],
+    ['https://eypi.cc/sitemap.xml', false],
+    ['https://eypi.cc/media/a.webp', false],
+  ])('navigation to %s uses the html fallback: %s', (url, shell) => {
+    const request = { url, method: 'GET', mode: 'navigate', headers: new Headers() } as unknown as Request
+    const got = sw.pickStrategy(new URL(url), request)
+    if (shell) expect(got).toBe('shell-network-first')
+    else expect(got).not.toBe('shell-network-first')
+    if (url.endsWith('/abc123') || url.includes('/unlock/')) expect(got).toBe('bypass')
+  })
+
+  it('keeps the spa route list in step with src/router/index.ts', () => {
+    const source = readFileSync(new URL('../src/router/index.ts', import.meta.url), 'utf8')
+    const segments = new Set([...source.matchAll(/path:\s*'\/([a-z][a-z-]*)/g)].map((m) => m[1]))
+    segments.delete('unlock') // short-link redirect target: network only
+    expect([...segments].sort()).toEqual([...sw.SPA_SEGMENTS].sort())
   })
 
   it('bypasses anything that is not a plain GET', () => {
@@ -120,8 +151,10 @@ describe('html is network first', () => {
 
   it('serves the network copy and refreshes the cached shell', async () => {
     const caches = new FakeCaches()
-    const res = await sw.shellNetworkFirst(nav(), deps(async () => html('fresh'), caches))
+    const d = deps(async () => html('fresh'), caches)
+    const res = await sw.shellNetworkFirst(nav(), d)
     expect(await res.text()).toBe('fresh')
+    await settle(d)
     const shell = await caches.open('eypi-shell-test')
     expect(await (await shell.match('/index.html'))!.text()).toBe('fresh')
   })
@@ -186,7 +219,9 @@ describe('assets', () => {
 
   it('caches a fresh ok asset', async () => {
     const caches = new FakeCaches()
-    await sw.assetCacheFirst(req('https://eypi.cc/assets/b.js'), deps(async () => new Response('js', { headers: { 'Content-Type': 'text/javascript' } }), caches))
+    const d = deps(async () => new Response('js', { headers: { 'Content-Type': 'text/javascript' } }), caches)
+    await sw.assetCacheFirst(req('https://eypi.cc/assets/b.js'), d)
+    await settle(d)
     expect(await (await caches.open('eypi-shell-test')).match('/assets/b.js')).toBeDefined()
   })
 
@@ -215,8 +250,10 @@ describe('media', () => {
     const caches = new FakeCaches()
     const media = await caches.open('eypi-media-v1')
     for (let i = 0; i < 150; i++) await media.put(`/media/${i}.webp`, new Response('x'))
-    const res = await sw.mediaCacheFirst(req('https://eypi.cc/media/new.webp'), deps(async () => new Response('img', { headers: { 'Content-Type': 'image/webp' } }), caches))
+    const d = deps(async () => new Response('img', { headers: { 'Content-Type': 'image/webp' } }), caches)
+    const res = await sw.mediaCacheFirst(req('https://eypi.cc/media/new.webp'), d)
     expect(await res.text()).toBe('img')
+    await settle(d)
     expect(media.map.size).toBe(150)
     expect(media.map.has('/media/new.webp')).toBe(true)
     expect(media.map.has('/media/0.webp')).toBe(false)
@@ -227,7 +264,9 @@ describe('media', () => {
     const media = await caches.open('eypi-media-v1')
     await media.put('/media/old.webp', new Response('x'))
     await media.put('/media/other.webp', new Response('y'))
-    await sw.mediaCacheFirst(req('https://eypi.cc/media/old.webp'), deps(vi.fn(), caches))
+    const d = deps(vi.fn(), caches)
+    await sw.mediaCacheFirst(req('https://eypi.cc/media/old.webp'), d)
+    await settle(d)
     expect([...media.map.keys()].pop()).toBe('/media/old.webp')
   })
 })
@@ -238,8 +277,10 @@ describe('tickets', () => {
   it('caches a good response and serves it when offline', async () => {
     const caches = new FakeCaches()
     const ok = () => new Response('[1]', { headers: { 'Content-Type': 'application/json' } })
-    const first = await sw.ticketsNetworkFirst(req(url), deps(async () => ok(), caches))
+    const d = deps(async () => ok(), caches)
+    const first = await sw.ticketsNetworkFirst(req(url), d)
     expect(await first.text()).toBe('[1]')
+    await settle(d)
     const offline = await sw.ticketsNetworkFirst(req(url), deps(async () => { throw new TypeError('offline') }, caches))
     expect(await offline.text()).toBe('[1]')
     expect(offline.headers.get('X-Eypi-Offline')).toBe('1')
@@ -260,7 +301,9 @@ describe('tickets', () => {
       () => new Response('[1]', { headers: { 'Set-Cookie': 'a=b' } }),
     ]) {
       const caches = new FakeCaches()
-      await sw.ticketsNetworkFirst(req(url), deps(async () => make(), caches))
+      const d = deps(async () => make(), caches)
+      await sw.ticketsNetworkFirst(req(url), d)
+      await settle(d)
       expect(await (await caches.open('eypi-tickets-v1')).match(url)).toBeUndefined()
     }
     expect(sw.cacheable({ ok: true, status: 200, type: 'opaque', headers: new Headers() } as unknown as Response)).toBe(false)
@@ -313,19 +356,44 @@ describe('sw.js wiring', () => {
     expect(self.clients.claim).toHaveBeenCalled()
   })
 
-  it('clears the tickets cache on a clear-tickets message', async () => {
-    const { listeners, caches } = load('sw.js')
-    await caches.open('eypi-tickets-v1')
+  it('installs best effort: a failed shell precache is tolerated and skipWaiting still runs', async () => {
+    const { listeners, self } = load('sw.js', { fetch: vi.fn(async () => { throw new TypeError('offline') }) })
     const { holder, event } = waitable()
-    listeners.message({ data: { type: 'clear-tickets' }, waitUntil: event.waitUntil })
+    listeners.install(event)
+    await expect(holder.p).resolves.toBeUndefined()
+    expect(self.skipWaiting).toHaveBeenCalled()
+  })
+
+  it('precaches the shell under /index.html and tolerates a failing asset', async () => {
+    const fetchMock = vi.fn(async (input: unknown) => {
+      if (input === '/') return html('shell')
+      throw new TypeError('boom')
+    })
+    const { listeners, caches, self } = load('sw.js', { fetch: fetchMock })
+    const { holder, event } = waitable()
+    listeners.install(event)
     await holder.p
-    expect(await caches.keys()).not.toContain('eypi-tickets-v1')
+    const names = await caches.keys()
+    expect(names).toEqual(['eypi-shell-dev'])
+    expect(await (await (await caches.open(names[0])).match('/index.html'))!.text()).toBe('shell')
+    expect(self.skipWaiting).toHaveBeenCalled()
+  })
+
+  it('routes fetches by pickStrategy', async () => {
+    const { listeners } = load('sw.js', { fetch: vi.fn(async () => new Response('js', { headers: { 'Content-Type': 'text/javascript' } })) })
+    const respondWith = vi.fn()
+    const waitUntil = vi.fn()
+    listeners.fetch({ request: req('https://eypi.cc/assets/x.js'), respondWith, waitUntil })
+    expect(respondWith).toHaveBeenCalledTimes(1)
+    expect(await (await respondWith.mock.calls[0][0] as Response).text()).toBe('js')
+    expect(waitUntil).toHaveBeenCalled()
   })
 
   it('does not intercept requests that bypass', () => {
     const { listeners } = load('sw.js')
     const respondWith = vi.fn()
     listeners.fetch({ request: req('https://api.eypi.cc/api/me'), respondWith })
+    listeners.fetch({ request: { url: 'https://eypi.cc/abc123', method: 'GET', mode: 'navigate', headers: new Headers() }, respondWith })
     expect(respondWith).not.toHaveBeenCalled()
   })
 })

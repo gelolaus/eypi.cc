@@ -52,6 +52,19 @@ beforeEach(() => {
 })
 
 describe('useSession', () => {
+  it('deletes the tickets cache when /api/me says nobody is signed in', async () => {
+    const del = vi.fn(async () => true)
+    vi.stubGlobal('caches', { delete: del })
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, { error: 'unauthorized' }))
+    try {
+      await useSession().load()
+      expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+    } finally {
+      vi.stubGlobal('fetch', fetchMock)
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('deletes the service worker tickets cache when the session resets', () => {
     const del = vi.fn(async () => true)
     vi.stubGlobal('caches', { delete: del })

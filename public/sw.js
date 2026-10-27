@@ -9,7 +9,7 @@
  *
  * Caches: eypi-shell-<buildHash> (HTML shell + /assets/*, dropped on every new build),
  *         eypi-media-v1 (/media/*, 150 entries, least recently used evicted),
- *         eypi-tickets-v1 (GET /api/tickets only, cleared on sign-out).
+ *         eypi-tickets-v1 (GET /api/tickets only; the page deletes it on sign-out, see registerSw.ts).
  *
  * KILL SWITCH: if this file ever ships broken, replace public/sw.js with the contents of
  * public/sw-kill.js and deploy the frontend. scripts/sw-precache.mjs leaves a file without the
@@ -22,8 +22,8 @@ importScripts('/sw-strategies.js')
 const BUILD = /*build*/ { hash: 'dev', precache: [] } /*end-build*/
 const SHELL_CACHE = EypiSw.CACHE_NAMES.shellPrefix + BUILD.hash
 
-function strategyDeps() {
-  return { caches: caches, fetch: (request) => fetch(request), shellCache: SHELL_CACHE }
+function strategyDeps(event) {
+  return { caches: caches, fetch: (request) => fetch(request), shellCache: SHELL_CACHE, waitUntil: (p) => event.waitUntil(p) }
 }
 
 async function precache() {
@@ -51,30 +51,26 @@ async function dropOldShells() {
 }
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(precache().then(() => self.skipWaiting()))
+  // Best effort: a failed precache (offline install, flaky network) must not leave the worker
+  // half-installed. Strategies fill the caches on use. skipWaiting always runs, per the policy above.
+  event.waitUntil(precache().catch(() => undefined).then(() => self.skipWaiting()))
 })
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(dropOldShells().then(() => self.clients.claim()))
 })
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'clear-tickets') {
-    event.waitUntil(caches.delete(EypiSw.CACHE_NAMES.tickets))
-  }
-})
-
 self.addEventListener('fetch', (event) => {
   const request = event.request
   switch (EypiSw.pickStrategy(new URL(request.url), request)) {
     case 'shell-network-first':
-      return event.respondWith(EypiSw.shellNetworkFirst(request, strategyDeps()))
+      return event.respondWith(EypiSw.shellNetworkFirst(request, strategyDeps(event)))
     case 'asset-cache-first':
-      return event.respondWith(EypiSw.assetCacheFirst(request, strategyDeps()))
+      return event.respondWith(EypiSw.assetCacheFirst(request, strategyDeps(event)))
     case 'media-cache-first':
-      return event.respondWith(EypiSw.mediaCacheFirst(request, strategyDeps()))
+      return event.respondWith(EypiSw.mediaCacheFirst(request, strategyDeps(event)))
     case 'tickets-network-first':
-      return event.respondWith(EypiSw.ticketsNetworkFirst(request, strategyDeps()))
+      return event.respondWith(EypiSw.ticketsNetworkFirst(request, strategyDeps(event)))
     default:
       // bypass: the browser handles it as if no worker existed
   }

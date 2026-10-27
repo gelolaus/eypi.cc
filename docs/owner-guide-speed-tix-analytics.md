@@ -220,9 +220,9 @@ Do these right after Part 2 for the matching phase.
 ## Emergency
 
 **The site shows an old version, or keeps breaking after a deploy (service worker problem).**
-1. Ask the agent for the **service worker kill switch** commit (the spec defines it; it replaces `public/sw.js` with a version that unregisters itself).
+1. The kill switch is one command from the repo root: `cp public/sw-kill.js public/sw.js` (it replaces the worker with one that deletes its caches and unregisters itself). Commit it.
 2. Deploy the frontend only (step 2D.2), then smoke test (2D.3).
-3. Each visitor's browser removes the broken worker on their next page load.
+3. Each visitor's browser removes the broken worker on their next page load. Because the site registers `/sw.js` on every visit, a browser may briefly re-register and unregister again until you restore the normal worker (`git checkout public/sw.js`, then deploy) once the bug is fixed.
 
 **A deploy broke something.**
 1. Workers keep previous versions. Check the command first:

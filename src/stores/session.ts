@@ -90,11 +90,13 @@ async function pull(): Promise<void> {
   try {
     const data = await api.get<MeResponse>('/api/me')
     user.value = asUser(data.user)
+    if (!user.value) void clearTicketsCache()
     pendingInviteCount.value = asCount(data.pendingInviteCount)
     needsConsent.value = asConsentList(data.needsConsent)
     status.value = 'ready'
   } catch (error) {
     if (isUnauthorized(error)) {
+      void clearTicketsCache()
       user.value = null
       pendingInviteCount.value = 0
       needsConsent.value = []
