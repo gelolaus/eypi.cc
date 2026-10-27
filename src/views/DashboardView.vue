@@ -46,20 +46,34 @@
             class="grid grid-cols-2 gap-3"
           >
             <div class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4">
-              <dt class="text-sm text-muted-foreground">Links</dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">{{ linkSummary.count.toLocaleString('en-US') }}</dd>
+              <dt class="text-sm text-muted-foreground">
+                Links
+              </dt>
+              <dd class="font-heading text-3xl font-semibold tabular-nums">
+                {{ linkSummary.count.toLocaleString('en-US') }}
+              </dd>
             </div>
             <div class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4">
-              <dt class="text-sm text-muted-foreground">Clicks</dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">{{ linkSummary.clicks.toLocaleString('en-US') }}</dd>
+              <dt class="text-sm text-muted-foreground">
+                Clicks
+              </dt>
+              <dd class="font-heading text-3xl font-semibold tabular-nums">
+                {{ linkSummary.clicks.toLocaleString('en-US') }}
+              </dd>
             </div>
             <div
               v-if="linkSummary.top"
               class="col-span-2 min-w-0 rounded-2xl border border-border bg-muted/40 p-4"
             >
-              <p class="text-sm text-muted-foreground">Top link</p>
-              <p class="truncate font-mono text-base">eypi.cc/{{ linkSummary.top.slug }}</p>
-              <p class="text-sm text-muted-foreground tabular-nums">{{ linkSummary.top.clicks.toLocaleString('en-US') }} clicks</p>
+              <p class="text-sm text-muted-foreground">
+                Top link
+              </p>
+              <p class="truncate font-mono text-base">
+                eypi.cc/{{ linkSummary.top.slug }}
+              </p>
+              <p class="text-sm text-muted-foreground tabular-nums">
+                {{ linkSummary.top.clicks.toLocaleString('en-US') }} clicks
+              </p>
             </div>
           </dl>
         </AppSection>
@@ -70,8 +84,12 @@
         data-card="org"
       >
         <AppSection title="Your org">
-          <p class="line-clamp-2 break-words text-base font-medium">{{ activeOrg.org_name }}</p>
-          <p class="mb-4 font-mono text-sm text-muted-foreground">{{ orgSlugLabel(activeOrg) }}</p>
+          <p class="line-clamp-2 break-words text-base font-medium">
+            {{ activeOrg.org_name }}
+          </p>
+          <p class="mb-4 font-mono text-sm text-muted-foreground">
+            {{ orgSlugLabel(activeOrg) }}
+          </p>
           <p
             v-if="orgSummary === 'error'"
             class="text-base text-muted-foreground"
@@ -87,8 +105,12 @@
               :key="item.key"
               class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4"
             >
-              <dt class="text-sm text-muted-foreground">{{ item.label }}</dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">{{ orgSummary[item.key].toLocaleString('en-US') }}</dd>
+              <dt class="text-sm text-muted-foreground">
+                {{ item.label }}
+              </dt>
+              <dd class="font-heading text-3xl font-semibold tabular-nums">
+                {{ orgSummary[item.key].toLocaleString('en-US') }}
+              </dd>
             </div>
           </dl>
         </AppSection>
