@@ -31,6 +31,8 @@ const settled = ref(false)
 const pendingInviteCount = ref(0)
 const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
+// Bumped by reset() so a load that began before it cannot mark the new session settled.
+let generation = 0
 let readyCallbacks = new Set<() => void>()
 
 function asCount(value: unknown): number {
@@ -69,6 +71,7 @@ function reset(): void {
   needsConsent.value = []
   status.value = 'idle'
   settled.value = false
+  generation += 1
   inflight = null
   readyCallbacks = new Set()
 }
@@ -123,9 +126,10 @@ function offReady(cb: () => void): void {
 }
 
 function track(task: Promise<void>): Promise<void> {
+  const startedIn = generation
   const tracked = task.finally(() => {
     if (inflight === tracked) inflight = null
-    settled.value = true
+    if (startedIn === generation) settled.value = true
     flushReady()
   })
   inflight = tracked

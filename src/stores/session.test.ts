@@ -400,6 +400,62 @@ describe('useSession', () => {
     expect(session.status.value).toBe('ready')
   })
 
+  describe('settled', () => {
+    it('is false before load() and true after a successful load', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      expect(session.settled.value).toBe(false)
+      const task = session.load()
+      expect(session.settled.value).toBe(false)
+      await task
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a 401', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(401, {
+        error: { code: 'unauthorized', message: 'Sign in to continue.' },
+      }))
+      const session = useSession()
+      await session.load()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a 500 with no user, even though status stays idle', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(500, { error: { code: 'internal', message: 'Oops' } }))
+      const session = useSession()
+      await session.load()
+      expect(session.status.value).toBe('idle')
+      expect(session.user.value).toBeNull()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a dropped connection with no user', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+      const session = useSession()
+      await session.load()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is false again after reset()', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      await session.load()
+      session.reset()
+      expect(session.settled.value).toBe(false)
+    })
+
+    it('ignores a load that finishes after reset()', async () => {
+      const pending = deferred<Response>()
+      fetchMock.mockReturnValue(pending.promise)
+      const session = useSession()
+      const task = session.load()
+      session.reset()
+      pending.resolve(jsonResponse(200, meBody(0)))
+      await task
+      expect(session.settled.value).toBe(false)
+    })
+  })
+
   it('never reads the legacy local token key', () => {
     const needle = ['eypi', 'token'].join('_')
     const root = join(process.cwd(), 'src')
