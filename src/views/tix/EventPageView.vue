@@ -197,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppImage from '@/components/AppImage.vue'
 import { Button } from '@/components/ui/button'
@@ -308,9 +308,8 @@ async function cancelRegistration(): Promise<void> {
   }
 }
 
-const previousTitle = document.title
+// The router owns titles; this only refines the generic one once the event is known.
 watch(event, (e) => {
   if (e) document.title = `${e.name} · Eypi`
 }, { immediate: true })
-onBeforeUnmount(() => { document.title = previousTitle })
 </script>
