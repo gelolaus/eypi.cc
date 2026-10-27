@@ -4,6 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
+import { loadAppShell } from '@/components/layout/loadAppShell'
 import { routeNeedsSession, routeSkipsConsent } from './guards'
 
 const { checkOrgMembership } = useOrgMembership()
@@ -378,6 +379,8 @@ function redirectToConsent(): void {
 }
 
 router.beforeEach(async (to, _from, next) => {
+  // Start the app shell chunk now so it does not waterfall behind the first render.
+  if (to.meta.layout !== 'public') void loadAppShell().catch(() => {})
   if (routeNeedsSession(to)) {
     // This navigation decides consent itself; a queued background redirect
     // would supersede it and lose the target as returnTo.

@@ -12,6 +12,7 @@ const router = createRouter({
     { path: '/', component: stub },
     { path: '/login', component: stub },
     { path: '/dashboard', component: stub },
+    { path: '/orgs', name: 'org-catalog', component: stub },
     { path: '/privacy', component: stub },
   ],
 })
@@ -80,5 +81,26 @@ describe('PublicShell', () => {
     expect(wrapper.find('[data-header-account-placeholder]').exists()).toBe(false)
     expect(headerLink(wrapper, 'Sign in')?.attributes('href')).toBe('/login')
     expect(headerLink(wrapper, 'Dashboard')).toBeUndefined()
+  })
+
+  it('falls back to Sign in when the session load failed and settled with no user', async () => {
+    const session = useSession()
+    session.status.value = 'idle'
+    const wrapper = await mountShell()
+    expect(wrapper.find('[data-header-account-placeholder]').exists()).toBe(true)
+    session.settled.value = true
+    await flushPromises()
+    expect(wrapper.find('[data-header-account-placeholder]').exists()).toBe(false)
+    expect(headerLink(wrapper, 'Sign in')?.attributes('href')).toBe('/login')
+  })
+
+  it('keeps an Orgs link next to the auth button, hidden on narrow screens', async () => {
+    const session = useSession()
+    session.status.value = 'ready'
+    const wrapper = await mountShell()
+    const orgs = headerLink(wrapper, 'Orgs')
+    expect(orgs?.attributes('href')).toBe('/orgs')
+    expect(orgs?.classes()).toContain('hidden')
+    expect(orgs?.classes()).toContain('sm:flex')
   })
 })

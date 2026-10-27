@@ -26,6 +26,8 @@ type MeResponse = {
 
 const user = ref<SessionUser | null>(null)
 const status = ref<'idle' | 'loading' | 'ready'>('idle')
+/** True once a load has finished, whether it worked or failed. Reset clears it. */
+const settled = ref(false)
 const pendingInviteCount = ref(0)
 const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
@@ -66,6 +68,7 @@ function reset(): void {
   pendingInviteCount.value = 0
   needsConsent.value = []
   status.value = 'idle'
+  settled.value = false
   inflight = null
   readyCallbacks = new Set()
 }
@@ -122,6 +125,7 @@ function offReady(cb: () => void): void {
 function track(task: Promise<void>): Promise<void> {
   const tracked = task.finally(() => {
     if (inflight === tracked) inflight = null
+    settled.value = true
     flushReady()
   })
   inflight = tracked
@@ -159,6 +163,7 @@ async function logout(): Promise<void> {
 const session: {
   user: Ref<SessionUser | null>
   status: Ref<'idle' | 'loading' | 'ready'>
+  settled: Ref<boolean>
   pendingInviteCount: Ref<number>
   needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
@@ -167,7 +172,7 @@ const session: {
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, pendingInviteCount, needsConsent, load, onReady, offReady, reload, reset, logout }
+} = { user, status, settled, pendingInviteCount, needsConsent, load, onReady, offReady, reload, reset, logout }
 
 export function useSession() {
   return session

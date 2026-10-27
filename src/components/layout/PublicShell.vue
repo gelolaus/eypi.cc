@@ -17,24 +17,35 @@
         class="h-11 w-24 rounded-xl bg-muted/60"
         aria-hidden="true"
       />
-      <Button
-        v-else-if="signedIn"
-        as-child
-        class="h-11 px-4 font-semibold"
-      >
-        <router-link to="/dashboard">
-          Dashboard
-        </router-link>
-      </Button>
-      <Button
+      <div
         v-else
-        as-child
-        class="h-11 px-4 font-semibold"
+        class="flex items-center gap-1"
       >
-        <router-link to="/login">
-          Sign in
+        <router-link
+          :to="{ name: 'org-catalog' }"
+          class="hidden min-h-11 items-center rounded-xl px-3 text-sm font-medium text-muted-foreground transition hover:text-foreground sm:flex"
+        >
+          Orgs
         </router-link>
-      </Button>
+        <Button
+          v-if="signedIn"
+          as-child
+          class="h-11 px-4 font-semibold"
+        >
+          <router-link to="/dashboard">
+            Dashboard
+          </router-link>
+        </Button>
+        <Button
+          v-else
+          as-child
+          class="h-11 px-4 font-semibold"
+        >
+          <router-link to="/login">
+            Sign in
+          </router-link>
+        </Button>
+      </div>
     </header>
 
     <main
@@ -58,6 +69,6 @@ import { Button } from '@/components/ui/button'
 import { useSession } from '@/stores/session'
 
 const session = useSession()
-const resolved = computed(() => session.status.value === 'ready')
+const resolved = computed(() => session.status.value === 'ready' || session.settled.value)
 const signedIn = computed(() => session.user.value !== null)
 </script>

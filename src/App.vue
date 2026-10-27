@@ -20,13 +20,14 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, provide } from 'vue'
 import { useRoute } from 'vue-router'
+import { loadAppShell } from '@/components/layout/loadAppShell'
 import PublicShell from '@/components/layout/PublicShell.vue'
 import ToastContainer from '@/components/ToastContainer.vue'
 import DialogHost from '@/components/DialogHost.vue'
 import AppTransition from '@/components/AppTransition.vue'
 
 // The signed-in shell is only fetched on app pages. Public pages never pay for it.
-const AppShell = defineAsyncComponent(() => import('@/components/layout/AppShell.vue'))
+const AppShell = defineAsyncComponent(loadAppShell)
 const route = useRoute()
 const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 
