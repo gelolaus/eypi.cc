@@ -20,7 +20,7 @@ export function handleClientError(err: unknown, info?: string): void {
   if (isChunkLoadError(err)) return
   const toast = useToast()
   if (isNetworkError(err)) {
-    toast.error("Can't reach eypi.cc. Check your connection.")
+    toast.error("Can't reach Eypi. Check your connection.")
     return
   }
   if (err instanceof Error && err.name === 'ApiError') {

@@ -12,7 +12,7 @@ import PizZip from 'pizzip'
 import { ref } from 'vue'
 
 const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-const TEMPLATE_TAG_MESSAGE = "This form's template has a broken tag. Tell the eypi.cc admin."
+const TEMPLATE_TAG_MESSAGE = "This form's template has a broken tag. Tell the Eypi admin."
 
 const HEADER_CELLS = new Set([
   'name',

@@ -243,7 +243,13 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: { name: 'admin-users' },
+          redirect: { name: 'admin-overview' },
+        },
+        {
+          path: 'overview',
+          name: 'admin-overview',
+          component: () => import('@/views/admin/AdminOverviewView.vue'),
+          meta: { title: 'Overview' },
         },
         {
           path: 'users',
@@ -414,7 +420,7 @@ router.beforeEach(async (to, _from, next) => {
 router.afterEach((to) => {
   const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')
   const page = typeof titled?.meta.title === 'string' ? titled.meta.title : 'Page'
-  const title = `${page} · eypi.cc`
+  const title = `${page} · Eypi`
   document.title = title
 
   let region = document.getElementById('route-announcer')

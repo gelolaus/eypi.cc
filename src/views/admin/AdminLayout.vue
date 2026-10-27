@@ -47,6 +47,7 @@ interface AdminTab {
 }
 
 const tabs: AdminTab[] = [
+  { name: 'admin-overview', label: 'Overview' },
   { name: 'admin-users', label: 'Users' },
   { name: 'admin-links', label: 'Links' },
   { name: 'admin-reports', label: 'Reports' },

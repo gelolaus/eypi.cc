@@ -122,8 +122,32 @@ describe('AppShell (signed in)', () => {
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
     expect(links.map((link) => link.text().replace(/\d+$/, '').trim())).toEqual([
-      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites', 'Account',
+      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites',
     ])
+    wrapper.unmount()
+  })
+
+  it('collapses the sidebar to icons, labels them for assistive tech and remembers the choice', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const aside = wrapper.get('aside')
+    expect(aside.classes()).toContain('w-72')
+    await aside.get('button[aria-label="Collapse sidebar"]').trigger('click')
+    expect(aside.classes()).toContain('w-16')
+    expect(aside.classes()).not.toContain('w-72')
+    expect(localStorage.getItem('eypi.rail.collapsed')).toBe('true')
+    const link = aside.get('nav a[href="/links"]')
+    expect(link.attributes('title')).toBe('Links')
+    expect(link.get('span').classes()).toContain('sr-only')
+    expect(aside.find('button[aria-label="Expand sidebar"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('starts collapsed when the choice was saved', async () => {
+    localStorage.setItem('eypi.rail.collapsed', 'true')
+    signIn()
+    const wrapper = await mountAt('/links')
+    expect(wrapper.get('aside').classes()).toContain('w-16')
     wrapper.unmount()
   })
 
@@ -154,7 +178,7 @@ describe('AppShell (signed in)', () => {
     const wrapper = await mountAt('/links')
     const header = wrapper.get('header')
     for (const cls of ['sticky', 'top-0', 'h-14', 'lg:hidden', 'border-b']) expect(header.classes()).toContain(cls)
-    expect(header.find('a[aria-label="eypi.cc"]').exists()).toBe(true)
+    expect(header.find('a[aria-label="Eypi"]').exists()).toBe(true)
     expect(header.find('[data-account-menu="header"]').exists()).toBe(true)
     wrapper.unmount()
   })
@@ -191,10 +215,31 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
-  it('adds Admin for admins', async () => {
+  it('puts Admin in the account menu for admins only', async () => {
     signIn(0, 'admin')
     const wrapper = await mountAt('/admin/users')
-    expect(wrapper.get('aside [aria-current="page"]').text()).toBe('Admin')
+    expect(wrapper.find('aside nav a[href="/admin/users"]').exists()).toBe(false)
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    const admin = menu.querySelector<HTMLElement>('a[href="/admin/users"]')!
+    expect(admin.textContent).toContain('Admin')
+    expect(admin.getAttribute('aria-current')).toBe('page')
+    wrapper.unmount()
+  })
+
+  it('hides Admin from regular users', async () => {
+    signIn(0)
+    const wrapper = await mountAt('/links')
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    expect(menu.textContent).not.toContain('Admin')
+    wrapper.unmount()
+  })
+
+  it('lists Account, Contact, Privacy, Terms and Sign out in the sidebar menu', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const menu = await openAccountMenu(wrapper, 'sidebar')
+    const items = Array.from(menu.querySelectorAll('[data-slot="dropdown-menu-item"]')).map((el) => el.textContent?.trim())
+    expect(items).toEqual(['Account', 'Contact', 'Privacy', 'Terms', 'Sign out'])
     wrapper.unmount()
   })
 

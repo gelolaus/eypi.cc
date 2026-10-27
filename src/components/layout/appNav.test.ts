@@ -1,26 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import { APP_NAV, appNav, isAppNavActive, isAppNavEntryActive, overflowEntries, tabEntries } from './appNav'
+import { APP_NAV, appNav, isAppNavActive, isAppNavEntryActive, menuEntries, overflowEntries, tabEntries } from './appNav'
 
 describe('APP_NAV', () => {
   it('lists the signed-in modules in order with a label and an icon component', () => {
     expect(APP_NAV.map((entry) => entry.label)).toEqual([
-      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites', 'Account',
+      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites',
     ])
     expect(APP_NAV.map((entry) => entry.to)).toEqual([
-      '/dashboard', '/links', '/manage/tix', '/manage/frames', '/forms', '/orgs', '/invites', '/account',
+      '/dashboard', '/links', '/manage/tix', '/manage/frames', '/forms', '/orgs', '/invites',
     ])
     for (const entry of APP_NAV) expect(entry.icon).toBeTruthy()
   })
 
-  it('adds Admin only for admins', () => {
-    expect(appNav({ admin: true }).slice(-1)[0]?.label).toBe('Admin')
-    expect(appNav({ admin: false }).some((entry) => entry.label === 'Admin')).toBe(false)
+  it('keeps Account and Admin out of the rail', () => {
+    expect(appNav({ admin: true }).map((entry) => entry.label)).not.toEqual(expect.arrayContaining(['Account']))
+    expect(appNav({ admin: true }).some((entry) => entry.label === 'Admin')).toBe(false)
+  })
+
+  it('lists Account, and Admin only for admins, in the account menu', () => {
+    expect(menuEntries({ admin: false }).map((entry) => entry.label)).toEqual(['Account'])
+    expect(menuEntries({ admin: true }).map((entry) => entry.label)).toEqual(['Admin', 'Account'])
   })
 
   it('splits into at most four tabs and the overflow', () => {
     const entries = appNav({ admin: true })
     expect(tabEntries(entries).map((entry) => entry.label)).toEqual(['Dashboard', 'Links', 'Tix', 'Frames'])
-    expect(overflowEntries(entries).map((entry) => entry.label)).toEqual(['Forms', 'Orgs', 'Invites', 'Account', 'Admin'])
+    expect(overflowEntries(entries).map((entry) => entry.label)).toEqual(['Forms', 'Orgs', 'Invites'])
   })
 })
 
@@ -33,7 +38,7 @@ describe('isAppNavActive', () => {
   })
 
   it('keeps Admin active across /admin pages via the shared nav config', () => {
-    const admin = appNav({ admin: true }).find((entry) => entry.label === 'Admin')!
+    const admin = menuEntries({ admin: true }).find((entry) => entry.label === 'Admin')!
     expect(isAppNavEntryActive(admin, '/admin/orgs')).toBe(true)
     expect(isAppNavEntryActive(admin, '/links')).toBe(false)
   })

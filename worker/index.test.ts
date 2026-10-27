@@ -590,7 +590,7 @@ describe('frame campaign share preview', () => {
   })
 })
 
-const SITE_TITLE = 'eypi.cc · Links and org tools for APC'
+const SITE_TITLE = 'Eypi · Links and org tools for APC'
 const SITE_DESCRIPTION = 'Short links, official paperwork, event tickets, and org pages. One APC login, zero ads.'
 
 class SitemapMemoryCache {

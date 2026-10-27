@@ -10,9 +10,18 @@
       data-shell-body
       class="flex min-h-0 flex-1 flex-col lg:flex-row"
     >
-      <aside class="sticky top-0 hidden h-full w-72 shrink-0 flex-col border-r border-border bg-background/95 lg:flex">
-        <div class="flex h-16 shrink-0 items-center border-b border-border px-4">
-          <BrandLogo to="/dashboard" />
+      <aside
+        class="sticky top-0 hidden h-full shrink-0 flex-col border-r border-border bg-background/95 transition-[width] duration-150 lg:flex"
+        :class="collapsed ? 'w-16' : 'w-72'"
+      >
+        <div
+          class="flex h-16 shrink-0 items-center border-b border-border"
+          :class="collapsed ? 'justify-center px-0' : 'px-4'"
+        >
+          <BrandLogo
+            to="/dashboard"
+            :mark-only="collapsed"
+          />
         </div>
 
         <nav
@@ -23,10 +32,14 @@
             v-for="entry in entries"
             :key="entry.to"
             :to="entry.to"
-            class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition"
-            :class="isActive(entry)
-              ? 'bg-primary/15 text-foreground'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+            :title="collapsed ? entry.label : undefined"
+            class="relative flex items-center gap-3 rounded-xl py-2.5 text-base font-medium transition"
+            :class="[
+              collapsed ? 'justify-center px-0' : 'px-3',
+              isActive(entry)
+                ? 'bg-primary/15 text-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            ]"
             :aria-current="isActive(entry) ? 'page' : undefined"
           >
             <component
@@ -35,9 +48,13 @@
               :class="isActive(entry) ? 'text-primary' : ''"
               aria-hidden="true"
             />
-            <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
+            <span
+              class="min-w-0 flex-1 truncate"
+              :class="collapsed ? 'sr-only' : ''"
+            >{{ entry.label }}</span>
             <Badge
               v-if="entry.to === '/invites' && inviteCount > 0"
+              :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
               :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
             >
               {{ inviteCount }}
@@ -45,13 +62,35 @@
           </router-link>
         </nav>
 
-        <div class="flex shrink-0 flex-col gap-2 border-t border-border p-3">
+        <div
+          class="flex shrink-0 flex-col gap-2 border-t border-border"
+          :class="collapsed ? 'p-2' : 'p-3'"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            class="self-end"
+            :class="collapsed ? 'self-center' : ''"
+            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            :aria-expanded="collapsed ? 'false' : 'true'"
+            @click="toggleRail"
+          >
+            <component
+              :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+              aria-hidden="true"
+            />
+          </Button>
           <OrgSwitcher
             block
+            :collapsed="collapsed"
             placement="up"
             :auto-fetch="false"
           />
-          <AccountMenu variant="sidebar" />
+          <AccountMenu
+            variant="sidebar"
+            :collapsed="collapsed"
+          />
         </div>
       </aside>
 
@@ -148,9 +187,12 @@ import OrgSwitcher from '@/components/OrgSwitcher.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
 import MarketingFooter from '@/components/marketing/MarketingFooter.vue'
 import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { installPaneScroll } from '@/composables/paneScroll'
+import { useRailCollapsed } from '@/composables/useRailCollapsed'
 import { useScrollContainer } from '@/composables/useScrollContainer'
 import { isAppShellRoute } from '@/config/nav'
 import { useSession } from '@/stores/session'
@@ -164,6 +206,7 @@ const session = useSession()
 const { container } = useScrollContainer()
 const { orgs, activeOrg, fetchOrgs } = useActiveOrg()
 
+const { collapsed, toggle: toggleRail } = useRailCollapsed()
 const paneRef = ref<HTMLElement | null>(null)
 
 const isAuthenticated = computed(() => session.user.value !== null)

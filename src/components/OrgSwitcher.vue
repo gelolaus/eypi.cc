@@ -7,10 +7,10 @@
     <button
       ref="triggerRef"
       type="button"
-      class="flex min-h-11 items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2 text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      :class="block ? 'w-full' : 'max-w-[min(100%,14rem)]'"
+      class="flex min-h-11 items-center gap-2.5 rounded-xl border border-border bg-card py-2 text-foreground outline-none transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      :class="[block ? 'w-full' : 'max-w-[min(100%,14rem)]', collapsed ? 'justify-center px-0' : 'px-3']"
       :title="activeOrg ? activeOrg.org_name : 'Select organization'"
-      :aria-label="compact ? `Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}` : undefined"
+      :aria-label="`Organization: ${activeOrg ? activeOrg.org_name : 'none selected'}`"
       aria-haspopup="dialog"
       :aria-controls="isOpen ? menuId : undefined"
       :aria-expanded="isOpen ? 'true' : 'false'"
@@ -24,22 +24,13 @@
       />
       <span
         data-org-label
-        class="min-w-0 flex-1 text-left"
-        :class="compact ? 'hidden sm:inline' : ''"
-      >
-        <span
-          data-org-name
-          class="line-clamp-2 break-words text-sm font-medium leading-tight"
-        >{{ activeOrg ? activeOrg.org_name : 'Select org' }}</span>
-        <span
-          v-if="activeOrg"
-          class="block truncate font-mono text-xs text-muted-foreground"
-        >{{ orgSlugLabel(activeOrg) }}</span>
-      </span>
+        class="min-w-0 flex-1 truncate text-left font-mono text-sm font-semibold"
+        :class="collapsed ? 'sr-only' : compact ? 'hidden sm:inline' : ''"
+      >{{ activeOrg ? orgSlugLabel(activeOrg) : 'Select org' }}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="h-3.5 w-3.5 shrink-0 opacity-40 transition-transform duration-200"
-        :class="isOpen ? 'rotate-180' : ''"
+        :class="[isOpen ? 'rotate-180' : '', collapsed ? 'hidden' : '']"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -92,6 +83,7 @@
             :key="org.org_id"
             type="button"
             class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted sm:rounded-none"
+            :title="org.org_name"
             :class="activeOrg?.org_id === org.org_id ? 'bg-muted/80' : ''"
             :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
             @click="handleSelect(org)"
@@ -101,13 +93,10 @@
               :name="org.org_name"
               size="sm"
             />
-            <span class="min-w-0 flex-1">
-              <span
-                class="line-clamp-2 break-words text-base leading-snug sm:text-sm"
-                :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
-              >{{ org.org_name }}</span>
-              <span class="block truncate font-mono text-xs text-muted-foreground">{{ orgSlugLabel(org) }}</span>
-            </span>
+            <span
+              class="min-w-0 flex-1 truncate font-mono text-base leading-snug sm:text-sm"
+              :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
+            >{{ orgSlugLabel(org) }}</span>
             <span
               v-if="activeOrg?.org_id === org.org_id"
               class="text-xs font-bold text-primary"
@@ -133,12 +122,14 @@ const props = withDefaults(
     compact?: boolean
     /** Fill the parent width (side rail). */
     block?: boolean
+    /** Show the logo only (collapsed side rail). */
+    collapsed?: boolean
     /** Open the menu above the trigger (side rail footer). */
     placement?: 'down' | 'up'
     /** Load orgs on mount. The app shell already loads them. */
     autoFetch?: boolean
   }>(),
-  { compact: false, block: false, placement: 'down', autoFetch: true },
+  { compact: false, block: false, collapsed: false, placement: 'down', autoFetch: true },
 )
 
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()

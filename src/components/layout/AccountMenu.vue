@@ -8,15 +8,16 @@
         header
           ? 'relative flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/50 py-0.5 pl-0.5 pr-2 hover:bg-muted'
           : 'flex w-full items-center gap-3 rounded-2xl p-2 text-left hover:bg-muted',
+        collapsed && !header ? 'justify-center' : '',
       )"
     >
-      <Avatar :class="header ? 'size-8' : 'size-11'">
+      <Avatar :class="header ? 'size-8' : collapsed ? 'size-9' : 'size-11'">
         <AvatarFallback class="text-sm font-medium">
           {{ initials }}
         </AvatarFallback>
       </Avatar>
       <span
-        v-if="!header"
+        v-if="!header && !collapsed"
         class="min-w-0 flex-1"
       >
         <span class="line-clamp-2 text-base font-semibold leading-snug tracking-tight">{{ displayName }}</span>
@@ -83,6 +84,24 @@
       </template>
 
       <DropdownMenuItem
+        v-for="entry in accountEntries"
+        :key="entry.to"
+        as-child
+        class="rounded-xl px-3 py-3 text-base"
+      >
+        <router-link
+          :to="entry.to"
+          :aria-current="isAppNavEntryActive(entry, route.path) ? 'page' : undefined"
+        >
+          <component
+            :is="entry.icon"
+            aria-hidden="true"
+          />
+          {{ entry.label }}
+        </router-link>
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
         v-for="link in legalLinks"
         :key="link.to"
         as-child
@@ -107,6 +126,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ChevronDown, LogOut } from 'lucide-vue-next'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -119,16 +139,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/cn'
 import { useSession } from '@/stores/session'
-import type { AppNavEntry } from './appNav'
+import { isAppNavEntryActive, menuEntries, type AppNavEntry } from './appNav'
 import { useSignOut } from './useSignOut'
 
 const props = withDefaults(
   defineProps<{
     variant?: 'sidebar' | 'header'
+    /** Show the avatar only (collapsed side rail). */
+    collapsed?: boolean
     /** Modules that do not fit in the bottom tabs (header menu only). */
     overflow?: AppNavEntry[]
   }>(),
-  { variant: 'sidebar', overflow: () => [] },
+  { variant: 'sidebar', collapsed: false, overflow: () => [] },
 )
 
 const legalLinks = [
@@ -138,8 +160,10 @@ const legalLinks = [
 ]
 
 const session = useSession()
+const route = useRoute()
 const signOut = useSignOut()
 
+const accountEntries = computed(() => menuEntries({ admin: session.user.value?.role === 'admin' }))
 const header = computed(() => props.variant === 'header')
 const email = computed(() => session.user.value?.email ?? '')
 const inviteCount = computed(() => session.pendingInviteCount.value)

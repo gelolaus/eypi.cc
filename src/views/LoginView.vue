@@ -7,7 +7,7 @@
     <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(53,67,140,0.3)] sm:p-8">
       <div class="space-y-3">
         <h1 class="font-display text-3xl font-semibold tracking-tight">
-          Sign in to eypi.cc
+          Sign in to Eypi
         </h1>
         <p class="text-base leading-relaxed text-muted-foreground">
           Use your APC Microsoft 365 account (@apc.edu.ph or @student.apc.edu.ph).
@@ -85,7 +85,7 @@ const ERROR_COPY: Record<string, string> = {
   domain: 'Only APC Microsoft 365 accounts can sign in.',
   cancelled: 'Sign-in was cancelled.',
   state: 'Your sign-in link expired. Try again.',
-  disabled: 'This account is disabled. Contact the eypi.cc admin.',
+  disabled: 'This account is disabled. Contact the Eypi admin.',
   server: 'Something went wrong signing you in. Try again.',
 }
 

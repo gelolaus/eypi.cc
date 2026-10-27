@@ -40,8 +40,8 @@ describe('admin mobile layout', () => {
     const buttons = wrapper.findAll('[data-admin-row] button')
     expect(buttons.length).toBeGreaterThan(0)
     for (const b of buttons) {
-      expect(b.attributes('data-slot')).toBe('button')
-      expect(b.classes().join(' ')).toMatch(/h-(8|9|11|12)/)
+      expect(['button', 'tooltip-trigger']).toContain(b.attributes('data-slot'))
+      expect(b.classes().join(' ')).toMatch(/(h|size)-(8|9|11|12)/)
     }
     expect(wrapper.find('[data-admin-row]').element.closest('.overflow-x-auto')).not.toBeNull()
   })
@@ -79,7 +79,7 @@ describe('admin mobile layout', () => {
   })
 
   it('layout has no nested main and a snapping scrollable tab nav', async () => {
-    const router = createRouter({ history: createMemoryHistory(), routes: ['users', 'links', 'reports', 'orgs', 'audit'].map((n) => ({ path: n === 'users' ? '/' : '/' + n, name: 'admin-' + n, component: { template: '<i />' } })) })
+    const router = createRouter({ history: createMemoryHistory(), routes: ['overview', 'users', 'links', 'reports', 'orgs', 'audit'].map((n) => ({ path: n === 'overview' ? '/' : '/' + n, name: 'admin-' + n, component: { template: '<i />' } })) })
     await router.push('/')
     const wrapper = mount(AdminLayout, { global: { plugins: [router] } })
     expect(wrapper.find('main').exists()).toBe(false)

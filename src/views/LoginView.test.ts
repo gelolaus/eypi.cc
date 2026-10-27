@@ -25,7 +25,7 @@ const ERROR_COPY: Record<string, string> = {
   domain: 'Only APC Microsoft 365 accounts can sign in.',
   cancelled: 'Sign-in was cancelled.',
   state: 'Your sign-in link expired. Try again.',
-  disabled: 'This account is disabled. Contact the eypi.cc admin.',
+  disabled: 'This account is disabled. Contact the Eypi admin.',
   server: 'Something went wrong signing you in. Try again.',
 }
 
@@ -43,7 +43,7 @@ describe('LoginView', () => {
     expect(link.attributes('href')).toBe(
       `${API_BASE_URL}/api/auth/microsoft/start?returnTo=${encodeURIComponent('/links')}`,
     )
-    expect(wrapper.text()).toContain('Sign in to eypi.cc')
+    expect(wrapper.text()).toContain('Sign in to Eypi')
     expect(wrapper.text()).toContain(
       'Use your APC Microsoft 365 account (@apc.edu.ph or @student.apc.edu.ph).',
     )

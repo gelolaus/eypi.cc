@@ -26,7 +26,7 @@ The wantap design language (layout, components, type, motion) in the APC light p
 - The palette is the APC brand on warm neutrals: APC blue (`#35438c`) is the primary and APC gold (`#deac4b`) is the accent. Gold is used for fills and washes (`--accent`, `--chart-2`) and is never text on a light surface or the background of white text.
 - The app is light only. `index.html` declares `color-scheme: light`, the palette lives in the `:root` block of `tokens.css`, and no `dark:` utility exists anywhere (Tailwind's default `dark` variant follows the OS, so one stray `dark:` class would darken part of the UI). There is no dark theme and no theme toggle.
 - Components never hard-code colors. They use the token utilities (`bg-background`, `text-muted-foreground`, `border-border`, `bg-primary/15`). Two allowances exist, both enforced by `design.test.ts`: the Microsoft logo fills in `LoginView.vue` (fixed by Microsoft brand rules) and the camera viewfinder scrim in `ScannerPanel.vue`.
-- Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`) shows the Eypi mascot (`public/eypi-mark.png`) beside the `eypi.cc` text. Eypi is a baby ram, the APC spirit animal: cream wool, royal blue horns and eyes, honey gold background. The source image is `docs/logo/eypi-icon-source.png`; the favicon, apple-touch icon and manifest icons in `public/` are resized from it.
+- Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`) shows the Eypi mascot (`public/eypi-mark.png`) beside the Eypi name. Eypi is a baby ram, the APC spirit animal: cream wool, royal blue horns and eyes, honey gold background. The source image is `docs/logo/eypi-icon-source.png`; the favicon, apple-touch icon and manifest icons in `public/` are resized from it.
 
 ## 2. Tokens
 
@@ -145,7 +145,7 @@ div[data-app-shell].flex h-dvh flex-col bg-background
       nav[aria-label="Primary"].fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden
 ```
 
-- **Side rail** (`lg` and up, `w-72`): logo row `h-16`, then nav `aria-label="App modules"`, then org switcher and account menu in the footer. Nav item: `flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition`. Active: `bg-primary/15 text-foreground` with a `text-primary` icon and `aria-current="page"`. Inactive: `text-muted-foreground hover:bg-muted hover:text-foreground`. The invite count renders as a `Badge`.
+- **Side rail** (`lg` and up, `w-72`, or `w-16` when collapsed): logo row `h-16`, then nav `aria-label="App modules"`, then a collapse toggle (`aria-label` "Collapse sidebar" / "Expand sidebar", state saved in `localStorage` key `eypi.rail.collapsed`), the org switcher and the account menu in the footer. Collapsed, only icons show: nav links keep their label in `title` and an `sr-only` span, the org switcher and account menu shrink to their icon and avatar. The org switcher shows only the capitalised org slug (full name on `title` and `aria-label`). The account menu holds Admin (admins only), Account, Contact, Privacy, Terms and Sign out; Admin and Account are not rail items. Nav item: `flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition`. Active: `bg-primary/15 text-foreground` with a `text-primary` icon and `aria-current="page"`. Inactive: `text-muted-foreground hover:bg-muted hover:text-foreground`. The invite count renders as a `Badge`.
 - **Top bar** (below `lg`, `h-14`): `BrandLogo`, compact `OrgSwitcher`, header `AccountMenu`. Never hides on scroll.
 - **Tab bar** (below `lg`): `grid h-[4.5rem] grid-cols-4`. Cell: `flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition`, icon `size-5`. Active `text-primary`, inactive `text-muted-foreground hover:text-foreground`. Destinations beyond the tabs appear in the header account menu.
 - **Content pane**: the scroll container for `ScrollTop` and route scroll restore (`useScrollContainer`, `installPaneScroll`). Pages sit inside `AppPage`: `mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8`, an `h1` and one short description line (`text-base text-muted-foreground sm:text-lg`).
@@ -334,3 +334,4 @@ Every heading, subtitle, label or helper line must carry information the surroun
 | `Something went wrong. Please try again.` | `Could not save link. Check the URL and try again.` |
 | `Welcome to your dashboard!` | `Dashboard` |
 | `Get started with eypi today` | `Create account` (button label only; no subtitle) |
+

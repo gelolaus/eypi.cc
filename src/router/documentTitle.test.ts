@@ -37,6 +37,7 @@ const pages: Record<string, string> = {
   'org-catalog': 'Orgs',
   'org-profile': 'Organization',
   account: 'Account',
+  'admin-overview': 'Overview',
   'admin-users': 'Users',
   'admin-links': 'Links',
   'admin-reports': 'Reports',
@@ -72,7 +73,7 @@ function media(matches: boolean) {
 }
 
 describe('route titles', () => {
-  it('sets document.title to Page · eypi.cc for each route and announces it', async () => {
+  it('sets document.title to Page · Eypi for each route and announces it', async () => {
     const named = router.getRoutes().filter((record) => typeof record.name === 'string')
     expect(named.map((record) => String(record.name)).sort()).toEqual(Object.keys(pages).sort())
 
@@ -82,15 +83,15 @@ describe('route titles', () => {
     }
 
     await router.push('/privacy')
-    expect(document.title).toBe('Privacy · eypi.cc')
+    expect(document.title).toBe('Privacy · Eypi')
 
     const region = document.getElementById('route-announcer')
     expect(region?.getAttribute('aria-live')).toBe('polite')
-    expect(region?.textContent).toBe('Privacy · eypi.cc')
+    expect(region?.textContent).toBe('Privacy · Eypi')
 
     await router.push('/contact')
-    expect(document.title).toBe('Contact · eypi.cc')
-    expect(document.getElementById('route-announcer')?.textContent).toBe('Contact · eypi.cc')
+    expect(document.title).toBe('Contact · Eypi')
+    expect(document.getElementById('route-announcer')?.textContent).toBe('Contact · Eypi')
   })
 
   it('hides the route announcer visually', async () => {

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <p class="text-sm text-muted-foreground">
-        Create and manage every org on eypi.cc.
+        Create and manage every org on Eypi.
       </p>
       <Button as-child>
         <router-link to="/admin/orgs/new">
