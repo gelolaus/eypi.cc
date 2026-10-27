@@ -4,7 +4,7 @@ import { computed } from 'vue'
 const props = defineProps<{ cells: number[]; label: string }>()
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const valid = computed(() => props.cells.length === 168)
-if (!valid.value) console.warn(`HeatGrid expects 168 cells (7 days x 24 hours), got ${props.cells.length}`)
+if (!valid.value && import.meta.env.DEV) console.warn(`HeatGrid expects 168 cells (7 days x 24 hours), got ${props.cells.length}`)
 const peak = computed(() => Math.max(1, ...props.cells))
 function opacity(v: number): number {
   return v <= 0 ? 0.06 : 0.15 + 0.85 * (v / peak.value)

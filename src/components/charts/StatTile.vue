@@ -2,13 +2,17 @@
 import { computed } from 'vue'
 
 const props = defineProps<{ label: string; value: string; delta?: number | null }>()
-const deltaText = computed(() => {
+const rounded = computed(() => {
   const d = props.delta
-  if (d == null || !Number.isFinite(d)) return ''
-  const n = Math.round(Math.abs(d))
-  return `${d > 0 ? '+' : d < 0 ? '−' : ''}${n}%`
+  return d == null || !Number.isFinite(d) ? null : Math.round(d)
 })
-const arrow = computed(() => ((props.delta ?? 0) > 0 ? '▲' : (props.delta ?? 0) < 0 ? '▼' : ''))
+const deltaText = computed(() => {
+  const r = rounded.value
+  if (r === null) return ''
+  return `${r > 0 ? '+' : r < 0 ? '\u2212' : ''}${Math.abs(r)}%`
+})
+const arrow = computed(() => ((rounded.value ?? 0) > 0 ? '\u25B2' : (rounded.value ?? 0) < 0 ? '\u25BC' : ''))
+const wording = computed(() => ((rounded.value ?? 0) > 0 ? 'increase versus previous period' : (rounded.value ?? 0) < 0 ? 'decrease versus previous period' : ''))
 </script>
 
 <template>
@@ -18,7 +22,7 @@ const arrow = computed(() => ((props.delta ?? 0) > 0 ? '▲' : (props.delta ?? 0
     <p v-if="deltaText" class="mt-1 text-sm text-muted-foreground" data-testid="delta">
       <span aria-hidden="true">{{ arrow }}</span>
       {{ deltaText }}
-      <span class="sr-only">{{ (delta ?? 0) < 0 ? 'decrease' : (delta ?? 0) > 0 ? 'increase' : 'no change' }} versus previous period</span>
+      <span v-if="wording" class="sr-only">{{ wording }}</span>
     </p>
   </div>
 </template>

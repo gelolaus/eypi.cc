@@ -13,10 +13,7 @@ export function niceTicks(max: number, count = 5): number[] {
   const pow = 10 ** Math.floor(Math.log10(rough))
   const frac = rough / pow
   const step = (frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 5 ? 5 : 10) * pow
-  const ticks: number[] = []
-  for (let v = 0; v < max + step * 0.999; v += step) {
-    ticks.push(Math.round(v / step) * step)
-    if (v + step >= max && ticks[ticks.length - 1] >= max) break
-  }
-  return ticks
+  const decimals = Math.max(0, -Math.floor(Math.log10(step)))
+  const n = Math.ceil(max / step - 1e-9)
+  return Array.from({ length: n + 1 }, (_, i) => Number((i * step).toFixed(decimals)))
 }

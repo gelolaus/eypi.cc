@@ -17,7 +17,7 @@ const ariaLabel = computed(() => `Bar list: ${props.items.map((i) => `${i.label}
         <div class="h-2 rounded-full bg-muted">
           <div
             class="h-2 rounded-full"
-            :style="{ width: `${Math.min(100, (item.value / top) * 100)}%`, background: 'var(--chart-1)' }"
+            :style="{ width: `${Math.max(0, Math.min(100, (item.value / top) * 100))}%`, background: 'var(--chart-1)' }"
           />
         </div>
       </li>

@@ -11,6 +11,28 @@ const H = 240
 const M = { l: 40, r: 12, t: 12, b: 28 }
 const colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)']
 
+const dashes = ['none', '6 4', '2 3', '10 3 2 3', '1 4']
+const shapes = ['circle', 'square', 'diamond', 'triangle', 'cross'] as const
+function marker(shape: string, cx: number, cy: number): string {
+  const r = 4
+  if (shape === 'square') return `M${cx - r} ${cy - r}h${2 * r}v${2 * r}h${-2 * r}z`
+  if (shape === 'diamond') return `M${cx} ${cy - r - 1}L${cx + r + 1} ${cy}L${cx} ${cy + r + 1}L${cx - r - 1} ${cy}z`
+  if (shape === 'triangle') return `M${cx} ${cy - r}L${cx + r} ${cy + r}L${cx - r} ${cy + r}z`
+  if (shape === 'cross') return `M${cx - r} ${cy - r}L${cx + r} ${cy + r}M${cx - r} ${cy + r}L${cx + r} ${cy - r}`
+  return `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`
+}
+const markerPaths = computed(() =>
+  props.series.map((s, si) => {
+    const sh = shapes[si % shapes.length]
+    const every = Math.max(1, Math.ceil(s.points.length / 8))
+    return s.points
+      .map((p, i) => ({ p, i }))
+      .filter(({ i }) => s.points.length === 1 || i % every === 0)
+      .map(({ p, i }) => marker(sh, xScale.value(i), yScale.value(p.y)))
+      .join('')
+  }),
+)
+
 const labels = computed(() => props.series[0]?.points.map((p) => p.x) ?? [])
 const ticks = computed(() => niceTicks(Math.max(0, ...props.series.flatMap((s) => s.points.map((p) => p.y)))))
 const yScale = computed(() => linearScale([0, ticks.value[ticks.value.length - 1]], [H - M.b, M.t]))
@@ -43,20 +65,33 @@ const xTicks = computed(() => {
         fill="none"
         :stroke="colors[i % colors.length]"
         stroke-width="2"
+        :stroke-dasharray="dashes[i % dashes.length]"
         stroke-linecap="round"
         stroke-linejoin="round"
+      />
+      <path
+        v-for="(d, i) in markerPaths"
+        :key="`m${i}`"
+        :d="d"
+        :data-marker="shapes[i % shapes.length]"
+        :fill="shapes[i % shapes.length] === 'cross' ? 'none' : colors[i % colors.length]"
+        :stroke="colors[i % colors.length]"
+        stroke-width="1.5"
       />
     </svg>
     <ul v-if="series.length > 1" class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
       <li v-for="(s, i) in series" :key="s.label" class="flex items-center gap-1.5">
-        <span class="inline-block size-2.5 rounded-sm" :style="{ background: colors[i % colors.length] }" aria-hidden="true" />
+        <svg viewBox="0 0 28 10" class="h-2.5 w-7" aria-hidden="true">
+          <line x1="1" x2="27" y1="5" y2="5" :stroke="colors[i % colors.length]" stroke-width="2" :stroke-dasharray="dashes[i % dashes.length]" />
+          <path :d="marker(shapes[i % shapes.length], 14, 5)" :fill="shapes[i % shapes.length] === 'cross' ? 'none' : colors[i % colors.length]" :stroke="colors[i % colors.length]" stroke-width="1" transform="scale(.9) translate(1.5 .5)" />
+        </svg>
         {{ s.label }}
       </li>
     </ul>
     <table class="sr-only">
       <caption>{{ ariaLabel }}</caption>
       <thead>
-        <tr><th scope="col" /><th v-for="s in series" :key="s.label" scope="col">{{ s.label }}</th></tr>
+        <tr><th scope="col"><span class="sr-only">Period</span></th><th v-for="s in series" :key="s.label" scope="col">{{ s.label }}</th></tr>
       </thead>
       <tbody>
         <tr v-for="(x, i) in labels" :key="x">
