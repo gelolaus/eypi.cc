@@ -240,6 +240,7 @@ const SPA_EXACT_PATHS = new Set([
   '/contact',
   '/expired',
   '/report',
+  '/tickets',
   '/manage/frames',
   '/manage/frames/new',
   '/manage/tix',
@@ -289,6 +290,7 @@ export function isSpaRoute(pathname: string): boolean {
     || /^\/manage\/tix\/[^/]+$/.test(path)
     || /^\/manage\/tix\/[^/]+\/select$/.test(path)
     || /^\/tix\/[^/]+$/.test(path)
+    || /^\/t\/[^/]+$/.test(path)
     || /^\/orgs\/modify\/[^/]+$/.test(path)
     || /^\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/orgs\/[^/]+$/.test(path)

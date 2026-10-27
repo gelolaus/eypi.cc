@@ -4,10 +4,10 @@ import { APP_NAV, appNav, isAppNavActive, isAppNavEntryActive, menuEntries, over
 describe('APP_NAV', () => {
   it('lists the signed-in modules in order with a label and an icon component', () => {
     expect(APP_NAV.map((entry) => entry.label)).toEqual([
-      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites',
+      'Dashboard', 'Links', 'Tix', 'My tickets', 'Frames', 'Forms', 'Orgs', 'Invites',
     ])
     expect(APP_NAV.map((entry) => entry.to)).toEqual([
-      '/dashboard', '/links', '/manage/tix', '/manage/frames', '/forms', '/orgs', '/invites',
+      '/dashboard', '/links', '/manage/tix', '/tickets', '/manage/frames', '/forms', '/orgs', '/invites',
     ])
     for (const entry of APP_NAV) expect(entry.icon).toBeTruthy()
   })
@@ -24,8 +24,8 @@ describe('APP_NAV', () => {
 
   it('splits into at most four tabs and the overflow', () => {
     const entries = appNav({ admin: true })
-    expect(tabEntries(entries).map((entry) => entry.label)).toEqual(['Dashboard', 'Links', 'Tix', 'Frames'])
-    expect(overflowEntries(entries).map((entry) => entry.label)).toEqual(['Forms', 'Orgs', 'Invites'])
+    expect(tabEntries(entries).map((entry) => entry.label)).toEqual(['Dashboard', 'Links', 'Tix', 'My tickets'])
+    expect(overflowEntries(entries).map((entry) => entry.label)).toEqual(['Frames', 'Forms', 'Orgs', 'Invites'])
   })
 })
 

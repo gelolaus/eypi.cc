@@ -8,6 +8,7 @@ import {
   Mail,
   ShieldCheck,
   Ticket,
+  TicketCheck,
   User,
 } from 'lucide-vue-next'
 import { isNavActive, navItems, tabItems, type NavIconName, type NavItem } from '@/config/nav'
@@ -24,6 +25,7 @@ const ICONS: Partial<Record<NavIconName, Component>> = {
   home: LayoutDashboard,
   link: Link2,
   ticket: Ticket,
+  tickets: TicketCheck,
   frame: Frame,
   form: FileText,
   orgs: Building2,

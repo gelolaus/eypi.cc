@@ -15,6 +15,7 @@ describe('nav items', () => {
       'Dashboard',
       'Links',
       'Tix',
+      'My tickets',
       'Frames',
       'Forms',
       'Orgs',
@@ -37,6 +38,7 @@ describe('nav items', () => {
       Dashboard: '/dashboard',
       Links: '/links',
       Tix: '/manage/tix',
+      'My tickets': '/tickets',
       Frames: '/manage/frames',
       Forms: '/forms',
       Orgs: '/orgs',
@@ -51,7 +53,7 @@ describe('nav items', () => {
 
   it('puts the first four app items in the tab bar', () => {
     expect(TAB_COUNT).toBe(4)
-    expect(labels(tabItems(navItems({ authenticated: true, admin: false })))).toEqual(['Dashboard', 'Links', 'Tix', 'Frames'])
+    expect(labels(tabItems(navItems({ authenticated: true, admin: false })))).toEqual(['Dashboard', 'Links', 'Tix', 'My tickets'])
   })
 })
 

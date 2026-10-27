@@ -111,6 +111,8 @@ describe('pickStrategy', () => {
     ['https://eypi.cc/links', true],
     ['https://eypi.cc/frames/spring', true],
     ['https://eypi.cc/orgs/apc-mc', true],
+    ['https://eypi.cc/tickets', true],
+    ['https://eypi.cc/t/abcDEF123_-xyz', true],
     ['https://eypi.cc/admin/users', true],
     ['https://eypi.cc/abc123', false],
     ['https://eypi.cc/unlock/abc123', false],

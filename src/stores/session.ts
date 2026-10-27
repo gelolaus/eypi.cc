@@ -23,6 +23,7 @@ type MeResponse = {
     role?: unknown
   }
   pendingInviteCount?: unknown
+  ticketUpdates?: unknown
   needsConsent?: unknown
 }
 
@@ -31,6 +32,8 @@ const status = ref<'idle' | 'loading' | 'ready'>('idle')
 /** True once a load has finished, whether it worked or failed. Reset clears it. */
 const settled = ref(false)
 const pendingInviteCount = ref(0)
+/** Tickets whose status changed since the last My tickets visit; drives the nav badge. */
+const ticketUpdates = ref(0)
 const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
 // Bumped by reset() so a load that began before it cannot mark the new session settled.
@@ -73,6 +76,7 @@ function reset(): void {
   void clearTicketsCache()
   user.value = null
   pendingInviteCount.value = 0
+  ticketUpdates.value = 0
   needsConsent.value = []
   status.value = 'idle'
   settled.value = false
@@ -96,6 +100,7 @@ async function pull(): Promise<void> {
     if (!user.value) void clearTicketsCache()
     noteSignedInUser(user.value?.id ?? null)
     pendingInviteCount.value = asCount(data.pendingInviteCount)
+    ticketUpdates.value = asCount(data.ticketUpdates)
     needsConsent.value = asConsentList(data.needsConsent)
     status.value = 'ready'
   } catch (error) {
@@ -104,6 +109,7 @@ async function pull(): Promise<void> {
       void clearTicketsCache()
       user.value = null
       pendingInviteCount.value = 0
+      ticketUpdates.value = 0
       needsConsent.value = []
       status.value = 'ready'
       return
@@ -181,6 +187,7 @@ const session: {
   status: Ref<'idle' | 'loading' | 'ready'>
   settled: Ref<boolean>
   pendingInviteCount: Ref<number>
+  ticketUpdates: Ref<number>
   needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
   onReady: (cb: () => void) => void
@@ -188,7 +195,7 @@ const session: {
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, settled, pendingInviteCount, needsConsent, load, onReady, offReady, reload, reset, logout }
+} = { user, status, settled, pendingInviteCount, ticketUpdates, needsConsent, load, onReady, offReady, reload, reset, logout }
 
 export function useSession() {
   return session

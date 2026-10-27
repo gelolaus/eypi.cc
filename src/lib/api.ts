@@ -61,7 +61,7 @@ function invalidateAfterWrite(path: string, method: string | undefined): void {
   if (!method || method === 'GET' || method === 'HEAD') return
   const p = pathnameOf(path)
   if (p.startsWith('/api/links')) invalidate('links:')
-  else if (p.startsWith('/api/events')) { invalidate('events:'); invalidate('orgs:summary:') }
+  else if (p.startsWith('/api/events')) { invalidate('events:'); invalidate('tickets:'); invalidate('orgs:summary:') }
   else if (p.startsWith('/api/dp')) { invalidate('dp:'); invalidate('orgs:summary:') }
   else if (p.startsWith('/api/orgs')) invalidate('orgs:')
 }

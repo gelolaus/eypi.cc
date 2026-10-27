@@ -2,6 +2,7 @@ export type NavIconName =
   | 'home'
   | 'link'
   | 'ticket'
+  | 'tickets'
   | 'frame'
   | 'form'
   | 'orgs'
@@ -30,6 +31,7 @@ const APP_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: 'home', exact: true },
   { to: '/links', label: 'Links', icon: 'link' },
   { to: '/manage/tix', label: 'Tix', icon: 'ticket' },
+  { to: '/tickets', label: 'My tickets', icon: 'tickets' },
   { to: '/manage/frames', label: 'Frames', icon: 'frame' },
   { to: '/forms', label: 'Forms', icon: 'form' },
   { to: '/orgs', label: 'Orgs', icon: 'orgs' },

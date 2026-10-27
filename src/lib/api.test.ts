@@ -158,6 +158,8 @@ describe('cache invalidation after writes', () => {
     ['POST', '/api/events', ['events:list:x', 'orgs:summary:x']],
     ['PATCH', '/api/events/launch', ['events:list:x', 'orgs:summary:x']],
     ['DELETE', '/api/events/launch', ['events:list:x', 'orgs:summary:x']],
+    ['DELETE', '/api/events/launch/registration', ['events:public:launch', 'tickets:list']],
+    ['POST', '/api/events/launch/register', ['tickets:list']],
     ['POST', '/api/dp', ['dp:list:x', 'orgs:summary:x']],
     ['POST', '/api/dp/1/frames', ['dp:list:x', 'orgs:summary:x']],
     ['PATCH', '/api/orgs/jpcs/profile', ['orgs:catalog', 'orgs:summary:x']],

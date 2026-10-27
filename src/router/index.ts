@@ -153,6 +153,20 @@ const router = createRouter({
       meta: { layout: 'public', title: 'Event' },
     },
 
+    // My tickets (signed in) and the private guest ticket link (no sign-in).
+    {
+      path: '/tickets',
+      name: 'tickets',
+      component: () => import('@/views/tix/MyTicketsView.vue'),
+      meta: { requiresAuth: true, title: 'My tickets' },
+    },
+    {
+      path: '/t/:token',
+      name: 'guest-ticket',
+      component: () => import('@/views/tix/GuestTicketView.vue'),
+      meta: { layout: 'public', title: 'Your ticket' },
+    },
+
     // ── Orgs module (coordinator org settings) ─────────────────────────────
     // Static /orgs/modify/* must be declared before public /orgs/:slug.
     {

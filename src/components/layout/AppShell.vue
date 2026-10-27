@@ -60,6 +60,14 @@
             >
               {{ inviteCount }}
             </Badge>
+            <Badge
+              v-if="entry.to === '/tickets' && ticketCount > 0"
+              data-ticket-updates
+              :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
+            >
+              <span aria-hidden="true">{{ ticketCount }}</span>
+              <span class="sr-only">{{ ticketLabel }}</span>
+            </Badge>
           </router-link>
         </nav>
 
@@ -147,11 +155,21 @@
               :class="isActive(entry) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'"
               :aria-current="isActive(entry) ? 'page' : undefined"
             >
-              <component
-                :is="entry.icon"
-                class="size-5"
-                aria-hidden="true"
-              />
+              <span class="relative">
+                <component
+                  :is="entry.icon"
+                  class="size-5"
+                  aria-hidden="true"
+                />
+                <Badge
+                  v-if="entry.to === '/tickets' && ticketCount > 0"
+                  data-ticket-updates
+                  class="absolute -right-3 -top-2 h-4 min-w-4 px-1 text-[10px]"
+                >
+                  <span aria-hidden="true">{{ ticketCount }}</span>
+                  <span class="sr-only">{{ ticketLabel }}</span>
+                </Badge>
+              </span>
               <span class="max-w-full truncate">{{ entry.label }}</span>
             </router-link>
           </div>
@@ -215,6 +233,8 @@ const paneRef = ref<HTMLElement | null>(null)
 const isAuthenticated = computed(() => session.user.value !== null)
 const isAdmin = computed(() => session.user.value?.role === 'admin')
 const inviteCount = computed(() => session.pendingInviteCount.value)
+const ticketCount = computed(() => session.ticketUpdates.value)
+const ticketLabel = computed(() => `${ticketCount.value} new ${ticketCount.value === 1 ? 'update' : 'updates'}`)
 const entries = computed(() => appNav({ admin: isAdmin.value }))
 const tabs = computed(() => tabEntries(entries.value))
 const overflow = computed(() => overflowEntries(entries.value))

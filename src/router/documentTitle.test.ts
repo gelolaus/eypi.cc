@@ -32,6 +32,8 @@ const pages: Record<string, string> = {
   'event-select': 'Attendee selection',
   'event-manage': 'Event',
   'event-page': 'Event',
+  tickets: 'My tickets',
+  'guest-ticket': 'Your ticket',
   'orgs-modify-index': 'Org settings',
   'orgs-modify': 'Org settings',
   'org-catalog': 'Orgs',
