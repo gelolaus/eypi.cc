@@ -19,7 +19,7 @@ const LABEL_MAX = 80
 const SLUG_MAX = 60
 const MAX_FRAMES = 10
 const MIN_FRAME_PX = 1080
-const MAX_FRAME_BYTES = 3 * 1024 * 1024
+const MAX_FRAME_BYTES = 10 * 1024 * 1024
 const DOWNLOAD_WINDOW_SEC = 24 * 60 * 60
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -32,7 +32,7 @@ type StoredFrame = {
 function frameMessage(err: ApiError): string {
   if (err.code === 'not_square') return 'Use a square PNG.'
   if (err.code === 'too_small') return 'Use a PNG at least 1080 px on each side.'
-  if (err.code === 'file_too_large') return 'Use a PNG under 3 MB.'
+  if (err.code === 'file_too_large') return 'Use a PNG under 10 MB.'
   if (err.code === 'invalid_image') return 'Use a transparent PNG.'
   return err.message
 }

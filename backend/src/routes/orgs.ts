@@ -28,8 +28,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 const TAGLINE_MAX = 160
 const ABOUT_MAX = 8000
 const URL_MAX = 2048
-const IMAGE_DATA_URL_MAX = 3 * 1024 * 1024
-const ORG_IMAGE_MAX_BYTES = 3 * 1024 * 1024
+const IMAGE_DATA_URL_MAX = 14 * 1024 * 1024
+const ORG_IMAGE_MAX_BYTES = 10 * 1024 * 1024
 
 const ORG_TYPE_VALUES = [
   'shs_academic',

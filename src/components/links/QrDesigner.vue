@@ -136,7 +136,7 @@
           id="logo-persist-hint"
           class="text-base text-muted-foreground"
         >
-          This logo is larger than 2 MB. Preview and export include it, but save keeps the style without the logo.
+          This logo is larger than 10 MB. Preview and export include it, but save keeps the style without the logo.
         </p>
       </div>
     </div>

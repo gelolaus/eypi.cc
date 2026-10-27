@@ -34,7 +34,7 @@ const UNLOCK_LIMIT = 10
 const UNLOCK_WINDOW_SEC = 15 * 60
 const RESOLVE_LIMIT = 60
 const RESOLVE_WINDOW_SEC = 60
-const QR_LOGO_MAX_BYTES = 3 * 1024 * 1024
+const QR_LOGO_MAX_BYTES = 10 * 1024 * 1024
 
 const LINK_COLUMNS = `id, slug, original_url, clicks, created_at, expires_at, disabled_at,
   disabled_reason, password_hash, qr_config`

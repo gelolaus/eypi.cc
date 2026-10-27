@@ -30,4 +30,4 @@ export interface DpFrame {
 }
 
 export const DP_MAX_FRAMES = 10
-export const DP_FRAME_MAX_BYTES = 3 * 1024 * 1024
+export const DP_FRAME_MAX_BYTES = 10 * 1024 * 1024

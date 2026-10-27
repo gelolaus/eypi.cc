@@ -7,7 +7,7 @@ import { requireAuth } from '../middleware/requireAuth'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-const MAX_BYTES = 3 * 1024 * 1024
+const MAX_BYTES = 10 * 1024 * 1024
 const FORMATS: readonly ImageFormat[] = ['png', 'jpeg', 'webp']
 
 type Counts = {

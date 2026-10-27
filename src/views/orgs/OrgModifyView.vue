@@ -709,7 +709,7 @@ async function fetchMembers() {
   }
 }
 
-const ORG_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+const ORG_IMAGE_MAX_BYTES = 10 * 1024 * 1024
 
 async function storeOrgImage(field: 'bannerUrl' | 'logoUrl', value: string | null, fallback: string) {
   if (!profileForm.value) return

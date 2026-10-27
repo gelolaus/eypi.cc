@@ -3,7 +3,7 @@ import { ApiError } from './errors'
 import { deleteObject, mediaUrl, putImage } from './media'
 import { createTestApp } from '../test/createTestApp'
 
-const THREE_MB = 3 * 1024 * 1024
+const TEN_MB = 10 * 1024 * 1024
 
 function png(width: number, height: number): Uint8Array {
   const bytes = new Uint8Array(24)
@@ -74,7 +74,7 @@ describe('putImage', () => {
       id: 'frame-1',
       bytes: svg,
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(ApiError)
@@ -82,9 +82,9 @@ describe('putImage', () => {
     expect(await storedKeys(env)).toEqual([])
   })
 
-  it('rejects a 3.1 MB PNG with file_too_large and stores nothing', async () => {
+  it('rejects a 10.1 MB PNG with file_too_large and stores nothing', async () => {
     const { env } = await createTestApp()
-    const bytes = new Uint8Array(Math.ceil(3.1 * 1024 * 1024))
+    const bytes = new Uint8Array(Math.ceil(10.1 * 1024 * 1024))
     bytes.set(png(32, 32))
 
     const error = await putImage(env, {
@@ -92,7 +92,7 @@ describe('putImage', () => {
       id: 'frame-1',
       bytes,
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(ApiError)
@@ -100,9 +100,9 @@ describe('putImage', () => {
     expect(await storedKeys(env)).toEqual([])
   })
 
-  it('rejects a PNG over 3 MB even when maxBytes is higher', async () => {
+  it('rejects a PNG over 10 MB even when maxBytes is higher', async () => {
     const { env } = await createTestApp()
-    const bytes = new Uint8Array(THREE_MB + 1)
+    const bytes = new Uint8Array(TEN_MB + 1)
     bytes.set(png(8, 8))
 
     const error = await putImage(env, {
@@ -110,7 +110,7 @@ describe('putImage', () => {
       id: 'logo',
       bytes,
       allowed: ['png', 'jpeg', 'webp'],
-      maxBytes: 10 * 1024 * 1024,
+      maxBytes: 20 * 1024 * 1024,
     }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(ApiError)
@@ -126,7 +126,7 @@ describe('putImage', () => {
       id: 'frame-1',
       bytes: png(20, 10),
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
       requireSquare: true,
     }).catch((err: unknown) => err)
 
@@ -143,7 +143,7 @@ describe('putImage', () => {
       id: 'frame-1',
       bytes: png(100, 100),
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
       requireSquare: true,
       minSize: 1080,
     }).catch((err: unknown) => err)
@@ -161,7 +161,7 @@ describe('putImage', () => {
       id: 'logo',
       bytes: jpeg(12, 12),
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     }).catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(ApiError)
@@ -178,7 +178,7 @@ describe('putImage', () => {
       id: 'frame-1',
       bytes,
       allowed: ['png', 'jpeg', 'webp'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
       requireSquare: true,
       minSize: 1080,
     })
@@ -217,14 +217,14 @@ describe('putImage', () => {
       id: 'lossless',
       bytes: lossless,
       allowed: ['webp'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     })
     const lossyStored = await putImage(env, {
       prefix: 'orgs/org-1',
       id: 'lossy',
       bytes: lossy,
       allowed: ['webp'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     })
 
     expect(losslessStored.width).toBe(2)
@@ -245,14 +245,14 @@ describe('putImage', () => {
       id: 'banner',
       bytes: jpegBytes,
       allowed: ['jpeg', 'webp'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     })
     const webpStored = await putImage(env, {
       prefix: 'orgs/org-1',
       id: 'logo',
       bytes: webpBytes,
       allowed: ['jpeg', 'webp'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
       requireSquare: true,
     })
 
@@ -270,9 +270,9 @@ describe('putImage', () => {
     expect((await env.MEDIA.get(webpStored.key))?.httpMetadata?.contentType).toBe('image/webp')
   })
 
-  it('accepts a PNG that is exactly 3 MB', async () => {
+  it('accepts a PNG that is exactly 10 MB', async () => {
     const { env } = await createTestApp()
-    const bytes = new Uint8Array(THREE_MB)
+    const bytes = new Uint8Array(TEN_MB)
     bytes.set(png(2, 2))
 
     const stored = await putImage(env, {
@@ -280,13 +280,13 @@ describe('putImage', () => {
       id: 'link-1',
       bytes,
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     })
 
     expect(stored.key).toBe(`qr-logos/link-1-${await sha8(bytes)}.png`)
     expect(stored.width).toBe(2)
     expect(stored.height).toBe(2)
-    expect((await env.MEDIA.get(stored.key))?.size).toBe(THREE_MB)
+    expect((await env.MEDIA.get(stored.key))?.size).toBe(TEN_MB)
   })
 
   it('deleteObject removes the stored image', async () => {
@@ -297,7 +297,7 @@ describe('putImage', () => {
       id: 'link-1',
       bytes,
       allowed: ['png'],
-      maxBytes: THREE_MB,
+      maxBytes: TEN_MB,
     })
 
     await deleteObject(env, stored.key)

@@ -1,4 +1,4 @@
-export const QR_LOGO_DATA_URL_MAX = 2_800_000
+export const QR_LOGO_DATA_URL_MAX = 14_000_000
 /** Allow larger files for in-session preview/export; Save strips logos over QR_LOGO_DATA_URL_MAX. */
 export const QR_LOGO_PREVIEW_MAX_BYTES = 10 * 1024 * 1024
 

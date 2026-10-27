@@ -150,7 +150,7 @@
         {{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}
       </p>
       <p class="mt-1 text-xs text-muted-foreground">
-        transparent PNG, up to 3 MB
+        transparent PNG, up to 10 MB
       </p>
     </div>
 
@@ -255,7 +255,7 @@ async function addSerial(list: File[]) {
       continue
     }
     if (file.size > DP_FRAME_MAX_BYTES) {
-      uploadError.value = `Choose a file under 3 MB instead of "${file.name}".`
+      uploadError.value = `Choose a file under 10 MB instead of "${file.name}".`
       continue
     }
     try {

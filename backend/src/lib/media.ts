@@ -1,6 +1,6 @@
 import { ApiError } from './errors'
 
-const MAX_IMAGE_BYTES = 3 * 1024 * 1024
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 export type ImageFormat = 'png' | 'jpeg' | 'webp'
 
