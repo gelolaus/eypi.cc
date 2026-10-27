@@ -1,5 +1,6 @@
 <template>
   <section
+    v-if="status !== 'ready' || visibleItems.length > 0"
     aria-label="Platform totals"
     :aria-busy="status === 'loading' ? 'true' : undefined"
   >
@@ -17,7 +18,7 @@
         class="grid grid-cols-2 gap-3 sm:grid-cols-3"
       >
         <div
-          v-for="item in items"
+          v-for="item in visibleItems"
           :key="item.key"
           class="flex flex-col-reverse gap-1 rounded-2xl border border-border bg-muted/40 p-4"
         >
@@ -75,6 +76,11 @@ const items: { key: keyof PlatformStats; label: string }[] = [
   { key: 'frames', label: 'Frames' },
   { key: 'frameDownloads', label: 'Frame downloads' },
 ]
+
+// Keep every tile while loading so the skeleton holds its shape; once loaded, drop zeros.
+const visibleItems = computed(() =>
+  stats.value ? items.filter(item => stats.value![item.key] > 0) : items,
+)
 
 function formatCount(value: number): string {
   return value.toLocaleString('en-US')

@@ -32,6 +32,24 @@ describe('LiveStats', () => {
     expect(wrapper.get('dl').attributes('aria-label')).toBe('Platform totals')
   })
 
+  it('hides tiles whose value is zero', async () => {
+    stubFetch(async () => new Response(JSON.stringify({ ...stats, orgs: 0, checkIns: 0 }), { headers: { 'Content-Type': 'application/json' } }))
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.findAll('dd')).toHaveLength(8)
+    expect(wrapper.text()).not.toContain('Orgs')
+    expect(wrapper.text()).not.toContain('Check-ins')
+  })
+
+  it('renders nothing when every metric is zero', async () => {
+    const zeros = Object.fromEntries(Object.keys(stats).map(key => [key, 0]))
+    stubFetch(async () => new Response(JSON.stringify(zeros), { headers: { 'Content-Type': 'application/json' } }))
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.find('section').exists()).toBe(false)
+    expect(wrapper.findAll('dd')).toHaveLength(0)
+  })
+
   it('shows the unavailable text, not zeros, when the request is not ok', async () => {
     stubFetch(async () => new Response('{}', { status: 500 }))
     const wrapper = mount(LiveStats)
