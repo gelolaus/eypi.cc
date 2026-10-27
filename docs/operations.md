@@ -122,6 +122,12 @@ The backend Worker has a cron trigger `0 19 * * *` (19:00 UTC, 03:00 Manila). It
 
 A failure is reported through `reportError` with code `retention_failed` and does not break the Worker. If it stops running, check the trigger in the Cloudflare dashboard and the Worker logs.
 
+The second cron trigger `15 * * * *` (every hour at minute 15) runs `runHourlyRollups`: it rebuilds `rum_daily` (p75 per day, route, metric and device) from `rum_samples` for yesterday and today (UTC). It is safe to repeat. A failure is reported with code `rollups_failed`. If Admin → Speed looks stale, check this trigger and the Worker logs. `0 19 * * *` and `15 * * * *` must both stay in `backend/wrangler.jsonc`.
+
+## Service worker kill switch
+
+If the site shows an old version or keeps breaking after a deploy, replace the service worker with one that deletes its caches and unregisters itself: `cp public/sw-kill.js public/sw.js`, commit, and deploy the frontend only. Restore with `git checkout public/sw.js` once the bug is fixed. The full steps are in the Emergency section of [owner-guide-speed-tix-analytics.md](owner-guide-speed-tix-analytics.md).
+
 ## Incident checklist
 
 First: `curl -s https://api.eypi.cc/api/health`. A 503 with `{"ok":false,"db":false}` means Turso is unreachable; a 503 with text means a required secret is missing.

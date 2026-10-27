@@ -170,7 +170,7 @@
 - [x] **Step 2: Run** `npx vitest run scripts/lib/releaseChecks.test.mjs` → FAIL.
 - [x] **Step 3: Implement**; call it in `release-check.mjs` step 5 using `zlib.gzipSync`.
 - [x] **Step 4: Run** `npm run build && npm run release:check -- --allow-dirty` → budgets pass. If the entry is over 70 KB, find what Task 7 left in it (`npx vite-bundle-visualizer` is fine to run ad hoc, don't add it) and move it behind a lazy import in this task.
-- [ ] **Step 5: Commit** `build(perf): enforce gzip bundle budgets in the release check`.
+- [x] **Step 5: Commit** `build(perf): enforce gzip bundle budgets in the release check`.
 
 ### Task 10: Client query cache
 
@@ -310,6 +310,6 @@
 **Files:**
 - Modify: `CONTEXT.md` (RUM, rollup cron, image variants, query cache, service worker, public/app shells), `DESIGN_SYSTEM.md` (AppImage and chart components), `docs/operations.md` (hourly cron, service worker kill switch → points to owner guide), tick this plan's boxes
 
-- [ ] **Step 1:** Update the docs.
-- [ ] **Step 2:** Run `npm run lint && npm run typecheck && npm test && npm run build` → all green; record entry/CSS gz sizes.
-- [ ] **Step 3: Commit** `docs: describe phase 1 speed architecture`. Then tell the owner Phase 1 is ready, with migration `0010_perf_media` (owner guide Part 2 and Part 3 Phase 1).
+- [x] **Step 1:** Update the docs.
+- [x] **Step 2:** Run `npm run lint && npm run typecheck && npm test && npm run build` → all green; record entry/CSS gz sizes.
+- [x] **Step 3: Commit** `docs: describe phase 1 speed architecture`. Then tell the owner Phase 1 is ready, with migration `0010_perf_media` (owner guide Part 2 and Part 3 Phase 1).
