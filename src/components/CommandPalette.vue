@@ -5,7 +5,7 @@
   >
     <DialogContent
       :show-close-button="false"
-      class="top-[15%] max-w-lg translate-y-0 gap-0 overflow-hidden p-0"
+      class="top-[15%] w-full max-w-[calc(100%-2rem)] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg"
       @open-auto-focus="onOpenAutoFocus"
     >
       <DialogTitle class="sr-only">
@@ -61,30 +61,44 @@
             v-for="entry in group.items"
             :id="optionId(entry.index)"
             :key="entry.command.id"
+            :ref="(el) => setOptionRef(entry.command.id, el)"
             type="button"
             role="option"
             tabindex="-1"
             :aria-selected="entry.index === activeIndex"
-            class="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-base"
-            :class="entry.index === activeIndex ? 'bg-primary/15 text-foreground' : 'text-foreground hover:bg-muted'"
+            :aria-current="entry.command.current ? 'true' : undefined"
+            class="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-base"
+            :class="entry.index === activeIndex ? 'bg-primary/15 text-foreground ring-2 ring-ring' : 'text-foreground hover:bg-muted'"
             @click="run(entry.command)"
           >
-            {{ entry.command.label }}
+            <span
+              data-command-label
+              class="min-w-0 flex-1 truncate"
+            >{{ entry.command.label }}</span>
+            <span
+              v-if="entry.command.current"
+              class="shrink-0 text-xs font-semibold text-primary"
+            >
+              Current
+            </span>
           </button>
         </div>
-        <p
-          v-if="filtered.length === 0"
-          class="px-3 py-6 text-center text-base text-muted-foreground"
-        >
-          No commands match "{{ query }}".
-        </p>
       </div>
+
+      <p
+        v-if="rows.length === 0"
+        role="status"
+        aria-live="polite"
+        class="px-3 py-6 text-center text-base text-muted-foreground"
+      >
+        No commands match "{{ query }}".
+      </p>
     </DialogContent>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch, type ComponentPublicInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -100,29 +114,41 @@ const session = useSession()
 const { orgs, activeOrg, selectOrg } = useActiveOrg()
 
 const listId = 'command-palette-list'
+const GROUP_ORDER: CommandGroup[] = ['Go to', 'Create', 'Switch org']
 const query = ref('')
 const commands = ref<Command[]>([])
 const activeIndex = ref(0)
 const inputRef = ref<HTMLInputElement | null>(null)
+const optionEls = new Map<string, HTMLElement>()
 
 const filtered = computed(() => filterCommands(commands.value, query.value))
-const active = computed(() => filtered.value[activeIndex.value] ?? null)
 const grouped = computed(() => {
-  const groups: { name: CommandGroup; items: { command: Command; index: number }[] }[] = []
-  filtered.value.forEach((command, index) => {
-    let group = groups.find((entry) => entry.name === command.group)
-    if (!group) {
-      group = { name: command.group, items: [] }
-      groups.push(group)
-    }
-    group.items.push({ command, index })
-  })
-  return groups
+  let index = 0
+  return GROUP_ORDER
+    .map((name) => ({
+      name,
+      items: filtered.value
+        .filter((command) => command.group === name)
+        .map((command) => ({ command, index: index++ })),
+    }))
+    .filter((group) => group.items.length > 0)
 })
+const rows = computed(() => grouped.value.flatMap((group) => group.items))
+const active = computed(() => rows.value[activeIndex.value] ?? null)
 
 function optionId(index: number): string {
   return `${listId}-option-${index}`
 }
+
+function setOptionRef(id: string, el: Element | ComponentPublicInstance | null) {
+  if (el instanceof HTMLElement) optionEls.set(id, el)
+  else optionEls.delete(id)
+}
+
+// The input keeps focus, so the highlighted row must stay visible on its own.
+watch(active, (entry) => {
+  if (entry) optionEls.get(entry.command.id)?.scrollIntoView({ block: 'nearest' })
+}, { flush: 'post' })
 
 function close() {
   emit('update:open', false)
@@ -157,13 +183,13 @@ watch(query, () => {
   activeIndex.value = 0
 })
 
-watch(filtered, () => {
-  activeIndex.value = Math.min(activeIndex.value, Math.max(0, filtered.value.length - 1))
+watch(rows, () => {
+  activeIndex.value = Math.min(activeIndex.value, Math.max(0, rows.value.length - 1))
 })
 
 function move(delta: number) {
-  if (filtered.value.length === 0) return
-  activeIndex.value = Math.min(Math.max(activeIndex.value + delta, 0), filtered.value.length - 1)
+  if (rows.value.length === 0) return
+  activeIndex.value = Math.min(Math.max(activeIndex.value + delta, 0), rows.value.length - 1)
 }
 
 function run(command: Command | null) {
@@ -173,6 +199,7 @@ function run(command: Command | null) {
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (event.isComposing) return
   if (event.key === 'ArrowDown') {
     event.preventDefault()
     move(1)
@@ -181,7 +208,7 @@ function onKeydown(event: KeyboardEvent) {
     move(-1)
   } else if (event.key === 'Enter') {
     event.preventDefault()
-    run(active.value)
+    run(active.value?.command ?? null)
   }
 }
 

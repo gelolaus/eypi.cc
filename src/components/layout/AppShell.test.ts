@@ -320,10 +320,38 @@ describe('Command palette shortcut', () => {
 
     palette()!.querySelector<HTMLElement>('[role="option"]')!.click()
     await flushPromises()
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await vi.waitFor(() => expect(palette()).toBeNull())
 
     await pressShortcut(document.body, { metaKey: true })
     await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('closes on Escape and restores focus through the mounted palette', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const trigger = wrapper.get('button[aria-label="Search and jump"]').element as HTMLButtonElement
+    trigger.focus()
+
+    await pressShortcut(trigger, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+    const field = palette()!.querySelector<HTMLInputElement>('[role="combobox"]')!
+    await vi.waitFor(() => expect(document.activeElement).toBe(field))
+
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(palette()).toBeNull())
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger))
+
+    // The lazy component stays mounted after the first open, so reopening is immediate.
+    await pressShortcut(trigger, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('stays inert on public pages', async () => {
+    await mountAt('/')
+    await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
   })
 
   it('ignores the shortcut while focus is in an input, textarea, select or editable element', async () => {

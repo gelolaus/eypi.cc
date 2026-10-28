@@ -84,7 +84,7 @@
               variant="ghost"
               size="icon"
               aria-label="Search and jump"
-              @click="showPalette = true"
+              @click="openPalette"
             >
               <Search aria-hidden="true" />
             </Button>
@@ -190,7 +190,7 @@
     </div>
 
     <CommandPalette
-      v-if="showPalette"
+      v-if="paletteNeeded"
       v-model:open="showPalette"
     />
   </div>
@@ -216,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandLogo from '@/components/brand/BrandLogo.vue'
 import { vPrefetch } from '@/directives/prefetch'
@@ -233,6 +233,7 @@ import { installPaneScroll } from '@/composables/paneScroll'
 import { useRailCollapsed } from '@/composables/useRailCollapsed'
 import { useScrollContainer } from '@/composables/useScrollContainer'
 import { isAppShellRoute } from '@/config/nav'
+import { lazyHost } from '@/lib/lazyHost'
 import { useSession } from '@/stores/session'
 import AccountMenu from './AccountMenu.vue'
 import { appNav, isAppNavEntryActive, overflowEntries, tabEntries, type AppNavEntry } from './appNav'
@@ -246,8 +247,10 @@ const { orgs, activeOrg, fetchOrgs } = useActiveOrg()
 
 const { collapsed, toggle: toggleRail } = useRailCollapsed()
 const paneRef = ref<HTMLElement | null>(null)
-const CommandPalette = defineAsyncComponent(() => import('@/components/CommandPalette.vue'))
+const CommandPalette = lazyHost(() => import('@/components/CommandPalette.vue'))
 const showPalette = ref(false)
+// Latch after the first open: the lazy chunk stays mounted, so closing and reopening never refetches it.
+const paletteNeeded = ref(false)
 
 const isAuthenticated = computed(() => session.user.value !== null)
 const isAdmin = computed(() => session.user.value?.role === 'admin')
@@ -271,13 +274,18 @@ function isActive(entry: AppNavEntry): boolean {
 }
 
 // Ctrl+K opens the palette. It stays out of text fields so typing keeps working.
+function openPalette() {
+  paletteNeeded.value = true
+  showPalette.value = true
+}
+
 function onShortcut(event: KeyboardEvent) {
   if (!appShell.value || event.defaultPrevented) return
   if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
   const target = event.target as HTMLElement | null
   if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return
   event.preventDefault()
-  showPalette.value = true
+  openPalette()
 }
 
 // The pane, not the window, scrolls inside the app shell.

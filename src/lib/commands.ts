@@ -5,6 +5,8 @@ export interface Command {
   label: string
   group: CommandGroup
   keywords: string[]
+  /** True for the organization that is already active; choosing it is a no-op. */
+  current?: boolean
   run: () => void
 }
 
@@ -13,9 +15,9 @@ export interface CommandContext {
   orgs: { id: string; name: string }[]
   activeOrgId: string | null
   /** Wired by the palette so a command can close the dialog before it navigates. */
-  go?: (path: string) => void
+  go: (path: string) => void
   /** Wired by the palette to useActiveOrg().selectOrg, the same path as the org switcher. */
-  switchOrg?: (orgId: string) => void
+  switchOrg: (orgId: string) => void
 }
 
 const DESTINATIONS: { label: string; to: string; keywords: string[] }[] = [
@@ -34,7 +36,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
     label: destination.label,
     group: 'Go to',
     keywords: destination.keywords,
-    run: () => ctx.go?.(destination.to),
+    run: () => ctx.go(destination.to),
   }))
 
   if (ctx.role === 'admin') {
@@ -43,7 +45,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
       label: 'Admin',
       group: 'Go to',
       keywords: ['users', 'manage', 'panel'],
-      run: () => ctx.go?.('/admin/users'),
+      run: () => ctx.go('/admin/users'),
     })
   }
 
@@ -52,7 +54,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
     label: 'Create a link',
     group: 'Create',
     keywords: ['new', 'shorten', 'add', 'url'],
-    run: () => ctx.go?.('/links'),
+    run: () => ctx.go('/links'),
   })
 
   for (const org of ctx.orgs) {
@@ -61,7 +63,8 @@ export function buildCommands(ctx: CommandContext): Command[] {
       label: org.name,
       group: 'Switch org',
       keywords: ['organization', 'club', 'switch'],
-      run: () => ctx.switchOrg?.(org.id),
+      current: org.id === ctx.activeOrgId,
+      run: () => ctx.switchOrg(org.id),
     })
   }
 

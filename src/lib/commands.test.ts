@@ -40,9 +40,13 @@ describe('buildCommands', () => {
 
   it('hides admin commands from non-admins and shows them to admins', () => {
     expect(buildCommands(ctx()).map((command) => command.label)).not.toContain('Admin')
-    const admin = buildCommands(ctx({ role: 'admin' }))
+    const go = vi.fn()
+    const admin = buildCommands(ctx({ role: 'admin', go }))
     expect(admin.map((command) => command.label)).toContain('Admin')
-    expect(admin.find((command) => command.label === 'Admin')!.group).toBe('Go to')
+    const command = admin.find((entry) => entry.label === 'Admin')!
+    expect(command.group).toBe('Go to')
+    command.run()
+    expect(go).toHaveBeenCalledWith('/admin/users')
   })
 
   it('creates a link by opening the Links page', () => {
@@ -63,6 +67,17 @@ describe('buildCommands', () => {
     const list = buildCommands(ctx({ switchOrg }))
     list.find((command) => command.label === 'Debate Society')!.run()
     expect(switchOrg).toHaveBeenCalledWith('debate')
+  })
+
+  it('marks the active organization and no-ops through the shared switcher', () => {
+    const switchOrg = vi.fn()
+    const list = buildCommands(ctx({ switchOrg }))
+    const current = list.find((command) => command.label === 'Robotics Club')!
+    expect(current.current).toBe(true)
+    expect(list.find((command) => command.label === 'Debate Society')!.current).toBe(false)
+    current.run()
+    // selectOrg owns the no-op guard; the palette still calls the shared path.
+    expect(switchOrg).toHaveBeenCalledWith('robotics')
   })
 
   it('has no Switch org group when the user has no organizations', () => {

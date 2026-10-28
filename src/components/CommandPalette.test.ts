@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import CommandPalette from './CommandPalette.vue'
@@ -72,7 +72,7 @@ function options(): HTMLElement[] {
 }
 
 function optionLabels(): string[] {
-  return options().map((option) => option.textContent?.trim() ?? '')
+  return options().map((option) => option.querySelector('[data-command-label]')?.textContent?.trim() ?? option.textContent?.trim() ?? '')
 }
 
 async function mountOpen() {
@@ -92,8 +92,8 @@ async function type(value: string) {
   await nextTick()
 }
 
-function key(name: string) {
-  input().dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true }))
+function key(name: string, init: KeyboardEventInit = {}) {
+  input().dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true, ...init }))
 }
 
 beforeEach(async () => {
@@ -195,7 +195,7 @@ describe('CommandPalette', () => {
     await router.push('/orgs/modify/robotics')
     await mountOpen()
 
-    options().find((option) => option.textContent?.trim() === 'Debate Society')!.click()
+    options().find((option) => option.querySelector('[data-command-label]')?.textContent?.trim() === 'Debate Society')!.click()
     await flushPromises()
 
     expect(useActiveOrg().activeOrg.value?.org_id).toBe('debate')
@@ -203,12 +203,32 @@ describe('CommandPalette', () => {
     expect(router.currentRoute.value.path).toBe('/orgs/modify/debate')
   })
 
+  it('marks the current organization and keeps choosing it a no-op', async () => {
+    setOrgs([org('robotics', 'Robotics Club'), org('debate', 'Debate Society')], 'robotics')
+    await router.push('/')
+    await mountOpen()
+
+    const current = options().find((option) => option.querySelector('[data-command-label]')?.textContent?.trim() === 'Robotics Club')!
+    expect(current.getAttribute('aria-current')).toBe('true')
+    expect(current.textContent).toContain('Current')
+    expect(options().find((option) => option.querySelector('[data-command-label]')?.textContent?.trim() === 'Debate Society')!.getAttribute('aria-current')).toBeNull()
+
+    current.click()
+    await flushPromises()
+
+    expect(useActiveOrg().activeOrg.value?.org_id).toBe('robotics')
+    expect(router.currentRoute.value.path).toBe('/')
+    expect(open.value).toBe(false)
+  })
+
   it('gives every row a 44px touch target and one selected row', async () => {
     await mountOpen()
     for (const option of options()) {
       expect(option.className).toContain('min-h-11')
     }
-    expect(options().filter((option) => option.getAttribute('aria-selected') === 'true')).toHaveLength(1)
+    const selected = options().filter((option) => option.getAttribute('aria-selected') === 'true')
+    expect(selected).toHaveLength(1)
+    for (const cls of ['ring-2', 'ring-ring']) expect(selected[0].classList).toContain(cls)
   })
 
   it('filters as you type and clamps the selection at the ends', async () => {
@@ -221,6 +241,78 @@ describe('CommandPalette', () => {
     key('ArrowUp')
     await nextTick()
     expect(input().getAttribute('aria-activedescendant')).toBe(options()[0].id)
+  })
+
+  it('navigates in the same order the rows are rendered across groups', async () => {
+    setOrgs([org('robotics', 'Robotics Club'), org('debate', 'Debate Society')], 'robotics')
+    await mountOpen()
+    await type('c')
+
+    const ids = options().map((option) => Number(option.id.split('-').pop()))
+    expect(ids.length).toBeGreaterThan(3)
+    expect(ids).toEqual(ids.map((_, index) => index))
+    expect(optionLabels()).toEqual([
+      'Orgs', 'My tickets', 'Tix', 'Account',
+      'Create a link',
+      'Robotics Club', 'Debate Society',
+    ])
+
+    for (const [index, option] of options().entries()) {
+      if (index === 0) continue
+      key('ArrowDown')
+      await nextTick()
+      expect(input().getAttribute('aria-activedescendant')).toBe(option.id)
+      expect(option.getAttribute('aria-selected')).toBe('true')
+    }
+  })
+
+  it('scrolls the highlighted row into view as the selection moves', async () => {
+    await mountOpen()
+    const second = options()[1]
+    const scrollIntoView = vi.fn()
+    second.scrollIntoView = scrollIntoView
+
+    key('ArrowDown')
+    await nextTick()
+    await nextTick()
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
+  })
+
+  it('announces an empty result outside the listbox', async () => {
+    await mountOpen()
+    await type('zzzz')
+
+    expect(options()).toHaveLength(0)
+    const list = document.getElementById('command-palette-list')!
+    expect(list.textContent?.trim()).toBe('')
+    const status = list.parentElement!.querySelector('[role="status"]')!
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.textContent).toContain('No commands match "zzzz"')
+    expect(list.contains(status)).toBe(false)
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false)
+  })
+
+  it('ignores keys while an IME composition is active', async () => {
+    await mountOpen()
+    const first = options()[0]
+
+    key('ArrowDown', { isComposing: true })
+    await nextTick()
+    expect(input().getAttribute('aria-activedescendant')).toBe(first.id)
+
+    key('Enter', { isComposing: true })
+    await flushPromises()
+    expect(open.value).toBe(true)
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('keeps the mobile gutter and widens only from sm', async () => {
+    await mountOpen()
+    const dialog = document.body.querySelector<HTMLElement>('[data-slot="dialog-content"]')!
+    expect(dialog.classList).toContain('max-w-[calc(100%-2rem)]')
+    expect(dialog.classList).toContain('sm:max-w-lg')
+    expect(dialog.classList.contains('max-w-lg')).toBe(false)
   })
 
   it('closes on Escape and returns focus to the previously focused element', async () => {
