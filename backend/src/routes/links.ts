@@ -15,6 +15,7 @@ import { manilaDay } from '../jobs/rollups'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
 import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
 import { reportError } from '../lib/reportError'
+import { etagMatches, LIVE_CACHE_CONTROL, weakEtagOf } from '../lib/liveEtag'
 import { manilaTimestamp } from '../lib/manilaTime'
 import { getOS, logLinkClick, parseUserAgent, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
@@ -514,6 +515,42 @@ app.get('/api/links/summary', requireAuth, async (c) => {
     clicks: Number(totals.rows[0]?.clicks ?? 0),
     top: row ? { slug: String(row.slug), clicks: Number(row.clicks) } : null,
   })
+})
+
+// Dashboard live view: clicks per minute for the last 60 minutes plus the 10 latest clicks.
+// Only the window is read (idx_analytics_created), and only time, country and app leave the server.
+app.get('/api/links/summary/live', requireAuth, async (c) => {
+  const database = db(c)
+  const [buckets, latest] = await Promise.all([
+    database.execute({
+      sql: `SELECT CAST((strftime('%s', 'now') - strftime('%s', a.created_at)) / 60 AS INTEGER) AS ago, COUNT(*) AS n
+            FROM analytics a JOIN links l ON l.id = a.link_id
+            WHERE l.user_id = ? AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
+            GROUP BY ago`,
+      args: [c.var.userId],
+    }),
+    database.execute({
+      sql: `SELECT a.created_at AS at, a.country AS country, a.app AS app
+            FROM analytics a JOIN links l ON l.id = a.link_id
+            WHERE l.user_id = ? AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
+            ORDER BY a.created_at DESC, a.id DESC LIMIT 10`,
+      args: [c.var.userId],
+    }),
+  ])
+  const last60 = new Array<number>(60).fill(0)
+  for (const row of buckets.rows) {
+    const ago = Number(row.ago)
+    if (ago >= 0 && ago < 60) last60[59 - ago] = Number(row.n)
+  }
+  const recent = latest.rows.map((row) => ({
+    at: `${String(row.at).replace(' ', 'T')}Z`,
+    country: row.country ? String(row.country) : null,
+    app: row.app ? String(row.app) : null,
+  }))
+  const etag = weakEtagOf(JSON.stringify({ last60, recent }))
+  const headers = { ETag: etag, 'Cache-Control': LIVE_CACHE_CONTROL }
+  if (etagMatches(c.req.header('If-None-Match'), etag)) return new Response(null, { status: 304, headers })
+  return c.json({ last60, recent }, 200, headers)
 })
 
 app.get('/api/links/slug-available', requireAuth, async (c) => {

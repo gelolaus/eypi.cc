@@ -205,6 +205,11 @@
               </div>
             </AppSection>
 
+            <LiveCheckIn
+              v-if="event.isLead && (event.status === 'published' || event.status === 'closed')"
+              :slug="slug"
+            />
+
             <AppSection
               v-if="!isImport"
               title="Event settings"
@@ -434,6 +439,7 @@ import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 
+const LiveCheckIn = defineAsyncComponent(() => import('@/components/tix/LiveCheckIn.vue'))
 const TixInsights = defineAsyncComponent(() => import('@/components/insights/TixInsights.vue'))
 
 const toast = useToast()

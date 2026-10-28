@@ -127,8 +127,8 @@
 **Interfaces:**
 - Produces: `useLivePoll<T>(url: string, intervalMs = 5000): { data: Ref<T | null>; lastUpdated: Ref<Date | null> }` — pauses when `document.hidden`, sends `If-None-Match`, keeps data on 304; `GET /api/links/summary/live` → `{ last60: number[] /* per minute */, recent: { at, country, app }[] /* 10 */ }` with weak ETag.
 
-- [ ] **Step 1: Failing tests:** poll pauses on hidden and resumes; 304 keeps previous data; endpoint returns 304 for a matching ETag; `recent` has no visitor hash field.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): add live clicks and check-in counters`.
+- [x] **Step 1: Failing tests:** poll pauses on hidden and resumes; 304 keeps previous data; endpoint returns 304 for a matching ETag; `recent` has no visitor hash field.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): add live clicks and check-in counters`.
 
 ### Task 9: Privacy draft, docs, verification
 

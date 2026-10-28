@@ -117,6 +117,8 @@
       </div>
     </div>
 
+    <LiveClicks v-if="linkSummary && linkSummary !== 'error' && linkSummary.count > 0" />
+
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
       <router-link
         v-for="mod in modules"
@@ -138,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import { Card } from '@/components/ui/card'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
@@ -148,6 +150,8 @@ import { useQuery } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
 import { orgSlugLabel } from '@/types/orgs'
 
+
+const LiveClicks = defineAsyncComponent(() => import('@/components/links/LiveClicks.vue'))
 
 const { activeOrg } = useActiveOrg()
 const orgItems: { key: keyof OrgSummary; label: string }[] = [
