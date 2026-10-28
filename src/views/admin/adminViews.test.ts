@@ -253,10 +253,14 @@ describe('admin links disable undo', () => {
     expect(`${err?.message} ${err?.detail ?? ''}`).not.toContain('restored')
   })
 
-  it('an already-disabled link offers no disable control', async () => {
+  it('does not start another undo for an already-disabled link', async () => {
     const { wrapper } = await mountLinks(true)
-    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Disabled')
+    const vm = wrapper.vm as unknown as { disable: (row: unknown) => void; links: unknown[] }
+    vm.disable(vm.links[0])
+    await vi.advanceTimersByTimeAsync(10_000)
+    await flushPromises()
+    expect(useToast().toasts.value.some((t) => t.message === '/one disabled.')).toBe(false)
+    expect(calls).toEqual([])
   })
 })
 
@@ -368,6 +372,17 @@ describe('admin users disable undo', () => {
     expect(wrapper.find('button[aria-label="Disable bo@apc.edu.ph"]').exists()).toBe(true)
     const err = useToast().toasts.value.find((t) => t.type === 'error')
     expect(err?.detail).toBe('Cannot disable the last admin.')
+  })
+
+  it('locks the row controls while the disable waits out its window', async () => {
+    const wrapper = await mountUsers()
+    await wrapper.get('button[aria-label="Disable bo@apc.edu.ph"]').trigger('click')
+    const buttons = wrapper.findAll('[data-admin-row] button')
+    expect(buttons.length).toBeGreaterThan(0)
+    for (const b of buttons) expect(b.attributes('disabled')).toBeDefined()
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushPromises()
+    for (const b of wrapper.findAll('[data-admin-row] button')) expect(b.attributes('disabled')).toBeUndefined()
   })
 
   it('enabling still happens at once', async () => {
