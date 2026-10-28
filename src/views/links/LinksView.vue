@@ -6,7 +6,10 @@
       title="Links"
       description="Create, search, and manage your short links."
     >
-      <div class="mb-6 flex flex-col gap-3 sm:flex-row">
+      <div
+        v-if="hasLinks"
+        class="mb-6 flex flex-col gap-3 sm:flex-row"
+      >
         <Button
           class="sm:order-2"
           type="button"
@@ -165,6 +168,9 @@ const initialLoading = ref(true)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const filtered = computed(() => query.value.trim().length > 0 || status.value !== 'all')
+// The header actions only hide when the account has no links at all. A filter that matches
+// nothing, or a reload in flight, keeps them so the header never flickers.
+const hasLinks = computed(() => items.value.length > 0 || filtered.value || loading.value)
 
 function prefillFromRoute() {
   const value = route.query.url

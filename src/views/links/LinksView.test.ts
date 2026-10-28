@@ -128,6 +128,45 @@ describe('LinksView empty state', () => {
   })
 })
 
+describe('LinksView header actions', () => {
+  const headerButtons = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findAll('button').filter((b) => ['New link', 'Export CSV'].includes(b.text()))
+
+  it('hides the header New link and Export CSV when the list is empty', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(200, { items: [], nextCursor: null })))
+    const wrapper = mount(LinksView)
+    await flushPromises()
+
+    expect(headerButtons(wrapper)).toHaveLength(0)
+    expect(wrapper.get('[data-empty-state]').text()).toContain('Create a link')
+    wrapper.unmount()
+  })
+
+  it('shows them when links exist', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(200, { items: [sampleLink], nextCursor: null })))
+    const wrapper = mount(LinksView)
+    await flushPromises()
+
+    expect(headerButtons(wrapper).map((b) => b.text()).sort()).toEqual(['Export CSV', 'New link'])
+    wrapper.unmount()
+  })
+
+  it('keeps them when a filter matches nothing', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const filtered = requestUrl(input).includes('status=disabled')
+      return json(200, { items: filtered ? [] : [sampleLink], nextCursor: null })
+    }))
+    const wrapper = mount(LinksView)
+    await flushPromises()
+    await wrapper.get('#link-status').setValue('disabled')
+    await flushPromises()
+
+    expect(wrapper.find('[data-empty-state]').exists()).toBe(true)
+    expect(headerButtons(wrapper)).toHaveLength(2)
+    wrapper.unmount()
+  })
+})
+
 describe('LinksView create and analytics', () => {
   it('prefills ?url= and does not create a link', async () => {
     const calls: Array<{ url: string; method: string }> = []
