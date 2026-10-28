@@ -113,11 +113,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 - Consumes: `DropdownMenu*` from `@/components/ui/dropdown-menu`; existing `disable`/`enable`/`delete` emits stay unchanged.
 - Produces: `LinkRow` renders Copy, Analytics and Edit as buttons at all widths, and Pause/Enable and Delete as buttons only from `md`; below `md` a single `More actions` trigger (`size-11`, `aria-label="More actions for {slug}"`) opens a menu with the same actions, items `min-h-11`.
 
-- [ ] **Step 1: Failing tests.** `linksMobile.test.ts`: `shows three visible actions and a More actions menu below md` (visible `[data-row-actions]` buttons count and the trigger label), `menu offers Disable and Delete`, `menu offers Enable for a user-disabled link`, `moderator-locked link has no Enable or Disable item`. Views: `LinksView hides the header New link when the list is empty` and `shows it when links exist` (empty-state button remains); same pair for `EventsView` with `New Event` (hidden only when `events.length === 0`, the search input row hides with it).
-- [ ] **Step 2:** Run the three files; expect FAIL.
-- [ ] **Step 3:** Implement. Desktop buttons use `hidden md:inline-flex`, the menu trigger `md:hidden`. Header Create and the Export CSV button: Export hides too when empty on Links (nothing to export); keep a single flex container so no empty gap remains.
-- [ ] **Step 4:** Run the files; expect PASS. Confirm keyboard use in Task 10.
-- [ ] **Step 5:** Set UX-28 `fixed` and record the header decision as resolved in the Outcomes notes, commit `feat(links): move row actions into a menu on phones`.
+- [x] **Step 1: Failing tests.** `linksMobile.test.ts`: `shows three visible actions and a More actions menu below md` (visible `[data-row-actions]` buttons count and the trigger label), `menu offers Disable and Delete`, `menu offers Enable for a user-disabled link`, `moderator-locked link has no Enable or Disable item`. Views: `LinksView hides the header New link when the list is empty` and `shows it when links exist` (empty-state button remains); same pair for `EventsView` with `New Event` (hidden only when `events.length === 0`, the search input row hides with it).
+- [x] **Step 2:** Run the three files; expect FAIL.
+- [x] **Step 3:** Implement. Desktop buttons use `hidden md:inline-flex`, the menu trigger `md:hidden`. Header Create and the Export CSV button: Export hides too when empty on Links (nothing to export); keep a single flex container so no empty gap remains.
+- [x] **Step 4:** Run the files; expect PASS. Confirm keyboard use in Task 10.
+- [x] **Step 5:** Set UX-28 `fixed` and record the header decision as resolved in the Outcomes notes, commit `feat(links): move row actions into a menu on phones`.
 
 ### Task 7: Phone tables and text (UX-45, UX-38, UX-29)
 
