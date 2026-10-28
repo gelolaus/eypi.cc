@@ -190,6 +190,7 @@ import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import { defineAsyncComponent, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -285,22 +286,23 @@ async function onAddFrame(dataUrl: string, file?: File) {
   }
 }
 
-async function onRemoveFrame(index: number) {
+function onRemoveFrame(index: number) {
   const frame = frames.value[index]
   if (!frame?.id) { frames.value.splice(index, 1); return }
   if (frames.value.length <= 1) { toast.error('A campaign needs at least one frame.'); return }
-  frameBusyIndex.value = index
-  try {
-    const res = await api.raw(`/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE' })
-    const data = await res.json() as { status: string; message?: string }
-    if (!res.ok) throw new Error(data.message ?? 'Could not remove frame.')
-    frames.value.splice(index, 1)
-    toast.success('Frame removed.')
-  } catch (err: unknown) {
-    toast.error(err instanceof Error ? err.message : 'Could not remove frame.')
-  } finally {
-    frameBusyIndex.value = null
-  }
+  const id = frame.id
+  runWithUndo({
+    message: 'Frame removed.',
+    apply: () => {
+      const at = frames.value.findIndex((f) => f.id === id)
+      if (at > -1) frames.value.splice(at, 1)
+    },
+    revert: () => { frames.value.splice(Math.min(index, frames.value.length), 0, frame) },
+    commit: async () => {
+      const res = await api.raw(`/api/dp/${campaignId.value}/frames/${id}`, { method: 'DELETE', keepalive: true })
+      if (!res.ok) throw new Error('Could not remove frame.')
+    },
+  })
 }
 
 async function onReorderFrame(from: number, to: number) {

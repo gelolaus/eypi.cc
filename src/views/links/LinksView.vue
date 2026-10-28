@@ -53,7 +53,7 @@
         :selected-ids="selectedIds"
         @analytics="openAnalytics"
         @copy="copyLink"
-        @delete="confirmDelete"
+        @delete="deleteLink"
         @disable="setDisabled($event, true)"
         @edit="openEdit"
         @enable="setDisabled($event, false)"
@@ -72,7 +72,7 @@
           aria-label="Disable selected"
           variant="outline"
           type="button"
-          @click="confirmBulkDisable"
+          @click="disableSelected"
         >
           Disable selected
         </Button>
@@ -110,6 +110,7 @@ import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
+import { runWithUndo } from '@/composables/useUndoToast'
 import {
   linksKey,
   useLinks,
@@ -233,20 +234,22 @@ async function copyLink(link: LinkListItem) {
   }
 }
 
-async function confirmDelete(link: LinkListItem) {
-  const ok = await dialog.confirm({
-    title: 'Delete this link?',
-    body: `Removes eypi.cc/${link.slug}. This cannot be undone.`,
-    confirmLabel: 'Delete link',
+// Delete waits out the undo window before it is sent, so nothing is lost if Undo is tapped.
+function deleteLink(link: LinkListItem) {
+  const index = items.value.findIndex((item) => item.id === link.id)
+  runWithUndo({
+    message: 'Link deleted.',
+    apply: () => {
+      items.value = items.value.filter((item) => item.id !== link.id)
+      selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
+    },
+    revert: () => {
+      const next = items.value.slice()
+      next.splice(Math.min(Math.max(index, 0), next.length), 0, link)
+      items.value = next
+    },
+    commit: () => remove(link.id),
   })
-  if (!ok) return
-  try {
-    await remove(link.id)
-    selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
-    toast.success('Link deleted.')
-  } catch {
-    toast.error('Could not delete the link.')
-  }
 }
 
 async function confirmBulkDelete() {
@@ -266,21 +269,25 @@ async function confirmBulkDelete() {
   }
 }
 
-async function confirmBulkDisable() {
-  const count = selectedIds.value.length
-  const ok = await dialog.confirm({
-    title: `Disable ${count} links?`,
-    body: 'Disabled links stop redirecting until you enable them.',
-    confirmLabel: 'Disable',
+function disableSelected() {
+  const ids = selectedIds.value.slice()
+  if (ids.length === 0) return
+  const before = items.value
+  const stamp = new Date().toISOString()
+  runWithUndo({
+    message: ids.length === 1 ? 'Link disabled.' : `${ids.length} links disabled.`,
+    apply: () => {
+      items.value = before.map((item) => (ids.includes(item.id) && !item.disabledAt
+        ? { ...item, disabledAt: stamp, disabledReason: 'user' }
+        : item))
+      selectedIds.value = []
+    },
+    revert: () => {
+      items.value = before
+      selectedIds.value = ids
+    },
+    commit: () => bulk('disable', ids),
   })
-  if (!ok) return
-  try {
-    await bulk('disable', selectedIds.value)
-    selectedIds.value = []
-    toast.success('Links disabled.')
-  } catch {
-    toast.error('Could not disable the selected links.')
-  }
 }
 
 async function setDisabled(link: LinkListItem, disabled: boolean) {

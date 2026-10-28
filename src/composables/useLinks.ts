@@ -150,13 +150,13 @@ export function useLinks() {
   }
 
   async function remove(id: string): Promise<void> {
-    await api.del(`/api/links/${id}`)
+    await api.del(`/api/links/${id}`, { keepalive: true })
     mutated()
     items.value = items.value.filter((item) => item.id !== id)
   }
 
   async function bulk(action: 'delete' | 'disable' | 'enable', ids: string[]): Promise<void> {
-    await api.post('/api/links/bulk', { action, ids })
+    await api.post('/api/links/bulk', { action, ids }, { keepalive: true })
     mutated()
     if (action === 'delete') {
       const drop = new Set(ids)

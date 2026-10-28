@@ -545,6 +545,7 @@ import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
+import { runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
@@ -890,47 +891,33 @@ async function sendInvite() {
   }
 }
 
-async function deleteMember(email: string, fallback: string) {
+// Both are reversible: a removed member can be re-invited. The request waits out the undo window.
+function removeWithUndo(email: string, message: string, fallback: string) {
+  const before = members.value
   membersActionError.value = ''
-  const res = await api.raw(`/api/orgs/${slug.value}/members`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+  runWithUndo({
+    message,
+    apply: () => { members.value = before.filter((member) => member.email !== email) },
+    revert: () => { members.value = before },
+    commit: async () => {
+      const res = await api.raw(`/api/orgs/${slug.value}/members`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        keepalive: true,
+      })
+      if (!res.ok) throw new Error(fallback)
+      await fetchMembers()
+    },
   })
-  const data = await res.json() as unknown
-  if (!res.ok) {
-    membersActionError.value = messageFrom(data, fallback)
-    return
-  }
-  await fetchMembers()
 }
 
-async function removeMember(email: string) {
-  const ok = await dialog.confirm({
-    title: 'Remove this member?',
-    body: `Removes ${email} from this org. They will lose access until invited again.`,
-    confirmLabel: 'Remove member',
-  })
-  if (!ok) return
-  try {
-    await deleteMember(email, 'Could not remove member.')
-  } catch {
-    membersActionError.value = 'Could not remove member.'
-  }
+function removeMember(email: string) {
+  removeWithUndo(email, 'Member removed.', 'Could not remove member.')
 }
 
-async function cancelInvite(email: string) {
-  const ok = await dialog.confirm({
-    title: 'Cancel this invite?',
-    body: `Cancels the invite for ${email}.`,
-    confirmLabel: 'Cancel invite',
-  })
-  if (!ok) return
-  try {
-    await deleteMember(email, 'Could not cancel invite.')
-  } catch {
-    membersActionError.value = 'Could not cancel invite.'
-  }
+function cancelInvite(email: string) {
+  removeWithUndo(email, 'Invite cancelled.', 'Could not cancel invite.')
 }
 
 async function resendInvite(email: string) {

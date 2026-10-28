@@ -33,3 +33,12 @@ import 'vue-sonner/style.css'
     </template>
   </Sonner>
 </template>
+
+<style>
+/* Undo is a real button; keep it a 44px target. */
+[data-sonner-toast] [data-button] {
+  min-height: 44px;
+  min-width: 44px;
+  padding-inline: 12px;
+}
+</style>

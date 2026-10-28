@@ -2,9 +2,15 @@ import { ref } from 'vue'
 
 export type ToastType = 'success' | 'error' | 'info'
 
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 export interface ToastOptions {
   detail?: string
   duration?: number
+  action?: ToastAction
 }
 
 export interface Toast {
@@ -13,6 +19,7 @@ export interface Toast {
   detail?: string
   type: ToastType
   duration: number
+  action?: ToastAction
 }
 
 const MAX_TOASTS = 3
@@ -81,20 +88,21 @@ function resumeToast(id: number) {
 function resolveDuration(
   type: ToastType,
   second?: number | ToastOptions,
-): { detail?: string; duration: number } {
+): { detail?: string; duration: number; action?: ToastAction } {
   if (typeof second === 'number') {
     return { duration: second }
   }
   return {
     detail: second?.detail,
+    action: second?.action,
     duration: second?.duration ?? DEFAULT_DURATION[type],
   }
 }
 
 function addToast(message: string, type: ToastType, second?: number | ToastOptions) {
-  const { detail, duration } = resolveDuration(type, second)
+  const { detail, duration, action } = resolveDuration(type, second)
 
-  const existing = toasts.value.find((t) => t.type === type && t.message === message && t.detail === detail)
+  const existing = action ? undefined : toasts.value.find((t) => t.type === type && t.message === message && t.detail === detail)
   if (existing) {
     scheduleRemove(existing.id, duration)
     existing.duration = duration
@@ -107,7 +115,7 @@ function addToast(message: string, type: ToastType, second?: number | ToastOptio
   }
 
   const id = nextId++
-  toasts.value.push({ id, message, detail, type, duration })
+  toasts.value.push({ id, message, detail, type, duration, action })
   scheduleRemove(id, duration)
   return id
 }

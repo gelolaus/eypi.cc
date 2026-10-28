@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { api } from '@/lib/api'
 import { useToast } from '@/composables/useToast'
+import { runWithUndo } from '@/composables/useUndoToast'
 import { attendeeQrFileName, downloadAttendeeQr, downloadAttendeeQrZip } from '@/lib/tix/qrFiles'
 
 export interface AttendeeRow {
@@ -95,6 +96,27 @@ export function useEventAttendees(slug: string) {
     }
   }
 
+  /** Marks the row removed now; the request is sent after the undo window. */
+  function removeAttendee(attendeeId: string) {
+    const row = attendees.value.find((attendee) => attendee.id === attendeeId)
+    if (!row) return
+    const previous = row.status
+    runWithUndo({
+      message: 'Attendee removed.',
+      apply: () => { row.status = 'removed' },
+      revert: () => { row.status = previous },
+      commit: async () => {
+        const res = await api.raw(`/api/events/${slug}/remove`, {
+          method: 'POST',
+          body: JSON.stringify({ attendeeId }),
+          keepalive: true,
+        })
+        if (!res.ok) throw new Error('Action failed.')
+        await fetchAttendees()
+      },
+    })
+  }
+
   async function saveCluster(id: string, clusterValue: string | null) {
     const res = await api.raw(`/api/events/${slug}/attendees/${id}`, {
       method: 'PATCH',
@@ -167,7 +189,7 @@ export function useEventAttendees(slug: string) {
     exportToXlsx,
     checkIn: (attendeeId: string) => doAction('checkin-manual', attendeeId),
     checkOut: (attendeeId: string) => doAction('checkout', attendeeId),
-    removeAttendee: (attendeeId: string) => doAction('remove', attendeeId),
+    removeAttendee,
     restoreAttendee: (attendeeId: string) => doAction('restore', attendeeId),
   }
 }

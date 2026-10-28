@@ -24,6 +24,9 @@ function show(t: Toast) {
     description: t.detail,
     duration: Infinity,
     class: id,
+    action: t.action
+      ? { label: t.action.label, onClick: () => { t.action?.onClick(); dismiss(t.id) } }
+      : undefined,
     onDismiss: () => dismiss(t.id),
   })
   shown.set(t.id, id)
