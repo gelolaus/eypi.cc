@@ -107,7 +107,7 @@
                       type="button"
                       size="icon-sm"
                       :variant="action.destructive ? 'destructive' : 'outline'"
-                      :disabled="busyId === user.id"
+                      :disabled="busyId === user.id || pendingIds.includes(user.id)"
                       :aria-label="action.label"
                       @click="action.run"
                     >
@@ -153,6 +153,7 @@ import { api } from '@/lib/api'
 import { formatManilaDate } from '@/lib/manilaTime'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
+import { activeOrgHeaders, runWithUndo } from '@/composables/useUndoToast'
 import { useSession } from '@/stores/session'
 
 type Role = 'admin' | 'user'
@@ -181,6 +182,8 @@ const nextCursor = ref<string | null>(null)
 const loading = ref(true)
 const loadingMore = ref(false)
 const busyId = ref<string | null>(null)
+/** Rows with a disable waiting out its Undo window; their buttons stay locked. */
+const pendingIds = ref<string[]>([])
 let requestId = 0
 
 function messageOf(err: unknown, fallback: string): string {
@@ -281,17 +284,46 @@ function setRole(user: AdminUser, role: Role) {
 }
 
 async function toggleDisabled(user: AdminUser) {
-  if (!user.disabled) {
-    const ok = await dialog.confirm({
-      title: 'Disable this account?',
-      body: `Disables ${user.email} and signs them out everywhere. They can be enabled again later.`,
-      confirmLabel: 'Disable account',
-    })
-    if (!ok) return
-    await patchUser(user, { disabled: true }, `${user.email} is disabled.`)
+  if (user.disabled) {
+    await patchUser(user, { disabled: false }, `${user.email} is enabled.`)
     return
   }
-  await patchUser(user, { disabled: false }, `${user.email} is enabled.`)
+  disableWithUndo(user)
+}
+
+/** Disables optimistically; the request waits out the Undo window. */
+function disableWithUndo(user: AdminUser) {
+  const { id, email } = user
+  // Captured now so a later org switch cannot redirect the deferred request.
+  const headers = activeOrgHeaders()
+  const setDisabled = (disabled: boolean) => {
+    const row = users.value.find((item) => item.id === id)
+    if (row) row.disabled = disabled
+  }
+  const release = () => {
+    pendingIds.value = pendingIds.value.filter((item) => item !== id)
+  }
+  pendingIds.value = [...pendingIds.value, id]
+  runWithUndo({
+    message: `${email} disabled.`,
+    apply: () => setDisabled(true),
+    revert: () => {
+      setDisabled(false)
+      release()
+    },
+    async commit() {
+      try {
+        const data = await api.patch<{ item: AdminUser }>(
+          `/api/admin/users/${encodeURIComponent(id)}`,
+          { disabled: true },
+          { keepalive: true, headers },
+        )
+        replaceUser(data.item)
+      } finally {
+        release()
+      }
+    },
+  })
 }
 
 async function forceLogout(user: AdminUser) {

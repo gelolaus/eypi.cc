@@ -5,6 +5,7 @@ import AdminAuditView from './AdminAuditView.vue'
 import AdminLinksView from './AdminLinksView.vue'
 import AdminReportsView from './AdminReportsView.vue'
 import AdminUsersView from './AdminUsersView.vue'
+import { useToast } from '@/composables/useToast'
 
 const confirm = vi.fn(async () => true)
 
@@ -210,5 +211,115 @@ describe('admin users icon actions', () => {
     for (const b of wrapper.findAll('[data-admin-row] button')) expect(b.text()).toBe('')
     expect(wrapper.get('[data-admin-row] button').element.parentElement?.className).toContain('md:flex-nowrap')
     vi.unstubAllGlobals()
+  })
+})
+
+describe('admin users disable undo', () => {
+  type Call = { url: string; method: string; body: string; keepalive?: boolean; org: string | null }
+  let calls: Call[]
+  let patchStatus: number
+
+  const user = (disabled: boolean) => ({
+    id: 'u2', email: 'bo@apc.edu.ph', name: 'Bo', role: 'user', disabled, createdAt: '2026-06-30 17:30:00',
+  })
+
+  async function mountUsers(disabled = false) {
+    localStorage.setItem('active_org_id', 'org-1')
+    calls = []
+    patchStatus = 200
+    stubFetch((url, init) => {
+      const method = (init?.method ?? 'GET').toUpperCase()
+      if (method === 'GET') return json(200, { items: [user(disabled)], nextCursor: null })
+      calls.push({ url, method, body: String(init?.body ?? ''), keepalive: init?.keepalive, org: new Headers(init?.headers).get('X-Active-Org-Id') })
+      if (patchStatus !== 200) return json(patchStatus, { error: { code: 'boom', message: 'Cannot disable the last admin.' } })
+      const sent = JSON.parse(String(init?.body ?? '{}')) as { disabled?: boolean }
+      return json(200, { item: { ...user(Boolean(sent.disabled)) } })
+    })
+    const wrapper = mount(AdminUsersView)
+    await flushPromises()
+    return wrapper
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  afterEach(() => {
+    window.dispatchEvent(new Event('pagehide'))
+    useToast().toasts.value = []
+    vi.useRealTimers()
+  })
+
+  it('disabling an account applies immediately and shows an Undo toast without a confirm dialog', async () => {
+    const wrapper = await mountUsers()
+    await wrapper.get('button[aria-label="Disable bo@apc.edu.ph"]').trigger('click')
+    await flushPromises()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Disabled')
+    expect(wrapper.find('button[aria-label="Enable bo@apc.edu.ph"]').exists()).toBe(true)
+    const toast = useToast().toasts.value.find((t) => t.message === 'bo@apc.edu.ph disabled.')
+    expect(toast?.action?.label).toBe('Undo')
+    expect(calls).toEqual([])
+  })
+
+  it('undo restores the account and sends no request', async () => {
+    const wrapper = await mountUsers()
+    await wrapper.get('button[aria-label="Disable bo@apc.edu.ph"]').trigger('click')
+    useToast().toasts.value.find((t) => t.message === 'bo@apc.edu.ph disabled.')!.action!.onClick()
+    await vi.advanceTimersByTimeAsync(10_000)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Active')
+    expect(wrapper.find('button[aria-label="Disable bo@apc.edu.ph"]').exists()).toBe(true)
+    expect(calls).toEqual([])
+  })
+
+  it('request fires after the window', async () => {
+    const wrapper = await mountUsers()
+    await wrapper.get('button[aria-label="Disable bo@apc.edu.ph"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(4_900)
+    expect(calls).toEqual([])
+    localStorage.setItem('active_org_id', 'org-2')
+    await vi.advanceTimersByTimeAsync(200)
+    await flushPromises()
+    expect(calls).toEqual([{
+      url: expect.stringContaining('/api/admin/users/u2'),
+      method: 'PATCH',
+      body: JSON.stringify({ disabled: true }),
+      keepalive: true,
+      org: 'org-1',
+    }])
+    expect(wrapper.text()).toContain('Disabled')
+  })
+
+  it('a failed commit reverts the row', async () => {
+    const wrapper = await mountUsers()
+    patchStatus = 409
+    await wrapper.get('button[aria-label="Disable bo@apc.edu.ph"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Active')
+    expect(wrapper.find('button[aria-label="Disable bo@apc.edu.ph"]').exists()).toBe(true)
+    const err = useToast().toasts.value.find((t) => t.type === 'error')
+    expect(err?.detail).toBe('Cannot disable the last admin.')
+  })
+
+  it('enabling still happens at once', async () => {
+    const wrapper = await mountUsers(true)
+    await wrapper.get('button[aria-label="Enable bo@apc.edu.ph"]').trigger('click')
+    await flushPromises()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toMatchObject({ method: 'PATCH', body: JSON.stringify({ disabled: false }) })
+    expect(wrapper.text()).toContain('Active')
+    expect(useToast().toasts.value.some((t) => t.message === 'bo@apc.edu.ph is enabled.')).toBe(true)
+  })
+
+  it('delete account keeps its confirm', async () => {
+    const wrapper = await mountUsers()
+    confirm.mockResolvedValue(false)
+    await wrapper.get('button[aria-label="Delete bo@apc.edu.ph"]').trigger('click')
+    await flushPromises()
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(calls).toEqual([])
   })
 })
