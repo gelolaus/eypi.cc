@@ -253,6 +253,59 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  describe('install entry', () => {
+    function fireInstallPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {
+      const event = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
+        prompt: ReturnType<typeof vi.fn>
+        userChoice: Promise<{ outcome: string }>
+      }
+      event.prompt = vi.fn(async () => undefined)
+      event.userChoice = Promise.resolve({ outcome })
+      window.dispatchEvent(event)
+      return event
+    }
+    const installItem = (menu: HTMLElement) =>
+      Array.from(menu.querySelectorAll<HTMLElement>('[data-slot="dropdown-menu-item"]'))
+        .find((el) => el.textContent?.trim() === 'Install Eypi')
+
+    afterEach(() => {
+      window.dispatchEvent(new Event('appinstalled'))
+    })
+
+    it('is hidden until the browser offers installation', async () => {
+      signIn(0)
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      expect(installItem(menu)).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('shows a 44px Install Eypi item that calls prompt() when clicked', async () => {
+      signIn(0)
+      const event = fireInstallPrompt()
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      const item = installItem(menu)!
+      expect(item).toBeDefined()
+      expect(item.className).toContain('min-h-11')
+      expect(item.className).toContain('rounded-xl')
+      item.click()
+      await flushPromises()
+      expect(event.prompt).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it('disappears after appinstalled', async () => {
+      signIn(0)
+      fireInstallPrompt()
+      window.dispatchEvent(new Event('appinstalled'))
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      expect(installItem(menu)).toBeUndefined()
+      wrapper.unmount()
+    })
+  })
+
   it('signs out from the menu and returns to the login page', async () => {
     signIn(0)
     const wrapper = await mountAt('/links')

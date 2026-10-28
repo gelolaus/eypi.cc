@@ -101,6 +101,16 @@
         </router-link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <template v-if="canInstall">
+        <DropdownMenuItem
+          class="min-h-11 rounded-xl px-3 py-3 text-base"
+          @select="install"
+        >
+          <Download aria-hidden="true" />
+          Install Eypi
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+      </template>
       <DropdownMenuItem
         v-for="link in legalLinks"
         :key="link.to"
@@ -127,7 +137,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { ChevronDown, LogOut } from 'lucide-vue-next'
+import { ChevronDown, Download, LogOut } from 'lucide-vue-next'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -137,6 +147,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { cn } from '@/lib/cn'
 import { useSession } from '@/stores/session'
 import { isAppNavEntryActive, menuEntries, type AppNavEntry } from './appNav'
@@ -162,6 +173,7 @@ const legalLinks = [
 const session = useSession()
 const route = useRoute()
 const signOut = useSignOut()
+const { canInstall, install } = useInstallPrompt()
 
 const accountEntries = computed(() => menuEntries({ admin: session.user.value?.role === 'admin' }))
 const header = computed(() => props.variant === 'header')

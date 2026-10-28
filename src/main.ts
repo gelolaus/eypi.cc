@@ -16,3 +16,5 @@ app.use(router).mount('#app')
 // web-vitals reads buffered entries, so loading it after first paint loses nothing.
 void import('@/lib/rum').then(({ startRum }) => startRum(router)).catch(() => {})
 registerSw()
+// Keep the install offer if it fires before the (lazy) account menu loads; see useInstallPrompt.
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); (window as { __bip?: Event }).__bip = e })
