@@ -242,3 +242,56 @@ describe('DpPublicView audit fixes', () => {
     expect(wrapper.get('canvas').element.parentElement!.className).toContain('lg:max-w-[70dvh]')
   })
 })
+
+describe('DpPublicView canvas keyboard', () => {
+  async function mountWithPhoto() {
+    const drawImage = vi.fn()
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+      clearRect: vi.fn(),
+      drawImage,
+    })) as unknown as typeof HTMLCanvasElement.prototype.getContext
+    // Return 0 so scheduleDraw is not left thinking a frame is pending after the synchronous callback.
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { callback(0); return 0 })
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 1200, height: 1200, close() {} })))
+    const wrapper = await mountReady()
+    const input = wrapper.get('input[type="file"]').element as HTMLInputElement
+    chooseFile(input, new File([new Uint8Array([1])], 'photo.jpg', { type: 'image/jpeg' }))
+    await wrapper.get('input[type="file"]').trigger('change')
+    await flushPromises()
+    return { wrapper, drawImage }
+  }
+
+  it('canvas has role img, a label and tabindex 0', async () => {
+    const wrapper = await mountReady()
+    const canvas = wrapper.get('canvas')
+    expect(canvas.attributes('role')).toBe('img')
+    expect(canvas.attributes('aria-label')).toBe('Photo preview. Use arrow keys to move and plus or minus to zoom.')
+    expect(canvas.attributes('tabindex')).toBe('0')
+  })
+
+  it('arrow keys on the canvas move the photo and plus zooms it', async () => {
+    const { wrapper, drawImage } = await mountWithPhoto()
+    const canvas = wrapper.get('canvas')
+    const photoDraw = () => { const l = drawImage.mock.calls.filter((c) => typeof c[0].close === 'function'); return l[l.length - 1] }
+    expect(photoDraw().slice(1, 5)).toEqual([0, 0, 1200, 1200])
+
+    await canvas.trigger('keydown', { key: 'ArrowRight' })
+    expect(photoDraw().slice(1, 5)).toEqual([10, 0, 1200, 1200])
+
+    await canvas.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
+    expect(photoDraw()[2]).toBe(40)
+
+    await canvas.trigger('keydown', { key: '+' })
+    expect(photoDraw()[3]).toBeCloseTo(1320)
+
+    await canvas.trigger('keydown', { key: '0' })
+    expect(photoDraw().slice(1, 5)).toEqual([0, 0, 1200, 1200])
+  })
+
+  it('ignores keys before a photo is loaded', async () => {
+    const wrapper = await mountReady()
+    const event = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true, bubbles: true })
+    wrapper.get('canvas').element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+})

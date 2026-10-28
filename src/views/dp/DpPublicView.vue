@@ -40,13 +40,17 @@
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
           <div
-            class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300 lg:max-w-[70dvh]"
+            class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 lg:max-w-[70dvh]"
             :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
             :style="{ aspectRatio: frameAspect }"
           >
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -- role img keeps the preview a labelled image; keys and pointer both move it, the Zoom slider is the other path -->
             <canvas
               ref="canvasRef"
-              class="absolute inset-0 h-full w-full select-none"
+              class="absolute inset-0 h-full w-full select-none outline-none"
+              role="img"
+              aria-label="Photo preview. Use arrow keys to move and plus or minus to zoom."
+              tabindex="0"
               style="touch-action: none;"
               @pointerdown="onPointerDown"
               @pointermove="onPointerMove"
@@ -54,6 +58,7 @@
               @pointercancel="onPointerUp"
               @pointerleave="onPointerUp"
               @wheel.prevent="onWheel"
+              @keydown="onKeydown"
             />
           </div>
 
@@ -97,7 +102,7 @@
           </div>
 
           <p class="mt-3 text-center font-mono text-xs text-muted-foreground">
-            {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom
+            {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom · arrow keys and +/- on the photo
           </p>
 
           <!-- Controls -->
@@ -256,7 +261,7 @@ const frameAspect = computed(() => {
   return `${width} / ${height}`
 })
 
-const { scale, offsetX, offsetY, onPointerDown, onPointerMove, onPointerUp, onWheel, reset } = useDpCanvas(canvasRef)
+const { scale, offsetX, offsetY, onPointerDown, onPointerMove, onPointerUp, onWheel, onKeydown, reset } = useDpCanvas(canvasRef, { isEnabled: () => headshot.value !== null })
 
 const MIN_SCALE = 0.2
 const MAX_SCALE = 8
