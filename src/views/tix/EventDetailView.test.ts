@@ -153,7 +153,7 @@ describe('EventDetailView tabs', () => {
   it('shows Overview, Attendees and a Door link for an import event, without a Lottery tab', async () => {
     const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } })
     await flushPromises()
-    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees'])
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Insights'])
     expect(wrapper.get('[data-door-link]').attributes('href')).toBe('/manage/tix/launch/door')
     await tab(wrapper, 'Attendees')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Scanner')).toBe(true)
@@ -235,7 +235,7 @@ describe('EventDetailView tabs', () => {
     }
     const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
     await flushPromises()
-    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Lottery'])
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Lottery', 'Insights'])
     await tab(wrapper, 'Lottery')
     expect(wrapper.find('[data-draw]').exists()).toBe(true)
     wrapper.unmount()

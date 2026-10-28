@@ -103,8 +103,8 @@
 **Interfaces:**
 - Produces: `GET /api/dp/:id/insights?days=30` → `{ funnel: { view, photo_added, downloadOrShare }, conversion: number, perFrame: { frameId, label, downloads }[], daily: { day, views, downloads }[] }`. Frames `download` and `share` beacons use `subjectId: '<campaignId>:<frameId>'` (Task 5 accepts this form for frames); the funnel sums every subject starting with `<campaignId>`, and `perFrame` reads each one; `GET /api/events/:slug/insights` → `{ byStatus, registrationsDaily: { day, n }[], byAnswer: { questionId, options: { value, n }[] }[], showUpRate: number | null, checkInCurve: { bucket: string /* HH:MM, 10-min */, n }[] }` computed from `attendees` and `check_ins`.
 
-- [ ] **Step 1: Failing tests:** funnel numbers from seeded `module_daily`; conversion = downloadOrShare / view (0 views → 0, not NaN); show-up rate = checked-in confirmed / confirmed (null when 0 confirmed); 10-minute buckets in Manila time; authz (org members only).
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): add frames and tix insights`.
+- [x] **Step 1: Failing tests:** funnel numbers from seeded `module_daily`; conversion = downloadOrShare / view (0 views → 0, not NaN); show-up rate = checked-in confirmed / confirmed (null when 0 confirmed); 10-minute buckets in Manila time; authz (org members only).
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): add frames and tix insights`.
 
 ### Task 7: Org insights page
 

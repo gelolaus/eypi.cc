@@ -389,6 +389,13 @@
               @go-overview="mainTab = 'overview'"
             />
           </template>
+
+          <TixInsights
+            v-else-if="mainTab === 'insights'"
+            :slug="slug"
+            :public-path="`/tix/${slug}`"
+            :questions="event.questions ?? []"
+          />
         </div>
       </div>
     </AppPage>
@@ -408,7 +415,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
@@ -426,6 +433,8 @@ import ScannerPanel from '@/components/tix/ScannerPanel.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+
+const TixInsights = defineAsyncComponent(() => import('@/components/insights/TixInsights.vue'))
 
 const toast = useToast()
 const dialog = useDialog()
@@ -466,7 +475,7 @@ const event = ref<EventInfo | null>(null)
 const loadingEvent = ref(true)
 const deletingEvent = ref(false)
 const clusters = ref<EventClusterBar[]>([])
-type MainTab = 'overview' | 'attendees' | 'lottery'
+type MainTab = 'overview' | 'attendees' | 'lottery' | 'insights'
 const mainTab = ref<MainTab>('overview')
 const legacyTab = ref(0)
 const inboxKey = ref(0)
@@ -505,6 +514,7 @@ const mainTabs = computed<{ id: MainTab; label: string }[]>(() => [
   { id: 'overview', label: 'Overview' },
   { id: 'attendees', label: 'Attendees' },
   ...(event.value?.admissionMode === 'lottery' ? [{ id: 'lottery' as const, label: 'Lottery' }] : []),
+  { id: 'insights' as const, label: 'Insights' },
 ])
 
 const STATUS_LABELS: Record<string, string> = { draft: 'Draft', published: 'Published', closed: 'Closed', cancelled: 'Cancelled' }

@@ -88,3 +88,21 @@ describe('DpEditCampaignView', () => {
     wrapper.unmount()
   })
 })
+
+describe('DpEditCampaignView insights tab', () => {
+  it('loads the insights for the campaign only after the tab is opened', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      const body = String(url).includes('/insights')
+        ? { funnel: { view: 0, photo_added: 0, downloadOrShare: 0 }, conversion: 0, perFrame: [], daily: [] }
+        : { status: 'ok', campaign: { id: 'camp-1', title: 'Launch', slug: 'launch-night', description: '', captionTemplate: '', frames: [] } }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = mount(DpEditCampaignView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/insights'))).toBe(false)
+    await wrapper.findAll('[role="tab"]').find((t) => t.text() === 'Insights')!.trigger('click')
+    await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/dp/camp-1/insights'))).toBe(true))
+    wrapper.unmount()
+  })
+})
