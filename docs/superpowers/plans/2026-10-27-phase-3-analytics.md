@@ -56,9 +56,9 @@
 - Produces: `rollupLinks(db: Client, days: string[]): Promise<void>`, `rollupModules(db: Client, days: string[]): Promise<void>`, `manilaDay(date: Date): string` (YYYY-MM-DD), `manilaHourOfWeek(date: Date): number`; `runHourlyRollups` calls both for `[yesterday, today]` (Manila).
 - Rebuild per day: `DELETE` then `INSERT … SELECT` grouped by link and day from raw rows where `created_at` falls in that Manila day (UTC range `[day-1 16:00, day 16:00)`), in one batch per day. Dims: `country, os, device, browser, app, referrer, how`.
 
-- [ ] **Step 1: Failing tests:** `splits at manila midnight` (clicks at 15:59Z and 16:00Z land on different days); uniques = distinct non-null visitor hashes; `how` correct for a Monday 00:30 Manila click (=0); `rerun repairs partial day` (delete half the rollup rows, rerun, equal to fresh); retention deletes raw rows older than 400 days only when `analytics_daily` has that link/day.
-- [ ] **Step 2–4:** run `npx vitest run backend/src/jobs` → FAIL, implement, PASS.
-- [ ] **Step 5: Commit** `feat(analytics): roll up link and module events hourly`.
+- [x] **Step 1: Failing tests:** `splits at manila midnight` (clicks at 15:59Z and 16:00Z land on different days); uniques = distinct non-null visitor hashes; `how` correct for a Monday 00:30 Manila click (=0); `rerun repairs partial day` (delete half the rollup rows, rerun, equal to fresh); retention deletes raw rows older than 400 days only when `analytics_daily` has that link/day.
+- [x] **Step 2–4:** run `npx vitest run backend/src/jobs` → FAIL, implement, PASS.
+- [x] **Step 5: Commit** `feat(analytics): roll up link and module events hourly`.
 
 ### Task 3: Link analytics API v2
 

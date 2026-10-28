@@ -41,10 +41,102 @@ async function rollUpRumDay(database: Client, day: string): Promise<void> {
   await database.batch(statements, 'write')
 }
 
-/** Hourly job: refreshes yesterday's and today's (UTC) speed rollups. */
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000
+
+/** Manila calendar day (UTC+8, no DST) of an instant, as `YYYY-MM-DD`. */
+export function manilaDay(date: Date): string {
+  return new Date(date.getTime() + MANILA_OFFSET_MS).toISOString().slice(0, 10)
+}
+
+/** Hour of week in Manila, 0-167, with Monday 00:00 Manila = 0. */
+export function manilaHourOfWeek(date: Date): number {
+  const manila = new Date(date.getTime() + MANILA_OFFSET_MS)
+  return ((manila.getUTCDay() + 6) % 7) * 24 + manila.getUTCHours()
+}
+
+/** SQLite `CURRENT_TIMESTAMP` text (`YYYY-MM-DD HH:MM:SS`, UTC) for an instant. */
+function sqlTimestamp(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
+}
+
+/** UTC range `[day-1 16:00, day 16:00)` of a Manila day, as `created_at` text. */
+function manilaDayRange(day: string): [string, string] {
+  const end = Date.parse(`${day}T00:00:00Z`) - MANILA_OFFSET_MS + DAY_MS
+  return [sqlTimestamp(end - DAY_MS), sqlTimestamp(end)]
+}
+
+const LINK_DIMS = ['country', 'os', 'device', 'browser', 'app', 'referrer'] as const
+
+/** Rebuilds `analytics_daily` and `analytics_daily_dim` for Manila days. One batch per day, safe to repeat. */
+export async function rollupLinks(database: Client, days: string[]): Promise<void> {
+  for (const day of days) {
+    const [from, to] = manilaDayRange(day)
+    const range = [from, to]
+    const statements: InStatement[] = [
+      { sql: 'DELETE FROM analytics_daily WHERE day = ?', args: [day] },
+      { sql: 'DELETE FROM analytics_daily_dim WHERE day = ?', args: [day] },
+      {
+        sql: `INSERT INTO analytics_daily (link_id, day, clicks, uniques, qr)
+              SELECT link_id, ?, COUNT(*), COUNT(DISTINCT visitor_hash),
+                     COALESCE(SUM(source = 'qr'), 0)
+              FROM analytics
+              WHERE created_at >= ? AND created_at < ?
+              GROUP BY link_id`,
+        args: [day, ...range],
+      },
+    ]
+    for (const dim of LINK_DIMS) {
+      // A missing app means no in-app browser, so it is not a bucket. Other gaps become Unknown.
+      const value = dim === 'app' ? 'app' : `COALESCE(NULLIF(${dim}, ''), 'Unknown')`
+      statements.push({
+        sql: `INSERT INTO analytics_daily_dim (link_id, day, dim, value, clicks)
+              SELECT link_id, ?, '${dim}', ${value}, COUNT(*)
+              FROM analytics
+              WHERE created_at >= ? AND created_at < ?${dim === 'app' ? ' AND app IS NOT NULL' : ''}
+              GROUP BY link_id, 4`,
+        args: [day, ...range],
+      })
+    }
+    statements.push({
+      sql: `INSERT INTO analytics_daily_dim (link_id, day, dim, value, clicks)
+            SELECT link_id, ?, 'how',
+                   CAST(((CAST(strftime('%w', datetime(created_at, '+8 hours')) AS INTEGER) + 6) % 7) * 24
+                        + CAST(strftime('%H', datetime(created_at, '+8 hours')) AS INTEGER) AS TEXT),
+                   COUNT(*)
+            FROM analytics
+            WHERE created_at >= ? AND created_at < ?
+            GROUP BY link_id, 4`,
+      args: [day, ...range],
+    })
+    await database.batch(statements, 'write')
+  }
+}
+
+/** Rebuilds `module_daily` from `module_events` for days. One batch per day, safe to repeat. */
+export async function rollupModules(database: Client, days: string[]): Promise<void> {
+  for (const day of days) {
+    await database.batch([
+      { sql: 'DELETE FROM module_daily WHERE day = ?', args: [day] },
+      {
+        sql: `INSERT INTO module_daily (subject_id, module, action, day, n, uniques)
+              SELECT subject_id, module, action, day, COUNT(*), COUNT(DISTINCT visitor_hash)
+              FROM module_events
+              WHERE day = ?
+              GROUP BY subject_id, module, action, day`,
+        args: [day],
+      },
+    ], 'write')
+  }
+}
+
+/** Hourly job: refreshes yesterday's and today's speed (UTC) and link and module (Manila) rollups. */
 export async function runHourlyRollups(database: Client, now: Date): Promise<void> {
   const today = now.toISOString().slice(0, 10)
   const yesterday = new Date(now.getTime() - DAY_MS).toISOString().slice(0, 10)
   await rollUpRumDay(database, yesterday)
   await rollUpRumDay(database, today)
+
+  const manilaDays = [manilaDay(new Date(now.getTime() - DAY_MS)), manilaDay(now)]
+  await rollupLinks(database, manilaDays)
+  await rollupModules(database, manilaDays)
 }
