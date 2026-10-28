@@ -36,7 +36,11 @@
         <div class="relative">
           <div
             class="relative h-44 md:h-52"
-            :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted'"
+            :class="[
+              bannerRatio ? 'lg:aspect-[var(--banner-ratio)] lg:h-auto lg:max-h-96' : '',
+              profile.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted',
+            ]"
+            :style="bannerRatio ? { '--banner-ratio': bannerRatio } : undefined"
           >
             <AppImage
               v-if="profile.bannerUrl"
@@ -273,6 +277,13 @@ const eventGroups = computed(() => [
 ])
 
 const aboutHtml = computed(() => renderMarkdown(profile.value?.aboutMarkdown))
+
+// Stored banner ratio as a CSS aspect-ratio value; null keeps the fixed height.
+const bannerRatio = computed(() => {
+  const meta = profile.value?.bannerMeta
+  if (!profile.value?.bannerUrl || !meta || !(meta.w > 0) || !(meta.h > 0)) return null
+  return `${meta.w} / ${meta.h}`
+})
 
 const orgTypeDisplay = computed(() => orgTypeLabel(profile.value?.orgType))
 

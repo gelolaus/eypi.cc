@@ -110,3 +110,40 @@ describe('OrgProfileView empty events', () => {
     expect(action.attributes('href')).toBe('/orgs')
   })
 })
+
+describe('OrgProfileView banner ratio', () => {
+  const meta = { w: 2048, h: 1153, fmt: 'webp', widths: [640], ph: '' }
+
+  async function mountWithBanner(bannerMeta: unknown) {
+    const body = { org: { ...org, bannerUrl: 'https://img.example/banner.webp', bannerMeta }, events: { upcoming: [], past: [] } }
+    vi.stubGlobal('fetch', vi.fn(async () => respond(200, body)))
+    const wrapper = await mountView()
+    return wrapper.get('img').element.parentElement!.closest('.relative.h-44') as HTMLElement
+  }
+
+  it('uses the stored banner ratio at lg', async () => {
+    const box = await mountWithBanner(meta)
+    expect(box.getAttribute('style')).toContain('--banner-ratio: 2048 / 1153')
+    expect(box.className).toContain('lg:aspect-[var(--banner-ratio)]')
+    expect(box.className).toContain('lg:h-auto')
+    expect(box.className).toContain('lg:max-h-96')
+    expect(box.className).toContain('h-44')
+    expect(box.className).toContain('md:h-52')
+  })
+
+  it('falls back to the fixed height without meta', async () => {
+    for (const bad of [null, undefined, { ...meta, w: 0 }, { ...meta, h: 0 }]) {
+      const box = await mountWithBanner(bad)
+      expect(box.getAttribute('style') ?? '').not.toContain('--banner-ratio')
+      expect(box.className).toContain('h-44')
+      expect(box.className).toContain('md:h-52')
+      expect(box.className).not.toContain('lg:h-auto')
+    }
+  })
+
+  it('no meta gradient still renders', async () => {
+    const wrapper = await mountView()
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.find('.bg-gradient-to-br').exists()).toBe(true)
+  })
+})
