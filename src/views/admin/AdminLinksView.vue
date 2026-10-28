@@ -121,7 +121,6 @@
                 <Button
                   type="button"
                   variant="destructive"
-                  :disabled="busyId === link.id"
                   :aria-label="`Disable /${link.slug}`"
                   @click="disable(link)"
                 >
@@ -163,8 +162,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { onMounted, ref } from 'vue'
 import { api } from '@/lib/api'
-import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
+import { activeOrgHeaders, runWithUndo } from '@/composables/useUndoToast'
 
 type Reason = 'abuse' | 'admin'
 
@@ -184,14 +183,12 @@ interface LinksPage {
 }
 
 const toast = useToast()
-const dialog = useDialog()
 
 const links = ref<AdminLink[]>([])
 const query = ref('')
 const nextCursor = ref<string | null>(null)
 const loading = ref(true)
 const loadingMore = ref(false)
-const busyId = ref<string | null>(null)
 const reasons = ref<Record<string, Reason>>({})
 let requestId = 0
 
@@ -234,25 +231,27 @@ onMounted(() => {
   void load(true)
 })
 
-async function disable(link: AdminLink) {
-  const reason: Reason = reasons.value[link.id] ?? 'abuse'
-  const ok = await dialog.confirm({
-    title: 'Disable this link?',
-    body: `Takes /${link.slug} offline immediately. The owner cannot re-enable it themselves.`,
-    confirmLabel: 'Disable link',
-  })
-  if (!ok) return
-  busyId.value = link.id
-  try {
-    await api.post(`/api/admin/links/${encodeURIComponent(link.id)}/disable`, { reason })
-    link.disabled = true
-    link.disabledReason = reason
-    toast.success(`/${link.slug} was disabled.`)
-  } catch (err) {
-    toast.error(messageOf(err, 'Could not disable the link.'))
-  } finally {
-    busyId.value = null
+/** Disables optimistically; the request waits out the Undo window. */
+function disable(link: AdminLink) {
+  if (link.disabled) return
+  const { id, slug } = link
+  // Captured now: the reason picker and the active org may change before the request runs.
+  const reason: Reason = reasons.value[id] ?? 'abuse'
+  const headers = activeOrgHeaders()
+  const setState = (disabled: boolean) => {
+    const row = links.value.find((item) => item.id === id)
+    if (!row) return
+    row.disabled = disabled
+    row.disabledReason = disabled ? reason : null
   }
+  runWithUndo({
+    message: `/${slug} disabled.`,
+    apply: () => setState(true),
+    revert: () => setState(false),
+    async commit() {
+      await api.post(`/api/admin/links/${encodeURIComponent(id)}/disable`, { reason }, { keepalive: true, headers })
+    },
+  })
 }
 </script>
 

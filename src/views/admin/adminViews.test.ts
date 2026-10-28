@@ -148,48 +148,103 @@ describe('admin audit action filter', () => {
   })
 })
 
-describe('admin links disable retry', () => {
-  it('keeps the disable control when the edge key cannot be removed', async () => {
+describe('admin links disable undo', () => {
+  type Call = { url: string; method: string; body: string; keepalive?: boolean; org: string | null }
+  let calls: Call[]
+  let postResponse: Response | null
+
+  const link = {
+    id: 'link-1', slug: 'one', originalUrl: 'https://example.com/one', ownerEmail: 'owner@example.com',
+    createdAt: '2026-01-01 00:00:00', disabled: false, disabledReason: null,
+  }
+
+  async function mountLinks(disabled = false) {
+    localStorage.setItem('active_org_id', 'org-1')
+    calls = []
+    postResponse = null
     const fetchMock = stubFetch((url, init) => {
       const method = (init?.method ?? 'GET').toUpperCase()
-      if (url.includes('/disable') && method === 'POST') {
-        return json(502, {
-          error: {
-            code: 'edge_delete_failed',
-            message: 'The link is disabled but the edge cache could not be cleared. Try again.',
-          },
-        })
-      }
-      if (url.includes('/api/admin/links') && method === 'GET') {
-        return json(200, {
-          items: [{
-            id: 'link-1',
-            slug: 'one',
-            originalUrl: 'https://example.com/one',
-            ownerEmail: 'owner@example.com',
-            createdAt: '2026-01-01 00:00:00',
-            disabled: false,
-            disabledReason: null,
-          }],
-          nextCursor: null,
-        })
-      }
+      if (method === 'GET') return json(200, { items: [{ ...link, disabled }], nextCursor: null })
+      calls.push({ url, method, body: String(init?.body ?? ''), keepalive: init?.keepalive, org: new Headers(init?.headers).get('X-Active-Org-Id') })
+      return postResponse ?? json(200, { ok: true })
     })
-
     const wrapper = mount(AdminLinksView)
     await flushPromises()
+    return { wrapper, fetchMock }
+  }
 
-    const button = wrapper.findAll('button').find((item) => item.text() === 'Disable')
-    expect(button).toBeTruthy()
-    await button?.trigger('click')
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+  })
+
+  afterEach(() => {
+    window.dispatchEvent(new Event('pagehide'))
+    useToast().toasts.value = []
+    vi.useRealTimers()
+  })
+
+  it('disabling a link applies immediately and shows an Undo toast without a confirm dialog', async () => {
+    const { wrapper } = await mountLinks()
+    await wrapper.get('button[aria-label="Disable /one"]').trigger('click')
     await flushPromises()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Disabled')
+    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(false)
+    expect(useToast().toasts.value.find((t) => t.message === '/one disabled.')?.action?.label).toBe('Undo')
+    expect(calls).toEqual([])
+  })
 
-    expect(fetchMock.mock.calls.some((call) => {
-      const init = call[1] as RequestInit | undefined
-      return String(call[0]).includes('/api/admin/links/link-1/disable') && init?.method === 'POST'
-    })).toBe(true)
+  it('undo restores the link and sends no request', async () => {
+    const { wrapper } = await mountLinks()
+    await wrapper.get('button[aria-label="Disable /one"]').trigger('click')
+    useToast().toasts.value.find((t) => t.message === '/one disabled.')!.action!.onClick()
+    await vi.advanceTimersByTimeAsync(10_000)
+    await flushPromises()
+    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(true)
+    expect(calls).toEqual([])
+  })
+
+  it('request fires after the window with the reason and org captured when the action started', async () => {
+    const { wrapper } = await mountLinks()
+    await wrapper.get('select').setValue('admin')
+    await wrapper.get('button[aria-label="Disable /one"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(4_900)
+    expect(calls).toEqual([])
+    localStorage.setItem('active_org_id', 'org-2')
+    await vi.advanceTimersByTimeAsync(200)
+    await flushPromises()
+    expect(calls).toEqual([{
+      url: expect.stringContaining('/api/admin/links/link-1/disable'),
+      method: 'POST',
+      body: JSON.stringify({ reason: 'admin' }),
+      keepalive: true,
+      org: 'org-1',
+    }])
+    expect(wrapper.text()).toContain('Disabled by admin')
+  })
+
+  it('a failed commit reverts the row and keeps the disable control', async () => {
+    const { wrapper } = await mountLinks()
+    postResponse = json(502, {
+      error: {
+        code: 'edge_delete_failed',
+        message: 'The link is disabled but the edge cache could not be cleared. Try again.',
+      },
+    })
+    await wrapper.get('button[aria-label="Disable /one"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushPromises()
+    expect(calls).toHaveLength(1)
     expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Disabled')
+    const err = useToast().toasts.value.find((t) => t.type === 'error')
+    expect(err?.detail).toContain('edge cache could not be cleared')
+  })
+
+  it('an already-disabled link offers no disable control', async () => {
+    const { wrapper } = await mountLinks(true)
+    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Disabled')
   })
 })
 
