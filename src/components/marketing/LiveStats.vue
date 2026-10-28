@@ -79,11 +79,23 @@ const items: { key: keyof PlatformStats; label: string }[] = [
   { key: 'frameDownloads', label: 'Frame downloads' },
 ]
 
+// Drops the last element of an odd list longer than one so the grid never ends on an orphan.
+function evenTiles<T>(list: T[]): T[] {
+  return list.length > 1 && list.length % 2 === 1 ? list.slice(0, -1) : list
+}
+
 // Keep every tile while loading so the skeleton holds its shape; once loaded, drop counts
-// under 5 because tiny numbers weaken the claim.
-const visibleItems = computed(() =>
-  stats.value ? items.filter(item => stats.value![item.key] >= MIN_SHOWN) : items,
-)
+// under 5 because tiny numbers weaken the claim, then drop the smallest tile if the count is
+// odd and restore the declared order.
+const visibleItems = computed(() => {
+  const current = stats.value
+  if (!current) return items
+  const qualifying = items.filter(item => current[item.key] >= MIN_SHOWN)
+  const kept = new Set(
+    evenTiles([...qualifying].sort((a, b) => current[b.key] - current[a.key])),
+  )
+  return qualifying.filter(item => kept.has(item))
+})
 
 function formatCount(value: number): string {
   return value.toLocaleString('en-US')

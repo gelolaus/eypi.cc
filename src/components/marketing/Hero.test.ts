@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import BrandLogo from '@/components/brand/BrandLogo.vue'
 import Hero from './Hero.vue'
 import LiveStats from './LiveStats.vue'
 
@@ -24,11 +25,11 @@ describe('Hero', () => {
     expect(cta!.classes()).toContain('bg-primary')
   })
 
-  it('shows the large brand', () => {
+  it('does not repeat the brand logo', () => {
     const wrapper = mountHero()
-    const brand = wrapper.get('.font-display')
-    expect(brand.text()).toBe('Eypi')
-    expect(brand.classes()).toContain('text-5xl')
+    expect(wrapper.findComponent(BrandLogo).exists()).toBe(false)
+    expect(wrapper.findAll('.font-display').filter((el) => el.text() === 'Eypi')).toHaveLength(0)
+    expect(wrapper.get('h1').classes()).toContain('mt-0')
   })
 
   it('hides the decorative float accents from assistive tech', () => {

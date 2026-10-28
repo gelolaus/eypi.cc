@@ -15,11 +15,7 @@
 
     <div class="mx-auto grid max-w-5xl grid-cols-1 items-center gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
       <div class="text-center lg:text-left">
-        <BrandLogo
-          size="lg"
-          class="justify-center lg:justify-start"
-        />
-        <h1 class="mt-8 text-4xl font-semibold tracking-tight sm:text-5xl">
+        <h1 class="mt-0 text-4xl font-semibold tracking-tight sm:text-5xl">
           The toolkit for <span class="text-primary">APC</span> orgs.
         </h1>
         <p class="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground sm:text-xl lg:mx-0">
@@ -57,7 +53,6 @@
 
 <script setup lang="ts">
 defineOptions({ name: 'MarketingHero' })
-import BrandLogo from '@/components/brand/BrandLogo.vue'
 import LiveStats from '@/components/marketing/LiveStats.vue'
 import { Button } from '@/components/ui/button'
 

@@ -55,11 +55,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Produces: `evenTiles<T>(items: T[]): T[]` exported from `LiveStats.vue`'s script module, or a local function if the file has no shared module; returns `items` with the last element dropped when the length is odd and greater than 1, and returns `items` unchanged for length 0 or 1.
 
-- [ ] **Step 1: Failing tests.** Hero: replace `shows the large brand` with `does not repeat the brand logo` (assert no `.font-display` text `Eypi` and no `BrandLogo` in the hero). LiveStats: `hides the odd tile out`, `keeps a single qualifying tile`, `keeps every tile while loading` (counts: 7 qualifying shows 6, 6 shows 6, 1 shows 1, 0 renders no section).
-- [ ] **Step 2:** Run `npx vitest run src/components/marketing`; expect the new tests FAIL.
-- [ ] **Step 3:** Remove `BrandLogo` and its import from `Hero.vue` and drop the `mt-8` that spaced the h1 below it (use `mt-0`). In `LiveStats.vue` apply `evenTiles` to the filtered list after loading, keeping the largest counts: sort qualifying items by value descending before dropping, then restore the declared order.
-- [ ] **Step 4:** Run the tests; expect PASS. Run `npm run release:check`.
-- [ ] **Step 5:** Set UX-6 and UX-7 to `fixed`, commit `fix(home): drop the duplicate logo and orphan stat tile`.
+- [x] **Step 1: Failing tests.** Hero: replace `shows the large brand` with `does not repeat the brand logo` (assert no `.font-display` text `Eypi` and no `BrandLogo` in the hero). LiveStats: `hides the odd tile out`, `keeps a single qualifying tile`, `keeps every tile while loading` (counts: 7 qualifying shows 6, 6 shows 6, 1 shows 1, 0 renders no section).
+- [x] **Step 2:** Run `npx vitest run src/components/marketing`; expect the new tests FAIL.
+- [x] **Step 3:** Remove `BrandLogo` and its import from `Hero.vue` and drop the `mt-8` that spaced the h1 below it (use `mt-0`). In `LiveStats.vue` apply `evenTiles` to the filtered list after loading, keeping the largest counts: sort qualifying items by value descending before dropping, then restore the declared order.
+- [x] **Step 4:** Run the tests; expect PASS. Run `npm run release:check`.
+- [x] **Step 5:** Set UX-6 and UX-7 to `fixed`, commit `fix(home): drop the duplicate logo and orphan stat tile`.
 
 ### Task 3: Legal contents list (UX-10)
 

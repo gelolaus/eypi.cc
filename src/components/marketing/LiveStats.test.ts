@@ -81,7 +81,53 @@ describe('LiveStats small numbers', () => {
     stubFetch(async () => new Response(JSON.stringify({ ...stats, orgs: 1, frames: 1, frameDownloads: 2 }), { headers: { 'Content-Type': 'application/json' } }))
     const wrapper = mount(LiveStats)
     await flushPromises()
-    expect(wrapper.findAll('dd')).toHaveLength(7)
+    expect(wrapper.findAll('dd')).toHaveLength(6)
     expect(wrapper.text()).not.toContain('Frame downloads')
+  })
+})
+
+describe('LiveStats even tiles', () => {
+  const respond = (data: Record<string, number>) =>
+    stubFetch(async () => new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } }))
+  const zeros = Object.fromEntries(Object.keys(stats).map(key => [key, 0]))
+
+  it('hides the odd tile out', async () => {
+    // 7 qualifying: users 1234, members 6, links 7, clicks 8, events 9, tickets 10, checkIns 11
+    respond({ ...stats, orgs: 0, frames: 0, frameDownloads: 0 })
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.findAll('dd')).toHaveLength(6)
+    expect(wrapper.text()).not.toContain('Org members')
+    expect(wrapper.findAll('dt').map(dt => dt.text())).toEqual([
+      'Students signed up', 'Short links', 'Link clicks', 'Events', 'Tickets issued', 'Check-ins',
+    ])
+  })
+
+  it('keeps all tiles when the qualifying count is even', async () => {
+    respond({ ...stats, orgs: 0, frames: 0, frameDownloads: 0, members: 0 })
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.findAll('dd')).toHaveLength(6)
+  })
+
+  it('keeps a single qualifying tile', async () => {
+    respond({ ...zeros, users: 42 })
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.findAll('dd')).toHaveLength(1)
+    expect(wrapper.get('dd').text()).toBe('42')
+  })
+
+  it('renders no section when nothing qualifies', async () => {
+    respond(zeros)
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.find('section').exists()).toBe(false)
+  })
+
+  it('keeps every tile while loading', () => {
+    stubFetch(() => new Promise<Response>(() => {}))
+    const wrapper = mount(LiveStats)
+    expect(wrapper.findAll('[aria-hidden="true"].animate-pulse')).toHaveLength(10)
   })
 })
