@@ -7,7 +7,15 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss(), cloudflare()],
-  build: { manifest: true },
+  build: {
+    manifest: true,
+    rollupOptions: {
+      output: {
+        // Vue SFC helper chunks get a very long generated name that the entry repeats in its preload map.
+        chunkFileNames: (chunk) => `assets/${chunk.name.replace('.vue_vue_type_script_setup_true_lang', '')}-[hash:7].js`,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
