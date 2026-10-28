@@ -416,4 +416,24 @@ describe('GET /api/orgs/:org_id/insights', () => {
     const { request } = await orgApp()
     expect((await request('/api/orgs/org-1/insights?days=0', { headers })).status).toBe(400)
   })
+
+  it('lets the owner in without an org_members row', async () => {
+    const owner: TestUser = { id: 'owner', email: 'owner@apc.edu.ph', name: 'Owner', role: 'user' }
+    const { request } = await orgApp(undefined, owner)
+    expect((await request('/api/orgs/org-1/insights', { headers })).status).toBe(200)
+  })
+
+  it('returns a single day for days=1, counting today only', async () => {
+    const { request } = await orgApp(async (client) => {
+      await orgDaily(client, 'org', 'org-1', 'view', '2026-10-25', 8)
+      await orgRaw(client, 'org', 'org-1', 'view', '2026-10-26', 2)
+    })
+    const body = await (await request('/api/orgs/org-1/insights?days=1', { headers })).json() as {
+      profileViews: { total: number; daily: { day: string; n: number }[] }
+      members: { daily: unknown[] }
+    }
+    expect(body.profileViews.daily).toEqual([{ day: '2026-10-26', n: 2 }])
+    expect(body.profileViews.total).toBe(2)
+    expect(body.members.daily).toHaveLength(1)
+  })
 })

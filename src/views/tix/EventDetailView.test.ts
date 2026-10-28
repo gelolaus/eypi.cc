@@ -2,6 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventDetailView from './EventDetailView.vue'
+import source from './EventDetailView.vue?raw'
 
 const { replace, confirm } = vi.hoisted(() => ({ replace: vi.fn(), confirm: vi.fn(async () => true) }))
 vi.mock('@/composables/useDialog', () => ({ useDialog: () => ({ confirm }) }))
@@ -336,5 +337,12 @@ describe('EventDetailView insights tab', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Show-up rate'))
     expect(wrapper.text()).toContain('No data')
     wrapper.unmount()
+  })
+})
+
+describe('EventDetailView live widgets', () => {
+  it('keys the live check-in counter by slug so a new event restarts its poll', () => {
+    const usage = source.slice(source.indexOf('<LiveCheckIn'), source.indexOf('/>', source.indexOf('<LiveCheckIn')))
+    expect(usage).toContain(':key="slug"')
   })
 })

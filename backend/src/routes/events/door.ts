@@ -3,7 +3,7 @@ import type { Client, InStatement } from '@libsql/client/web'
 import { recordAudit } from '../../lib/audit'
 import { db, type Bindings } from '../../lib/db'
 import { etagMatches, LIVE_CACHE_CONTROL } from '../../lib/liveEtag'
-import { canTransition,type AttendeeStatus } from '../../lib/tix/admission'
+import { canTransition, type AttendeeStatus } from '../../lib/tix/admission'
 import { NOW_SQL, promoteWaitlistStatement } from '../../lib/tix/registration'
 import { actionError, applyDoorAction, attendeeLabel, doorActionStatements, doorOutcome, doorTimestamp, performCheckIn, requireEventLead, type DoorAction } from './shared'
 

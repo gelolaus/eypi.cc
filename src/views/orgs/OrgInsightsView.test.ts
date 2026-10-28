@@ -60,6 +60,17 @@ describe('OrgInsightsView', () => {
     const wrapper = await mountView()
     await flushPromises()
     expect(wrapper.find('[role="alert"]').text()).toContain('Only members of this organization')
+    expect(wrapper.findAll('button').some((b) => b.text() === 'Try again')).toBe(false)
+    expect(wrapper.find('a[href="/orgs/jpcs"]').exists()).toBe(true)
+  })
+
+  it('explains what Members and profile views count', async () => {
+    fetchMock.mockResolvedValue(respond(payload))
+    const wrapper = await mountView()
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('Members is the running total of activated members')
+    expect(text).toContain('Profile views are recorded only for organizations listed in the public catalog')
   })
 
   it('shows a retry on other failures', async () => {

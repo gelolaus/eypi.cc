@@ -27,18 +27,21 @@ const range = ref(30)
 const data = ref<Payload | null>(null)
 const loading = ref(true)
 const error = ref('')
+const forbidden = ref(false)
 let requestId = 0
 
 async function load() {
   const current = ++requestId
   loading.value = true
   error.value = ''
+  forbidden.value = false
   try {
     const next = await api.get<Payload>(`/api/orgs/${encodeURIComponent(orgId.value)}/insights?days=${range.value}`)
     if (current === requestId) data.value = next
   } catch (e) {
     if (current === requestId) {
-      error.value = e instanceof ApiError && e.status === 403
+      forbidden.value = e instanceof ApiError && e.status === 403
+      error.value = forbidden.value
         ? 'Only members of this organization can see its insights.'
         : 'Could not load insights. Check your connection and try again.'
     }
@@ -97,6 +100,16 @@ const memberCount = computed(() => memberValues.value[memberValues.value.length 
       </p>
       <div>
         <Button
+          v-if="forbidden"
+          as-child
+          variant="outline"
+        >
+          <router-link :to="`/orgs/${encodeURIComponent(orgId)}`">
+            Back to the organization page
+          </router-link>
+        </Button>
+        <Button
+          v-else
           type="button"
           variant="outline"
           @click="load"
@@ -171,8 +184,10 @@ const memberCount = computed(() => memberValues.value[memberValues.value.length 
       </div>
 
       <p class="text-sm text-muted-foreground">
-        Profile views and frames are counted in the selected period (Manila time). Events, registrations
-        (excluding cancelled and declined) and check-ins are all-time totals.
+        Profile views and frames are counted in the selected period (Manila time). Profile views are recorded
+        only for organizations listed in the public catalog. Members is the running total of activated members
+        at the end of the period. Events, registrations (excluding cancelled and declined) and check-ins are
+        all-time totals.
       </p>
 
       <Button

@@ -207,6 +207,7 @@
 
             <LiveCheckIn
               v-if="event.isLead && (event.status === 'published' || event.status === 'closed')"
+              :key="slug"
               :slug="slug"
             />
 
