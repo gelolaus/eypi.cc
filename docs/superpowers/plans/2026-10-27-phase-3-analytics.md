@@ -137,4 +137,4 @@
 
 - [x] **Step 1:** Draft the privacy changes; do **not** merge the version bump until the owner approves (owner guide 3.3.1) — commit the draft, then wait for "privacy update approved" before Step 3. Draft committed; pending owner approval.
 - [x] **Step 2:** `npm run lint && npm run typecheck && npm test && npm run build` → green.
-- [x] **Step 3: Commit** `docs(legal): describe the new analytics in the privacy policy`, then tell the owner Phase 3 is ready with migration `0012_analytics`.
+- [x] **Step 3: Commit** `docs(legal): describe the new analytics in the privacy policy`, then tell the owner Phase 3 is ready with migration `0012_analytics`. Committed; pending owner approval (owner guide 3.3.1).

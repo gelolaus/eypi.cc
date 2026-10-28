@@ -67,8 +67,9 @@ export const privacy: LegalDocument = {
       paragraphs: [
         'Event leads can upload a CSV. eypi.cc stores those rows in event_csv_rows. A row can include names, email addresses, and any other columns in the file. Selected attendees are stored with a name, an email address, a ticket token, and an optional cluster. Check-in stores that a ticket was scanned.',
         "Signed-in students can register for an event on eypi.cc. A registration stores your account link, your name and email address, your status (for example confirmed, waitlisted, or cancelled), the time you registered, and your answers to the organizer's registration questions. Organizers of that event can see these and can export them.",
-        "Organizers can issue a private guest ticket link to an attendee who has no account. Anyone who has the link can open the ticket without signing in. The ticket shows the event name, date, time and location, the ticket status, the ticket QR code, the answers to the registration questions, and the waitlist position. eypi.cc stores only a hash of the link's token. An organizer can issue a new link at any time, which stops the old link from working. Keep the link private.",
-        "If you delete your account, your future self-registrations that have no check-ins are deleted. Your past registrations, and any that have a check-in, are kept as the organization's attendance record. They are unlinked from your account, but the name and email address stay on them.",
+        "Organizers can issue a private guest ticket link to an attendee who has no account. Anyone who has the link can open the ticket without signing in. The ticket shows the event name, date, time and location, the ticket status, the ticket QR code, the answers to the registration questions, and the waitlist position. eypi.cc stores only a hash of the link's token. An organizer can issue a new link at any time, which stops the old link from working. Keep the link private. When an organizer exports the attendee CSV, eypi.cc issues guest ticket links for confirmed attendees who have no account and no link yet, and puts those links in the file.",
+        "If you delete your account, your future self-registrations that have no check-ins are deleted. Every other registration linked to your account is kept as the organization's attendance record with the account link removed. That includes past registrations, registrations with a check-in, and registrations an organizer imported for you, even for future events. Your name and email address stay on those kept records.",
+        "To have a kept attendance record erased, ask through /contact. The organization that holds the record may need to confirm it first.",
         'Google Wallet is the wallet pass eypi.cc issues. Google receives the holder name, the ticket number, the event name, date, time, and location, the tier, and any custom fields placed on the pass.',
       ],
     },
@@ -109,14 +110,14 @@ export const privacy: LegalDocument = {
     {
       heading: 'Retention',
       paragraphs: [
-        'Expired sessions are deleted daily. Raw click rows are deleted 400 days after the click, once the daily totals for that day exist. Speed samples are deleted after 30 days. The daily totals are kept. Rows in event_csv_rows are deleted 30 days after the event date. Resolved link reports older than 180 days are deleted. Rate-limit keys expire by their KV time-to-live.',
-        'Frames and organization page activity rows and their daily totals are kept while the Frame or organization exists. Other account, link, organization, event, attendee, and frame records are kept while that record exists. The owner sets any further retention periods before publish.',
+        'Expired sessions are deleted daily. Raw click rows and raw Frames and organization page activity rows are deleted after 400 days, once the daily totals for their day exist. The daily totals themselves are kept. Speed samples are deleted after 30 days. Rows in event_csv_rows are deleted 30 days after the event date. Resolved link reports older than 180 days are deleted. Rate-limit keys expire by their KV time-to-live.',
+        'Other account, link, organization, event, attendee, and frame records are kept while that record exists. The owner sets any further retention periods before publish.',
       ],
     },
     {
       heading: 'Your rights',
       paragraphs: [
-        'You have the right to access your personal data, to correction, to erasure, to portability, and to objection. Send a request through /contact.',
+        'You have the right to access your personal data, to correction, to erasure, to portability, and to objection. Send a request through /contact. Erasure of an attendance record kept after account deletion is described under Tix.',
         'You may file a complaint with the National Privacy Commission if you believe your personal data has been processed in violation of the Data Privacy Act of 2012 (Republic Act No. 10173). The Commission describes that complaint right and its process at https://privacy.gov.ph.',
       ],
     },

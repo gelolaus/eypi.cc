@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { LEGAL_VERSIONS } from '@shared/legalVersions'
 import { acceptableUse } from './acceptable-use'
 import { privacy } from './privacy'
 import { terms } from './terms'
@@ -42,6 +43,12 @@ describe('legal documents', () => {
     }
   })
 
+  it('keeps each document version in step with LEGAL_VERSIONS', () => {
+    expect(privacy.version).toBe(LEGAL_VERSIONS.privacy)
+    expect(terms.version).toBe(LEGAL_VERSIONS.terms)
+    expect(acceptableUse.version).toBe(LEGAL_VERSIONS['acceptable-use'])
+  })
+
   it('covers the privacy bullets without the retired password and wallet claims', () => {
     const text = prose(privacy)
     const required = [
@@ -63,7 +70,10 @@ describe('legal documents', () => {
       'cannot link a person across days',
       'Speed samples',
       'guest ticket link',
-      'name and email address stay on them',
+      'puts those links in the file',
+      'registrations an organizer imported',
+      'after 400 days',
+      'name and email address stay on those kept records',
       'Cloudflare',
       'Turso',
       'Resend',
