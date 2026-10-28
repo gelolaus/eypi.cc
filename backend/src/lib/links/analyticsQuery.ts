@@ -1,5 +1,5 @@
 import type { Client } from '@libsql/client'
-import { manilaDay, manilaDayRange } from '../../jobs/rollups'
+import { manilaDay, manilaDayRange } from '../manilaTime'
 
 export const MAX_RANGE_DAYS = 400
 const DAY_MS = 24 * 60 * 60 * 1000

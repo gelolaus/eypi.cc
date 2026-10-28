@@ -1,5 +1,5 @@
 import type { Client, InStatement } from '@libsql/client/web'
-import { manilaHour } from '../lib/manilaTime'
+import { manilaDay, manilaDayRange, manilaHour } from '../lib/manilaTime'
 
 /** Nearest-rank 75th percentile: sort ascending, take index `ceil(0.75 * n) - 1`. */
 export function p75(values: number[]): number {
@@ -40,30 +40,6 @@ async function rollUpRumDay(database: Client, day: string): Promise<void> {
     })
   }
   await database.batch(statements, 'write')
-}
-
-const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000
-
-/** Manila calendar day (UTC+8, no DST) of an instant, as `YYYY-MM-DD`. */
-export function manilaDay(date: Date): string {
-  return new Date(date.getTime() + MANILA_OFFSET_MS).toISOString().slice(0, 10)
-}
-
-/** Hour of week in Manila, 0-167, with Monday 00:00 Manila = 0. */
-export function manilaHourOfWeek(date: Date): number {
-  const manila = new Date(date.getTime() + MANILA_OFFSET_MS)
-  return ((manila.getUTCDay() + 6) % 7) * 24 + manila.getUTCHours()
-}
-
-/** SQLite `CURRENT_TIMESTAMP` text (`YYYY-MM-DD HH:MM:SS`, UTC) for an instant. */
-function sqlTimestamp(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
-}
-
-/** UTC range `[day-1 16:00, day 16:00)` of a Manila day, as `created_at` text. */
-export function manilaDayRange(day: string): [string, string] {
-  const end = Date.parse(`${day}T00:00:00Z`) - MANILA_OFFSET_MS + DAY_MS
-  return [sqlTimestamp(end - DAY_MS), sqlTimestamp(end)]
 }
 
 const LINK_DIMS = ['country', 'os', 'device', 'browser', 'app', 'referrer'] as const

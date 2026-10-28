@@ -62,7 +62,7 @@
           <input
             :value="fromDate"
             aria-label="From date"
-            class="h-10 rounded-md border border-input bg-background px-3 text-base text-foreground"
+            class="h-11 rounded-md border border-input bg-background px-3 text-base text-foreground"
             type="date"
             @input="onDateInput('from', $event)"
           >
@@ -72,16 +72,16 @@
           <input
             :value="toDate"
             aria-label="To date"
-            class="h-10 rounded-md border border-input bg-background px-3 text-base text-foreground"
+            class="h-11 rounded-md border border-input bg-background px-3 text-base text-foreground"
             type="date"
             @input="onDateInput('to', $event)"
           >
         </label>
-        <label class="flex h-10 items-center gap-2 text-base text-foreground">
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 text-base text-foreground">
           <input
             v-model="compare"
             aria-label="Compare to previous period"
-            class="size-4"
+            class="size-5"
             type="checkbox"
           >
           Compare to previous period
@@ -94,7 +94,6 @@
       >
         {{ rangeError }}
       </p>
-      <div class="mb-3" />
       <p
         v-if="isLoading"
         class="text-base text-muted-foreground"
@@ -181,7 +180,7 @@
           type="button"
           @click="downloadCsv"
         >
-          Download CSV
+          Download all clicks (CSV)
         </Button>
         <p
           v-if="downloadError"
@@ -192,7 +191,7 @@
         </p>
       </template>
       <p
-        v-else
+        v-else-if="!rangeError"
         class="text-base text-muted-foreground"
         role="alert"
       >
@@ -339,7 +338,13 @@ async function load() {
     analytics.value = null
     return
   }
-  if (rangeError.value) return
+  if (rangeError.value) {
+    // Drop any response still in flight and the data it would sit beside the error.
+    request++
+    isLoading.value = false
+    analytics.value = null
+    return
+  }
   const id = ++request
   isLoading.value = true
   downloadError.value = ''
@@ -379,6 +384,7 @@ watch(() => props.isOpen, (open) => {
     trap.release()
     return
   }
+  pickPreset(30)
   void nextTick(() => trap.activate())
 }, { immediate: true })
 

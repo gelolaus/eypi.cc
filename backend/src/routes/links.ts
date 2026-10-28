@@ -11,12 +11,11 @@ import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
 import { addDays, daysBetween, isDay, loadLinkPeriod, MAX_RANGE_DAYS } from '../lib/links/analyticsQuery'
 import { toCsv } from '../lib/links/csv'
-import { manilaDay } from '../jobs/rollups'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
 import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
 import { reportError } from '../lib/reportError'
 import { etagMatches, LIVE_CACHE_CONTROL, weakEtagOf } from '../lib/liveEtag'
-import { manilaTimestamp } from '../lib/manilaTime'
+import { manilaDay, manilaTimestamp } from '../lib/manilaTime'
 import { getOS, logLinkClick, parseUserAgent, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
 import { generateSlug, normalizeSlugInput, validateSlug } from '../../../shared/slugRules'
@@ -621,16 +620,19 @@ app.get('/api/links/:id/analytics', requireAuth, async (c) => {
   const today = manilaDay(new Date())
   const rangeDays = analyticsRange(c.req.query('range'))
   const from = c.req.query('from') ?? addDays(today, -(rangeDays - 1))
-  const to = c.req.query('to') ?? today
-  if (!isDay(from) || !isDay(to)) {
+  const requestedTo = c.req.query('to') ?? today
+  if (!isDay(from) || !isDay(requestedTo)) {
     return fail(c, 422, 'invalid_range', 'Use dates like 2026-10-26.', { from: 'Use YYYY-MM-DD.', to: 'Use YYYY-MM-DD.' })
   }
+  // Days after today have no clicks yet; counting them would dilute the daily average.
+  const to = requestedTo > today ? today : requestedTo
   const length = daysBetween(from, to)
   if (length < 1) return fail(c, 422, 'invalid_range', 'The start date must not be after the end date.')
   if (length > MAX_RANGE_DAYS) {
     return fail(c, 422, 'invalid_range', `Pick a range of ${MAX_RANGE_DAYS} days or fewer.`)
   }
 
+  c.header('Cache-Control', 'private, no-store')
   const client = db(c)
   const current = await loadLinkPeriod(client, row.id, from, to, today)
   if (c.req.query('compare') !== '1') return c.json(current)

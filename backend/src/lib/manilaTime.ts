@@ -23,6 +23,18 @@ export function manilaDay(input: string | Date): string {
   return shifted(input).toISOString().slice(0, 10)
 }
 
+/** Hour of week in Manila, 0-167, with Monday 00:00 Manila = 0. */
+export function manilaHourOfWeek(input: string | Date): number {
+  const manila = shifted(input)
+  return ((manila.getUTCDay() + 6) % 7) * 24 + manila.getUTCHours()
+}
+
+/** UTC range `[day-1 16:00, day 16:00)` of a Manila day, as `created_at` text. */
+export function manilaDayRange(day: string): [string, string] {
+  const end = Date.parse(`${day}T00:00:00Z`) - MANILA_OFFSET_MS + DAY_MS
+  return [sqlUtc(new Date(end - DAY_MS)), sqlUtc(new Date(end))]
+}
+
 /** `YYYY-MM-DD HH:MM:SS` in Manila. */
 export function manilaTimestamp(input: string | Date): string {
   return shifted(input).toISOString().slice(0, 19).replace('T', ' ')

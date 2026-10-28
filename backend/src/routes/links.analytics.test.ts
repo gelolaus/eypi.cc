@@ -188,6 +188,97 @@ describe('link analytics and CSV export', () => {
     expect(body.heat.reduce((a, b) => a + b, 0)).toBe(3)
   })
 
+  it('puts Sunday 23:00 Manila at heat index 167 for raw and rolled-up days', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(FROZEN_NOW)) // Monday 2026-10-26 10:00 Manila
+    const { request, client } = await withOwner(async (db) => {
+      await insertLink(db, { id: 'sun', slug: 'sun', url: 'https://example.com/sun' })
+    })
+    // Sunday 2026-10-25 23:00 Manila
+    await insertClicks(client, 'sun', [{ createdAt: '2026-10-25 15:00:00' }])
+    await rollupLinks(client as never, ['2026-10-25'])
+    await client.execute("DELETE FROM analytics WHERE created_at < '2026-10-25 16:00:00'")
+    const body = await (await request('/api/links/sun/analytics?from=2026-10-25&to=2026-10-25')).json() as { heat: number[] }
+    expect(body.heat[167]).toBe(1)
+    expect(body.heat.reduce((a, b) => a + b, 0)).toBe(1)
+  })
+
+  it('reads a range that starts today from raw rows only', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(FROZEN_NOW))
+    const { request, client } = await withOwner(async (db) => {
+      await insertLink(db, { id: 'now', slug: 'now', url: 'https://example.com/now' })
+    })
+    await insertClicks(client, 'now', [
+      { createdAt: '2026-10-25 15:00:00', visitorHash: 'old' }, // yesterday
+      { createdAt: '2026-10-26 01:00:00', visitorHash: 'a' },
+      { createdAt: '2026-10-26 02:00:00', visitorHash: 'b' },
+    ])
+    const body = await (await request('/api/links/now/analytics?from=2026-10-26&to=2026-10-26')).json() as {
+      totals: { clicks: number }
+      timeline: { day: string; clicks: number }[]
+    }
+    expect(body.timeline).toEqual([{ day: '2026-10-26', clicks: 2, uniques: 2 }])
+    expect(body.totals.clicks).toBe(2)
+  })
+
+  it('ignores a rollup row for today when the range ends before today', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(FROZEN_NOW))
+    const { request, client } = await withOwner(async (db) => {
+      await insertLink(db, { id: 'past', slug: 'past', url: 'https://example.com/past' })
+    })
+    await insertClicks(client, 'past', [
+      { createdAt: '2026-10-24 02:00:00', visitorHash: 'a' },
+      { createdAt: '2026-10-26 01:00:00', visitorHash: 'b' },
+    ])
+    await rollupLinks(client as never, ['2026-10-24', '2026-10-26'])
+    const body = await (await request('/api/links/past/analytics?from=2026-10-24&to=2026-10-25')).json() as {
+      totals: { clicks: number }
+      timeline: { day: string; clicks: number }[]
+    }
+    expect(body.timeline).toEqual([
+      { day: '2026-10-24', clicks: 1, uniques: 1 },
+      { day: '2026-10-25', clicks: 0, uniques: 0 },
+    ])
+    expect(body.totals.clicks).toBe(1)
+  })
+
+  it('clamps a future end date to today so the daily average is not diluted', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(FROZEN_NOW))
+    const { request, client } = await withOwner(async (db) => {
+      await insertLink(db, { id: 'clamp', slug: 'clamp', url: 'https://example.com/clamp' })
+    })
+    await insertClicks(client, 'clamp', [
+      { createdAt: '2026-10-24 02:00:00', visitorHash: 'a' },
+      { createdAt: '2026-10-25 02:00:00', visitorHash: 'b' },
+      { createdAt: '2026-10-26 01:00:00', visitorHash: 'c' },
+    ])
+    await rollupLinks(client as never, ['2026-10-24', '2026-10-25'])
+    const res = await request('/api/links/clamp/analytics?from=2026-10-24&to=2026-12-31&compare=1')
+    expect(res.status).toBe(200)
+    const body = await res.json() as {
+      totals: { avgDailyUniques: number }
+      timeline: { day: string }[]
+      previous: { timeline: { day: string }[] }
+    }
+    expect(body.timeline.map((d) => d.day)).toEqual(['2026-10-24', '2026-10-25', '2026-10-26'])
+    expect(body.totals.avgDailyUniques).toBe(1)
+    expect(body.previous.timeline.map((d) => d.day)).toEqual(['2026-10-21', '2026-10-22', '2026-10-23'])
+    // a start date after today is still rejected
+    expect((await request('/api/links/clamp/analytics?from=2026-11-01&to=2026-12-31')).status).toBe(422)
+  })
+
+  it('is never cached', async () => {
+    const { request } = await withOwner(async (db) => {
+      await insertLink(db, { id: 'nc', slug: 'nc', url: 'https://example.com/nc' })
+    })
+    const res = await request('/api/links/nc/analytics')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
   it('ranks the top 8 per dimension, buckets gaps as Unknown, and skips a missing app', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(FROZEN_NOW))

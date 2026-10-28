@@ -224,6 +224,75 @@ describe('AnalyticsPanel', () => {
     wrapper.unmount()
   })
 
+  it('gives the date inputs and the compare row a 44px touch height', () => {
+    expect(source.match(/aria-label="(From|To) date"[^]*?type="date"/g)).toHaveLength(2)
+    for (const block of source.match(/aria-label="(From|To) date"[^]*?type="date"/g) ?? []) expect(block).toContain('h-11')
+    expect(source).toMatch(/<label class="flex min-h-11 [^"]*">[^<]*<input[^>]*v-model="compare"/)
+    expect(source).not.toContain('<div class="mb-3" />')
+  })
+
+  it('labels the export as all clicks, since the CSV ignores the range', async () => {
+    const wrapper = mount(AnalyticsPanel, {
+      props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent ?? '').includes('CSV'))
+    expect(button?.textContent?.trim()).toBe('Download all clicks (CSV)')
+    wrapper.unmount()
+  })
+
+  it('clears stale data and ignores a pending response when the range becomes invalid', async () => {
+    let release: (() => void) | undefined
+    const wrapper = mount(AnalyticsPanel, {
+      props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    expect(document.body.textContent).toContain('Campus mail')
+
+    // the next request stays in flight while the user types an invalid range
+    fetchMock.mockImplementationOnce(() => new Promise((resolve) => {
+      release = () => resolve(new Response(JSON.stringify(payload), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    }))
+    const set = async (label: string, value: string) => {
+      const input = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)!
+      input.value = value
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      await flushPromises()
+    }
+    await set('From date', '2026-10-01')
+    await set('From date', '2999-01-01')
+    expect(document.body.textContent).toContain('Start date must be on or before the end date')
+    release?.()
+    await flushPromises()
+    const text = document.body.textContent ?? ''
+    expect(text).not.toContain('Campus mail')
+    expect(text).not.toContain('Loading analytics')
+    expect(text).not.toContain('Analytics are unavailable')
+    wrapper.unmount()
+  })
+
+  it('resets the date range to the last 30 days when the panel opens again', async () => {
+    const wrapper = mount(AnalyticsPanel, {
+      props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    const input = () => document.querySelector<HTMLInputElement>('input[aria-label="From date"]')!
+    const initial = input().value
+    input().value = '2026-01-01'
+    input().dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    await wrapper.setProps({ isOpen: false })
+    await wrapper.setProps({ isOpen: true })
+    await flushPromises()
+    expect(input().value).toBe(initial)
+    const pressed = document.querySelector('[aria-label="Last 30 days"]')!.getAttribute('aria-pressed')
+    expect(pressed).toBe('true')
+    wrapper.unmount()
+  })
+
   it('has no chart.js import', () => {
     expect(source).not.toMatch(/chart\.js|vue-chartjs/)
   })

@@ -3,7 +3,7 @@ import type { Client as WebClient } from '@libsql/client/web'
 import { describe, expect, it, vi } from 'vitest'
 import { applyMigrations } from '../test/createTestApp'
 import { loadLinkPeriod } from '../lib/links/analyticsQuery'
-import { backfillLinkRollups, manilaDay, manilaHourOfWeek, p75, rollupLinks, rollupModules, runHourlyRollups } from './rollups'
+import { backfillLinkRollups, p75, rollupLinks, rollupModules, runHourlyRollups } from './rollups'
 
 const NOW = new Date('2026-10-26T19:15:00.000Z')
 
@@ -131,17 +131,6 @@ async function dump(client: Db) {
 }
 
 const web = (c: Db) => c as unknown as WebClient
-
-describe('manila helpers', () => {
-  it('maps instants to Manila day and hour of week', () => {
-    expect(manilaDay(new Date('2026-10-26T15:59:59Z'))).toBe('2026-10-26')
-    expect(manilaDay(new Date('2026-10-26T16:00:00Z'))).toBe('2026-10-27')
-    // 2026-10-26 is a Monday. Sunday 16:30Z is Monday 00:30 Manila.
-    expect(manilaHourOfWeek(new Date('2026-10-25T16:30:00Z'))).toBe(0)
-    expect(manilaHourOfWeek(new Date('2026-10-26T16:30:00Z'))).toBe(24)
-    expect(manilaHourOfWeek(new Date('2026-10-25T15:30:00Z'))).toBe(167)
-  })
-})
 
 describe('rollupLinks', () => {
   it('splits at manila midnight', async () => {
