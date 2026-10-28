@@ -186,6 +186,24 @@ describe('OrgModifyView leave', () => {
 })
 
 describe('OrgModifyView members', () => {
+  it('members wrapper does not scroll sideways below md', async () => {
+    installFetch({
+      asOwner: true,
+      members: [{ email: 'ana@student.apc.edu.ph', user_id: 'u1', name: 'Ana', activated_at: '2026-01-01T00:00:00.000Z', declined_at: null }],
+    })
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    const table = wrapper.get('table[aria-label="Members"]')
+    const wrapperClasses = table.element.parentElement!.className.split(/\s+/)
+    expect(wrapperClasses).not.toContain('overflow-x-auto')
+    expect(wrapperClasses).toContain('md:overflow-x-auto')
+    expect(table.classes()).toContain('block')
+    expect(table.classes()).toContain('md:table')
+    expect(wrapper.get('tbody tr').classes()).toContain('block')
+    wrapper.unmount()
+  })
+
   it('does not label a declined row as pending or offer resend', async () => {
     installFetch({
       asOwner: true,
