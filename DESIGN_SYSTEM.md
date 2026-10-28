@@ -17,6 +17,7 @@ The wantap design language (layout, components, type, motion) in the APC light p
 11. QR output
 12. Toasts
 13. UI writing rules
+14. Loading, undo, transitions, palette, empty states, install
 
 ## 1. Brand and source of truth
 
@@ -248,7 +249,7 @@ Overlays (dialog, dropdown, select, tooltip) use `tw-animate-css` classes (`anim
 
 Under `@media (prefers-reduced-motion: reduce)` the block at the end of `main.css` sets `animation: none` on `.float-slow`, `.float-slow-2`, `.animate-sparkle`, `.animate-blink-caret` and `.marketing-block-enter`. `design.test.ts` asserts the first four are in that block.
 
-Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead of spinners.
+Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead of spinners. See section 14 for the new primitives.
 
 ## 9. Accessibility
 
@@ -356,3 +357,12 @@ Every heading, subtitle, label or helper line must carry information the surroun
 | `Welcome to your dashboard!` | `Dashboard` |
 | `Get started with eypi today` | `Create account` (button label only; no subtitle) |
 
+
+## 14. Loading, undo, transitions, palette, empty states, install
+
+- **Skeleton** (`ui/Skeleton.vue`): `w` (px or CSS), `h` (px, required), `radius`; `bg-muted`, `aria-hidden`, pulse only under `motion-safe`. Page skeletons (`skeletons/ListSkeleton`, `CardGridSkeleton`, `DetailSkeleton`, `OrgProfileSkeleton`) use fixed pixel heights taken from the loaded markup so nothing shifts, and set `role="status"` and `aria-busy="true"`. No spinners for page loads. A changed card or row needs its skeleton height changed with it (tests assert the heights).
+- **Undo** (`useUndoToast`, `runWithUndo({ message, apply, revert, commit, windowMs = 5000 })`): apply now, show an info toast with an `Undo` action for 5 s, then commit once. Undo reverts and never commits; a failed commit reverts and shows an error toast; leaving or hiding the page commits at once. Use it for reversible actions (single link delete, bulk disable, remove member, cancel invite, remove attendee, remove frame). Keep `confirm` for permanent or hard-to-reverse ones (bulk delete, delete campaign, transfer ownership, leave org, decline invite, new guest link).
+- **Route transitions** (`routeTransitions` in `lib/viewTransition.ts`): a 150 ms cross-fade through the View Transitions API, started after guards and chunk loads. Off when the API is missing, under `prefers-reduced-motion: reduce` (also disabled in `main.css`), on first load and for query or hash-only changes.
+- **Command palette** (`CommandPalette.vue`, lazy): `Ctrl+K` or `Cmd+K`, or the search button in the rail; ignored while typing in an input, textarea, select or editable field. Groups: Go to, Create, Switch org. Arrow keys, Enter and Esc work, rows are 44px, admin commands show for admins only.
+- **EmptyState** (`EmptyState.vue`): icon disc, `title`, optional `body` (`text-base`) and at most one primary `action` (`to`, `href` or `onClick`). The action must work for users without an org. It states the next step (section 13).
+- **Install**: "Install Eypi" in the account menu (44px). It appears only after `beforeinstallprompt` and hides after `appinstalled`; there is no pop-up. The manifest opens at `/dashboard`.
