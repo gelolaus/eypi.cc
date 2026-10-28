@@ -19,7 +19,7 @@ const router = createRouter({
     const behavior = reduce ? 'auto' : 'smooth'
     // Plain in-page links (`<a href="#id">`) change the hash without a RouterLink; scroll to
     // the target instead of jumping to the top.
-    if (to.hash) return { el: to.hash, behavior }
+    if (to.hash) return { el: to.hash, top: 80, behavior }
     return { top: 0, behavior }
   },
   routes: [

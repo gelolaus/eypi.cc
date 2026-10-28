@@ -106,15 +106,34 @@ describe('route titles', () => {
     expect(document.getElementById('route-announcer')?.classList.contains('sr-only')).toBe(true)
   })
 
-  it('scrolls to the hash target instead of the top for in-page links', () => {
+  it('scrolls to the hash target below the sticky header for in-page links', () => {
     vi.stubGlobal('matchMedia', () => media(false))
-    const current = router.currentRoute.value
-    const target = { ...current, hash: '#cookies' }
-    expect(router.options.scrollBehavior?.(target, current, null)).toEqual({
-      el: '#cookies',
-      behavior: 'smooth',
-    })
-    vi.unstubAllGlobals()
+    try {
+      const current = router.currentRoute.value
+      const target = { ...current, hash: '#cookies' }
+      expect(router.options.scrollBehavior?.(target, current, null)).toEqual({
+        el: '#cookies',
+        top: 80,
+        behavior: 'smooth',
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('keeps the header offset but skips smooth scrolling for hash links under reduced motion', () => {
+    vi.stubGlobal('matchMedia', (query: string) => media(query.includes('prefers-reduced-motion')))
+    try {
+      const current = router.currentRoute.value
+      const target = { ...current, hash: '#cookies' }
+      expect(router.options.scrollBehavior?.(target, current, null)).toEqual({
+        el: '#cookies',
+        top: 80,
+        behavior: 'auto',
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('scrolls without smooth behavior when reduced motion is requested', () => {
