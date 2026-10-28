@@ -3,16 +3,11 @@
     <AppPage title="Edit Campaign">
       <div class="mx-auto w-full max-w-xl">
         <!-- Loading -->
-        <div
+        <DetailSkeleton
           v-if="loading"
-          role="status"
-          aria-busy="true"
-          class="space-y-4"
-        >
-          <span class="sr-only">Loading</span>
-          <div class="mx-auto h-8 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
-          <div class="h-72 rounded-3xl bg-muted motion-safe:animate-pulse" />
-        </div>
+          :title-height="32"
+          :body-height="288"
+        />
 
         <!-- Not found / error -->
         <Card
@@ -190,6 +185,7 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import AppPage from '@/components/layout/AppPage.vue'
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import { defineAsyncComponent, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'

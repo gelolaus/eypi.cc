@@ -32,12 +32,20 @@
     >
       {{ error }}
     </p>
-    <p
+    <div
       v-else-if="loading && !data"
-      class="text-sm text-muted-foreground"
+      role="status"
+      aria-busy="true"
+      class="grid grid-cols-2 gap-3 md:grid-cols-5"
     >
-      Loading…
-    </p>
+      <span class="sr-only">Loading speed data</span>
+      <Skeleton
+        v-for="n in 5"
+        :key="n"
+        :h="90"
+        :radius="16"
+      />
+    </div>
     <p
       v-else-if="data && data.rows.length === 0"
       class="text-sm text-muted-foreground"
@@ -75,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@/components/ui/Skeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import BarList from '@/components/charts/BarList.vue'

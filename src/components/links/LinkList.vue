@@ -1,19 +1,12 @@
 <template>
   <div class="w-full">
     <div class="flex flex-col gap-3">
-      <div
+      <ListSkeleton
         v-if="loading && items.length === 0"
-        class="flex flex-col gap-3"
-        role="status"
-      >
-        <span class="sr-only">Loading links</span>
-        <div
-          v-for="n in 3"
-          :key="n"
-          aria-hidden="true"
-          class="h-28 rounded-xl bg-muted motion-safe:animate-pulse"
-        />
-      </div>
+        :rows="3"
+        :row-height="112"
+        label="Loading links"
+      />
       <template v-else-if="items.length > 0">
         <LinkRow
           v-for="link in items"
@@ -58,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import LinkRow from '@/components/links/LinkRow.vue'

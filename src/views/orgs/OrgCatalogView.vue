@@ -37,20 +37,11 @@
       </div>
     </template>
 
-    <div
+    <CardGridSkeleton
       v-if="loading"
-      role="status"
-      aria-busy="true"
-      class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      <span class="sr-only">Loading</span>
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+      :count="6"
+      :card-height="192"
+    />
 
     <Card
       v-else-if="error"
@@ -146,6 +137,7 @@
 <script setup lang="ts">
 import AppImage from '@/components/AppImage.vue'
 import AppPage from '@/components/layout/AppPage.vue'
+import CardGridSkeleton from '@/components/skeletons/CardGridSkeleton.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

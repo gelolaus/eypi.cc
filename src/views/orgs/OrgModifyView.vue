@@ -4,16 +4,11 @@
       <OrgLockout />
     </div>
 
-    <div
+    <DetailSkeleton
       v-else-if="loading"
-      role="status"
-      aria-busy="true"
-      class="space-y-4"
-    >
-      <span class="sr-only">Loading</span>
-      <div class="h-10 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
-      <div class="h-64 rounded-3xl bg-muted motion-safe:animate-pulse" />
-    </div>
+      :title-height="40"
+      :body-height="256"
+    />
 
     <div
       v-else-if="error"
@@ -283,9 +278,12 @@
           Members
         </h3>
 
-        <div
+        <ListSkeleton
           v-if="loadingMembers"
-          class="mb-6 h-20 animate-pulse rounded-xl bg-muted"
+          class="mb-6"
+          :rows="1"
+          :row-height="80"
+          label="Loading members"
         />
         <p
           v-else-if="membersError"
@@ -530,6 +528,8 @@
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
 import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { ImageMeta } from '@/lib/images/variants'

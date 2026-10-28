@@ -1,25 +1,11 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
-    <div
+    <DetailSkeleton
       v-if="loading"
-      role="status"
-      aria-busy="true"
-      class="space-y-6"
-    >
-      <span class="sr-only">Loading</span>
-      <div
-        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse md:h-56"
-        aria-hidden="true"
-      />
-      <div
-        class="h-8 w-2/3 rounded-lg bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-      <div
-        class="h-40 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+      :title-height="192"
+      title-width="100%"
+      :body-height="200"
+    />
 
     <Card
       v-else-if="error"
@@ -224,6 +210,7 @@
 </template>
 
 <script setup lang="ts">
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

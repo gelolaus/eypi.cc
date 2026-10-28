@@ -31,10 +31,11 @@
       </p>
     </div>
 
-    <div
+    <ListSkeleton
       v-if="loading"
-      class="h-40 animate-pulse rounded-2xl bg-muted"
-      aria-hidden="true"
+      :rows="6"
+      :row-height="72"
+      :radius="16"
     />
 
     <p
@@ -134,13 +135,14 @@
         :disabled="loadingMore"
         @click="load(false)"
       >
-        {{ loadingMore ? 'Loading...' : 'Load more' }}
+        {{ loadingMore ? 'Loading…' : 'Load more' }}
       </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { onMounted, ref } from 'vue'
