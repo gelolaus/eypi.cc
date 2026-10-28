@@ -215,6 +215,12 @@ const router = createRouter({
       meta: { title: 'Orgs', prefetch: () => import('@/lib/queries').then((m) => m.prefetchOrgsCatalog()) },
     },
     {
+      path: '/orgs/:slug/insights',
+      name: 'org-insights',
+      component: () => import('@/views/orgs/OrgInsightsView.vue'),
+      meta: { requiresAuth: true, title: 'Org insights' },
+    },
+    {
       path: '/orgs/:slug',
       name: 'org-profile',
       component: () => import('@/views/orgs/OrgProfileView.vue'),

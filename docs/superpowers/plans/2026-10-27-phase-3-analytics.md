@@ -115,8 +115,8 @@
 **Interfaces:**
 - Produces: `GET /api/orgs/:org_id/insights?days=30` → `{ profileViews: { total, daily }, frames: { campaigns, views, downloads }, tix: { events, registrations, checkIns }, members: { daily: { day, count }[] } }` (member trend from `org_members.activated_at`).
 
-- [ ] **Step 1: Failing tests:** non-member 403; no personal links data in the payload (assert keys); view renders tiles and sparklines.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(orgs): add an org insights page`.
+- [x] **Step 1: Failing tests:** non-member 403; no personal links data in the payload (assert keys); view renders tiles and sparklines.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(orgs): add an org insights page`.
 
 ### Task 8: Live view
 

@@ -257,3 +257,146 @@ describe('show-up rate with door check-outs', () => {
     expect(body.checkInCurve.reduce((sum, b) => sum + b.n, 0)).toBe(1)
   })
 })
+
+async function orgApp(seed?: (client: Client) => Promise<void>, user: TestUser | null = member) {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(NOW))
+  return createTestApp({
+    user: user ?? undefined,
+    seed: async (client) => {
+      await seedOrgs(client)
+      for (const [id, org] of [['camp1', 'org-1'], ['camp10', 'org-1'], ['campx', 'org-2']]) {
+        await client.execute({
+          sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES (?, 'owner', ?, ?, ?, '')",
+          args: [id, org, id, id],
+        })
+      }
+      for (const [slug, org] of [['e1', 'org-1'], ['e2', 'org-1'], ['ex', 'org-2']]) {
+        await client.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, org_id, selection_locked, status, admission_mode)
+                VALUES (?, ?, 'owner', 'Ev', '2099-01-01', '09:00', 'Hall', ?, 1, 'published', 'approval')`,
+          args: [`id-${slug}`, slug, org],
+        })
+      }
+      if (seed) await seed(client)
+    },
+  })
+}
+
+async function orgDaily(client: Client, moduleName: string, subject: string, action: string, day: string, n: number) {
+  await client.execute({
+    sql: 'INSERT INTO module_daily (subject_id, module, action, day, n, uniques) VALUES (?, ?, ?, ?, ?, ?)',
+    args: [subject, moduleName, action, day, n, n],
+  })
+}
+
+async function orgRaw(client: Client, moduleName: string, subject: string, action: string, day: string, count: number) {
+  for (let i = 0; i < count; i++) {
+    await client.execute({
+      sql: 'INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES (?, ?, ?, ?, ?, ?)',
+      args: ['org-1', moduleName, subject, action, `v${i}`, day],
+    })
+  }
+}
+
+async function orgAttendee(client: Client, id: string, event: string, status: string) {
+  await client.execute({
+    sql: `INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, status, registered_at)
+          VALUES (?, ?, ?, 'L', ?, ?, ?, '2026-10-25 03:00:00')`,
+    args: [id, `id-${event}`, id, `${id}@x.test`, `qr-${id}`, status],
+  })
+}
+
+describe('GET /api/orgs/:org_id/insights', () => {
+  it('totals profile views, frames, tix and the member trend for the org only', async () => {
+    const { request } = await orgApp(async (client) => {
+      await orgDaily(client, 'org', 'org-1', 'view', '2026-10-24', 5)
+      await orgDaily(client, 'org', 'org-1', 'view', '2026-10-26', 99) // today's rollup row is never read
+      await orgDaily(client, 'org', 'org-2', 'view', '2026-10-24', 40)
+      await orgRaw(client, 'org', 'org-1', 'view', '2026-10-26', 3)
+      await orgDaily(client, 'frames', 'camp1', 'view', '2026-10-25', 10)
+      await orgDaily(client, 'frames', 'camp10:f1', 'download', '2026-10-25', 4)
+      await orgDaily(client, 'frames', 'camp1:f1', 'share', '2026-10-24', 2)
+      await orgDaily(client, 'frames', 'camp1', 'view', '2026-01-01', 1000) // outside 30 days
+      await orgDaily(client, 'frames', 'campx', 'view', '2026-10-25', 500)
+      await orgRaw(client, 'frames', 'camp1', 'view', '2026-10-26', 2)
+      await orgAttendee(client, 'a1', 'e1', 'confirmed')
+      await orgAttendee(client, 'a2', 'e1', 'pending')
+      await orgAttendee(client, 'a3', 'e2', 'cancelled')
+      await orgAttendee(client, 'a4', 'e2', 'declined')
+      await orgAttendee(client, 'a5', 'e2', 'confirmed')
+      await orgAttendee(client, 'ax', 'ex', 'confirmed')
+      for (const [id, a, action] of [['k1', 'a1', 'checked_in'], ['k2', 'a1', 'checked_out'], ['k3', 'a1', 'checked_in'], ['k4', 'a5', 'checked_in']]) {
+        await client.execute({
+          sql: 'INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)',
+          args: [id, a, a === 'a1' ? 'id-e1' : 'id-e2', action],
+        })
+      }
+      await client.execute({ sql: "UPDATE org_members SET activated_at = '2026-10-24 17:00:00' WHERE user_id = 'mem-1'", args: [] })
+      await client.execute({
+        sql: "INSERT INTO org_members (org_id, email, activated_at) VALUES ('org-1', 'pending@x.test', NULL)",
+        args: [],
+      })
+    })
+    const res = await request('/api/orgs/org-1/insights', { headers })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Cache-Control')).toBe('private, no-store')
+    const body = await res.json() as {
+      profileViews: { total: number; daily: { day: string; n: number }[] }
+      frames: { campaigns: number; views: number; downloads: number }
+      tix: { events: number; registrations: number; checkIns: number }
+      members: { daily: { day: string; count: number }[] }
+    }
+    expect(body.profileViews.total).toBe(8)
+    expect(body.profileViews.daily).toHaveLength(30)
+    expect(body.profileViews.daily.at(-1)).toEqual({ day: '2026-10-26', n: 3 })
+    expect(body.profileViews.daily.find((d) => d.day === '2026-10-24')).toEqual({ day: '2026-10-24', n: 5 })
+    expect(body.frames).toEqual({ campaigns: 2, views: 12, downloads: 6 })
+    expect(body.tix).toEqual({ events: 2, registrations: 3, checkIns: 2 })
+    expect(body.members.daily).toHaveLength(30)
+    // cumulative activated members at the end of each Manila day
+    expect(body.members.daily.find((d) => d.day === '2026-10-24')).toEqual({ day: '2026-10-24', count: 0 })
+    expect(body.members.daily.find((d) => d.day === '2026-10-25')).toEqual({ day: '2026-10-25', count: 1 })
+    expect(body.members.daily.at(-1)).toEqual({ day: '2026-10-26', count: 1 })
+  })
+
+  it('exposes only aggregate keys: no links data, names or emails', async () => {
+    const { request } = await orgApp()
+    const res = await request('/api/orgs/org-1/insights?days=7', { headers })
+    const body = await res.json() as Record<string, Record<string, unknown>>
+    expect(Object.keys(body).sort()).toEqual(['frames', 'members', 'profileViews', 'tix'])
+    expect(Object.keys(body.profileViews).sort()).toEqual(['daily', 'total'])
+    expect(Object.keys(body.frames).sort()).toEqual(['campaigns', 'downloads', 'views'])
+    expect(Object.keys(body.tix).sort()).toEqual(['checkIns', 'events', 'registrations'])
+    expect(Object.keys(body.members)).toEqual(['daily'])
+    const memberDaily = body.members.daily as unknown as Record<string, unknown>[]
+    expect(Object.keys(memberDaily[0]).sort()).toEqual(['count', 'day'])
+    const viewDaily = body.profileViews.daily as unknown as Record<string, unknown>[]
+    expect(Object.keys(viewDaily[0]).sort()).toEqual(['day', 'n'])
+    const text = JSON.stringify(body)
+    expect(text).not.toContain('@')
+    expect(text).not.toContain('mem-1')
+  })
+
+  it('rejects non-members and anonymous callers, and 404s unknown orgs', async () => {
+    const outsiderApp = await orgApp(undefined, outsider)
+    const denied = await outsiderApp.request('/api/orgs/org-1/insights', { headers })
+    expect(denied.status).toBe(403)
+    expect((await denied.json() as { error: { code: string } }).error.code).toBe('forbidden')
+    expect((await outsiderApp.request('/api/orgs/nope/insights', { headers })).status).toBe(404)
+    const anon = await orgApp(undefined, null)
+    expect((await anon.request('/api/orgs/org-1/insights')).status).toBe(401)
+  })
+
+  it('does not treat an invited but not activated member as a member', async () => {
+    const { request } = await orgApp(async (client) => {
+      await client.execute({ sql: "UPDATE org_members SET activated_at = NULL WHERE user_id = 'mem-1'", args: [] })
+    })
+    expect((await request('/api/orgs/org-1/insights', { headers })).status).toBe(403)
+  })
+
+  it('validates days', async () => {
+    const { request } = await orgApp()
+    expect((await request('/api/orgs/org-1/insights?days=0', { headers })).status).toBe(400)
+  })
+})

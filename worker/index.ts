@@ -294,6 +294,7 @@ export function isSpaRoute(pathname: string): boolean {
     || /^\/tix\/[^/]+$/.test(path)
     || /^\/t\/[^/]+$/.test(path)
     || /^\/orgs\/modify\/[^/]+$/.test(path)
+    || /^\/orgs\/[^/]+\/insights$/.test(path)
     || /^\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/org-management\/[^/]+$/.test(path)
