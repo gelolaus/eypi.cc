@@ -94,6 +94,44 @@ describe('EventsView', () => {
     wrapper.unmount()
   })
 
+  it('hides the header New Event and the search row when there are no events', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ status: 'ok', events: [] })))
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+
+    expect(wrapper.findAll('a').filter((a) => a.text() === 'New Event')).toHaveLength(0)
+    expect(wrapper.find('input[aria-label="Search events"]').exists()).toBe(false)
+    expect(wrapper.get('[data-empty-state]').text()).toContain('Create event')
+    wrapper.unmount()
+  })
+
+  it('shows the header New Event and the search row when events exist', async () => {
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+
+    const create = wrapper.findAll('a').filter((a) => a.text() === 'New Event')
+    expect(create).toHaveLength(1)
+    expect(create[0].attributes('href')).toBe('/manage/tix/new')
+    expect(wrapper.find('input[aria-label="Search events"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('keeps the header when a search matches nothing', async () => {
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+    await wrapper.get('input[aria-label="Search events"]').setValue('zzz')
+
+    expect(wrapper.text()).toContain('No matching events')
+    expect(wrapper.findAll('a').filter((a) => a.text() === 'New Event')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it('shows the org lockout with a real destination instead of a dead create action without an org', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const path = new URL(String(input), 'https://eypi.cc').pathname
