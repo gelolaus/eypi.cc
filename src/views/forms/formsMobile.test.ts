@@ -34,6 +34,7 @@ describe('forms mobile layout', () => {
 
   it.each([
     ['guest list', VisitorsPassView],
+    ['signer list', LetterOfIntentView],
   ])('%s stacks as cards below md', async (_n, view) => {
     const wrapper = mount(view)
     ;(wrapper.vm as unknown as { parsedNames: string[] }).parsedNames = ['Ana Cruz', 'Ben Reyes']

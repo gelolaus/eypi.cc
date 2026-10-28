@@ -158,15 +158,24 @@
           </p>
           <div
             v-if="previewNames.length"
-            class="mt-4 overflow-x-auto"
+            class="mt-4 md:overflow-x-auto"
           >
-            <table class="w-full text-left text-sm">
+            <!-- Explicit table roles are kept on purpose: Safari drops table semantics once display is overridden by utilities. -->
+            <!-- eslint-disable vuejs-accessibility/no-redundant-roles -->
+            <table
+              role="table"
+              class="block w-full text-left text-sm md:table"
+            >
               <caption class="sr-only">
                 Parsed names
               </caption>
-              <thead>
-                <tr>
+              <thead
+                role="rowgroup"
+                class="sr-only md:not-sr-only md:table-header-group"
+              >
+                <tr role="row">
                   <th
+                    role="columnheader"
                     scope="col"
                     class="py-1 font-medium text-muted-foreground"
                   >
@@ -174,17 +183,31 @@
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody
+                role="rowgroup"
+                class="block space-y-2 md:table-row-group md:space-y-0"
+              >
                 <tr
                   v-for="(name, index) in previewNames"
                   :key="`${index}-${name}`"
+                  role="row"
+                  class="block rounded-2xl border border-border bg-card p-3 md:table-row md:rounded-none md:border-0 md:bg-transparent md:p-0"
                 >
-                  <td class="py-1 text-foreground">
+                  <td
+                    role="cell"
+                    class="block break-words text-foreground md:table-cell md:py-1"
+                  >
+                    <span
+                      data-cell-label
+                      aria-hidden="true"
+                      class="block text-sm font-medium text-muted-foreground md:hidden"
+                    >Name</span>
                     {{ name }}
                   </td>
                 </tr>
               </tbody>
             </table>
+            <!-- eslint-enable vuejs-accessibility/no-redundant-roles -->
             <p
               v-if="parsedNames.length > previewNames.length"
               class="mt-1 text-sm text-muted-foreground"
