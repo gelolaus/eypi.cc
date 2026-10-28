@@ -12,6 +12,8 @@ import { ref, type Ref } from 'vue'
 export interface DpCanvasOptions {
   minScale?: number
   maxScale?: number
+  // Keyboard handling is ignored while this returns false (e.g. before a photo is loaded).
+  isEnabled?: () => boolean
 }
 
 export function useDpCanvas(
@@ -77,6 +79,48 @@ export function useDpCanvas(
     offsetX.value = f.x - k * (f.x - cOldX) - centerX
     offsetY.value = f.y - k * (f.y - cOldY) - centerY
     scale.value = next
+  }
+
+  // Move the photo by canvas pixels.
+  function nudge(dx: number, dy: number) {
+    offsetX.value += dx
+    offsetY.value += dy
+  }
+
+  // Zoom about the canvas centre, clamped to the scale limits.
+  function zoomBy(factor: number) {
+    const next = Math.min(maxScale, Math.max(minScale, scale.value * factor))
+    const k = next / scale.value
+    if (k === 1) return
+    offsetX.value *= k
+    offsetY.value *= k
+    scale.value = next
+  }
+
+  const ARROWS: Record<string, [number, number]> = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1],
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return
+    if (options.isEnabled && !options.isEnabled()) return
+    const dir = ARROWS[e.key]
+    if (dir) {
+      const step = e.shiftKey ? 40 : 10
+      nudge(dir[0] * step, dir[1] * step)
+    } else if (e.key === '+' || e.key === '=') {
+      zoomBy(1.1)
+    } else if (e.key === '-' || e.key === '_') {
+      zoomBy(1 / 1.1)
+    } else if (e.key === '0') {
+      reset()
+    } else {
+      return
+    }
+    e.preventDefault()
   }
 
   function onPointerDown(e: PointerEvent) {
@@ -145,6 +189,9 @@ export function useDpCanvas(
     onPointerMove,
     onPointerUp,
     onWheel,
+    onKeydown,
+    nudge,
+    zoomBy,
     reset,
   }
 }
