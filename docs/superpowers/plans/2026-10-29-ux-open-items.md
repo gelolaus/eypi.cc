@@ -85,11 +85,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Consumes: `profile.bannerMeta` (`ImageMeta | null`, from `src/components/AppImage.vue`'s `meta` prop; read its width and height fields).
 
-- [ ] **Step 1: Failing tests.** `uses the stored banner ratio at lg` (with `bannerMeta` width 2048, height 1153 the wrapper has an inline `aspect-ratio: 2048 / 1153` style at `lg` via a CSS variable `--banner-ratio` plus class `lg:aspect-[var(--banner-ratio)]`, `lg:h-auto`); `falls back to the fixed height without meta` (no variable, keeps `h-44 md:h-52`); `no meta gradient still renders`.
-- [ ] **Step 2:** Run the file; expect FAIL.
-- [ ] **Step 3:** Set `--banner-ratio` on the banner wrapper from `bannerMeta`, keep `h-44 md:h-52` below `lg`, switch to the ratio box at `lg` with `max-h-96` so a very tall banner cannot push content off screen; image keeps `object-cover` (the box now matches, so no crop).
-- [ ] **Step 4:** Run the tests; expect PASS.
-- [ ] **Step 5:** Set UX-14 `fixed` (visual check in Task 10), commit `fix(orgs): size the banner to its stored ratio`.
+- [x] **Step 1: Failing tests.** `uses the stored banner ratio at lg` (with `bannerMeta` width 2048, height 1153 the wrapper has an inline `aspect-ratio: 2048 / 1153` style at `lg` via a CSS variable `--banner-ratio` plus class `lg:aspect-[var(--banner-ratio)]`, `lg:h-auto`); `falls back to the fixed height without meta` (no variable, keeps `h-44 md:h-52`); `no meta gradient still renders`.
+- [x] **Step 2:** Run the file; expect FAIL.
+- [x] **Step 3:** Set `--banner-ratio` on the banner wrapper from `bannerMeta`, keep `h-44 md:h-52` below `lg`, switch to the ratio box at `lg` with `max-h-96` so a very tall banner cannot push content off screen; image keeps `object-cover` (the box now matches, so no crop).
+- [x] **Step 4:** Run the tests; expect PASS.
+- [x] **Step 5:** Set UX-14 `fixed` (visual check in Task 10), commit `fix(orgs): size the banner to its stored ratio`.
 
 ### Task 5: Sitemap (UX-57)
 
