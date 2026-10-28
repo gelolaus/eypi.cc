@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { api } from '@/lib/api'
 import { useToast } from '@/composables/useToast'
-import { activeOrgHeaders, runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, activeOrgId, runWithUndo } from '@/composables/useUndoToast'
 import { attendeeQrFileName, downloadAttendeeQr, downloadAttendeeQrZip } from '@/lib/tix/qrFiles'
 
 export interface AttendeeRow {
@@ -64,7 +64,7 @@ export function useEventAttendees(slug: string) {
 
   const activeAttendeeCount = computed(() => attendees.value.filter((attendee) => attendee.status !== 'removed').length)
 
-  async function fetchAttendees() {
+  async function loadAttendees(quiet: boolean) {
     loadingAttendees.value = true
     try {
       const res = await api.raw(`/api/events/${slug}/attendees`)
@@ -72,11 +72,13 @@ export function useEventAttendees(slug: string) {
       if (!res.ok) throw new Error(data.message ?? 'Failed to load attendees.')
       attendees.value = data.attendees ?? []
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load attendees.')
+      if (!quiet) toast.error(err instanceof Error ? err.message : 'Failed to load attendees.')
     } finally {
       loadingAttendees.value = false
     }
   }
+
+  const fetchAttendees = () => loadAttendees(false)
 
   async function doAction(action: string, attendeeId: string) {
     actionPending.value = action
@@ -102,8 +104,11 @@ export function useEventAttendees(slug: string) {
     if (!first) return
     const previous = first.status
     const headers = activeOrgHeaders()
+    const orgId = activeOrgId()
+    // After an org switch inside the undo window this list belongs to another org.
+    const same = () => activeOrgId() === orgId
     // Rows are looked up by id each time: a refetch during the window replaces the objects.
-    const rowNow = () => attendees.value.find((attendee) => attendee.id === attendeeId)
+    const rowNow = () => (same() ? attendees.value.find((attendee) => attendee.id === attendeeId) : undefined)
     runWithUndo({
       message: 'Attendee removed.',
       apply: () => { const row = rowNow(); if (row) row.status = 'removed' },
@@ -119,7 +124,8 @@ export function useEventAttendees(slug: string) {
           const data = await res.json().catch(() => ({})) as { message?: string }
           throw new Error(data.message ?? 'Action failed.')
         }
-        await fetchAttendees()
+        // The remove already succeeded; a failed refresh must not undo it or raise an error.
+        if (same()) await loadAttendees(true)
       },
     })
   }

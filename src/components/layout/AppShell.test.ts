@@ -445,6 +445,21 @@ describe('Command palette shortcut', () => {
     expect(palette()).toBeNull()
   })
 
+  it('does not open over another open dialog', async () => {
+    signIn()
+    await mountAt('/links')
+    const other = document.createElement('div')
+    other.setAttribute('role', 'dialog')
+    other.setAttribute('data-state', 'open')
+    document.body.appendChild(other)
+    const event = await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+    expect(event.defaultPrevented).toBe(false)
+    other.remove()
+  })
+
   it('opens one palette when the shortcut is pressed twice quickly', async () => {
     signIn()
     await mountAt('/links')

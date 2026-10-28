@@ -82,6 +82,13 @@ describe('runWithUndo', () => {
     expect(o.commit).toHaveBeenCalledTimes(1)
   })
 
+  it('does not listen to beforeunload (pagehide and hidden cover it)', () => {
+    const o = opts()
+    runWithUndo(o)
+    window.dispatchEvent(new Event('beforeunload'))
+    expect(o.commit).not.toHaveBeenCalled()
+  })
+
   it('commits when the page becomes hidden', () => {
     const o = opts()
     runWithUndo(o)

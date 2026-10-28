@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 const root = resolve(__dirname, '..')
 const manifest = JSON.parse(readFileSync(resolve(root, 'public/manifest.webmanifest'), 'utf8')) as {
+  id: string
   name: string
   short_name: string
   start_url: string
@@ -14,6 +15,7 @@ const manifest = JSON.parse(readFileSync(resolve(root, 'public/manifest.webmanif
 
 describe('web app manifest', () => {
   it('is installable as a standalone app that opens the dashboard', () => {
+    expect(manifest.id).toBe('/')
     expect(manifest.name).toBe('Eypi')
     expect(manifest.short_name).toBe('Eypi')
     expect(manifest.start_url).toBe('/dashboard')

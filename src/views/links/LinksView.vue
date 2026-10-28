@@ -111,7 +111,7 @@ import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
-import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, activeOrgId, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import {
   linksKey,
   useLinks,
@@ -241,6 +241,8 @@ function deleteLink(link: LinkListItem) {
   const prev = previousKey(items.value, link.id, (row) => row.id)
   const wasSelected = selectedIds.value.includes(link.id)
   const headers = activeOrgHeaders()
+  const orgId = activeOrgId()
+  const same = () => activeOrgId() === orgId
   runWithUndo({
     message: 'Link deleted.',
     apply: () => {
@@ -248,6 +250,7 @@ function deleteLink(link: LinkListItem) {
       selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
     },
     revert: () => {
+      if (!same()) return
       items.value = reinsert(items.value, link, prev, (row) => row.id)
       if (wasSelected && !selectedIds.value.includes(link.id)) selectedIds.value = [...selectedIds.value, link.id]
     },
@@ -277,6 +280,8 @@ function disableSelected() {
   if (ids.length === 0) return
   const stamp = new Date().toISOString()
   const headers = activeOrgHeaders()
+  const orgId = activeOrgId()
+  const same = () => activeOrgId() === orgId
   const changed = new Map<string, { disabledAt: string | null; disabledReason: string | null }>()
   runWithUndo({
     message: ids.length === 1 ? 'Link disabled.' : `${ids.length} links disabled.`,
@@ -289,6 +294,7 @@ function disableSelected() {
       selectedIds.value = selectedIds.value.filter((id) => !ids.includes(id))
     },
     revert: () => {
+      if (!same()) return
       items.value = items.value.map((item) => {
         const original = changed.get(item.id)
         return original ? { ...item, ...original } : item

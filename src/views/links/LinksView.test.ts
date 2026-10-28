@@ -332,6 +332,33 @@ describe('LinksView undo', () => {
     wrapper.unmount()
   })
 
+  it('Undo after an org switch does not put the row into the other org list', async () => {
+    localStorage.setItem('active_org_id', 'org-1')
+    const wrapper = await mountList()
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    localStorage.setItem('active_org_id', 'org-2')
+    undo('Link deleted.')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('alpha')
+    wrapper.unmount()
+  })
+
+  it('Undo of a disable after an org switch leaves the other org list alone', async () => {
+    localStorage.setItem('active_org_id', 'org-1')
+    const wrapper = await mountList()
+    const disabledBefore = wrapper.text().split('Disabled').length
+    await wrapper.get('[aria-label="Select beta"]').setValue(true)
+    await wrapper.get('[aria-label="Disable selected"]').trigger('click')
+    localStorage.setItem('active_org_id', 'org-2')
+    undo('Link disabled.')
+    await flushPromises()
+
+    // revert was skipped, so the optimistic state is untouched in this list
+    expect(wrapper.text().split('Disabled').length).toBeGreaterThan(disabledBefore)
+    wrapper.unmount()
+  })
+
   it('sends the delete to the org that was active when it started', async () => {
     localStorage.setItem('active_org_id', 'org-1')
     const wrapper = await mountList()

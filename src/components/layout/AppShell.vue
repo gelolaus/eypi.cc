@@ -284,6 +284,7 @@ function onShortcut(event: KeyboardEvent) {
   if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'k') return
   const target = event.target as HTMLElement | null
   if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT' || target?.closest?.('[role=textbox],[role=combobox]')) return
+  if (document.querySelector('[role=dialog][data-state=open]')) return
   event.preventDefault()
   openPalette()
 }

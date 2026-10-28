@@ -31,7 +31,6 @@ function listen() {
   // A hidden or closing page may never run the timer, so commit now. Commits
   // should pass { keepalive: true } to api so the request outlives the page.
   window.addEventListener('pagehide', flushAll)
-  window.addEventListener('beforeunload', flushAll)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flushAll()
   })
@@ -39,11 +38,16 @@ function listen() {
 
 /** Headers that pin a deferred request to the org that was active when the action started. */
 export function activeOrgHeaders(): Record<string, string> {
+  const id = activeOrgId()
+  return id ? { 'X-Active-Org-Id': id } : {}
+}
+
+/** Id of the org that is active right now, or '' when none. */
+export function activeOrgId(): string {
   try {
-    const id = localStorage.getItem('active_org_id')
-    return id ? { 'X-Active-Org-Id': id } : {}
+    return localStorage.getItem('active_org_id') ?? ''
   } catch {
-    return {}
+    return ''
   }
 }
 
