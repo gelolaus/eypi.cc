@@ -126,6 +126,8 @@ describe('admin routes', () => {
       { path: '/api/admin/reports?status=open', init: { method: 'GET' } },
       { path: '/api/admin/reports/report-1/resolve', init: json('POST', { action: 'dismiss' }) },
       { path: '/api/admin/audit', init: { method: 'GET' } },
+      { path: '/api/admin/speed?days=7', init: { method: 'GET' } },
+      { path: '/api/admin/media/pending', init: { method: 'GET' } },
     ]
 
     for (const call of calls) {
@@ -706,5 +708,110 @@ describe('admin routes', () => {
     const body = await res.json() as { items: { id: string; actorEmail: string | null }[] }
     expect(body.items).toHaveLength(1)
     expect(body.items[0]).toMatchObject({ id: 'audit-1', actorEmail: null })
+  })
+})
+
+describe('admin speed route', () => {
+  it('returns 401 when anonymous', async () => {
+    const { request } = await createTestApp()
+    const res = await request('/api/admin/speed?days=7')
+    expect(res.status).toBe(401)
+  })
+
+  it('rejects unsupported day windows', async () => {
+    const { request } = await createTestApp({
+      user: admin,
+      seed: (client) => insertUser(client, admin),
+    })
+    const res = await request('/api/admin/speed?days=99')
+    expect(res.status).toBe(400)
+    expect(await res.json()).toMatchObject({ error: { code: 'invalid' } })
+  })
+
+  it('accepts days=28 and defaults to 7 when days is missing', async () => {
+    const { request } = await createTestApp({
+      user: admin,
+      seed: (client) => insertUser(client, admin),
+    })
+    expect((await request('/api/admin/speed?days=28')).status).toBe(200)
+    expect((await request('/api/admin/speed')).status).toBe(200)
+  })
+
+  it('returns thresholds, per-route rows and a sample-weighted trend', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    const old = new Date(Date.now() - 20 * 86_400_000).toISOString().slice(0, 10)
+    const { request } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, admin)
+        const ins = (day: string, route: string, p75: number, samples: number) =>
+          client.execute({
+            sql: 'INSERT INTO rum_daily (day, route, metric, device, p75, samples) VALUES (?, ?, ?, ?, ?, ?)',
+            args: [day, route, 'LCP', 'mobile', p75, samples],
+          })
+        await ins(today, '/a', 1000, 1)
+        await ins(today, '/b', 3000, 3)
+        await ins(old, '/a', 9999, 5)
+      },
+    })
+    const res = await request('/api/admin/speed?days=7')
+    expect(res.status).toBe(200)
+    const body = await res.json() as {
+      thresholds: Record<string, number[]>
+      rows: { route: string; metric: string; device: string; p75: number; samples: number }[]
+      trend: { metric: string; day: string; p75: number }[]
+    }
+    expect(body.thresholds.LCP).toEqual([2500, 4000])
+    expect(body.rows.map((r) => r.route).sort()).toEqual(['/a', '/b'])
+    expect(body.trend).toEqual([{ metric: 'LCP', day: today, p75: 2500 }])
+  })
+})
+
+describe('admin media pending route', () => {
+  it('returns 401 when anonymous', async () => {
+    const { request } = await createTestApp()
+    const res = await request('/api/admin/media/pending')
+    expect(res.status).toBe(401)
+  })
+
+  it('lists only stored keys the variants endpoint accepts and that have no meta', async () => {
+    const meta = JSON.stringify({ w: 800, h: 400, fmt: 'webp', widths: [96], ph: '' })
+    const { request } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, admin)
+        const org = (id: string, logo: string | null, banner: string | null, logoMeta: string | null = null) =>
+          client.execute({
+            sql: 'INSERT INTO organizations (id, name, owner_id, logo_url, banner_url, logo_meta) VALUES (?, ?, ?, ?, ?, ?)',
+            args: [id, id, admin.id, logo, banner, logoMeta],
+          })
+        await org('org-a', 'orgs/org-a/logo-0123abcd.png', 'https://example.com/b.png')
+        await org('org-b', 'orgs/org-b/logo-0123abcd.png', 'orgs/org-b/banner-89abcdef.webp', meta)
+        await org('org-c', 'https://example.com/l.png', null)
+        await org('org-d', '/media/orgs/org-d/logo-0123abcd.jpg', 'not-a-key')
+        await client.execute({
+          sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, frame_image_url) VALUES (?, ?, ?, ?, ?)',
+          args: ['camp-1', admin.id, 'org-a', 'Camp', 'x'],
+        })
+        const frame = (id: string, url: string, imageMeta: string | null) =>
+          client.execute({
+            sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, image_meta) VALUES (?, ?, ?, ?)',
+            args: [id, 'camp-1', url, imageMeta],
+          })
+        await frame('f1', 'frames/camp-1/f1-0123abcd.png', null)
+        await frame('f2', 'frames/camp-1/f2-0123abcd.png', meta)
+        await frame('f3', 'https://example.com/f.png', null)
+      },
+    })
+    const res = await request('/api/admin/media/pending')
+    expect(res.status).toBe(200)
+    const body = await res.json() as { items: { key: string; profile: string }[] }
+    const sorted = [...body.items].sort((a, b) => a.key.localeCompare(b.key))
+    expect(sorted).toEqual([
+      { key: 'frames/camp-1/f1-0123abcd.png', profile: 'frame' },
+      { key: 'orgs/org-a/logo-0123abcd.png', profile: 'orgLogo' },
+      { key: 'orgs/org-b/banner-89abcdef.webp', profile: 'banner' },
+      { key: 'orgs/org-d/logo-0123abcd.jpg', profile: 'orgLogo' },
+    ])
   })
 })

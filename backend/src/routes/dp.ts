@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import type { Client } from '@libsql/client/web'
 import { db, type Bindings } from '../lib/db'
+import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
-import { deleteObject, mediaUrl, putImage } from '../lib/media'
+import { deleteWithVariants, mediaUrl, parseImageMeta, putImage, type ImageMeta } from '../lib/media'
 import { reportError } from '../lib/reportError'
 import { checkRateLimit } from '../lib/rateLimit'
 import { isOrgFeature } from '../middleware/orgGuard'
@@ -94,10 +95,13 @@ function isFrameKey(value: string): boolean {
   return value.startsWith('frames/') && !value.includes('..')
 }
 
-async function discardKeys(env: Bindings, keys: string[]) {
-  await Promise.all(keys.map(async (key) => {
+type DiscardItem = string | { key: string; meta: ImageMeta | null }
+
+async function discardKeys(env: Bindings, items: DiscardItem[]) {
+  await Promise.all(items.map(async (item) => {
+    const { key, meta } = typeof item === 'string' ? { key: item, meta: null } : item
     try {
-      await deleteObject(env, key)
+      await deleteWithVariants(env, key, meta)
     } catch {
       // The write already failed. A missing object should not hide that error.
     }
@@ -147,7 +151,7 @@ async function presentFrame(env: Bindings, stored: string): Promise<{ url: strin
 
 async function loadFrames(env: Bindings, client: Client, campaignId: string) {
   const frames = await client.execute({
-    sql: 'SELECT id, image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    sql: 'SELECT id, image_url, image_meta, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
     args: [campaignId],
   })
   return Promise.all(frames.rows.map(async (frame) => {
@@ -156,6 +160,7 @@ async function loadFrames(env: Bindings, client: Client, campaignId: string) {
       id: String(frame.id),
       label: frame.label == null ? null : String(frame.label),
       url: presented.url,
+      imageMeta: presented.url.startsWith('/media/') ? parseImageMeta(frame.image_meta) : null,
       width: presented.width,
       height: presented.height,
       position: Number(frame.position ?? 0),
@@ -293,7 +298,15 @@ app.post('/api/dp', isOrgFeature, async (c) => {
     return c.json({ status: 'error', message: 'Could not create the campaign.' }, 500)
   }
 
-  return c.json({ status: 'ok', campaign: { id, title, slug } }, 201)
+  return c.json({
+    status: 'ok',
+    campaign: {
+      id,
+      title,
+      slug,
+      frames: stored.map((frame) => ({ id: frame.id, key: frame.key, url: mediaUrl(frame.key) })),
+    },
+  }, 201)
 })
 
 // ── GET /api/dp ───────────────────────────────────────────────────────────────
@@ -396,7 +409,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
   const placed = await client.execute({ sql: 'SELECT position FROM dp_frames WHERE id = ?', args: [stored.id] })
 
-  return c.json({ status: 'ok', frame: { id: stored.id, position: Number(placed.rows[0]?.position ?? 0) } }, 201)
+  return c.json({ status: 'ok', frame: { id: stored.id, key: stored.key, url: mediaUrl(stored.key), position: Number(placed.rows[0]?.position ?? 0) } }, 201)
 })
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────
@@ -416,7 +429,7 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   }
 
   const existingFrame = await client.execute({
-    sql: 'SELECT image_url FROM dp_frames WHERE id = ? AND campaign_id = ?',
+    sql: 'SELECT image_url, image_meta FROM dp_frames WHERE id = ? AND campaign_id = ?',
     args: [frameId, id],
   })
   if (existingFrame.rows.length === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
@@ -425,7 +438,9 @@ app.delete('/api/dp/:id/frames/:frameId', isOrgFeature, async (c) => {
   const del = await client.execute({ sql: 'DELETE FROM dp_frames WHERE id = ? AND campaign_id = ?', args: [frameId, id] })
   if (del.rowsAffected === 0) return c.json({ status: 'error', message: 'Frame not found.' }, 404)
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
-  if (isFrameKey(imageKey)) await discardKeys(c.env, [imageKey])
+  if (isFrameKey(imageKey)) {
+    await discardKeys(c.env, [{ key: imageKey, meta: parseImageMeta(existingFrame.rows[0]?.image_meta) }])
+  }
 
   return c.json({ status: 'ok' })
 })
@@ -553,14 +568,16 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
-  const frames = await client.execute({ sql: 'SELECT image_url FROM dp_frames WHERE campaign_id = ?', args: [id] })
+  const frames = await client.execute({ sql: 'SELECT image_url, image_meta FROM dp_frames WHERE campaign_id = ?', args: [id] })
   await client.batch([
     { sql: 'DELETE FROM dp_frames WHERE campaign_id = ?', args: [id] },
     { sql: 'DELETE FROM dp_campaigns WHERE id = ?', args: [id] },
   ], 'write')
   await discardKeys(
     c.env,
-    frames.rows.map((frame) => String(frame.image_url ?? '')).filter(isFrameKey),
+    frames.rows
+      .map((frame) => ({ key: String(frame.image_url ?? ''), meta: parseImageMeta(frame.image_meta) }))
+      .filter((frame) => isFrameKey(frame.key)),
   )
 
   return c.json({ status: 'ok', message: 'Campaign deleted.' })
@@ -596,7 +613,7 @@ app.post('/api/dp/:id/download', async (c) => {
 // Public page payload by slug, including every frame. Declared last so the more
 // specific /:id/* routes above are matched first by segment count (Hono matches
 // on segment count, so order is not strictly required, but this reads clearly).
-app.get('/api/dp/:slug', async (c) => {
+app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   const slug = c.req.param('slug')!
   const client = db(c)
   let result = await client.execute({
@@ -628,9 +645,7 @@ app.get('/api/dp/:slug', async (c) => {
       captionTemplate: row.caption_template,
       frames: await loadFrames(c.env, client, String(row.id)),
     },
-  }, 200, {
-    'Cache-Control': 'public, max-age=60',
   })
-})
+}))
 
 export default app

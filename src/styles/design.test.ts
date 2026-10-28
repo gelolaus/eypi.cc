@@ -191,7 +191,7 @@ const LEGACY: Array<[string, RegExp]> = [
   ['#34418F', /#34418F/i],
   ['Geist', /Geist/],
   ['useDarkMode', /useDarkMode/],
-  ['dark: variant', /(?<![a-z0-9-])dark:[a-z\[]/],
+  ['dark: variant', /(?<![a-z0-9-])dark:[a-z[]/],
   ['dark class', /class="dark"|classList\.add\('dark'\)|theme="dark"/],
   ['tap-scale', /tap-scale/],
   ['data-cursor', /data-cursor/],

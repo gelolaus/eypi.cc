@@ -1,5 +1,7 @@
 import { ref, type Ref } from 'vue'
 import { ApiError, api } from '@/lib/api'
+import { clearQueryCache } from '@/lib/queryCache'
+import { clearTicketsCache, noteSignedInUser } from '@/lib/registerSw'
 
 export type SessionUser = {
   id: string
@@ -26,9 +28,14 @@ type MeResponse = {
 
 const user = ref<SessionUser | null>(null)
 const status = ref<'idle' | 'loading' | 'ready'>('idle')
+/** True once a load has finished, whether it worked or failed. Reset clears it. */
+const settled = ref(false)
 const pendingInviteCount = ref(0)
 const needsConsent = ref<ConsentRequirement[]>([])
 let inflight: Promise<void> | null = null
+// Bumped by reset() so a load that began before it cannot mark the new session settled.
+let generation = 0
+let readyCallbacks = new Set<() => void>()
 
 function asCount(value: unknown): number {
   const count = typeof value === 'number' ? value : Number(value)
@@ -61,11 +68,17 @@ function asUser(raw: MeResponse['user']): SessionUser | null {
 }
 
 function reset(): void {
+  clearQueryCache()
+  // The service worker keeps the last tickets for offline use. They belong to this session only.
+  void clearTicketsCache()
   user.value = null
   pendingInviteCount.value = 0
   needsConsent.value = []
   status.value = 'idle'
+  settled.value = false
+  generation += 1
   inflight = null
+  readyCallbacks = new Set()
 }
 
 function isUnauthorized(error: unknown): boolean {
@@ -74,14 +87,21 @@ function isUnauthorized(error: unknown): boolean {
 
 async function pull(): Promise<void> {
   const hadUser = user.value !== null
+  const startedIn = generation
   try {
     const data = await api.get<MeResponse>('/api/me')
+    // A reset while this was in flight means the response belongs to a session that has ended.
+    if (startedIn !== generation) return
     user.value = asUser(data.user)
+    if (!user.value) void clearTicketsCache()
+    noteSignedInUser(user.value?.id ?? null)
     pendingInviteCount.value = asCount(data.pendingInviteCount)
     needsConsent.value = asConsentList(data.needsConsent)
     status.value = 'ready'
   } catch (error) {
+    if (startedIn !== generation) return
     if (isUnauthorized(error)) {
+      void clearTicketsCache()
       user.value = null
       pendingInviteCount.value = 0
       needsConsent.value = []
@@ -96,9 +116,33 @@ async function pull(): Promise<void> {
   }
 }
 
+function flushReady(): void {
+  if (status.value !== 'ready') return
+  const callbacks = readyCallbacks
+  readyCallbacks = new Set()
+  for (const cb of callbacks) cb()
+}
+
+/** Runs cb once, as soon as the session has resolved (now, if it already has). The same function registered twice runs once. */
+function onReady(cb: () => void): void {
+  if (status.value === 'ready') {
+    cb()
+    return
+  }
+  readyCallbacks.add(cb)
+}
+
+/** Cancels a callback queued with onReady. */
+function offReady(cb: () => void): void {
+  readyCallbacks.delete(cb)
+}
+
 function track(task: Promise<void>): Promise<void> {
+  const startedIn = generation
   const tracked = task.finally(() => {
     if (inflight === tracked) inflight = null
+    if (startedIn === generation) settled.value = true
+    flushReady()
   })
   inflight = tracked
   return tracked
@@ -135,13 +179,16 @@ async function logout(): Promise<void> {
 const session: {
   user: Ref<SessionUser | null>
   status: Ref<'idle' | 'loading' | 'ready'>
+  settled: Ref<boolean>
   pendingInviteCount: Ref<number>
   needsConsent: Ref<ConsentRequirement[]>
   load: () => Promise<void>
+  onReady: (cb: () => void) => void
+  offReady: (cb: () => void) => void
   reload: () => Promise<void>
   reset: () => void
   logout: () => Promise<void>
-} = { user, status, pendingInviteCount, needsConsent, load, reload, reset, logout }
+} = { user, status, settled, pendingInviteCount, needsConsent, load, onReady, offReady, reload, reset, logout }
 
 export function useSession() {
   return session

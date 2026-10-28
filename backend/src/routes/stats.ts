@@ -1,10 +1,11 @@
 import { Hono } from 'hono'
 import { db } from '../lib/db'
 import type { Bindings } from '../lib/db'
+import { withEdgeCache } from '../lib/edgeCache'
 
 const app = new Hono<{ Bindings: Bindings }>()
 
-app.get('/api/stats', async (c) => {
+app.get('/api/stats', (c) => withEdgeCache(c, 30, async () => {
   const database = db(c)
   const count = async (sql: string): Promise<number> => {
     const res = await database.execute(sql)
@@ -22,8 +23,7 @@ app.get('/api/stats', async (c) => {
     count('SELECT COUNT(*) AS c FROM dp_campaigns'),
     count('SELECT COALESCE(SUM(download_count), 0) AS c FROM dp_campaigns'),
   ])
-  c.header('Cache-Control', 'public, max-age=300')
   return c.json({ users, orgs, members, links, clicks, events, tickets, checkIns, frames, frameDownloads })
-})
+}))
 
 export default app

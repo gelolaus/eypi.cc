@@ -104,11 +104,13 @@
               v-if="org.logoUrl"
               class="size-14 shrink-0 overflow-hidden rounded-2xl border border-border bg-card"
             >
-              <img
+              <AppImage
                 :src="org.logoUrl"
+                :meta="org.logoMeta"
+                sizes="56px"
                 :alt="`${org.name} logo`"
                 class="h-full w-full object-cover"
-              >
+              />
             </div>
             <div
               v-else
@@ -142,24 +144,30 @@
 </template>
 
 <script setup lang="ts">
+import AppImage from '@/components/AppImage.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { api } from '@/lib/api'
+import { useQuery } from '@/lib/queryCache'
 import { ref, computed, onMounted } from 'vue'
 import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { orgInitials, type PublicOrgCatalogItem } from '@/types/orgs'
+import { ORGS_CATALOG_KEY, fetchOrgsCatalog } from '@/lib/queries'
+import { orgInitials } from '@/types/orgs'
 import { ORG_TYPE_OPTIONS, orgTypeLabel, type OrgType } from '@/constants/orgTypes'
 
 const session = useSession()
 const { activeOrg, fetchOrgs } = useActiveOrg()
 
-const orgs = ref<PublicOrgCatalogItem[]>([])
-const loading = ref(true)
-const error = ref('')
+const catalog = useQuery(ORGS_CATALOG_KEY, fetchOrgsCatalog)
+const orgs = computed(() => catalog.data.value ?? [])
+const loading = computed(() => catalog.status.value === 'loading')
+const error = computed(() => {
+  if (catalog.status.value !== 'error') return ''
+  return catalog.error.value instanceof Error ? catalog.error.value.message : 'Failed to load organizations.'
+})
 const searchQuery = ref('')
 const selectedOrgType = ref<OrgType | null>(null)
 
@@ -188,20 +196,9 @@ const filteredOrgs = computed(() => {
   )
 })
 
-onMounted(async () => {
+onMounted(() => {
   if (isAuthenticated.value) {
     fetchOrgs()
-  }
-
-  try {
-    const res = await api.raw(`/api/orgs/public`)
-    const data = await res.json() as { error?: string; orgs?: PublicOrgCatalogItem[] }
-    if (!res.ok) throw new Error(data.error || 'Failed to load organizations.')
-    orgs.value = data.orgs ?? []
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load organizations.'
-  } finally {
-    loading.value = false
   }
 })
 </script>

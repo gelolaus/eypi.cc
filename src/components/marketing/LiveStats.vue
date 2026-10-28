@@ -27,13 +27,13 @@
           </dt>
           <dd
             v-if="stats"
-            class="font-heading text-3xl font-semibold tracking-tight tabular-nums"
+            class="h-10 font-heading text-3xl leading-10 font-semibold tracking-tight tabular-nums"
           >
             {{ formatCount(stats[item.key]) }}
           </dd>
           <div
             v-else
-            class="h-9 w-16 animate-pulse rounded-lg bg-muted"
+            class="h-10 w-16 animate-pulse rounded-lg bg-muted"
             aria-hidden="true"
           />
         </div>

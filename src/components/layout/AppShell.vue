@@ -31,6 +31,7 @@
           <router-link
             v-for="entry in entries"
             :key="entry.to"
+            v-prefetch="entry.to"
             :to="entry.to"
             :title="collapsed ? entry.label : undefined"
             class="relative flex items-center gap-3 rounded-xl py-2.5 text-base font-medium transition"
@@ -140,6 +141,7 @@
             <router-link
               v-for="entry in tabs"
               :key="entry.to"
+              v-prefetch="entry.to"
               :to="entry.to"
               class="flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition"
               :class="isActive(entry) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'"
@@ -182,6 +184,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandLogo from '@/components/brand/BrandLogo.vue'
+import { vPrefetch } from '@/directives/prefetch'
 import LocalDevBanner from '@/components/LocalDevBanner.vue'
 import OrgSwitcher from '@/components/OrgSwitcher.vue'
 import ScrollTop from '@/components/ScrollTop.vue'

@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { clearQueryCache } from '@/lib/queryCache'
 
 const CACHE_TTL_MS = 60_000
 
@@ -49,6 +50,7 @@ export function useOrgMembership() {
   function clearOrgMembershipCache() {
     cachedResult = null
     cachedAt = 0
+    clearQueryCache()
   }
 
   return { checkOrgMembership, clearOrgMembershipCache }

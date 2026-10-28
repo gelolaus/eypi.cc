@@ -9,6 +9,7 @@ import { db, type Bindings } from '../lib/db'
 import { ApiError } from '../lib/errors'
 import { deleteObject } from '../lib/media'
 import { reportError } from '../lib/reportError'
+import { classifyKey } from './mediaVariants'
 import { requireAdmin } from '../middleware/requireAdmin'
 import { requireAuth } from '../middleware/requireAuth'
 
@@ -593,6 +594,85 @@ app.get('/api/admin/audit', requireAuth, requireAdmin, async (c) => {
     ? encodeCursor({ value: text(last.created_at), id: text(last.id) })
     : null
   return c.json({ items: page.map(toAudit), nextCursor })
+})
+
+const SPEED_THRESHOLDS = {
+  LCP: [2500, 4000],
+  INP: [200, 500],
+  CLS: [0.1, 0.25],
+  FCP: [1800, 3000],
+  TTFB: [800, 1800],
+} as const
+
+/**
+ * Stored R2 images that still lack variants (null meta). Only keys that
+ * PUT /api/media/variants accepts are listed; external URLs are skipped.
+ */
+app.get('/api/admin/media/pending', requireAuth, requireAdmin, async (c) => {
+  const client = db(c)
+  const [orgs, frames] = await Promise.all([
+    client.execute(
+      `SELECT logo_url AS logo, banner_url AS banner, logo_meta, banner_meta FROM organizations
+       WHERE (logo_url IS NOT NULL AND logo_meta IS NULL) OR (banner_url IS NOT NULL AND banner_meta IS NULL)`,
+    ),
+    client.execute(`SELECT image_url AS url FROM dp_frames WHERE image_meta IS NULL`),
+  ])
+  const seen = new Set<string>()
+  const items: { key: string; profile: 'orgLogo' | 'banner' | 'frame' }[] = []
+  const add = (raw: unknown) => {
+    if (typeof raw !== 'string') return
+    const key = raw.startsWith('/media/') ? raw.slice('/media/'.length) : raw
+    const target = classifyKey(key)
+    if (!target || seen.has(key)) return
+    seen.add(key)
+    items.push({ key, profile: target.kind })
+  }
+  for (const row of orgs.rows) {
+    if (row.logo_meta == null) add(row.logo)
+    if (row.banner_meta == null) add(row.banner)
+  }
+  for (const row of frames.rows) add(row.url)
+  return c.json({ items })
+})
+
+app.get('/api/admin/speed', requireAuth, requireAdmin, async (c) => {
+  const daysParam = c.req.query('days') ?? '7'
+  if (daysParam !== '7' && daysParam !== '28') {
+    return c.json(invalid({ days: 'Choose 7 or 28 days.' }), 400)
+  }
+  const days = Number(daysParam)
+  const since = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const [rows, trend] = await Promise.all([
+    db(c).execute({
+      sql: `SELECT route, metric, device,
+                   SUM(p75 * samples) * 1.0 / SUM(samples) AS p75,
+                   SUM(samples) AS samples
+            FROM rum_daily
+            WHERE day >= ? AND samples > 0
+            GROUP BY route, metric, device
+            ORDER BY metric, route, device`,
+      args: [since],
+    }),
+    db(c).execute({
+      sql: `SELECT metric, day, SUM(p75 * samples) * 1.0 / SUM(samples) AS p75
+            FROM rum_daily
+            WHERE day >= ? AND samples > 0
+            GROUP BY metric, day
+            ORDER BY metric, day`,
+      args: [since],
+    }),
+  ])
+  return c.json({
+    thresholds: SPEED_THRESHOLDS,
+    rows: rows.rows.map((r) => ({
+      route: text(r.route),
+      metric: text(r.metric),
+      device: text(r.device),
+      p75: Number(r.p75),
+      samples: Number(r.samples),
+    })),
+    trend: trend.rows.map((r) => ({ metric: text(r.metric), day: text(r.day), p75: Number(r.p75) })),
+  })
 })
 
 export default app

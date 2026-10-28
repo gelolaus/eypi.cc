@@ -163,6 +163,36 @@ describe('frame campaigns', () => {
     expect(campaigns.rows).toHaveLength(0)
   })
 
+  it('returns the stored key and url for each new frame', async () => {
+    const { request, client } = await createTestApp({ user: member, seed: seedOrg })
+
+    const created = await request('/api/dp', json('POST', {
+      title: 'Launch',
+      slug: 'launch-keys',
+      frames: [{ imageData: frameDataUrl() }, { imageData: frameDataUrl() }],
+    }))
+    expect(created.status).toBe(201)
+    const body = await created.json() as {
+      campaign: { id: string; frames: { id: string; key: string; url: string }[] }
+    }
+    const rows = await client.execute('SELECT id, image_url FROM dp_frames ORDER BY position')
+    expect(body.campaign.frames).toHaveLength(2)
+    body.campaign.frames.forEach((frame, index) => {
+      expect(frame.id).toBe(String(rows.rows[index]?.id))
+      expect(frame.key).toBe(String(rows.rows[index]?.image_url))
+      expect(frame.key).toMatch(/^frames\/[^/]+\/[^/]+-[0-9a-f]{8}\.png$/)
+      expect(frame.url).toBe(`/media/${frame.key}`)
+    })
+
+    const added = await request(`/api/dp/${body.campaign.id}/frames`, json('POST', { imageData: frameDataUrl() }))
+    expect(added.status).toBe(201)
+    const addedBody = await added.json() as { frame: { id: string; key: string; url: string; position: number } }
+    const row = await client.execute({ sql: 'SELECT image_url FROM dp_frames WHERE id = ?', args: [addedBody.frame.id] })
+    expect(addedBody.frame.key).toBe(String(row.rows[0]?.image_url))
+    expect(addedBody.frame.url).toBe(`/media/${addedBody.frame.key}`)
+    expect(addedBody.frame.position).toBe(2)
+  })
+
   it('resolves an old slug through dp_slug_history', async () => {
     const { request, client } = await createTestApp({
       user: member,
@@ -187,7 +217,7 @@ describe('frame campaigns', () => {
 
     const response = await request('/api/dp/launch-night')
     expect(response.status).toBe(200)
-    expect(response.headers.get('Cache-Control')).toBe('public, max-age=60')
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store') // signed-in viewers bypass the edge cache
     const body = await response.json() as {
       campaign: {
         id: string

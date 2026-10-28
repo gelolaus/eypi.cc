@@ -2,6 +2,7 @@ import { createClient } from '@libsql/client/web'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { runRetention } from './jobs/retention'
+import { runHourlyRollups } from './jobs/rollups'
 import { db, type Bindings } from './lib/db'
 import { onError } from './lib/errors'
 import { missingRequiredEnv, requiredEnvError } from './lib/env'
@@ -13,8 +14,10 @@ import authMicrosoft from './routes/authMicrosoft'
 import legalRoutes from './routes/legal'
 import linkRoutes from './routes/links'
 import accountRoutes from './routes/account'
+import mediaVariantRoutes from './routes/mediaVariants'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
+import rumRoutes from './routes/rum'
 import eventRoutes from './routes/events'
 import dpRoutes from './routes/dp'
 import orgsRoutes from './routes/orgs'
@@ -73,9 +76,11 @@ app.use('/api/*', csrf)
 app.route('/', authMicrosoft)
 app.route('/', meRoutes)
 app.route('/', accountRoutes)
+app.route('/', mediaVariantRoutes)
 app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)
+app.route('/', rumRoutes)
 app.route('/', eventRoutes)
 app.route('/', dpRoutes)
 app.route('/api/orgs', orgsRoutes)
@@ -90,18 +95,24 @@ app.all('*', (c) => c.json({ error: { code: 'not_found', message: 'Not found' } 
 
 app.onError(onError)
 
-async function scheduled(_controller: ScheduledController, env: Bindings): Promise<void> {
+const HOURLY_CRON = '15 * * * *'
+
+async function scheduled(controller: ScheduledController, env: Bindings): Promise<void> {
+  const hourly = controller.cron === HOURLY_CRON
   try {
     const client = createClient({
       url: env.TURSO_DATABASE_URL,
       authToken: env.TURSO_AUTH_TOKEN,
     })
-    await runRetention(client, new Date())
+    if (hourly) await runHourlyRollups(client, new Date())
+    else await runRetention(client, new Date())
   } catch (err) {
     reportError(
-      { req: { path: '/scheduled/retention', header: () => undefined } },
+      { req: { path: hourly ? '/scheduled/rollups' : '/scheduled/retention', header: () => undefined } },
       err,
-      { code: 'retention_failed', message: 'Retention cleanup failed.' },
+      hourly
+        ? { code: 'rollups_failed', message: 'Hourly rollups failed.' }
+        : { code: 'retention_failed', message: 'Retention cleanup failed.' },
     )
   }
 }

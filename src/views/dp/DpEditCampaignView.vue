@@ -162,6 +162,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
+import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { DpUploaderFrame, DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -215,17 +216,24 @@ async function saveDetails() {
   }
 }
 
-async function onAddFrame(dataUrl: string) {
+async function onAddFrame(dataUrl: string, file?: File) {
   frameBusyIndex.value = frames.value.length
   try {
     const res = await api.raw(`/api/dp/${campaignId.value}/frames`, {
       method: 'POST',
       body: JSON.stringify({ imageData: dataUrl }),
     })
-    const data = await res.json() as { status: string; message?: string; frame?: { id: string } }
+    const data = await res.json() as { status: string; message?: string; frame?: { id: string; key?: string } }
     if (!res.ok || !data.frame) throw new Error(data.message ?? 'Could not add frame.')
     frames.value.push({ id: data.frame.id, src: dataUrl })
     toast.success('Frame added.')
+    // Best-effort: the frame is saved, so variants never fail the add.
+    const key = data.frame.key
+    if (file && key) {
+      const meta = await uploadVariants(file, 'frame', key).catch(() => null)
+      const added = frames.value.find((f) => f.id === data.frame!.id)
+      if (meta && added) added.meta = meta
+    }
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Could not add frame.')
   } finally {
@@ -302,7 +310,7 @@ onMounted(async () => {
     form.slug = data.campaign.slug
     form.description = data.campaign.description ?? ''
     form.captionTemplate = data.campaign.captionTemplate ?? ''
-    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url }))
+    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url, meta: f.imageMeta ?? null }))
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
   } finally {

@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
 import type { OrgListItem } from '@/types/orgs'
 
@@ -26,6 +27,9 @@ export function useActiveOrg() {
           selected = orgs.value[0]
           localStorage.setItem('active_org_id', selected.org_id)
         }
+        if (activeOrg.value && activeOrg.value.org_id !== selected?.org_id) {
+          useOrgMembership().clearOrgMembershipCache()
+        }
         activeOrg.value = selected ?? null
       }
     } catch (err) {
@@ -37,6 +41,7 @@ export function useActiveOrg() {
 
   /** Quiet sync (no toast / navigation) — used when a URL already picked the org. */
   function setActiveOrg(org: OrgListItem) {
+    if (activeOrg.value && activeOrg.value.org_id !== org.org_id) useOrgMembership().clearOrgMembershipCache()
     localStorage.setItem('active_org_id', org.org_id)
     activeOrg.value = org
   }

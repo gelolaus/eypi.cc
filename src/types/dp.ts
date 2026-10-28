@@ -1,4 +1,5 @@
 // Shared DP Blast types.
+import type { ImageMeta } from '@/lib/images/variants'
 
 // A frame as handled by the uploader UI. `id` is present only for frames already
 // persisted on the server (edit mode); `src` is a displayable image URL — a
@@ -6,6 +7,9 @@
 export interface DpUploaderFrame {
   id?: string
   src: string
+  meta?: ImageMeta | null
+  /** The picked file, kept only until its variants are uploaded after the first save. */
+  file?: File
 }
 
 // Campaign list item (no heavy image payloads).
@@ -23,6 +27,7 @@ export interface DpCampaignSummary {
 export interface DpFrame {
   id: string
   url: string
+  imageMeta?: ImageMeta | null
   label: string | null
   width: number
   height: number

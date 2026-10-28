@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
-import LoginView from '@/views/LoginView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
+import { loadAppShell } from '@/components/layout/loadAppShell'
+import { routeNeedsSession, routeSkipsConsent } from './guards'
 
 const { checkOrgMembership } = useOrgMembership()
 const session = useSession()
@@ -17,15 +18,15 @@ const router = createRouter({
     return { top: 0, behavior: reduce ? 'auto' : 'smooth' }
   },
   routes: [
-    { path: '/', name: 'home', component: HomeView, meta: { title: 'Home' } },
-    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Sign in' } },
+    { path: '/', name: 'home', component: HomeView, meta: { layout: 'public', title: 'Home' } },
+    { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { layout: 'public', title: 'Sign in' } },
 
     // ── Suite hub ────────────────────────────────────────────────────────────
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/views/DashboardView.vue'),
-      meta: { requiresAuth: true, title: 'Dashboard' },
+      meta: { requiresAuth: true, title: 'Dashboard', prefetch: () => import('@/lib/queries').then((m) => m.prefetchDashboard()) },
     },
     {
       path: '/invites',
@@ -39,7 +40,7 @@ const router = createRouter({
       path: '/links',
       name: 'links',
       component: () => import('@/views/links/LinksView.vue'),
-      meta: { requiresAuth: true, title: 'Links' },
+      meta: { requiresAuth: true, title: 'Links', prefetch: () => import('@/lib/queries').then((m) => m.prefetchLinks()) },
     },
 
     // ── Forms module ─────────────────────────────────────────────────────────
@@ -107,7 +108,7 @@ const router = createRouter({
       path: '/frames/:slug',
       name: 'dp-public',
       component: () => import('@/views/dp/DpPublicView.vue'),
-      meta: { title: 'Frame' },
+      meta: { layout: 'public', title: 'Frame' },
     },
 
     // ── Tix module (ticketing) ───────────────────────────────────────────────
@@ -149,7 +150,7 @@ const router = createRouter({
       path: '/tix/:eventId',
       name: 'ticket-lookup',
       component: () => import('@/views/tix/TicketLookupView.vue'),
-      meta: { title: 'Ticket lookup' },
+      meta: { layout: 'public', title: 'Ticket lookup' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────
@@ -185,7 +186,7 @@ const router = createRouter({
       path: '/orgs',
       name: 'org-catalog',
       component: () => import('@/views/orgs/OrgCatalogView.vue'),
-      meta: { title: 'Orgs' },
+      meta: { title: 'Orgs', prefetch: () => import('@/lib/queries').then((m) => m.prefetchOrgsCatalog()) },
     },
     {
       path: '/orgs/:slug',
@@ -270,6 +271,18 @@ const router = createRouter({
           meta: { title: 'Reports' },
         },
         {
+          path: 'speed',
+          name: 'admin-speed',
+          component: () => import('@/views/admin/AdminSpeedView.vue'),
+          meta: { title: 'Speed' },
+        },
+        {
+          path: 'maintenance',
+          name: 'admin-maintenance',
+          component: () => import('@/views/admin/AdminMaintenanceView.vue'),
+          meta: { title: 'Maintenance' },
+        },
+        {
           path: 'audit',
           name: 'admin-audit',
           component: () => import('@/views/admin/AdminAuditView.vue'),
@@ -299,19 +312,19 @@ const router = createRouter({
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Privacy' },
+      meta: { layout: 'public', title: 'Privacy' },
     },
     {
       path: '/terms',
       name: 'terms',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Terms' },
+      meta: { layout: 'public', title: 'Terms' },
     },
     {
       path: '/acceptable-use',
       name: 'acceptable-use',
       component: () => import('@/views/LegalView.vue'),
-      meta: { title: 'Acceptable use' },
+      meta: { layout: 'public', title: 'Acceptable use' },
     },
     {
       path: '/consent',
@@ -323,25 +336,25 @@ const router = createRouter({
       path: '/contact',
       name: 'contact',
       component: () => import('@/views/ContactView.vue'),
-      meta: { title: 'Contact' },
+      meta: { layout: 'public', title: 'Contact' },
     },
     {
       path: '/unlock/:slug',
       name: 'unlock',
       component: () => import('@/views/UnlockView.vue'),
-      meta: { title: 'Unlock' },
+      meta: { layout: 'public', title: 'Unlock' },
     },
     {
       path: '/expired',
       name: 'expired',
       component: () => import('@/views/ExpiredView.vue'),
-      meta: { title: 'Expired' },
+      meta: { layout: 'public', title: 'Expired' },
     },
     {
       path: '/report',
       name: 'report',
       component: () => import('@/views/ReportView.vue'),
-      meta: { title: 'Report' },
+      meta: { layout: 'public', title: 'Report' },
     },
 
     // ── Link shortener redirect — MUST stay second-to-last ───────────────────
@@ -349,19 +362,41 @@ const router = createRouter({
       path: '/:slug',
       name: 'redirect',
       component: () => import('@/views/RedirectView.vue'),
-      meta: { title: 'Redirect' },
+      meta: { layout: 'public', title: 'Redirect' },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
-      meta: { title: 'Page not found' },
+      meta: { layout: 'public', title: 'Page not found' },
     },
   ],
 })
 
+// A public page renders before /api/me answers. Once the session resolves,
+// a signed-in user who still owes consent is sent to /consent from wherever
+// they are, with the page they were on as returnTo.
+function redirectToConsent(): void {
+  const current = router.currentRoute.value
+  if (!session.user.value || session.needsConsent.value.length === 0) return
+  if (routeSkipsConsent(current)) return
+  void router.replace({ name: 'consent', query: { returnTo: current.fullPath } })
+}
+
 router.beforeEach(async (to, _from, next) => {
-  await session.load()
+  // Start the app shell chunk now so it does not waterfall behind the first render.
+  if (to.meta.layout !== 'public') void loadAppShell().catch(() => {})
+  if (routeNeedsSession(to)) {
+    // This navigation decides consent itself; a queued background redirect
+    // would supersede it and lose the target as returnTo.
+    session.offReady(redirectToConsent)
+    await session.load()
+  } else if (session.status.value !== 'ready') {
+    void session.load()
+    session.onReady(redirectToConsent)
+    next()
+    return
+  }
   const signedIn = session.user.value
 
   if (to.name === 'login' && signedIn) {
@@ -374,15 +409,7 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
-  const skipsConsent = to.matched.some((record) => (
-    record.name === 'consent'
-    || record.name === 'privacy'
-    || record.name === 'terms'
-    || record.name === 'acceptable-use'
-    || record.name === 'contact'
-    || record.name === 'login'
-    || record.name === 'account'
-  ))
+  const skipsConsent = routeSkipsConsent(to)
   if (signedIn && session.needsConsent.value.length > 0 && !skipsConsent) {
     next({ name: 'consent', query: { returnTo: to.fullPath } })
     return

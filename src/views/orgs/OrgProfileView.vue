@@ -57,12 +57,15 @@
             class="relative h-44 md:h-52"
             :class="profile.bannerUrl ? '' : 'bg-gradient-to-br from-primary/40 to-muted'"
           >
-            <img
+            <AppImage
               v-if="profile.bannerUrl"
               :src="profile.bannerUrl"
+              :meta="profile.bannerMeta"
+              sizes="(min-width: 1280px) 1280px, 100vw"
+              priority
               :alt="`${profile.name} banner`"
               class="h-full w-full object-cover"
-            >
+            />
           </div>
 
           <!-- Logo sits on the banner, overlapping into the content area -->
@@ -71,11 +74,14 @@
               v-if="profile.logoUrl"
               class="size-28 shrink-0 overflow-hidden rounded-2xl border-4 border-card bg-card shadow-lg md:size-32"
             >
-              <img
+              <AppImage
                 :src="profile.logoUrl"
+                :meta="profile.logoMeta"
+                sizes="(min-width: 768px) 128px, 112px"
+                priority
                 :alt="`${profile.name} logo`"
                 class="h-full w-full object-cover"
-              >
+              />
             </div>
             <div
               v-else
@@ -218,6 +224,7 @@
 </template>
 
 <script setup lang="ts">
+import AppImage from '@/components/AppImage.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

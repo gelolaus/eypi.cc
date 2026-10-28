@@ -21,6 +21,16 @@ describe('LiveStats', () => {
     expect(wrapper.findAll('dd')).toHaveLength(0)
   })
 
+  it('reserves a fixed height per tile before /api/stats resolves', async () => {
+    stubFetch(async () => new Response(JSON.stringify(stats), { headers: { 'Content-Type': 'application/json' } }))
+    const wrapper = mount(LiveStats)
+    const placeholders = wrapper.findAll('[aria-hidden="true"].animate-pulse')
+    expect(placeholders).toHaveLength(10)
+    for (const placeholder of placeholders) expect(placeholder.classes()).toContain('h-10')
+    await flushPromises()
+    for (const value of wrapper.findAll('dd')) expect(value.classes()).toContain('h-10')
+  })
+
   it('renders ten formatted tiles on success', async () => {
     stubFetch(async () => new Response(JSON.stringify(stats), { headers: { 'Content-Type': 'application/json' } }))
     const wrapper = mount(LiveStats)

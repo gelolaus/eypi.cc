@@ -28,12 +28,14 @@
         @dragend="onDragEnd"
       >
         <div class="overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
-          <img
+          <AppImage
             :src="frame.src"
+            :meta="frame.meta"
+            sizes="(min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
             alt=""
             draggable="false"
             class="block aspect-square w-full object-contain"
-          >
+          />
         </div>
         <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">{{ i + 1 }}</span>
         <span
@@ -170,6 +172,7 @@
 
 <script setup lang="ts">
 import { getCurrentInstance, ref } from 'vue'
+import AppImage from '@/components/AppImage.vue'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/composables/useToast'
 import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpUploaderFrame } from '@/types/dp'
@@ -183,7 +186,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   /** Emitted with a fresh PNG data-URL for each accepted file. */
-  (e: 'add', dataUrl: string): void
+  (e: 'add', dataUrl: string, file?: File): void
   (e: 'remove', index: number): void
   /** Emitted when a frame is dragged from one position to another. */
   (e: 'reorder', from: number, to: number): void
@@ -228,17 +231,17 @@ function readFile(file: File): Promise<string> {
   })
 }
 
-async function emitAdd(dataUrl: string) {
+async function emitAdd(dataUrl: string, file: File) {
   const raw = instance?.vnode.props?.onAdd as
-    | ((value: string) => unknown)
-    | Array<(value: string) => unknown>
+    | ((value: string, file?: File) => unknown)
+    | Array<(value: string, file?: File) => unknown>
     | undefined
   const handlers = Array.isArray(raw) ? raw : raw ? [raw] : []
   if (handlers.length === 0) {
-    emit('add', dataUrl)
+    emit('add', dataUrl, file)
     return
   }
-  await Promise.all(handlers.map((handler) => handler(dataUrl)))
+  await Promise.all(handlers.map((handler) => handler(dataUrl, file)))
 }
 
 async function addSerial(list: File[]) {
@@ -260,7 +263,7 @@ async function addSerial(list: File[]) {
     }
     try {
       const dataUrl = await readFile(file)
-      await emitAdd(dataUrl)
+      await emitAdd(dataUrl, file)
     } catch {
       toast.error(`Could not read "${file.name}".`)
     }

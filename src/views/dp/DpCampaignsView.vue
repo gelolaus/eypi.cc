@@ -119,7 +119,8 @@
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { invalidate, useQuery } from '@/lib/queryCache'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import type { DpCampaignSummary } from '@/types/dp'
@@ -133,10 +134,25 @@ import { Input } from '@/components/ui/input'
 const toast = useToast()
 const dialog = useDialog()
 
+const query = useQuery(
+  () => `dp:list:${localStorage.getItem('active_org_id') ?? ''}`,
+  async () => {
+    const res = await api.raw(`/api/dp`)
+    if (res.status === 403) return { locked: true, campaigns: [] as DpCampaignSummary[] }
+    const data = await res.json() as { status: string; message?: string; campaigns?: DpCampaignSummary[] }
+    if (!res.ok) throw new Error(data.message ?? 'Failed to load campaigns.')
+    return { locked: false, campaigns: data.campaigns ?? [] }
+  },
+)
 const campaigns = ref<DpCampaignSummary[]>([])
-const loading = ref(true)
-const error = ref('')
-const isLocked = ref(false)
+const loading = computed(() => query.status.value === 'loading')
+const error = computed(() => {
+  if (query.status.value !== 'error') return ''
+  return query.error.value instanceof Error ? query.error.value.message : 'Failed to load campaigns.'
+})
+const isLocked = computed(() => query.data.value?.locked === true)
+watch(query.data, (d) => { campaigns.value = d?.campaigns ?? [] }, { immediate: true })
+watch(error, (message) => { if (message) toast.error(message) })
 const deletingId = ref<string | null>(null)
 const searchQuery = ref('')
 
@@ -173,6 +189,7 @@ async function remove(id: string, title: string) {
     const data = await res.json() as { status: string; message?: string }
     if (!res.ok) throw new Error(data.message ?? 'Delete failed.')
     campaigns.value = campaigns.value.filter(c => c.id !== id)
+    invalidate('dp:')
     toast.success(`"${title}" deleted.`)
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Delete failed.')
@@ -181,22 +198,5 @@ async function remove(id: string, title: string) {
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await api.raw(`/api/dp`)
-    if (res.status === 403) {
-      isLocked.value = true
-      return
-    }
-    const data = await res.json() as { status: string; message?: string; campaigns?: DpCampaignSummary[] }
-    if (!res.ok) throw new Error(data.message ?? 'Failed to load campaigns.')
-    campaigns.value = data.campaigns ?? []
-  } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Failed to load campaigns.'
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
-})
 </script>
 

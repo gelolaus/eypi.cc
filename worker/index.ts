@@ -8,6 +8,8 @@ import { isReservedSlug } from '../shared/reservedSlugs'
 
 const PUBLIC_MEDIA_PREFIXES = ['frames/', 'orgs/', 'qr-logos/']
 const IMMUTABLE_MEDIA_CACHE = 'public, max-age=31536000, immutable'
+// The edge copy expires daily so removed media cannot linger there for a year.
+const EDGE_MEDIA_CACHE = 'public, max-age=86400'
 
 export interface Env {
   ASSETS: Fetcher
@@ -51,9 +53,50 @@ function publicMediaKey(pathname: string): string | null {
   return key
 }
 
-async function servePublicMedia(request: Request, env: Env, pathname: string): Promise<Response> {
+function etagMatches(header: string | null, etag: string): boolean {
+  if (!header) return false
+  if (header.trim() === '*') return true
+  const weak = (value: string) => value.trim().replace(/^W\//, '')
+  return header.split(',').some((candidate) => weak(candidate) === weak(etag))
+}
+
+function notModified(etag: string): Response {
+  return new Response(null, {
+    status: 304,
+    headers: { ETag: etag, 'Cache-Control': IMMUTABLE_MEDIA_CACHE },
+  })
+}
+
+async function servePublicMedia(
+  request: Request,
+  env: Env,
+  pathname: string,
+  ctx: ExecutionContext,
+): Promise<Response> {
   const key = publicMediaKey(pathname)
   if (!key) return new Response(null, { status: 404 })
+
+  // Only whole-object GETs touch the edge cache; HEAD and Range always go to R2.
+  const cache = request.method === 'GET' && !request.headers.has('Range') ? edgeCache() : null
+  const requestUrl = new URL(request.url)
+  const cacheKey = new Request(`${requestUrl.origin}${requestUrl.pathname}`, { method: 'GET' })
+  const ifNoneMatch = request.headers.get('If-None-Match')
+
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey)
+      if (hit) {
+        const etag = hit.headers.get('ETag')
+        if (etag && etagMatches(ifNoneMatch, etag)) return notModified(etag)
+        const servedHeaders = new Headers(hit.headers)
+        servedHeaders.set('Cache-Control', IMMUTABLE_MEDIA_CACHE)
+        return new Response(hit.body, { status: hit.status, headers: servedHeaders })
+      }
+    } catch {
+      // Fall through to R2 when the cache cannot be read.
+    }
+  }
+
   const object = await env.MEDIA.get(key)
   if (!object) return new Response(null, { status: 404 })
 
@@ -64,8 +107,19 @@ async function servePublicMedia(request: Request, env: Env, pathname: string): P
   })
   const contentType = object.httpMetadata?.contentType || contentTypeForKey(key)
   if (contentType) headers.set('Content-Type', contentType)
+  if (object.httpEtag) headers.set('ETag', object.httpEtag)
   if (request.method === 'HEAD') return new Response(null, { status: 200, headers })
-  return new Response(object.body, { status: 200, headers })
+
+  const etag = headers.get('ETag')
+  if (etag && etagMatches(ifNoneMatch, etag)) return notModified(etag)
+
+  const response = new Response(object.body, { status: 200, headers })
+  if (cache) {
+    const stored = new Response(response.clone().body, { status: 200, headers: new Headers(response.headers) })
+    stored.headers.set('Cache-Control', EDGE_MEDIA_CACHE)
+    ctx.waitUntil(cache.put(cacheKey, stored).catch(() => {}))
+  }
+  return response
 }
 
 type FrameSharePreview = {
@@ -177,6 +231,9 @@ const SPA_EXACT_PATHS = new Set([
   '/forms',
   '/orgs',
   '/settings',
+  '/account',
+  '/acceptable-use',
+  '/consent',
   '/privacy',
   '/terms',
   '/contact',
@@ -193,9 +250,12 @@ const SPA_EXACT_PATHS = new Set([
   '/settings/org-management',
   '/settings/org-management/new',
   '/admin',
+  '/admin/overview',
   '/admin/users',
   '/admin/links',
   '/admin/reports',
+  '/admin/speed',
+  '/admin/maintenance',
   '/admin/audit',
   '/admin/orgs',
   '/admin/orgs/new',
@@ -220,7 +280,7 @@ function normalizePath(pathname: string): string {
   return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
 }
 
-function isSpaRoute(pathname: string): boolean {
+export function isSpaRoute(pathname: string): boolean {
   const path = normalizePath(pathname)
   if (SPA_EXACT_PATHS.has(path)) return true
   return /^\/frames\/[^/]+$/.test(path)
@@ -514,7 +574,7 @@ export default {
     }
 
     if (pathname.startsWith('/media/') && pathname.length > '/media/'.length) {
-      return servePublicMedia(request, env, pathname)
+      return servePublicMedia(request, env, pathname, ctx)
     }
 
     if (pathname === '/sitemap.xml') {

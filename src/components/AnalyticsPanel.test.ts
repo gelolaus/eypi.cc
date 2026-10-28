@@ -2,14 +2,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AnalyticsPanel from './AnalyticsPanel.vue'
-
-vi.mock('vue-chartjs', () => ({
-  Line: {
-    name: 'Line',
-    props: ['data', 'options'],
-    template: '<div data-testid="clicks-chart" />',
-  },
-}))
+import source from './AnalyticsPanel.vue?raw'
+import BarList from './charts/BarList.vue'
+import LineChart from './charts/LineChart.vue'
+import StatTile from './charts/StatTile.vue'
 
 const payload = {
   total: 42,
@@ -60,7 +56,6 @@ describe('AnalyticsPanel', () => {
     expect(text).toContain('Windows')
     expect(text).toContain('Busiest hour: 3:00 PM')
     expect(text).not.toContain('🔥')
-    expect(document.querySelector('[data-testid="clicks-chart"]')).toBeTruthy()
     expect(requestUrl(fetchMock.mock.calls[0][0])).toContain('/api/links/link-1/analytics?range=30')
     wrapper.unmount()
   })
@@ -81,36 +76,40 @@ describe('AnalyticsPanel', () => {
     wrapper.unmount()
   })
 
-  it('derives the chart colours from the design tokens and keeps ticks legible on dark', async () => {
-    document.documentElement.style.setProperty('--chart-1', 'rgb(12, 34, 56)')
+  it('renders timeline with LineChart and top lists with BarList', async () => {
     const wrapper = mount(AnalyticsPanel, {
       props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
       attachTo: document.body,
     })
     await flushPromises()
-    const line = wrapper.findComponent({ name: 'Line' })
-    const data = line.props('data') as { datasets: { borderColor: string; backgroundColor: string }[] }
-    const options = line.props('options') as {
-      scales: { x: { ticks: { color: string } }; y: { ticks: { color: string }; grid: { color: string } } }
-    }
-    expect(data.datasets[0]!.borderColor).toBe('rgb(12, 34, 56)')
-    expect(data.datasets[0]!.backgroundColor).toContain('rgb(12, 34, 56)')
-    expect(options.scales.x.ticks.color).toBeTruthy()
-    expect(options.scales.y.ticks.color).toBeTruthy()
-    expect(options.scales.y.grid.color).toBeTruthy()
-    expect(options.scales.x.ticks.color).not.toBe(options.scales.y.grid.color)
-    document.documentElement.style.removeProperty('--chart-1')
+    const line = wrapper.findComponent(LineChart)
+    expect(line.exists()).toBe(true)
+    expect(line.props('series')).toEqual([{ label: 'Clicks', points: [{ x: '2026-10-26', y: 4 }] }])
+    const bars = wrapper.findAllComponents(BarList)
+    expect(bars).toHaveLength(3)
+    expect(bars[0]!.props('items')).toEqual([{ label: 'Windows', value: 8 }])
+    expect(bars[1]!.props('items')).toEqual([{ label: 'PH', value: 6 }])
+    expect(bars[2]!.props('items')).toEqual([{ label: 'Campus mail', value: 5 }])
+    const tiles = wrapper.findAllComponents(StatTile).map((t) => [t.props('label'), t.props('value')])
+    expect(tiles).toEqual([['Total', '42'], ['Unique visitors', '10'], ['QR scans', '7'], ['Direct', '35']])
     wrapper.unmount()
   })
 
-  it('falls back to a usable chart colour when the variable is missing', async () => {
+  it('shows No data for empty top lists', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({
+      ...payload, topOs: [], topCountries: [], topReferrers: [],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     const wrapper = mount(AnalyticsPanel, {
       props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },
       attachTo: document.body,
     })
     await flushPromises()
-    const data = wrapper.findComponent({ name: 'Line' }).props('data') as { datasets: { borderColor: string }[] }
-    expect(data.datasets[0]!.borderColor.length).toBeGreaterThan(3)
+    expect(wrapper.findAllComponents(BarList)).toHaveLength(0)
+    expect((document.body.textContent ?? '').match(/No data/g)).toHaveLength(3)
     wrapper.unmount()
+  })
+
+  it('has no chart.js import', () => {
+    expect(source).not.toMatch(/chart\.js|vue-chartjs/)
   })
 })

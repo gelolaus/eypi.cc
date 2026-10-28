@@ -8,7 +8,14 @@ import { useDialog } from '@/composables/useDialog'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
 import { useSession } from '@/stores/session'
+import { makeVariants } from '@/lib/images/variants'
 import OrgModifyView from './OrgModifyView.vue'
+
+vi.mock('@/lib/images/variants', () => ({
+  makeVariants: vi.fn(async () => {
+    throw new Error('no canvas')
+  }),
+}))
 
 const memberOrg = {
   org_id: 'jpcs',
@@ -328,6 +335,94 @@ describe('OrgModifyView images', () => {
       wrapper.unmount()
     },
   )
+
+  class VariantReader {
+    result: string | null = null
+    onload: null | (() => void) = null
+    onerror: null | (() => void) = null
+    readAsDataURL() {
+      this.result = 'data:image/png;base64,AAAA'
+      this.onload?.()
+    }
+  }
+
+  async function uploadLogo(variantsResponse: () => Response) {
+    vi.stubGlobal('FileReader', VariantReader)
+    const calls: Array<{ path: string; body: Record<string, unknown> }> = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = pathname(input)
+      const method = init?.method ?? 'GET'
+      if (path === '/api/orgs' && method === 'GET') return json({ orgs: [memberOrg] })
+      if (path === '/api/orgs/jpcs/profile' && method === 'GET') return json({ profile })
+      if (path === '/api/orgs/jpcs/profile' && method === 'PATCH') {
+        return json({ profile: { ...profile, logoUrl: '/media/orgs/jpcs/logo-abcd1234.png' } })
+      }
+      if (path === '/api/media/variants' && method === 'PUT') {
+        calls.push({ path, body: JSON.parse(String(init?.body)) as Record<string, unknown> })
+        return variantsResponse()
+      }
+      return json({ error: { code: 'not_found', message: 'Missing.' } }, 404)
+    }))
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+    const input = wrapper.findAll('input[type="file"]')[1]
+    const file = new File([new Uint8Array([1, 2, 3])], 'logo.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', { value: [file] })
+    await input.trigger('change')
+    await flushPromises()
+    await flushPromises()
+    return { wrapper, calls }
+  }
+
+  it('puts orgLogo variants after the logo is saved and uses them for the preview', async () => {
+    const meta = { w: 1000, h: 1000, fmt: 'webp', widths: [96, 192, 384], ph: 'data:image/webp;base64,AAAA' }
+    vi.mocked(makeVariants).mockResolvedValueOnce({
+      meta: meta as never,
+      variants: [96, 192, 384].map((width) => ({ width, dataUrl: `data:image/webp;base64,V${width}` })),
+    })
+    const { wrapper, calls } = await uploadLogo(() => json({ meta }))
+
+    expect(makeVariants).toHaveBeenCalledWith(expect.any(File), 'orgLogo')
+    expect(calls).toHaveLength(1)
+    expect(calls[0].body).toMatchObject({
+      key: '/media/orgs/jpcs/logo-abcd1234.png',
+      placeholder: meta.ph,
+      meta: { w: 1000, h: 1000, fmt: 'webp', widths: [96, 192, 384] },
+    })
+    expect((calls[0].body.variants as Array<{ width: number }>).map((v) => v.width)).toEqual([96, 192, 384])
+    expect(wrapper.get('img[alt="Logo preview"]').attributes('srcset')).toContain(
+      '/media/orgs/jpcs/logo-abcd1234-96.webp 96w',
+    )
+    wrapper.unmount()
+  })
+
+  it('skips the variants call for a small image and keeps the saved logo', async () => {
+    vi.mocked(makeVariants).mockResolvedValueOnce({
+      meta: { w: 50, h: 50, fmt: 'webp', widths: [], ph: '' },
+      variants: [],
+    })
+    const { wrapper, calls } = await uploadLogo(() => json({}))
+    expect(calls).toEqual([])
+    expect(wrapper.get('img[alt="Logo preview"]').attributes('src')).toBe('/media/orgs/jpcs/logo-abcd1234.png')
+    wrapper.unmount()
+  })
+
+  it('still saves the logo when variants cannot be made or stored', async () => {
+    vi.mocked(makeVariants).mockRejectedValueOnce(new Error('no canvas'))
+    const failed = await uploadLogo(() => json({}))
+    expect(failed.wrapper.get('img[alt="Logo preview"]').attributes('src')).toBe('/media/orgs/jpcs/logo-abcd1234.png')
+    expect(failed.wrapper.text()).not.toContain('Upload failed')
+    failed.wrapper.unmount()
+
+    vi.mocked(makeVariants).mockResolvedValueOnce({
+      meta: { w: 1000, h: 1000, fmt: 'webp', widths: [96], ph: '' },
+      variants: [{ width: 96, dataUrl: 'data:image/webp;base64,V96' }],
+    })
+    const rejected = await uploadLogo(() => json({ error: { code: 'rate_limited', message: 'Slow down.' } }, 429))
+    expect(rejected.calls).toHaveLength(1)
+    expect(rejected.wrapper.get('img[alt="Logo preview"]').attributes('src')).toBe('/media/orgs/jpcs/logo-abcd1234.png')
+    rejected.wrapper.unmount()
+  })
 })
 
 describe('OrgModifyView mobile layout', () => {

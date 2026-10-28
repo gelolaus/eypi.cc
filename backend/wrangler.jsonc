@@ -22,11 +22,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "placement": { "mode": "smart" },
   "observability": {
     "enabled": true
   },
   "triggers": {
-    "crons": ["0 19 * * *"]
+    "crons": ["0 19 * * *", "15 * * * *"]
   },
   // "vars": {
   //   "MY_VAR": "my-variable"

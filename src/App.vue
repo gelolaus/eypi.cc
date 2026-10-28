@@ -7,22 +7,52 @@
   <!-- Page transition overlay -->
   <AppTransition ref="appTransitionRef" />
 
-  <AppShell>
+  <component :is="Shell">
     <router-view v-slot="{ Component }">
       <component :is="Component" />
     </router-view>
-  </AppShell>
+  </component>
 
-  <ToastContainer />
-  <DialogHost />
+  <!-- Toasts and dialogs pull in vue-sonner and reka-ui. Mount them on first use. -->
+  <ToastContainer v-if="toastsNeeded" />
+  <DialogHost v-if="dialogNeeded" />
 </template>
 
 <script setup lang="ts">
-import { ref, provide } from 'vue'
-import AppShell from '@/components/layout/AppShell.vue'
-import ToastContainer from '@/components/ToastContainer.vue'
-import DialogHost from '@/components/DialogHost.vue'
+import { computed, defineAsyncComponent, type Component as VueComponent, ref, provide, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { loadAppShell } from '@/components/layout/loadAppShell'
+import PublicShell from '@/components/layout/PublicShell.vue'
+import { reloadOnceForChunkError } from '@/lib/chunkReload'
+import { useToast } from '@/composables/useToast'
+import { useDialog } from '@/composables/useDialog'
 import AppTransition from '@/components/AppTransition.vue'
+
+// The signed-in shell is only fetched on app pages. Public pages never pay for it.
+const AppShell = defineAsyncComponent(loadAppShell)
+// Retry once, then reload once on a stale chunk, so a dialog never hangs unseen.
+function lazyHost(load: () => Promise<VueComponent>) {
+  return defineAsyncComponent({
+    loader: load,
+    onError(err, retry, fail, attempts) {
+      if (attempts <= 1) retry()
+      else if (!reloadOnceForChunkError(err, window.location.pathname + window.location.search)) fail()
+    },
+  })
+}
+const ToastContainer = lazyHost(() => import('@/components/ToastContainer.vue'))
+const DialogHost = lazyHost(() => import('@/components/DialogHost.vue'))
+
+// Latches stay true once set so an open overlay never unmounts mid-animation.
+const { toasts } = useToast()
+const { current: currentDialog } = useDialog()
+const toastsNeeded = ref(toasts.value.length > 0)
+const dialogNeeded = ref(currentDialog.value !== null)
+watch(() => toasts.value.length, (n) => { if (n > 0) toastsNeeded.value = true })
+watch(currentDialog, (d) => { if (d) dialogNeeded.value = true })
+
+const route = useRoute()
+const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)
 

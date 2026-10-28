@@ -151,6 +151,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
+import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { DpUploaderFrame } from '@/types/dp'
 
 const toast = useToast()
@@ -175,8 +176,8 @@ function sanitizeSlug(e: Event) {
   form.slug = t.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-{2,}/g, '-')
 }
 
-function onAddFrame(dataUrl: string) {
-  frames.value.push({ src: dataUrl })
+function onAddFrame(dataUrl: string, file?: File) {
+  frames.value.push({ src: dataUrl, file })
 }
 function onRemoveFrame(index: number) {
   frames.value.splice(index, 1)
@@ -202,11 +203,27 @@ async function submit() {
         frames: frames.value.map(f => ({ imageData: f.src })),
       }),
     })
-    const data = await res.json() as { status: string; message?: string; campaign?: { id: string; slug: string } }
+    const data = await res.json() as {
+      status: string
+      message?: string
+      campaign?: { id: string; slug: string; frames?: { key?: string }[] }
+    }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Failed to create campaign.')
     createdSlug.value = data.campaign.slug
     created.value = true
     toast.success('Campaign created!')
+    // Best-effort: the campaign is saved, so variants never fail the create.
+    const pairs = frames.value.map((f, i) => ({ file: f.file, key: data.campaign?.frames?.[i]?.key }))
+    void (async () => {
+      for (const { file, key } of pairs) {
+        if (!file || !key) continue
+        try {
+          await uploadVariants(file, 'frame', key)
+        } catch {
+          // The campaign is saved; a frame without variants still works.
+        }
+      }
+    })()
   } catch (err: unknown) {
     toast.error(err instanceof Error ? err.message : 'Failed to create campaign.')
   } finally {

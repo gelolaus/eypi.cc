@@ -190,6 +190,7 @@ const actionLabels: Record<string, string> = {
   'org.update': 'Organization updated',
   'org.transfer': 'Ownership transferred',
   'org.delete': 'Organization deleted',
+  'media.variants': 'Image optimized',
 }
 
 const toast = useToast()

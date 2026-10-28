@@ -3,7 +3,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { checkFrontendBundle, checkGitState, isCiEnvironment } from './lib/releaseChecks.mjs'
+import { gzipSync } from 'node:zlib'
+import { checkBundleBudgets, checkFrontendBundle, checkGitState, checkServiceWorker, isCiEnvironment } from './lib/releaseChecks.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const backendDir = path.join(root, 'backend')
@@ -106,6 +107,21 @@ const files = readdirSync(assetsDir)
 const bundleProblems = checkFrontendBundle(files)
 if (bundleProblems.length > 0) {
   fail(5, 'frontend bundle', bundleProblems.join('\n'))
+}
+const clientDir = path.join(root, 'dist', 'client')
+const manifestPath = [path.join(clientDir, '.vite', 'manifest.json'), path.join(clientDir, 'manifest.json')].find(existsSync)
+if (!manifestPath) {
+  fail(5, 'frontend bundle', 'missing vite manifest (build.manifest must be true)')
+}
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+const budgetProblems = checkBundleBudgets(manifest, (file) => gzipSync(readFileSync(path.join(clientDir, file))).length)
+if (budgetProblems.length > 0) {
+  fail(5, 'frontend bundle budgets', budgetProblems.join('\n'))
+}
+const swPath = path.join(clientDir, 'sw.js')
+const swProblems = checkServiceWorker(existsSync(swPath) ? readFileSync(swPath, 'utf8') : null)
+if (swProblems.length > 0) {
+  fail(5, 'service worker', swProblems.join('\n'))
 }
 ok(5, 'frontend bundle')
 

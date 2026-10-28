@@ -52,6 +52,30 @@ beforeEach(() => {
 })
 
 describe('useSession', () => {
+  it('deletes the tickets cache when /api/me says nobody is signed in', async () => {
+    const del = vi.fn(async () => true)
+    vi.stubGlobal('caches', { delete: del })
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, { error: 'unauthorized' }))
+    try {
+      await useSession().load()
+      expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+    } finally {
+      vi.stubGlobal('fetch', fetchMock)
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('deletes the service worker tickets cache when the session resets', () => {
+    const del = vi.fn(async () => true)
+    vi.stubGlobal('caches', { delete: del })
+    try {
+      useSession().reset()
+      expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('dedupes concurrent load() calls', async () => {
     fetchMock.mockResolvedValue(jsonResponse(401, {
       error: { code: 'unauthorized', message: 'Sign in to continue.' },
@@ -400,6 +424,106 @@ describe('useSession', () => {
     expect(session.status.value).toBe('ready')
   })
 
+  describe('settled', () => {
+    it('is false before load() and true after a successful load', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      expect(session.settled.value).toBe(false)
+      const task = session.load()
+      expect(session.settled.value).toBe(false)
+      await task
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a 401', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(401, {
+        error: { code: 'unauthorized', message: 'Sign in to continue.' },
+      }))
+      const session = useSession()
+      await session.load()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a 500 with no user, even though status stays idle', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(500, { error: { code: 'internal', message: 'Oops' } }))
+      const session = useSession()
+      await session.load()
+      expect(session.status.value).toBe('idle')
+      expect(session.user.value).toBeNull()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is true after a dropped connection with no user', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+      const session = useSession()
+      await session.load()
+      expect(session.settled.value).toBe(true)
+    })
+
+    it('is false again after reset()', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      await session.load()
+      session.reset()
+      expect(session.settled.value).toBe(false)
+    })
+
+    it('leaves state signed out when a load resolves after reset()', async () => {
+      const pending = deferred<Response>()
+      fetchMock.mockReturnValue(pending.promise)
+      const session = useSession()
+      const cb = vi.fn()
+      const task = session.load()
+      session.onReady(cb)
+      session.reset()
+      pending.resolve(jsonResponse(200, { ...meBody(3), needsConsent: [{ document: 'terms', version: '1' }] }))
+      await task
+      expect(session.user.value).toBeNull()
+      expect(session.status.value).toBe('idle')
+      expect(session.pendingInviteCount.value).toBe(0)
+      expect(session.needsConsent.value).toEqual([])
+      expect(cb).not.toHaveBeenCalled()
+    })
+
+    it('clears the tickets cache when a different person signs in on this browser', async () => {
+      const del = vi.fn(async () => true)
+      vi.stubGlobal('caches', { delete: del })
+      try {
+        localStorage.setItem('eypi_last_user', 'someone-else')
+        fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+        await useSession().load()
+        expect(del).toHaveBeenCalledWith('eypi-tickets-v1')
+        expect(localStorage.getItem('eypi_last_user')).toBe(ada.id)
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('keeps the tickets cache when the same person returns', async () => {
+      const del = vi.fn(async () => true)
+      vi.stubGlobal('caches', { delete: del })
+      try {
+        localStorage.setItem('eypi_last_user', ada.id)
+        fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+        await useSession().load()
+        expect(del).not.toHaveBeenCalled()
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('ignores a load that finishes after reset()', async () => {
+      const pending = deferred<Response>()
+      fetchMock.mockReturnValue(pending.promise)
+      const session = useSession()
+      const task = session.load()
+      session.reset()
+      pending.resolve(jsonResponse(200, meBody(0)))
+      await task
+      expect(session.settled.value).toBe(false)
+    })
+  })
+
   it('never reads the legacy local token key', () => {
     const needle = ['eypi', 'token'].join('_')
     const root = join(process.cwd(), 'src')
@@ -409,5 +533,43 @@ describe('useSession', () => {
     })
 
     expect(hits).toEqual([])
+  })
+
+  describe('onReady', () => {
+    it('runs once when the load resolves', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      expect(cb).not.toHaveBeenCalled()
+      await session.load()
+      expect(cb).toHaveBeenCalledTimes(1)
+      await session.reload()
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('runs immediately when the session is already ready', async () => {
+      fetchMock.mockResolvedValue(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      await session.load()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits through a failed load until one succeeds', async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: { code: 'x', message: 'x' } }))
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+      const session = useSession()
+      const cb = vi.fn()
+
+      session.onReady(cb)
+      await session.load()
+      expect(cb).not.toHaveBeenCalled()
+      await session.load()
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
   })
 })

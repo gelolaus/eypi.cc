@@ -2,6 +2,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { linkBadges, useLinks } from './useLinks'
+import { clearQueryCache, peekQuery, prefetchQuery } from '@/lib/queryCache'
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }))
 
@@ -199,5 +200,49 @@ describe('useLinks', () => {
     expect(links.items.value.map((entry) => entry.id)).toEqual(['expired-link'])
     expect(links.nextCursor.value).toBe('cursor-expired')
     expect(links.loading.value).toBe(false)
+  })
+
+  describe('cache invalidation', () => {
+    const detail = { id: 'a', slug: 'a', url: 'https://x.test', clicks: 0, createdAt: null, expiresAt: null, disabledAt: null, disabledReason: null, protected: false, hasLogo: false, qrConfig: null }
+
+    beforeEach(() => clearQueryCache())
+
+    for (const [name, run] of [
+      ['create', (l: ReturnType<typeof useLinks>) => l.create({ url: 'https://x.test' })],
+      ['update', (l: ReturnType<typeof useLinks>) => l.update('a', { url: 'https://x.test' })],
+      ['remove', (l: ReturnType<typeof useLinks>) => l.remove('a')],
+      ['bulk', (l: ReturnType<typeof useLinks>) => l.bulk('delete', ['a'])],
+    ] as const) {
+      it(`${name} invalidates links: keys`, async () => {
+        await prefetchQuery('links:summary', async () => 1)
+        fetchMock.mockResolvedValue(json(200, detail))
+        await run(useLinks())
+        expect(peekQuery('links:summary')).toBeUndefined()
+      })
+    }
+
+    it('does not let a list load started before create overwrite the new link', async () => {
+      let release!: (r: Response) => void
+      fetchMock.mockReturnValueOnce(new Promise<Response>((r) => { release = r }))
+      const links = useLinks()
+      const pending = links.load()
+      fetchMock.mockResolvedValueOnce(json(201, { ...detail, id: 'new' }))
+      await links.create({ url: 'https://x.test' })
+      release(json(200, { items: [], nextCursor: null }))
+      await pending
+      expect(links.items.value.map((i) => i.id)).toEqual(['new'])
+      expect(links.loading.value).toBe(false)
+    })
+
+    it('does not show an error when the cache is cleared mid-load', async () => {
+      let release!: (r: Response) => void
+      fetchMock.mockReturnValueOnce(new Promise<Response>((r) => { release = r }))
+      const links = useLinks()
+      const pending = links.load()
+      clearQueryCache()
+      release(json(200, { items: [] }))
+      await pending
+      expect(links.error.value).toBe('')
+    })
   })
 })

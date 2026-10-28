@@ -209,7 +209,21 @@ All primitives live in `src/components/ui/<name>/` and are imported from the fol
 
 Focus on every interactive primitive: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50` (badges, tabs and the slider thumb use the same ring at `3px`).
 
-App-level components built on these: `AppPage`, `AppSection`, `BrandLogo`, `OrgSwitcher`, `AccountMenu`, `SiteNavSheet`, `DialogHost` (confirm and info dialogs via `useDialog()`), `PageSkeleton`, `ScrollTop`.
+**`AppImage`** (`src/components/AppImage.vue`) is the standard way to show a stored org, frame or campaign image (static brand assets such as the `BrandLogo` mark in `public/` are plain files and do not use it). Props: `src`, `meta` (`ImageMeta`: width, height, variant widths, format, blur placeholder), `alt`, `sizes`, `priority`. It sets `width` and `height` from `meta` (no layout shift), `srcset` from the variants, `loading="lazy"` unless `priority` (then `fetchpriority="high"`), and a blur placeholder until load. If a variant fails it falls back to the original once. Pass `priority` only for the above-the-fold image. `data:` and `blob:` sources skip `srcset`. Decorative images use `alt=""`.
+
+**Chart components** (`src/components/charts/`, hand-written SVG and HTML, no chart library; colors from `--chart-1` to `--chart-5`):
+
+| Component | Props | Notes |
+|---|---|---|
+| `LineChart` | `series`, `yLabel` | Up to 5 series. |
+| `BarList` | `items`, `max?` | Horizontal bars with the value as text. |
+| `HeatGrid` | `cells` (168), `label` | 7 days by 24 hours; intensity is opacity. |
+| `SparkLine` | `values`, `label` | Inline trend, no axes. |
+| `StatTile` | `label`, `value`, `delta?` | Delta shows an arrow and a signed percent. |
+
+Rules: color is never the only signal. `LineChart` gives each series its own dash pattern and marker shape (circle, square, diamond, triangle, cross) as well as its color, and `StatTile` pairs the delta color with an arrow and a signed percent. Every chart has `role="img"` and an `aria-label` that states the data (`BarList` is HTML, not SVG, but carries the same `role="img"`). Charts need a visible text label or legend and must fit 360px without horizontal scroll.
+
+App-level components built on these: `AppPage`, `AppSection`, `BrandLogo`, `OrgSwitcher`, `AccountMenu`, `SiteNavSheet`, `DialogHost` (confirm and info dialogs via `useDialog()`), `PageSkeleton`, `ScrollTop`, `AppImage`.
 
 ## 8. Motion and reduced motion
 
