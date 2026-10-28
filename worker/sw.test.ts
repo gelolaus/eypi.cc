@@ -111,6 +111,7 @@ describe('pickStrategy', () => {
     ['https://eypi.cc/links', true],
     ['https://eypi.cc/frames/spring', true],
     ['https://eypi.cc/orgs/apc-mc', true],
+    ['https://eypi.cc/orgs/apc-mc/insights', true],
     ['https://eypi.cc/tickets', true],
     ['https://eypi.cc/t/abcDEF123_-xyz', true],
     ['https://eypi.cc/admin/users', true],
@@ -456,7 +457,7 @@ describe('public/_headers', () => {
   it('serves the worker scripts with no-cache', () => {
     const headers = readFileSync(new URL('../public/_headers', import.meta.url), 'utf8')
     for (const path of ['/sw.js', '/sw-strategies.js', '/sw-kill.js']) {
-      expect(headers).toMatch(new RegExp(`^${path.replace('.', '\\.')}\\n\\s+Cache-Control: no-cache`, 'm'))
+      expect(headers).toMatch(new RegExp(`^${path.replace('.', '\\.')}\\r?\\n\\s+Cache-Control: no-cache`, 'm'))
     }
   })
 })

@@ -2,7 +2,7 @@
 import { createClient } from '@libsql/client/web'
 import { visitorHash } from '../backend/src/lib/ipHash'
 import { isBot } from '../backend/src/lib/links/bots'
-import { getOS, logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
+import { getOS, logLinkClick, parseUserAgent, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKv } from '../shared/linksKv'
 import { markdownToPlainText } from '../shared/plainText'
 import { isReservedSlug } from '../shared/reservedSlugs'
@@ -294,6 +294,7 @@ export function isSpaRoute(pathname: string): boolean {
     || /^\/tix\/[^/]+$/.test(path)
     || /^\/t\/[^/]+$/.test(path)
     || /^\/orgs\/modify\/[^/]+$/.test(path)
+    || /^\/orgs\/[^/]+\/insights$/.test(path)
     || /^\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/org-management\/[^/]+$/.test(path)
@@ -747,6 +748,7 @@ export default {
               {
                 linkId: entry.id,
                 os: getOS(userAgent),
+                ...parseUserAgent(userAgent),
                 country: cf?.country ?? 'Unknown',
                 referrer: sanitizeReferrer(request.headers.get('Referer') ?? undefined),
                 source,

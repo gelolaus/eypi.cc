@@ -41,11 +41,11 @@
 - Migration: `analytics ADD device TEXT, ADD browser TEXT, ADD app TEXT`; tables `analytics_daily(link_id, day, clicks, uniques, qr, PRIMARY KEY(link_id, day))`, `analytics_daily_dim(link_id, day, dim, value, clicks, PRIMARY KEY(link_id, day, dim, value))`, `module_events(id INTEGER PK AUTOINCREMENT, org_id, module, subject_id, action, visitor_hash, day, created_at DEFAULT CURRENT_TIMESTAMP)` with index `(subject_id, day)`, `module_daily(subject_id, module, action, day, n, uniques, PRIMARY KEY(subject_id, module, action, day))`; index `analytics(created_at)`.
 - Produces: `parseUserAgent(ua: string | null): { device: Device; browser: Browser; app: App | null }`; `LinkClickMetadata` gains `device`, `browser`, `app`; `logLinkClick` writes them.
 
-- [ ] **Step 1: Failing tests:** table of real UA strings: iPhone Messenger (`FBAN/MessengerForiOS`) → `mobile/Safari/messenger`; Android Facebook (`FB_IAB`/`FBAV`) → `mobile/Chrome/facebook`; Instagram, TikTok (`musical_ly`/`BytedanceWebview`), Line, Discord, X (`Twitter for`); iPad → tablet; Edge desktop (`Edg/`) → `desktop/Edge`; Samsung Internet; `empty user agent` → `desktop/Other/null`. Worker test asserts the inserted row has the three fields.
-- [ ] **Step 2: Run** `npx vitest run shared/linkAnalytics.test.ts worker/index.test.ts` → FAIL.
-- [ ] **Step 3: Implement** (ordered regex checks, in-app markers before browser markers).
-- [ ] **Step 4: Run** → PASS; `npm test`.
-- [ ] **Step 5: Commit** `feat(links): record device, browser and source app per click`.
+- [x] **Step 1: Failing tests:** table of real UA strings: iPhone Messenger (`FBAN/MessengerForiOS`) → `mobile/Safari/messenger`; Android Facebook (`FB_IAB`/`FBAV`) → `mobile/Chrome/facebook`; Instagram, TikTok (`musical_ly`/`BytedanceWebview`), Line, Discord, X (`Twitter for`); iPad → tablet; Edge desktop (`Edg/`) → `desktop/Edge`; Samsung Internet; `empty user agent` → `desktop/Other/null`. Worker test asserts the inserted row has the three fields.
+- [x] **Step 2: Run** `npx vitest run shared/linkAnalytics.test.ts worker/index.test.ts` → FAIL.
+- [x] **Step 3: Implement** (ordered regex checks, in-app markers before browser markers).
+- [x] **Step 4: Run** → PASS; `npm test`.
+- [x] **Step 5: Commit** `feat(links): record device, browser and source app per click`.
 
 ### Task 2: Link and module rollups
 
@@ -56,9 +56,9 @@
 - Produces: `rollupLinks(db: Client, days: string[]): Promise<void>`, `rollupModules(db: Client, days: string[]): Promise<void>`, `manilaDay(date: Date): string` (YYYY-MM-DD), `manilaHourOfWeek(date: Date): number`; `runHourlyRollups` calls both for `[yesterday, today]` (Manila).
 - Rebuild per day: `DELETE` then `INSERT … SELECT` grouped by link and day from raw rows where `created_at` falls in that Manila day (UTC range `[day-1 16:00, day 16:00)`), in one batch per day. Dims: `country, os, device, browser, app, referrer, how`.
 
-- [ ] **Step 1: Failing tests:** `splits at manila midnight` (clicks at 15:59Z and 16:00Z land on different days); uniques = distinct non-null visitor hashes; `how` correct for a Monday 00:30 Manila click (=0); `rerun repairs partial day` (delete half the rollup rows, rerun, equal to fresh); retention deletes raw rows older than 400 days only when `analytics_daily` has that link/day.
-- [ ] **Step 2–4:** run `npx vitest run backend/src/jobs` → FAIL, implement, PASS.
-- [ ] **Step 5: Commit** `feat(analytics): roll up link and module events hourly`.
+- [x] **Step 1: Failing tests:** `splits at manila midnight` (clicks at 15:59Z and 16:00Z land on different days); uniques = distinct non-null visitor hashes; `how` correct for a Monday 00:30 Manila click (=0); `rerun repairs partial day` (delete half the rollup rows, rerun, equal to fresh); retention deletes raw rows older than 400 days only when `analytics_daily` has that link/day.
+- [x] **Step 2–4:** run `npx vitest run backend/src/jobs` → FAIL, implement, PASS.
+- [x] **Step 5: Commit** `feat(analytics): roll up link and module events hourly`.
 
 ### Task 3: Link analytics API v2
 
@@ -68,8 +68,8 @@
 **Interfaces:**
 - Produces: `GET /api/links/:id/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD&compare=1` (default last 30 days; max range 400 days) → `{ totals: { clicks, avgDailyUniques, qrShare }, previous?: same shape, timeline: { day, clicks, uniques }[], heat: number[168], top: { referrer, app, country, device, browser, os: { value, clicks }[] /* top 8 */ } }`. CSV adds columns `device,browser,app`.
 
-- [ ] **Step 1: Failing tests:** `today counted once` (rollup for yesterday + raw for today); compare returns the equal-length previous range; `heat.length === 168`; range > 400 days → 422; authz unchanged (owner only, admin allowed); CSV header exact.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(links): serve analytics from rollups with period comparison`.
+- [x] **Step 1: Failing tests:** `today counted once` (rollup for yesterday + raw for today); compare returns the equal-length previous range; `heat.length === 168`; range > 400 days → 422; authz unchanged (owner only, admin allowed); CSV header exact.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(links): serve analytics from rollups with period comparison`.
 
 ### Task 4: Analytics panel redesign
 
@@ -79,8 +79,8 @@
 **Interfaces:**
 - Consumes Task 3 payload and Phase 1 charts (`StatTile` with `delta`, `LineChart`, `HeatGrid`, `BarList`).
 
-- [ ] **Step 1: Failing tests:** range buttons 7/30/90 + custom dates send `from`/`to`; compare toggle shows deltas as `+12%` text; "Source apps" list labels `messenger` as "Messenger"; empty range shows the empty state copy "No clicks in this period yet".
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(links): show device, app and hour-of-week analytics`.
+- [x] **Step 1: Failing tests:** range buttons 7/30/90 + custom dates send `from`/`to`; compare toggle shows deltas as `+12%` text; "Source apps" list labels `messenger` as "Messenger"; empty range shows the empty state copy "No clicks in this period yet".
+- [x] **Step 2–4.** **Step 5: Commit** `feat(links): show device, app and hour-of-week analytics`.
 
 ### Task 5: Module beacons (Frames and org profile)
 
@@ -91,8 +91,8 @@
 **Interfaces:**
 - Produces: `POST /api/beacon` (text/plain JSON `{ module: 'frames'|'org', subjectId: string, action: 'view'|'photo_added'|'download'|'share' }`) → 204; resolves `org_id` from the subject (campaign or org), computes `visitor_hash` with `IP_HASH_SECRET` the same way as clicks; `sendModuleBeacon(module, subjectId, action): void`.
 
-- [ ] **Step 1: Failing tests:** unknown subject → 204 and no row (no existence oracle); invalid action for module (`org` + `download`) → 400; `rate limits beacons per visitor` (same visitor, subject and action more than 20 per hour → 204 but not stored); `view` sent once per page load.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): record frames and org page events`.
+- [x] **Step 1: Failing tests:** unknown subject → 204 and no row (no existence oracle); invalid action for module (`org` + `download`) → 400; `rate limits beacons per visitor` (same visitor, subject and action more than 20 per hour → 204 but not stored); `view` sent once per page load.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): record frames and org page events`.
 
 ### Task 6: Frames and Tix insights
 
@@ -103,8 +103,8 @@
 **Interfaces:**
 - Produces: `GET /api/dp/:id/insights?days=30` → `{ funnel: { view, photo_added, downloadOrShare }, conversion: number, perFrame: { frameId, label, downloads }[], daily: { day, views, downloads }[] }`. Frames `download` and `share` beacons use `subjectId: '<campaignId>:<frameId>'` (Task 5 accepts this form for frames); the funnel sums every subject starting with `<campaignId>`, and `perFrame` reads each one; `GET /api/events/:slug/insights` → `{ byStatus, registrationsDaily: { day, n }[], byAnswer: { questionId, options: { value, n }[] }[], showUpRate: number | null, checkInCurve: { bucket: string /* HH:MM, 10-min */, n }[] }` computed from `attendees` and `check_ins`.
 
-- [ ] **Step 1: Failing tests:** funnel numbers from seeded `module_daily`; conversion = downloadOrShare / view (0 views → 0, not NaN); show-up rate = checked-in confirmed / confirmed (null when 0 confirmed); 10-minute buckets in Manila time; authz (org members only).
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): add frames and tix insights`.
+- [x] **Step 1: Failing tests:** funnel numbers from seeded `module_daily`; conversion = downloadOrShare / view (0 views → 0, not NaN); show-up rate = checked-in confirmed / confirmed (null when 0 confirmed); 10-minute buckets in Manila time; authz (org members only).
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): add frames and tix insights`.
 
 ### Task 7: Org insights page
 
@@ -115,8 +115,8 @@
 **Interfaces:**
 - Produces: `GET /api/orgs/:org_id/insights?days=30` → `{ profileViews: { total, daily }, frames: { campaigns, views, downloads }, tix: { events, registrations, checkIns }, members: { daily: { day, count }[] } }` (member trend from `org_members.activated_at`).
 
-- [ ] **Step 1: Failing tests:** non-member 403; no personal links data in the payload (assert keys); view renders tiles and sparklines.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(orgs): add an org insights page`.
+- [x] **Step 1: Failing tests:** non-member 403; no personal links data in the payload (assert keys); view renders tiles and sparklines.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(orgs): add an org insights page`.
 
 ### Task 8: Live view
 
@@ -127,14 +127,14 @@
 **Interfaces:**
 - Produces: `useLivePoll<T>(url: string, intervalMs = 5000): { data: Ref<T | null>; lastUpdated: Ref<Date | null> }` — pauses when `document.hidden`, sends `If-None-Match`, keeps data on 304; `GET /api/links/summary/live` → `{ last60: number[] /* per minute */, recent: { at, country, app }[] /* 10 */ }` with weak ETag.
 
-- [ ] **Step 1: Failing tests:** poll pauses on hidden and resumes; 304 keeps previous data; endpoint returns 304 for a matching ETag; `recent` has no visitor hash field.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): add live clicks and check-in counters`.
+- [x] **Step 1: Failing tests:** poll pauses on hidden and resumes; 304 keeps previous data; endpoint returns 304 for a matching ETag; `recent` has no visitor hash field.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): add live clicks and check-in counters`.
 
 ### Task 9: Privacy draft, docs, verification
 
 **Files:**
 - Modify: `src/legal/privacy.ts` (new version date, sections for device/browser/app, RUM samples, Frames/org page events, retention 400 days raw clicks and 30 days speed samples), `shared/legalVersions.ts`, `CONTEXT.md`, tick this plan
 
-- [ ] **Step 1:** Draft the privacy changes; do **not** merge the version bump until the owner approves (owner guide 3.3.1) — commit the draft, then wait for "privacy update approved" before Step 3.
-- [ ] **Step 2:** `npm run lint && npm run typecheck && npm test && npm run build` → green.
-- [ ] **Step 3: Commit** `docs(legal): describe the new analytics in the privacy policy`, then tell the owner Phase 3 is ready with migration `0012_analytics`.
+- [x] **Step 1:** Draft the privacy changes; do **not** merge the version bump until the owner approves (owner guide 3.3.1) — commit the draft, then wait for "privacy update approved" before Step 3. Draft committed; pending owner approval.
+- [x] **Step 2:** `npm run lint && npm run typecheck && npm test && npm run build` → green.
+- [x] **Step 3: Commit** `docs(legal): describe the new analytics in the privacy policy`, then tell the owner Phase 3 is ready with migration `0012_analytics`. Committed; pending owner approval (owner guide 3.3.1).

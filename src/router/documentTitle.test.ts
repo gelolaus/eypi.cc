@@ -40,6 +40,7 @@ const pages: Record<string, string> = {
   'orgs-modify': 'Org settings',
   'org-catalog': 'Orgs',
   'org-profile': 'Organization',
+  'org-insights': 'Org insights',
   account: 'Account',
   'admin-overview': 'Overview',
   'admin-users': 'Users',

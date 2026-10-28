@@ -38,12 +38,22 @@
             </h2>
           </div>
         </div>
-        <Badge
-          :variant="isOwner ? 'default' : 'outline'"
-          class="h-7 px-3 text-sm"
-        >
-          {{ isOwner ? 'Owner' : 'Member' }}
-        </Badge>
+        <div class="flex flex-wrap items-center gap-2">
+          <Button
+            as-child
+            variant="outline"
+          >
+            <router-link :to="`/orgs/${encodeURIComponent(org.org_id)}/insights`">
+              View insights
+            </router-link>
+          </Button>
+          <Badge
+            :variant="isOwner ? 'default' : 'outline'"
+            class="h-7 px-3 text-sm"
+          >
+            {{ isOwner ? 'Owner' : 'Member' }}
+          </Badge>
+        </div>
       </header>
 
       <!-- Public directory profile -->

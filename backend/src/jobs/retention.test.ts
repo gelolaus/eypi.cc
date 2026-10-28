@@ -108,4 +108,72 @@ describe('runRetention', () => {
     const left = await client.execute('SELECT day FROM rum_samples ORDER BY day')
     expect(left.rows.map((row) => String(row.day))).toEqual([CSV_CUTOFF, '2026-10-26'])
   })
+
+  it('deletes raw clicks older than 400 days only when their day is rolled up', async () => {
+    const client = await memoryDb()
+    await client.execute({
+      sql: 'INSERT INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?), (?, ?, ?, ?)',
+      args: ['link-a', 'user-1', 'https://a.example', 'a', 'link-b', 'user-1', 'https://b.example', 'b'],
+    })
+    // 400 days before NOW is 2025-09-21T19:00:00Z, which is Manila day 2025-09-22.
+    await client.execute({
+      sql: `INSERT INTO analytics (link_id, os, country, referrer, created_at) VALUES
+            ('link-a', 'x', 'PH', 'd', '2025-09-10 04:00:00'),
+            ('link-a', 'x', 'PH', 'd', '2025-09-11 04:00:00'),
+            ('link-b', 'x', 'PH', 'd', '2025-09-10 04:00:00'),
+            ('link-a', 'x', 'PH', 'd', '2025-09-21 18:59:59'),
+            ('link-a', 'x', 'PH', 'd', '2025-09-21 19:00:00'),
+            ('link-a', 'x', 'PH', 'd', '2026-10-01 04:00:00')`,
+      args: [],
+    })
+    await client.execute({
+      sql: `INSERT INTO analytics_daily (link_id, day, clicks) VALUES
+            ('link-a', '2025-09-10', 1), ('link-a', '2025-09-22', 2), ('link-a', '2026-10-01', 1)`,
+      args: [],
+    })
+
+    await runRetention(client as unknown as WebClient, NOW)
+
+    const left = await client.execute('SELECT link_id, created_at FROM analytics ORDER BY id')
+    expect(left.rows.map((r) => [String(r.link_id), String(r.created_at)])).toEqual([
+      ['link-a', '2025-09-11 04:00:00'], // day 2025-09-11 has no rollup
+      ['link-b', '2025-09-10 04:00:00'], // other link has no rollup
+      ['link-a', '2025-09-21 19:00:00'], // exactly 400 days old stays
+      ['link-a', '2026-10-01 04:00:00'],
+    ])
+  })
+
+  it('deletes module events older than 400 days only when their day is rolled up', async () => {
+    const client = await memoryDb()
+    // 400 days before NOW (2026-10-26 19:00Z) is Manila day 2025-09-22. Older days are candidates.
+    await client.execute({
+      sql: `INSERT INTO module_events (module, subject_id, action, visitor_hash, day) VALUES
+            ('frames', 'c1', 'view', 'v1', '2025-09-10'),
+            ('frames', 'c1', 'view', 'v2', '2025-09-10'),
+            ('frames', 'c1', 'download', 'v1', '2025-09-10'),
+            ('frames', 'c2', 'view', 'v1', '2025-09-10'),
+            ('frames', 'c1', 'view', 'v1', '2025-09-11'),
+            ('org', 'o1', 'view', 'v1', '2025-09-22'),
+            ('org', 'o1', 'view', 'v1', '2026-10-01')`,
+      args: [],
+    })
+    await client.execute({
+      sql: `INSERT INTO module_daily (subject_id, module, action, day, n, uniques) VALUES
+            ('c1', 'frames', 'view', '2025-09-10', 2, 2),
+            ('o1', 'org', 'view', '2025-09-22', 1, 1),
+            ('o1', 'org', 'view', '2026-10-01', 1, 1)`,
+      args: [],
+    })
+
+    await runRetention(client as unknown as WebClient, NOW)
+
+    const left = await client.execute('SELECT subject_id, action, day FROM module_events ORDER BY id')
+    expect(left.rows.map((r) => [String(r.subject_id), String(r.action), String(r.day)])).toEqual([
+      ['c1', 'download', '2025-09-10'], // no rollup for this action
+      ['c2', 'view', '2025-09-10'], // no rollup for this subject
+      ['c1', 'view', '2025-09-11'], // no rollup for this day
+      ['o1', 'view', '2025-09-22'], // exactly 400 days old stays
+      ['o1', 'view', '2026-10-01'],
+    ])
+  })
 })

@@ -52,96 +52,134 @@
             </Button>
           </div>
 
-          <Card class="relative gap-5 rounded-3xl p-5 sm:p-8">
-            <!-- Title -->
-            <div class="space-y-1.5">
-              <Label for="edit-campaign-title">Title</Label>
-              <Input
-                id="edit-campaign-title"
-                v-model="form.title"
-                type="text"
-                maxlength="200"
-                class="font-mono"
-              />
-            </div>
+          <div
+            role="tablist"
+            aria-label="Campaign sections"
+            class="mb-6 flex gap-2"
+          >
+            <Button
+              v-for="(item, index) in tabs"
+              :id="`campaign-tab-${item.id}`"
+              :key="item.id"
+              type="button"
+              role="tab"
+              :variant="tab === item.id ? 'default' : 'ghost'"
+              :aria-selected="tab === item.id"
+              aria-controls="campaign-tabpanel"
+              :tabindex="tab === item.id ? 0 : -1"
+              class="text-sm font-semibold"
+              @click="tab = item.id"
+              @keydown="onTabKeydown($event, tabs.length, index, (i) => (tab = tabs[i].id))"
+            >
+              {{ item.label }}
+            </Button>
+          </div>
 
-            <!-- Slug -->
-            <div class="space-y-1.5">
-              <Label for="edit-campaign-slug">Link</Label>
-              <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
-                <input
-                  id="edit-campaign-slug"
-                  v-model="form.slug"
-                  type="text"
-                  maxlength="60"
-                  class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
-                  @input="sanitizeSlug"
+          <div
+            id="campaign-tabpanel"
+            role="tabpanel"
+            tabindex="0"
+            :aria-labelledby="`campaign-tab-${tab}`"
+            class="outline-none"
+          >
+            <FramesInsights
+              v-if="tab === 'insights'"
+              :campaign-id="campaignId"
+              :public-path="`/frames/${form.slug}`"
+            />
+            <template v-else>
+              <Card class="relative gap-5 rounded-3xl p-5 sm:p-8">
+                <!-- Title -->
+                <div class="space-y-1.5">
+                  <Label for="edit-campaign-title">Title</Label>
+                  <Input
+                    id="edit-campaign-title"
+                    v-model="form.title"
+                    type="text"
+                    maxlength="200"
+                    class="font-mono"
+                  />
+                </div>
+
+                <!-- Slug -->
+                <div class="space-y-1.5">
+                  <Label for="edit-campaign-slug">Link</Label>
+                  <div class="flex h-11 min-w-0 items-center rounded-xl border border-input bg-transparent px-3.5 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
+                    <span class="mr-0.5 shrink-0 font-mono text-sm font-bold text-foreground">eypi.cc/frames/</span>
+                    <input
+                      id="edit-campaign-slug"
+                      v-model="form.slug"
+                      type="text"
+                      maxlength="60"
+                      class="min-w-0 flex-1 bg-transparent font-mono text-base text-foreground outline-none placeholder:text-muted-foreground"
+                      @input="sanitizeSlug"
+                    >
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-1.5">
+                  <Label for="edit-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="edit-campaign-description"
+                    v-model="form.description"
+                    type="text"
+                    maxlength="1000"
+                    class="font-mono"
+                  />
+                </div>
+
+                <!-- Caption -->
+                <div class="space-y-1.5">
+                  <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
+                  <Textarea
+                    id="edit-campaign-caption"
+                    v-model="form.captionTemplate"
+                    rows="3"
+                    maxlength="2000"
+                    class="resize-y font-mono"
+                  />
+                </div>
+
+                <!-- Save metadata -->
+                <Button
+                  type="button"
+                  size="lg"
+                  :disabled="saving || !form.title.trim()"
+                  class="w-full font-semibold"
+                  @click="saveDetails"
                 >
+                  {{ saving ? 'Saving…' : 'Save Details' }}
+                </Button>
+
+                <!-- Frames (persisted immediately) -->
+                <div class="border-t border-border pt-5">
+                  <p class="mb-1 text-base font-medium">
+                    Frames
+                  </p>
+                  <p class="mb-3 text-xs text-muted-foreground">
+                    Changes here save instantly.
+                  </p>
+                  <DpFrameUploader
+                    :frames="frames"
+                    :busy-index="frameBusyIndex"
+                    @add="onAddFrame"
+                    @remove="onRemoveFrame"
+                    @reorder="onReorderFrame"
+                  />
+                </div>
+              </Card>
+
+              <div class="mt-6 text-center">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  @click="removeCampaign"
+                >
+                  Delete this campaign
+                </Button>
               </div>
-            </div>
-
-            <!-- Description -->
-            <div class="space-y-1.5">
-              <Label for="edit-campaign-description">Description <span class="text-muted-foreground">(optional)</span></Label>
-              <Input
-                id="edit-campaign-description"
-                v-model="form.description"
-                type="text"
-                maxlength="1000"
-                class="font-mono"
-              />
-            </div>
-
-            <!-- Caption -->
-            <div class="space-y-1.5">
-              <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
-              <Textarea
-                id="edit-campaign-caption"
-                v-model="form.captionTemplate"
-                rows="3"
-                maxlength="2000"
-                class="resize-y font-mono"
-              />
-            </div>
-
-            <!-- Save metadata -->
-            <Button
-              type="button"
-              size="lg"
-              :disabled="saving || !form.title.trim()"
-              class="w-full font-semibold"
-              @click="saveDetails"
-            >
-              {{ saving ? 'Saving…' : 'Save Details' }}
-            </Button>
-
-            <!-- Frames (persisted immediately) -->
-            <div class="border-t border-border pt-5">
-              <p class="mb-1 text-base font-medium">
-                Frames
-              </p>
-              <p class="mb-3 text-xs text-muted-foreground">
-                Changes here save instantly.
-              </p>
-              <DpFrameUploader
-                :frames="frames"
-                :busy-index="frameBusyIndex"
-                @add="onAddFrame"
-                @remove="onRemoveFrame"
-                @reorder="onReorderFrame"
-              />
-            </div>
-          </Card>
-
-          <div class="mt-6 text-center">
-            <Button
-              type="button"
-              variant="destructive"
-              @click="removeCampaign"
-            >
-              Delete this campaign
-            </Button>
+            </template>
           </div>
         </template>
       </div>
@@ -152,7 +190,7 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import AppPage from '@/components/layout/AppPage.vue'
-import { ref, reactive, onMounted } from 'vue'
+import { defineAsyncComponent, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -162,8 +200,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
+import { onTabKeydown } from '@/lib/tix/tabKeys'
 import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { DpUploaderFrame, DpFrame } from '@/types/dp'
+
+const FramesInsights = defineAsyncComponent(() => import('@/components/insights/FramesInsights.vue'))
+type CampaignTab = 'details' | 'insights'
+const tab = ref<CampaignTab>('details')
+const tabs: { id: CampaignTab; label: string }[] = [
+  { id: 'details', label: 'Details' },
+  { id: 'insights', label: 'Insights' },
+]
 
 const route = useRoute()
 const router = useRouter()

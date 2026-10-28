@@ -106,12 +106,61 @@ export function getOS(userAgent: string | null): string {
   return 'Unknown'
 }
 
+export type Device = 'mobile' | 'tablet' | 'desktop'
+export type Browser = 'Chrome' | 'Safari' | 'Firefox' | 'Edge' | 'Samsung' | 'Opera' | 'Other'
+export type App = 'messenger' | 'facebook' | 'instagram' | 'tiktok' | 'x' | 'line' | 'discord'
+
+const APP_MARKERS: [App, RegExp][] = [
+  // Messenger carries FBAN/Messenger* and must win over the generic Facebook markers.
+  ['messenger', /FBAN\/Messenger|\bMessenger(?:Lite)?ForiOS\b|\bMESSENGER\b/i],
+  ['facebook', /FBAN\/|FBAV\/|FB_IAB|FBIOS|\bFB4A\b/],
+  ['instagram', /\bInstagram\b/i],
+  ['tiktok', /musical_ly|BytedanceWebview|\bTikTok\b|trill_/i],
+  ['x', /Twitter for|\bTwitterAndroid\b|\bTwitter\//i],
+  ['line', /\bLine\/\d/i],
+  ['discord', /\bDiscord(?:Bot)?\b/i],
+]
+
+export function parseUserAgent(ua: string | null): { device: Device; browser: Browser; app: App | null } {
+  const s = ua ?? ''
+  if (!s) return { device: 'desktop', browser: 'Other', app: null }
+
+  let app: App | null = null
+  for (const [name, re] of APP_MARKERS) {
+    if (re.test(s)) {
+      app = name
+      break
+    }
+  }
+
+  let device: Device = 'desktop'
+  if (/iPad|Tablet|PlayBook|Silk\//i.test(s) || (/Android/i.test(s) && !/Mobile/i.test(s))) {
+    device = 'tablet'
+  } else if (/iPhone|iPod|Android|Mobile|Windows Phone|Opera Mini|webOS|BlackBerry/i.test(s)) {
+    device = 'mobile'
+  }
+
+  let browser: Browser = 'Other'
+  if (/Edg(?:e|A|iOS)?\//.test(s)) browser = 'Edge'
+  else if (/OPR\/|Opera|OPiOS\//.test(s)) browser = 'Opera'
+  else if (/SamsungBrowser\//.test(s)) browser = 'Samsung'
+  else if (/Firefox\/|FxiOS\//.test(s)) browser = 'Firefox'
+  else if (/Chrome\/|CriOS\//.test(s)) browser = 'Chrome'
+  else if (/Safari\/|AppleWebKit\/|\bMobile\/\w+/.test(s)) browser = 'Safari'
+  // iOS in-app webviews carry AppleWebKit without Chrome tokens: that is WebKit, i.e. Safari.
+
+  return { device, browser, app }
+}
+
 export type LinkClickMetadata = {
   linkId: string
   os?: string
   country: string
   referrer: string
   source?: string | null
+  device?: Device
+  browser?: Browser
+  app?: App | null
   visitorHash?: string | null
   // The SPA fallback still sends these until Task 4.3. The counter keys on linkId.
   slug?: string
@@ -120,10 +169,14 @@ export type LinkClickMetadata = {
 
 export async function logLinkClick(db: Client, meta: LinkClickMetadata): Promise<void> {
   const os = meta.os ?? getOS(meta.userAgent ?? null)
+  const parsed = parseUserAgent(meta.userAgent ?? null)
+  const device = meta.device ?? parsed.device
+  const browser = meta.browser ?? parsed.browser
+  const app = meta.app === undefined ? parsed.app : meta.app
   await db.batch([
     {
-      sql: `INSERT INTO analytics (link_id, os, country, referrer, visitor_hash, source)
-        VALUES (?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO analytics (link_id, os, country, referrer, visitor_hash, source, device, browser, app)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         meta.linkId,
         os,
@@ -131,6 +184,9 @@ export async function logLinkClick(db: Client, meta: LinkClickMetadata): Promise
         meta.referrer,
         meta.visitorHash ?? null,
         meta.source ?? null,
+        device,
+        browser,
+        app,
       ],
     },
     {

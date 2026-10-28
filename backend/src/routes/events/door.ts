@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { Client, InStatement } from '@libsql/client/web'
 import { recordAudit } from '../../lib/audit'
 import { db, type Bindings } from '../../lib/db'
+import { etagMatches, LIVE_CACHE_CONTROL } from '../../lib/liveEtag'
 import { canTransition, type AttendeeStatus } from '../../lib/tix/admission'
 import { NOW_SQL, promoteWaitlistStatement } from '../../lib/tix/registration'
 import { actionError, applyDoorAction, attendeeLabel, doorActionStatements, doorOutcome, doorTimestamp, performCheckIn, requireEventLead, type DoorAction } from './shared'
@@ -246,9 +247,8 @@ app.get('/api/events/:slug/live', async (c) => {
   const row = res.rows[0]
   const counts = { confirmed: Number(row?.confirmed ?? 0), checkedIn: Number(row?.checked_in ?? 0), last10min: Number(row?.last10 ?? 0) }
   const etag = `W/"${counts.confirmed}-${counts.checkedIn}-${counts.last10min}"`
-  const headers = { ETag: etag, 'Cache-Control': 'private, no-cache' }
-  const sent = (c.req.header('If-None-Match') ?? '').split(',').map((t) => t.trim())
-  if (sent.includes(etag) || sent.includes('*')) return new Response(null, { status: 304, headers })
+  const headers = { ETag: etag, 'Cache-Control': LIVE_CACHE_CONTROL }
+  if (etagMatches(c.req.header('If-None-Match'), etag)) return new Response(null, { status: 304, headers })
   return c.json(counts, 200, headers)
 })
 

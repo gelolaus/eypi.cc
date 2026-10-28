@@ -359,6 +359,48 @@ describe('links API', () => {
     expect(rows.rows[0].source).toBe('qr')
   })
 
+  it('stores device, browser and app on an unlock click', async () => {
+    const { request, client } = await withOwner()
+    const created = await request('/api/links', post({
+      url: 'https://example.com/secret',
+      password: 'correct-horse',
+      slug: 'secretua',
+    }))
+    const { slug } = await created.json() as { slug: string }
+    const init = post({ password: 'correct-horse' }, '203.0.113.43')
+    ;(init.headers as Record<string, string>)['User-Agent'] =
+      'Mozilla/5.0 (Linux; Android 13; SM-A135F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/450.0.0.38.108;]'
+
+    const res = await request(`/api/links/${slug}/unlock`, init)
+
+    expect(res.status).toBe(200)
+    const rows = await client.execute('SELECT device, browser, app FROM analytics')
+    expect(rows.rows[0]).toMatchObject({ device: 'mobile', browser: 'Chrome', app: 'facebook' })
+  })
+
+  it('stores device, browser and app on a resolve click', async () => {
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute({
+          sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)',
+          args: [owner.id, owner.email, owner.name, owner.role],
+        })
+        await db.execute({
+          sql: `INSERT INTO links (id, user_id, original_url, slug)
+            VALUES ('ua-link', ?, 'https://example.com/dest', 'ua-link')`,
+          args: [owner.id],
+        })
+      },
+    })
+
+    await request('/api/links/resolve/ua-link', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 Version/17.2 Mobile/15E148 Safari/604.1' },
+    })
+    const rows = await client.execute('SELECT device, browser, app FROM analytics')
+
+    expect(rows.rows[0]).toMatchObject({ device: 'tablet', browser: 'Safari', app: null })
+  })
+
   it('returns 410 link_expired for an expired resolve and does not log a click', async () => {
     const { request, client } = await createTestApp({
       seed: async (db) => {

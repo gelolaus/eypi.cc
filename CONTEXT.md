@@ -30,7 +30,7 @@ Use these terms. Prefer them over invented synonyms.
 | **slug** | First path segment. Formats differ by context: link (random), event (`[a-z0-9]+`), DP campaign (`[a-z0-9-]+`). Org slug = `organizations.id`. |
 | **reserved slug** | First-segment path blocked from link slugs so suite routes win. Source: `shared/reservedSlugs.ts`. |
 | **redirect** | HTTP 302 (edge via `LINKS_KV`) or SPA fallback (`RedirectView` → API) from slug → destination. |
-| **analytics** | Per-click rows for a link (`analytics` table) plus denormalized `links.clicks`. |
+| **analytics** | Per-click rows for a link (`analytics` table, see **click row**) plus denormalized `links.clicks` and daily rollups (see **rollup**). |
 | **link report** | Public abuse report on a link (`link_reports`), triaged in the admin panel. |
 | **organization** / **org** | Student-org tenant. Primary key / public handle is the **org slug** (`organizations.id`). |
 | **membership** | `org_members` row linking email → org. |
@@ -61,6 +61,13 @@ Use these terms. Prefer them over invented synonyms.
 | **frame** | PNG overlay image (`dp_frames`). Max 10 per campaign. Stored in R2. |
 | **media** | Org logos and banners, QR logos and frames, in the R2 bucket `eypi-media` (binding `MEDIA`). |
 | **RUM** | Real-user monitoring. The SPA sends Web Vitals batches to `POST /api/rum` (`rum_samples`); hourly rollups write p75 per day, route, metric and device to `rum_daily`. Read in Admin → Speed. |
+| **click row** | One `analytics` row per counted link click: country, OS, `device` (mobile/tablet/desktop), `browser` family, `app`, referrer host, `source` (qr/direct) and a `visitor_hash`. Parsed from the user agent at click time; the UA string is never stored (`shared/linkAnalytics.ts`). Raw rows are deleted once older than 400 days and their Manila day has a rollup. |
+| **source app** | In-app browser a click came from (`analytics.app`): messenger, facebook, instagram, tiktok, x, line, discord, or NULL. |
+| **Manila day** | Calendar day in Asia/Manila (UTC+8), `YYYY-MM-DD`. Every analytics and module day, bucket and rollup uses it (`backend/src/lib/manilaTime.ts`). RUM keeps UTC days. Link-click visitor hashes rotate on the UTC day (worker), while beacon (module event) hashes rotate on the Manila day. |
+| **per-day unique** | Count of distinct `visitor_hash` in one Manila day. The hash is rotated daily, so uniques are never summed or compared across days. |
+| **rollup** | Hourly cron (`backend/src/jobs/rollups.ts`) that rebuilds yesterday's and today's rows: `analytics_daily` (clicks, uniques, qr per link and day), `analytics_daily_dim` (clicks per dimension value, including the `how` hour-of-week bucket 0–167, Monday 00:00 Manila = 0), `module_daily` and `rum_daily`. Retention deletes raw rows only after a rollup exists. |
+| **module event** | One public beacon row in `module_events` (`POST /api/beacon`, no session): module `frames` (view, photo_added, download, share) or `org` (view), the subject id, a daily `visitor_hash`, and the Manila day. Rate-limited to 20 per visitor, subject and action per hour. Rolled up into `module_daily`. |
+| **live view** | Dashboard panel at `GET /api/links/summary/live` (auth): clicks per minute for the last 60 minutes plus the 10 latest clicks as time, country and app only. Polled every 5 s while visible with `If-None-Match` (weak ETag, 304); no Durable Object or WebSocket. |
 | **image variants** | Resized copies of an uploaded image in R2, written by the browser (`PUT /api/media/variants`) and listed in the stored image metadata (`ImageMeta`). `AppImage` builds the `srcset`. Admin → Maintenance backfills existing media. |
 | **query cache** | In-memory cache of GET responses in `src/lib/queryCache.ts`. Writes through `src/lib/api.ts` invalidate it centrally, but only under the `/api/links`, `/api/events`, `/api/dp` and `/api/orgs` prefixes (the media variants PUT is not covered); logout and org switch clear it. |
 | **public shell / app shell** | `PublicShell` renders public pages with no app chrome. `AppShell` (side rail, tab bar) is a lazy chunk loaded only for signed-in routes. |

@@ -99,7 +99,7 @@ describe('GET /api/me needsConsent', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { needsConsent: { document: string; version: string }[] }
     expect(body.needsConsent).toEqual([
-      { document: 'privacy', version: '2026-11-01' },
+      { document: 'privacy', version: '2026-11-15' },
     ])
   })
 })
@@ -136,7 +136,7 @@ describe('POST /api/links consent gate', () => {
     expect(await consentRows(client)).toEqual([
       {
         document: 'privacy',
-        version: '2026-11-01',
+        version: '2026-11-15',
         ip_hash: await hmacIp('test-ip-secret', IP),
         user_agent: USER_AGENT,
       },
@@ -245,7 +245,7 @@ describe('POST /api/legal/consent', () => {
 
     expect(res.status).toBe(200)
     expect(await consentRows(client)).toEqual([
-      { document: 'privacy', version: '2026-11-01', ip_hash: null, user_agent: null },
+      { document: 'privacy', version: '2026-11-15', ip_hash: null, user_agent: null },
     ])
   })
 })

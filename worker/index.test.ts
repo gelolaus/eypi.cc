@@ -246,6 +246,25 @@ describe('edge short-link redirect', () => {
     )
   })
 
+  it('records device, browser and source app from the user agent', async () => {
+    await worker.fetch(
+      new Request(`https://eypi.cc/${SLUG}`, {
+        headers: {
+          'Sec-Fetch-Mode': 'navigate',
+          'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/MessengerForiOS;FBAV/450.0.0.38.108]',
+        },
+      }),
+      makeEnv({ [SLUG]: slugEntry() }, vi.fn(async () => new Response('asset'))),
+      ctx(),
+    )
+
+    expect(logLinkClick).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ device: 'mobile', browser: 'Safari', app: 'messenger' }),
+    )
+  })
+
   it('ignores src=qr on the stored destination and keeps it', async () => {
     const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
     const response = await worker.fetch(

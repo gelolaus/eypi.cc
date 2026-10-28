@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { LEGAL_VERSIONS } from '@shared/legalVersions'
 import { acceptableUse } from './acceptable-use'
 import { privacy } from './privacy'
 import { terms } from './terms'
@@ -24,8 +25,11 @@ describe('legal documents', () => {
     }
 
     for (const document of [privacy, terms, acceptableUse]) {
-      expect(document.version).toBe('2026-11-01')
-      expect(document.effectiveDate).toBe('1 November 2026')
+      const expected = document === privacy
+        ? { version: '2026-11-15', effectiveDate: '15 November 2026' }
+        : { version: '2026-11-01', effectiveDate: '1 November 2026' }
+      expect(document.version).toBe(expected.version)
+      expect(document.effectiveDate).toBe(expected.effectiveDate)
       expect(document.title.length).toBeGreaterThan(0)
       expect(document.sections.length).toBeGreaterThan(0)
       for (const section of document.sections) {
@@ -37,6 +41,12 @@ describe('legal documents', () => {
         }
       }
     }
+  })
+
+  it('keeps each document version in step with LEGAL_VERSIONS', () => {
+    expect(privacy.version).toBe(LEGAL_VERSIONS.privacy)
+    expect(terms.version).toBe(LEGAL_VERSIONS.terms)
+    expect(acceptableUse.version).toBe(LEGAL_VERSIONS['acceptable-use'])
   })
 
   it('covers the privacy bullets without the retired password and wallet claims', () => {
@@ -54,6 +64,18 @@ describe('legal documents', () => {
       '30 days',
       '180 days',
       'deleted daily',
+      '400 days',
+      'source app',
+      'user agent string itself',
+      'cannot link a person across days',
+      'Speed samples',
+      'guest ticket link',
+      'puts those links in the file',
+      'registrations an organizer imported',
+      'per visitor, per campaign (or organization page), per action each hour',
+      'other than registrations for events you lead, which are deleted with the account',
+      'after 400 days',
+      'name and email address stay on those kept records',
       'Cloudflare',
       'Turso',
       'Resend',

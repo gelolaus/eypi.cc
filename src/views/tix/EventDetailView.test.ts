@@ -2,6 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import EventDetailView from './EventDetailView.vue'
+import source from './EventDetailView.vue?raw'
 
 const { replace, confirm } = vi.hoisted(() => ({ replace: vi.fn(), confirm: vi.fn(async () => true) }))
 vi.mock('@/composables/useDialog', () => ({ useDialog: () => ({ confirm }) }))
@@ -153,7 +154,7 @@ describe('EventDetailView tabs', () => {
   it('shows Overview, Attendees and a Door link for an import event, without a Lottery tab', async () => {
     const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' } } } })
     await flushPromises()
-    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees'])
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Insights'])
     expect(wrapper.get('[data-door-link]').attributes('href')).toBe('/manage/tix/launch/door')
     await tab(wrapper, 'Attendees')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Scanner')).toBe(true)
@@ -235,7 +236,7 @@ describe('EventDetailView tabs', () => {
     }
     const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
     await flushPromises()
-    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Lottery'])
+    expect(wrapper.findAll('[data-main-tab]').map((b) => b.text())).toEqual(['Overview', 'Attendees', 'Lottery', 'Insights'])
     await tab(wrapper, 'Lottery')
     expect(wrapper.find('[data-draw]').exists()).toBe(true)
     wrapper.unmount()
@@ -304,5 +305,44 @@ describe('EventDetailView status controls', () => {
     expect(posts()).toContain('/api/events/launch/publish')
     expect(wrapper.get('[data-event-status]').text()).toBe('Published')
     wrapper.unmount()
+  })
+})
+
+describe('EventDetailView insights tab', () => {
+  async function openInsights(insights: unknown) {
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (new URL(raw).pathname === '/api/events/launch/insights') return json(insights)
+      return base(input, init)
+    }))
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await tab(wrapper, 'Insights')
+    return wrapper
+  }
+
+  it('fetches the event insights when the tab is opened', async () => {
+    const wrapper = await openInsights({ byStatus: [], registrationsDaily: [], byAnswer: [], showUpRate: null, checkInCurve: [] })
+    await vi.waitFor(() => {
+      expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('/api/events/launch/insights'))).toBe(true)
+    })
+    wrapper.unmount()
+  })
+
+  it('shows No data for a null show-up rate when there are registrations', async () => {
+    const wrapper = await openInsights({
+      byStatus: [{ status: 'pending', n: 2 }], registrationsDaily: [], byAnswer: [], showUpRate: null, checkInCurve: [],
+    })
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Show-up rate'))
+    expect(wrapper.text()).toContain('No data')
+    wrapper.unmount()
+  })
+})
+
+describe('EventDetailView live widgets', () => {
+  it('keys the live check-in counter by slug so a new event restarts its poll', () => {
+    const usage = source.slice(source.indexOf('<LiveCheckIn'), source.indexOf('/>', source.indexOf('<LiveCheckIn')))
+    expect(usage).toContain(':key="slug"')
   })
 })

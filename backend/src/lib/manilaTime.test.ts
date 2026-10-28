@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { manilaDay, manilaDaySpan, manilaEventStart, manilaHour, manilaTimestamp, manilaWindow } from './manilaTime'
+import { manilaDay, manilaDayRange, manilaDaySpan, manilaEventStart, manilaHour, manilaHourOfWeek, manilaTimestamp, manilaWindow } from './manilaTime'
 
 describe('manilaTime', () => {
   it('maps 2026-10-25T17:00:00Z onto Manila day 2026-10-26', () => {
@@ -36,5 +36,18 @@ describe('manilaTime', () => {
   it('turns a Manila event date and time into the UTC instant', () => {
     expect(manilaEventStart('2026-11-02', '09:30').toISOString()).toBe('2026-11-02T01:30:00.000Z')
     expect(manilaEventStart('2026-11-02', '00:15:00').toISOString()).toBe('2026-11-01T16:15:00.000Z')
+  })
+})
+
+describe('manilaHourOfWeek and manilaDayRange', () => {
+  it('counts hours from Monday 00:00 Manila and wraps Sunday 23:00 to 167', () => {
+    // 2026-10-26 is a Monday. Sunday 16:30Z is Monday 00:30 Manila.
+    expect(manilaHourOfWeek(new Date('2026-10-25T16:30:00Z'))).toBe(0)
+    expect(manilaHourOfWeek(new Date('2026-10-26T16:30:00Z'))).toBe(24)
+    expect(manilaHourOfWeek(new Date('2026-10-25T15:30:00Z'))).toBe(167)
+  })
+
+  it('returns the UTC range of a Manila day', () => {
+    expect(manilaDayRange('2026-10-26')).toEqual(['2026-10-25 16:00:00', '2026-10-26 16:00:00'])
   })
 })

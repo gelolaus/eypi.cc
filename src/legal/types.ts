@@ -4,8 +4,8 @@ export type LegalSection = {
 }
 
 export type LegalDocument = {
-  version: '2026-11-01'
+  version: string
   title: string
-  effectiveDate: '1 November 2026'
+  effectiveDate: string
   sections: LegalSection[]
 }

@@ -214,6 +214,7 @@ import { useRoute } from 'vue-router'
 import { saveAs } from 'file-saver'
 import { useToast } from '@/composables/useToast'
 import { useDpCanvas } from '@/composables/useDpCanvas'
+import { sendModuleBeacon } from '@/lib/beacon'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -338,6 +339,7 @@ async function onHeadshotPicked(e: Event) {
     const bitmap = await downscalePhoto(file)
     if (headshot.value && 'close' in headshot.value) headshot.value.close()
     headshot.value = bitmap
+    sendModuleBeacon('frames', campaign.id, 'photo_added')
     reset()
     scheduleDraw()
   } catch {
@@ -360,6 +362,8 @@ async function download() {
     const filename = `eypi-dp-${safe}${suffix}.png`
     saveAs(blob, filename)
     toast.success('Downloaded. Share your new profile picture.')
+    const frameId = campaign.frames[selectedIndex.value]?.id
+    sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
     api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
   } catch {
     toast.error('Export failed. Try again.')
@@ -373,6 +377,8 @@ async function copyCaption() {
   try {
     await navigator.clipboard.writeText(campaign.captionTemplate)
     toast.success('Caption copied to clipboard!')
+    const frameId = campaign.frames[selectedIndex.value]?.id
+    sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'share')
   } catch {
     toast.error('Could not copy the caption.')
   }
@@ -397,6 +403,8 @@ onMounted(async () => {
 
     Object.assign(campaign, data.campaign)
     if (!campaign.frames.length) throw new Error('This campaign has no frames yet.')
+    // The campaign exists and is shown: count the visit now, not after every frame image has downloaded.
+    sendModuleBeacon('frames', campaign.id, 'view')
 
     frameImgs.value = await Promise.all(campaign.frames.map((frame) => loadImage(frame.url)))
 
