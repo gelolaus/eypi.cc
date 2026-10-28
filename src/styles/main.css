@@ -207,3 +207,16 @@
     animation: none;
   }
 }
+
+/* Route changes: a quick cross-fade between pages. */
+::view-transition-group(root) {
+  animation-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
