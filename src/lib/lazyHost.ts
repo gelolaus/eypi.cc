@@ -21,11 +21,22 @@ export function lazyHost(load: () => Promise<Component>) {
       const message = err instanceof Error ? err.message : ''
       const path = window.location.pathname + window.location.search
       const key = `eypi_chunk_reload:${path}`
-      if (!CHUNK_ERROR_PARTS.some((part) => message.includes(part)) || sessionStorage.getItem(key)) {
+      let reloaded = true
+      try {
+        reloaded = !!sessionStorage.getItem(key)
+      } catch {
+        reloaded = true
+      }
+      if (!CHUNK_ERROR_PARTS.some((part) => message.includes(part)) || reloaded) {
         fail()
         return
       }
-      sessionStorage.setItem(key, '1')
+      try {
+        sessionStorage.setItem(key, '1')
+      } catch {
+        fail()
+        return
+      }
       window.location.assign(path)
     },
   })

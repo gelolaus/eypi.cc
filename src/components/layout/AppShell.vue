@@ -281,9 +281,9 @@ function openPalette() {
 
 function onShortcut(event: KeyboardEvent) {
   if (!appShell.value || event.defaultPrevented) return
-  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+  if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'k') return
   const target = event.target as HTMLElement | null
-  if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return
+  if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT' || target?.closest?.('[role=textbox],[role=combobox]')) return
   event.preventDefault()
   openPalette()
 }
