@@ -1,7 +1,7 @@
 <template>
   <AppPage
     :title="userName ? `Hi, ${userName}.` : 'Hi.'"
-    description="Your links, your org, and the platform at a glance."
+    description="Pick up where you left off."
   >
     <Card
       v-if="pendingInviteCount > 0"

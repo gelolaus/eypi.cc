@@ -6,7 +6,7 @@
         Contact
       </h1>
       <p class="text-sm text-muted-foreground">
-        Last Updated: May 16, 2026
+        Last updated: May 16, 2026
       </p>
     </div>
 
@@ -14,7 +14,7 @@
       <!-- General Support -->
       <div>
         <h2 class="text-xl font-semibold tracking-tight border-b border-border pb-2 mb-4">
-          General Support
+          General support
         </h2>
         <p class="text-muted-foreground mb-3">
           For inquiries and bug reports:
@@ -46,7 +46,7 @@
       <!-- What to Include -->
       <div>
         <h2 class="text-xl font-semibold tracking-tight border-b border-border pb-2 mb-4">
-          What to Include
+          What to include
         </h2>
         <ul class="list-disc pl-5 space-y-2 text-muted-foreground">
           <li>Your organization, school, department, or role</li>

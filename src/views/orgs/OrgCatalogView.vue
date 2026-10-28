@@ -22,7 +22,10 @@
         aria-label="Search organizations"
       />
 
-      <div class="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+      <div
+        v-if="typeFilterOptions.length > 1"
+        class="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible"
+      >
         <Button
           v-for="option in typeFilterOptions"
           :key="option.value ?? 'all'"
@@ -165,10 +168,12 @@ const selectedOrgType = ref<OrgType | null>(null)
 
 const isAuthenticated = computed(() => session.user.value !== null)
 
-const typeFilterOptions = computed(() => [
-  { value: null as OrgType | null, label: 'All' },
-  ...ORG_TYPE_OPTIONS,
-])
+// Only offer categories that have at least one org, so a small directory has no dead chips.
+const typeFilterOptions = computed(() => {
+  const present = new Set(orgs.value.map((org) => org.orgType))
+  const options = ORG_TYPE_OPTIONS.filter((option) => present.has(option.value))
+  return options.length ? [{ value: null as OrgType | null, label: 'All' }, ...options] : []
+})
 
 const filteredOrgs = computed(() => {
   let list = orgs.value

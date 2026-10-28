@@ -1,9 +1,5 @@
 <template>
   <section class="relative flex min-h-dvh w-full flex-col items-center justify-center px-4 py-10 sm:py-24">
-    <BrandLogo
-      to="/"
-      class="mb-8"
-    />
     <Card class="w-full max-w-md gap-6 rounded-3xl bg-card/80 p-6 shadow-[0_24px_80px_-40px_rgba(53,67,140,0.3)] sm:p-8">
       <div class="space-y-3">
         <h1 class="font-display text-3xl font-semibold tracking-tight">
@@ -73,7 +69,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import BrandLogo from '@/components/brand/BrandLogo.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/config/api'

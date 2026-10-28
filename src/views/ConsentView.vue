@@ -8,17 +8,14 @@
         class="flex flex-col gap-4"
         @submit.prevent="onContinue"
       >
-        <div class="flex min-h-11 items-start gap-3">
+        <label class="flex min-h-11 cursor-pointer items-start gap-3 text-base leading-relaxed text-foreground">
           <input
             id="consent-privacy"
             v-model="acceptPrivacy"
             class="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             type="checkbox"
           >
-          <label
-            class="text-base leading-relaxed text-foreground"
-            for="consent-privacy"
-          >
+          <span>
             I agree to the
             <router-link
               class="text-primary underline underline-offset-4"
@@ -27,19 +24,16 @@
             >
               Privacy policy
             </router-link>.
-          </label>
-        </div>
-        <div class="flex min-h-11 items-start gap-3">
+          </span>
+        </label>
+        <label class="flex min-h-11 cursor-pointer items-start gap-3 text-base leading-relaxed text-foreground">
           <input
             id="consent-terms"
             v-model="acceptTerms"
             class="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             type="checkbox"
           >
-          <label
-            class="text-base leading-relaxed text-foreground"
-            for="consent-terms"
-          >
+          <span>
             I agree to the
             <router-link
               class="text-primary underline underline-offset-4"
@@ -48,8 +42,8 @@
             >
               Terms
             </router-link>.
-          </label>
-        </div>
+          </span>
+        </label>
         <p
           v-if="errorMessage"
           class="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-base text-destructive"

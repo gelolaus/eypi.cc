@@ -274,7 +274,7 @@ Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead
 
 APC gold is not in this table because it is never text and never carries white text; on `--background` it is about 1.9:1, so it is decorative only.
 
-**Focus ring.** Every focusable control shows a ring in `--ring`: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`. `--ring` is solid APC blue, so the border of a focused control is full strength and the halo is the 50% ring around it. The base layer also sets `outline-ring/50` on every element.
+**Focus ring.** Every focusable control shows a ring in `--ring`: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50`. `--ring` is solid APC blue, so the border of a focused control is full strength and the halo is the 50% ring around it. The base layer also sets a full-strength `outline-ring` on every element, so links without their own ring still meet 3:1.
 
 **Touch targets.** Controls are 44px by default (section 4).
 

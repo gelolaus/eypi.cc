@@ -40,7 +40,7 @@
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
           <div
-            class="relative w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300"
+            class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300 lg:max-w-[70dvh]"
             :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
             :style="{ aspectRatio: frameAspect }"
           >
@@ -167,7 +167,7 @@
             <Button
               type="button"
               size="lg"
-              :disabled="!headshot || exporting"
+              :disabled="exporting"
               class="w-full font-semibold"
               @click="download"
             >
@@ -352,7 +352,8 @@ async function onHeadshotPicked(e: Event) {
 // ── Export ───────────────────────────────────────────────────────────────────
 async function download() {
   const canvas = canvasRef.value
-  if (!canvas || !headshot.value) return
+  if (!headshot.value) { toast.error('Upload a photo first.'); return }
+  if (!canvas) return
   exporting.value = true
   try {
     const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
@@ -408,6 +409,7 @@ onMounted(async () => {
 
     frameImgs.value = await Promise.all(campaign.frames.map((frame) => loadImage(frame.url)))
 
+    document.title = `${campaign.title} · Eypi`
     loading.value = false
     await nextTick()
     scheduleDraw()

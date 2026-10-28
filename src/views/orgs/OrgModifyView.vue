@@ -304,7 +304,7 @@
         </Card>
         <div
           v-else
-          class="mb-6 overflow-x-auto md:rounded-2xl md:border md:border-border"
+          class="mb-6 md:overflow-x-auto md:rounded-2xl md:border md:border-border"
         >
           <!-- Explicit table roles are kept on purpose: Safari drops table semantics once display is overridden by utilities. -->
           <!-- eslint-disable vuejs-accessibility/no-redundant-roles -->

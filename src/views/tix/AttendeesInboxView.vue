@@ -274,7 +274,7 @@
             :disabled="loadingMore"
             @click="load(true)"
           >
-            {{ loadingMore ? 'Loading…' : 'Load more' }}
+            {{ loadingMore ? 'LOADING...' : 'Load more' }}
           </Button>
         </div>
       </div>

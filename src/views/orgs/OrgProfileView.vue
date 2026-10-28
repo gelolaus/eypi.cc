@@ -80,7 +80,7 @@
 
           <p
             v-if="profile.tagline"
-            class="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground"
+            class="mt-3 max-w-3xl text-base leading-relaxed text-muted-foreground"
           >
             {{ profile.tagline }}
           </p>
@@ -118,7 +118,7 @@
       >
         <div
           v-if="aboutHtml"
-          class="max-w-none text-sm leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
+          class="max-w-none text-base leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
           v-html="aboutHtml"
         />
         <p

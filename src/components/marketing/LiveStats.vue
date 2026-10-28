@@ -64,6 +64,8 @@ const stats = ref<PlatformStats | null>(null)
 const failed = ref(false)
 const status = computed(() => (failed.value ? 'error' : stats.value ? 'ready' : 'loading'))
 
+const MIN_SHOWN = 5
+
 const items: { key: keyof PlatformStats; label: string }[] = [
   { key: 'users', label: 'Students signed up' },
   { key: 'orgs', label: 'Orgs' },
@@ -77,9 +79,10 @@ const items: { key: keyof PlatformStats; label: string }[] = [
   { key: 'frameDownloads', label: 'Frame downloads' },
 ]
 
-// Keep every tile while loading so the skeleton holds its shape; once loaded, drop zeros.
+// Keep every tile while loading so the skeleton holds its shape; once loaded, drop counts
+// under 5 because tiny numbers weaken the claim.
 const visibleItems = computed(() =>
-  stats.value ? items.filter(item => stats.value![item.key] > 0) : items,
+  stats.value ? items.filter(item => stats.value![item.key] >= MIN_SHOWN) : items,
 )
 
 function formatCount(value: number): string {

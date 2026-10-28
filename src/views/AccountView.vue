@@ -167,7 +167,7 @@
                 :key="org.id"
               >
                 <router-link
-                  class="inline-flex min-h-8 items-center rounded-lg text-sm font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  class="inline-flex min-h-11 items-center rounded-lg text-sm font-semibold text-primary underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   :to="`/orgs/modify/${org.id}`"
                 >
                   {{ org.name }}

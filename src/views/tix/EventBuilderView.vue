@@ -206,7 +206,6 @@
                   >
                     <Button
                       type="button"
-                      size="sm"
                       :variant="preview ? 'ghost' : 'default'"
                       :aria-pressed="!preview"
                       @click="preview = false"
@@ -215,7 +214,6 @@
                     </Button>
                     <Button
                       type="button"
-                      size="sm"
                       :variant="preview ? 'default' : 'ghost'"
                       :aria-pressed="preview"
                       @click="showPreview"

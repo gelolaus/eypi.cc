@@ -5,7 +5,7 @@
       aria-hidden="true"
     />
     <div
-      class="float-slow pointer-events-none absolute -left-10 top-24 -z-10 size-40 rounded-3xl bg-primary/15"
+      class="float-slow pointer-events-none absolute -left-12 -top-6 -z-10 size-40 sm:-left-10 sm:top-24 rounded-3xl bg-primary/15"
       aria-hidden="true"
     />
     <div

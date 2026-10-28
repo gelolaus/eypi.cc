@@ -75,3 +75,13 @@ describe('LiveStats', () => {
     expect(wrapper.text()).toContain('Stats are unavailable right now.')
   })
 })
+
+describe('LiveStats small numbers', () => {
+  it('hides tiles under 5 so tiny counts do not weaken the claim', async () => {
+    stubFetch(async () => new Response(JSON.stringify({ ...stats, orgs: 1, frames: 1, frameDownloads: 2 }), { headers: { 'Content-Type': 'application/json' } }))
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    expect(wrapper.findAll('dd')).toHaveLength(7)
+    expect(wrapper.text()).not.toContain('Frame downloads')
+  })
+})

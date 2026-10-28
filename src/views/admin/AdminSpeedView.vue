@@ -15,7 +15,6 @@
         <Button
           v-for="d in [7, 28]"
           :key="d"
-          size="sm"
           :variant="days === d ? 'secondary' : 'outline'"
           :aria-pressed="days === d"
           @click="setDays(d)"
