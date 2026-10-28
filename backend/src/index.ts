@@ -17,6 +17,7 @@ import accountRoutes from './routes/account'
 import mediaVariantRoutes from './routes/mediaVariants'
 import meRoutes from './routes/me'
 import reportRoutes from './routes/reports'
+import beaconRoutes from './routes/beacon'
 import rumRoutes from './routes/rum'
 import eventRoutes from './routes/events/index'
 import dpRoutes from './routes/dp'
@@ -82,6 +83,7 @@ app.route('/', legalRoutes)
 app.route('/', linkRoutes)
 app.route('/', reportRoutes)
 app.route('/', rumRoutes)
+app.route('/', beaconRoutes)
 app.route('/', eventRoutes)
 app.route('/', dpRoutes)
 app.route('/api/orgs', orgsRoutes)

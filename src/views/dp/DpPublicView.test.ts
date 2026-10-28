@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { saveAs } from 'file-saver'
 import DpPublicView from './DpPublicView.vue'
 import { useToast } from '@/composables/useToast'
+import { sendModuleBeacon } from '@/lib/beacon'
+
+vi.mock('@/lib/beacon', () => ({ sendModuleBeacon: vi.fn() }))
 
 vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
 
@@ -89,6 +92,7 @@ beforeEach(() => {
   const toast = useToast()
   while (toast.toasts.value.length > 0) toast.dismiss(toast.toasts.value[0].id)
   vi.mocked(saveAs).mockReset()
+  vi.mocked(sendModuleBeacon).mockReset()
 })
 
 afterEach(() => {
@@ -161,5 +165,27 @@ describe('DpPublicView mobile controls', () => {
     expect(wrapper.html()).not.toContain('text-[0.65rem]')
     const shape = wrapper.findAll('button').find((b) => b.text() === 'Circle Preview')
     expect(shape!.classes().join(' ')).toContain('min-h-11')
+  })
+})
+
+describe('DpPublicView beacons', () => {
+  it('sends view once per page load, then photo_added and download', async () => {
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close() {} })))
+    const wrapper = await mountReady()
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toEqual([['frames', 'camp-1', 'view']])
+
+    const input = wrapper.get('input[type="file"]').element as HTMLInputElement
+    chooseFile(input, new File([new Uint8Array([1])], 'photo.jpg', { type: 'image/jpeg' }))
+    await wrapper.get('input[type="file"]').trigger('change')
+    await flushPromises()
+    const download = wrapper.findAll('button').find((button) => button.text() === 'Download')
+    await download!.trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toEqual([
+      ['frames', 'camp-1', 'view'],
+      ['frames', 'camp-1', 'photo_added'],
+      ['frames', 'camp-1:frame-1', 'download'],
+    ])
   })
 })

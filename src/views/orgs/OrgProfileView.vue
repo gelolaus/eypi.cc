@@ -229,6 +229,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
+import { sendModuleBeacon } from '@/lib/beacon'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { renderMarkdown } from '@/composables/useMarkdown'
@@ -342,6 +343,7 @@ async function fetchProfile(slug: string) {
     if (!res.ok) throw new Error(data.error || 'Organization not found.')
     profile.value = data.org
     events.value = data.events ?? { upcoming: [], past: [] }
+    sendModuleBeacon('org', slug, 'view')
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Organization not found.'
   } finally {

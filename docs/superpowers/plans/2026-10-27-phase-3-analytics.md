@@ -91,8 +91,8 @@
 **Interfaces:**
 - Produces: `POST /api/beacon` (text/plain JSON `{ module: 'frames'|'org', subjectId: string, action: 'view'|'photo_added'|'download'|'share' }`) → 204; resolves `org_id` from the subject (campaign or org), computes `visitor_hash` with `IP_HASH_SECRET` the same way as clicks; `sendModuleBeacon(module, subjectId, action): void`.
 
-- [ ] **Step 1: Failing tests:** unknown subject → 204 and no row (no existence oracle); invalid action for module (`org` + `download`) → 400; `rate limits beacons per visitor` (same visitor, subject and action more than 20 per hour → 204 but not stored); `view` sent once per page load.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(analytics): record frames and org page events`.
+- [x] **Step 1: Failing tests:** unknown subject → 204 and no row (no existence oracle); invalid action for module (`org` + `download`) → 400; `rate limits beacons per visitor` (same visitor, subject and action more than 20 per hour → 204 but not stored); `view` sent once per page load.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(analytics): record frames and org page events`.
 
 ### Task 6: Frames and Tix insights
 
