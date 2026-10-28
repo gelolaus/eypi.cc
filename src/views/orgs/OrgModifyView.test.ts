@@ -224,6 +224,26 @@ describe('OrgModifyView members', () => {
     expect(wrapper.text()).not.toContain('Invite an active member before transferring ownership.')
     wrapper.unmount()
   })
+
+  it('offers one invite action when the org has no members and focuses the invite field', async () => {
+    installFetch({ asOwner: true, members: [] })
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No members yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Invite your first member')
+    expect(wrapper.find('[data-skeleton-row]').exists()).toBe(false)
+
+    await actions[0].trigger('click')
+    expect(document.activeElement?.id).toBe('invite-email')
+    wrapper.unmount()
+  })
 })
 
 describe('OrgModifyView images', () => {
@@ -446,6 +466,86 @@ describe('OrgModifyView mobile layout', () => {
     expect(wrapper.get('thead').classes()).not.toContain('hidden')
     expect(wrapper.findAll('tbody [role="row"]')).toHaveLength(1)
     expect(wrapper.findAll('tbody [role="cell"]')).toHaveLength(4)
+    wrapper.unmount()
+  })
+})
+
+describe('OrgModifyView undo', () => {
+  const pending = (email: string) => ({ email, user_id: null, name: null, activated_at: null, declined_at: null })
+  const active = (email: string) => ({ email, user_id: `u-${email}`, name: email, activated_at: '2026-10-01T00:00:00.000Z', declined_at: null })
+  let deletes: Array<{ path: string; body: string; org: string | null }>
+
+  function installWithDelete(members: unknown[]) {
+    installFetch({ asOwner: true, members })
+    const base = globalThis.fetch as unknown as (i: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    deletes = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        deletes.push({ path: pathname(input), body: String(init.body), org: new Headers(init.headers).get('X-Active-Org-Id') })
+        return json({ success: true })
+      }
+      return base(input, init)
+    }))
+  }
+
+  async function mountMembers(members: unknown[]) {
+    installWithDelete(members)
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    return wrapper
+  }
+
+  const button = (wrapper: ReturnType<typeof mount>, label: string, n = 0) =>
+    wrapper.findAll('button').filter((b) => b.text() === label)[n]
+
+  afterEach(() => {
+    window.dispatchEvent(new Event('pagehide'))
+    vi.useRealTimers()
+  })
+
+  it('cancels an invite without a dialog and sends the DELETE after 5 s', async () => {
+    const wrapper = await mountMembers([pending('bea@student.apc.edu.ph')])
+    await button(wrapper, 'Cancel invite').trigger('click')
+
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(wrapper.text()).not.toContain('bea@student.apc.edu.ph')
+    expect(deletes).toEqual([])
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0]).toMatchObject({ path: '/api/orgs/jpcs/members', org: 'jpcs' })
+    wrapper.unmount()
+  })
+
+  it('still deletes from the original org when the route changes inside the window', async () => {
+    const wrapper = await mountMembers([pending('bea@student.apc.edu.ph')])
+    await button(wrapper, 'Cancel invite').trigger('click')
+    await router.push('/orgs/modify/other')
+    localStorage.setItem('active_org_id', 'other')
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(deletes).toHaveLength(1)
+    expect(deletes[0]).toMatchObject({ path: '/api/orgs/jpcs/members', org: 'jpcs' })
+    expect(deletes[0].body).toContain('bea@student.apc.edu.ph')
+    wrapper.unmount()
+  })
+
+  it('keeps overlapping removals independent', async () => {
+    const wrapper = await mountMembers([active('ana@student.apc.edu.ph'), active('ben@student.apc.edu.ph')])
+    await button(wrapper, 'Remove').trigger('click')
+    await button(wrapper, 'Remove').trigger('click')
+    expect(wrapper.text()).not.toContain('ana@student.apc.edu.ph')
+    expect(wrapper.text()).not.toContain('ben@student.apc.edu.ph')
+
+    const toasts = useToast().toasts.value.filter((t) => t.message === 'Member removed.')
+    toasts[0].action!.onClick()
+    await flushPromises()
+    expect(wrapper.text()).toContain('ana@student.apc.edu.ph')
+    expect(wrapper.text()).not.toContain('ben@student.apc.edu.ph')
+    toasts[1].action!.onClick()
+    await flushPromises()
+    expect(wrapper.text()).toContain('ben@student.apc.edu.ph')
+    expect(deletes).toEqual([])
     wrapper.unmount()
   })
 })

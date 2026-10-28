@@ -53,7 +53,8 @@
         :selected-ids="selectedIds"
         @analytics="openAnalytics"
         @copy="copyLink"
-        @delete="confirmDelete"
+        @create="openCreate"
+        @delete="deleteLink"
         @disable="setDisabled($event, true)"
         @edit="openEdit"
         @enable="setDisabled($event, false)"
@@ -72,7 +73,7 @@
           aria-label="Disable selected"
           variant="outline"
           type="button"
-          @click="confirmBulkDisable"
+          @click="disableSelected"
         >
           Disable selected
         </Button>
@@ -110,6 +111,7 @@ import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
+import { activeOrgHeaders, activeOrgId, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import {
   linksKey,
   useLinks,
@@ -233,20 +235,27 @@ async function copyLink(link: LinkListItem) {
   }
 }
 
-async function confirmDelete(link: LinkListItem) {
-  const ok = await dialog.confirm({
-    title: 'Delete this link?',
-    body: `Removes eypi.cc/${link.slug}. This cannot be undone.`,
-    confirmLabel: 'Delete link',
+// Delete waits out the undo window before it is sent, so nothing is lost if Undo is tapped.
+// Reverts work per link id so overlapping Undo actions never undo each other.
+function deleteLink(link: LinkListItem) {
+  const prev = previousKey(items.value, link.id, (row) => row.id)
+  const wasSelected = selectedIds.value.includes(link.id)
+  const headers = activeOrgHeaders()
+  const orgId = activeOrgId()
+  const same = () => activeOrgId() === orgId
+  runWithUndo({
+    message: 'Link deleted.',
+    apply: () => {
+      items.value = items.value.filter((item) => item.id !== link.id)
+      selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
+    },
+    revert: () => {
+      if (!same()) return
+      items.value = reinsert(items.value, link, prev, (row) => row.id)
+      if (wasSelected && !selectedIds.value.includes(link.id)) selectedIds.value = [...selectedIds.value, link.id]
+    },
+    commit: () => remove(link.id, { headers }),
   })
-  if (!ok) return
-  try {
-    await remove(link.id)
-    selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
-    toast.success('Link deleted.')
-  } catch {
-    toast.error('Could not delete the link.')
-  }
 }
 
 async function confirmBulkDelete() {
@@ -266,21 +275,34 @@ async function confirmBulkDelete() {
   }
 }
 
-async function confirmBulkDisable() {
-  const count = selectedIds.value.length
-  const ok = await dialog.confirm({
-    title: `Disable ${count} links?`,
-    body: 'Disabled links stop redirecting until you enable them.',
-    confirmLabel: 'Disable',
+function disableSelected() {
+  const ids = selectedIds.value.slice()
+  if (ids.length === 0) return
+  const stamp = new Date().toISOString()
+  const headers = activeOrgHeaders()
+  const orgId = activeOrgId()
+  const same = () => activeOrgId() === orgId
+  const changed = new Map<string, { disabledAt: string | null; disabledReason: string | null }>()
+  runWithUndo({
+    message: ids.length === 1 ? 'Link disabled.' : `${ids.length} links disabled.`,
+    apply: () => {
+      items.value = items.value.map((item) => {
+        if (!ids.includes(item.id) || item.disabledAt) return item
+        changed.set(item.id, { disabledAt: item.disabledAt, disabledReason: item.disabledReason })
+        return { ...item, disabledAt: stamp, disabledReason: 'user' }
+      })
+      selectedIds.value = selectedIds.value.filter((id) => !ids.includes(id))
+    },
+    revert: () => {
+      if (!same()) return
+      items.value = items.value.map((item) => {
+        const original = changed.get(item.id)
+        return original ? { ...item, ...original } : item
+      })
+      selectedIds.value = [...selectedIds.value, ...ids.filter((id) => !selectedIds.value.includes(id))]
+    },
+    commit: () => bulk('disable', ids, { headers }),
   })
-  if (!ok) return
-  try {
-    await bulk('disable', selectedIds.value)
-    selectedIds.value = []
-    toast.success('Links disabled.')
-  } catch {
-    toast.error('Could not disable the selected links.')
-  }
 }
 
 async function setDisabled(link: LinkListItem, disabled: boolean) {

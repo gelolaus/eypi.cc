@@ -161,12 +161,12 @@
           Select all loaded ({{ rows.length }})
         </label>
 
-        <p
+        <Card
           v-if="!rows.length && !error"
-          class="rounded-2xl border border-border px-4 py-12 text-center text-sm font-medium text-muted-foreground"
+          class="rounded-2xl p-0"
         >
-          {{ searchQuery.trim() ? `No results for "${searchQuery.trim()}"` : `No ${activeLabel.toLowerCase()} registrations` }}
-        </p>
+          <EmptyState :title="emptyTitle" />
+        </Card>
 
         <Card
           v-for="row in rows"
@@ -274,7 +274,7 @@
             :disabled="loadingMore"
             @click="load(true)"
           >
-            {{ loadingMore ? 'Loading…' : 'Load more' }}
+            {{ loadingMore ? 'LOADING...' : 'Load more' }}
           </Button>
         </div>
       </div>
@@ -294,6 +294,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import EmptyState from '@/components/EmptyState.vue'
 
 interface InboxRow {
   id: string
@@ -377,6 +378,10 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 const selectedIds = computed(() => [...selected.value])
 const allSelected = computed(() => rows.value.length > 0 && rows.value.every((row) => selected.value.has(row.id)))
 const activeLabel = computed(() => STATUS_LABEL[activeStatus.value] ?? '')
+const emptyTitle = computed(() => {
+  const query = searchQuery.value.trim()
+  return query ? `No results for "${query}"` : `No ${activeLabel.value.toLowerCase()} registrations`
+})
 
 function fullName(row: InboxRow): string {
   return `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || 'Guest'

@@ -7,17 +7,17 @@
       <h1 class="mb-2 font-heading text-3xl font-semibold tracking-tight">
         {{ document.title }}
       </h1>
-      <p class="font-mono text-xs text-muted-foreground">
+      <p class="font-mono text-sm text-muted-foreground">
         Version {{ document.version }}
       </p>
-      <p class="font-mono text-xs text-muted-foreground">
+      <p class="font-mono text-sm text-muted-foreground">
         Effective {{ document.effectiveDate }}
       </p>
     </div>
 
     <div
       v-if="document"
-      class="max-w-prose space-y-8 text-sm leading-relaxed"
+      class="max-w-prose space-y-8 text-base leading-relaxed"
     >
       <section
         v-for="(section, index) in document.sections"

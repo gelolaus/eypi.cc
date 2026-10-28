@@ -11,20 +11,13 @@
       {{ banner }}
     </p>
 
-    <div
+    <ListSkeleton
       v-if="query.status.value === 'loading' || query.status.value === 'idle'"
-      role="status"
-      aria-busy="true"
-      class="space-y-4"
-    >
-      <span class="sr-only">Loading your tickets</span>
-      <div
-        v-for="n in 2"
-        :key="n"
-        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+      :rows="2"
+      :row-height="192"
+      :radius="24"
+      label="Loading your tickets"
+    />
 
     <Card
       v-else-if="query.status.value === 'error'"
@@ -47,22 +40,13 @@
 
     <Card
       v-else-if="tickets.length === 0"
-      class="items-center gap-0 rounded-3xl p-10 text-center"
+      class="rounded-3xl p-0"
     >
-      <h2 class="text-lg font-semibold">
-        No tickets yet
-      </h2>
-      <p class="mt-1 text-sm text-muted-foreground">
-        When you register for an event, your ticket shows up here.
-      </p>
-      <Button
-        as-child
-        class="mt-4"
-      >
-        <router-link to="/orgs">
-          Find events through organizations
-        </router-link>
-      </Button>
+      <EmptyState
+        title="No tickets yet"
+        body="When you register for an event, your ticket shows up here."
+        :action="{ label: 'Browse events', to: '/orgs' }"
+      />
     </Card>
 
     <template v-else>
@@ -109,7 +93,9 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import AppPage from '@/components/layout/AppPage.vue'
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import TicketCard from '@/components/tix/TicketCard.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ApiError, api } from '@/lib/api'

@@ -29,10 +29,12 @@
       </p>
     </div>
 
-    <div
+    <ListSkeleton
       v-if="loading"
-      class="h-40 animate-pulse rounded-2xl bg-muted"
-      aria-hidden="true"
+      :rows="6"
+      :row-height="210"
+      :md-row-height="53"
+      :radius="16"
     />
 
     <p
@@ -134,13 +136,14 @@
         :disabled="loadingMore"
         @click="load(false)"
       >
-        {{ loadingMore ? 'Loading...' : 'Load more' }}
+        {{ loadingMore ? 'LOADING...' : 'Load more' }}
       </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'

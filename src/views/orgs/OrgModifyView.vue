@@ -4,16 +4,11 @@
       <OrgLockout />
     </div>
 
-    <div
+    <DetailSkeleton
       v-else-if="loading"
-      role="status"
-      aria-busy="true"
-      class="space-y-4"
-    >
-      <span class="sr-only">Loading</span>
-      <div class="h-10 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
-      <div class="h-64 rounded-3xl bg-muted motion-safe:animate-pulse" />
-    </div>
+      :title-height="40"
+      :body-height="256"
+    />
 
     <div
       v-else-if="error"
@@ -283,9 +278,12 @@
           Members
         </h3>
 
-        <div
+        <ListSkeleton
           v-if="loadingMembers"
-          class="mb-6 h-20 animate-pulse rounded-xl bg-muted"
+          class="mb-6"
+          :rows="1"
+          :row-height="80"
+          label="Loading members"
         />
         <p
           v-else-if="membersError"
@@ -294,15 +292,19 @@
         >
           {{ membersError }}
         </p>
-        <p
+        <Card
           v-else-if="members.length === 0"
-          class="mb-6 text-sm text-muted-foreground"
+          class="mb-6 rounded-2xl p-0"
         >
-          No members yet.
-        </p>
+          <EmptyState
+            title="No members yet"
+            body="Invite a teammate to help manage this org."
+            :action="{ label: 'Invite your first member', onClick: focusInviteEmail }"
+          />
+        </Card>
         <div
           v-else
-          class="mb-6 overflow-x-auto md:rounded-2xl md:border md:border-border"
+          class="mb-6 md:overflow-x-auto md:rounded-2xl md:border md:border-border"
         >
           <!-- Explicit table roles are kept on purpose: Safari drops table semantics once display is overridden by utilities. -->
           <!-- eslint-disable vuejs-accessibility/no-redundant-roles -->
@@ -530,9 +532,13 @@
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { ImageMeta } from '@/lib/images/variants'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -545,6 +551,7 @@ import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
+import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
@@ -643,6 +650,10 @@ function isOwnerMember(member: OrgMember): boolean {
 function memberLabel(member: OrgMember): string {
   const name = member.name?.trim()
   return name ? `${name} (${member.email})` : member.email
+}
+
+function focusInviteEmail() {
+  document.getElementById('invite-email')?.focus()
 }
 
 function messageFrom(data: unknown, fallback: string): string {
@@ -890,47 +901,43 @@ async function sendInvite() {
   }
 }
 
-async function deleteMember(email: string, fallback: string) {
+// Both are reversible: a removed member can be re-invited. The request waits out the undo window.
+function removeWithUndo(email: string, message: string, fallback: string) {
+  // Everything the request needs is fixed now; the route may change before it is sent.
+  const orgSlug = slug.value
+  const headers = { 'Content-Type': 'application/json', ...activeOrgHeaders() }
+  const member = members.value.find((row) => row.email === email)
+  if (!member) return
+  const prev = previousKey(members.value, email, (row) => row.email)
+  const same = () => slug.value === orgSlug
   membersActionError.value = ''
-  const res = await api.raw(`/api/orgs/${slug.value}/members`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+  runWithUndo({
+    message,
+    apply: () => {
+      if (same()) members.value = members.value.filter((row) => row.email !== email)
+    },
+    revert: () => {
+      if (same()) members.value = reinsert(members.value, member, prev, (row) => row.email)
+    },
+    commit: async () => {
+      const res = await api.raw(`/api/orgs/${orgSlug}/members`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify({ email }),
+        keepalive: true,
+      })
+      if (!res.ok) throw new Error(messageFrom(await res.json().catch(() => null), fallback))
+      if (same()) await fetchMembers()
+    },
   })
-  const data = await res.json() as unknown
-  if (!res.ok) {
-    membersActionError.value = messageFrom(data, fallback)
-    return
-  }
-  await fetchMembers()
 }
 
-async function removeMember(email: string) {
-  const ok = await dialog.confirm({
-    title: 'Remove this member?',
-    body: `Removes ${email} from this org. They will lose access until invited again.`,
-    confirmLabel: 'Remove member',
-  })
-  if (!ok) return
-  try {
-    await deleteMember(email, 'Could not remove member.')
-  } catch {
-    membersActionError.value = 'Could not remove member.'
-  }
+function removeMember(email: string) {
+  removeWithUndo(email, 'Member removed.', 'Could not remove member.')
 }
 
-async function cancelInvite(email: string) {
-  const ok = await dialog.confirm({
-    title: 'Cancel this invite?',
-    body: `Cancels the invite for ${email}.`,
-    confirmLabel: 'Cancel invite',
-  })
-  if (!ok) return
-  try {
-    await deleteMember(email, 'Could not cancel invite.')
-  } catch {
-    membersActionError.value = 'Could not cancel invite.'
-  }
+function cancelInvite(email: string) {
+  removeWithUndo(email, 'Invite cancelled.', 'Could not cancel invite.')
 }
 
 async function resendInvite(email: string) {

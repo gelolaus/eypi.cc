@@ -219,3 +219,26 @@ describe('DpPublicView beacons', () => {
     ])
   })
 })
+
+describe('DpPublicView audit fixes', () => {
+  it('keeps Download enabled and says what to do when no photo is chosen', async () => {
+    const wrapper = await mountReady()
+    const download = wrapper.findAll('button').find((button) => button.text() === 'Download')
+    expect(download!.attributes('disabled')).toBeUndefined()
+    await download!.trigger('click')
+    await flushPromises()
+    expect(useToast().toasts.value.map((toast) => toast.message)).toContain('Upload a photo first.')
+    expect(vi.mocked(saveAs)).not.toHaveBeenCalled()
+  })
+
+  it('titles the tab with the campaign name once loaded', async () => {
+    document.title = 'Frame · Eypi'
+    await mountReady()
+    expect(document.title).toBe('Launch · Eypi')
+  })
+
+  it('caps the canvas height so the controls stay near the fold on desktop', async () => {
+    const wrapper = await mountReady()
+    expect(wrapper.get('canvas').element.parentElement!.className).toContain('lg:max-w-[70dvh]')
+  })
+})

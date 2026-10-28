@@ -253,6 +253,59 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  describe('install entry', () => {
+    function fireInstallPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {
+      const event = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
+        prompt: ReturnType<typeof vi.fn>
+        userChoice: Promise<{ outcome: string }>
+      }
+      event.prompt = vi.fn(async () => undefined)
+      event.userChoice = Promise.resolve({ outcome })
+      window.dispatchEvent(event)
+      return event
+    }
+    const installItem = (menu: HTMLElement) =>
+      Array.from(menu.querySelectorAll<HTMLElement>('[data-slot="dropdown-menu-item"]'))
+        .find((el) => el.textContent?.trim() === 'Install Eypi')
+
+    afterEach(() => {
+      window.dispatchEvent(new Event('appinstalled'))
+    })
+
+    it('is hidden until the browser offers installation', async () => {
+      signIn(0)
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      expect(installItem(menu)).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('shows a 44px Install Eypi item that calls prompt() when clicked', async () => {
+      signIn(0)
+      const event = fireInstallPrompt()
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      const item = installItem(menu)!
+      expect(item).toBeDefined()
+      expect(item.className).toContain('min-h-11')
+      expect(item.className).toContain('rounded-xl')
+      item.click()
+      await flushPromises()
+      expect(event.prompt).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it('disappears after appinstalled', async () => {
+      signIn(0)
+      fireInstallPrompt()
+      window.dispatchEvent(new Event('appinstalled'))
+      const wrapper = await mountAt('/links')
+      const menu = await openAccountMenu(wrapper, 'sidebar')
+      expect(installItem(menu)).toBeUndefined()
+      wrapper.unmount()
+    })
+  })
+
   it('signs out from the menu and returns to the login page', async () => {
     signIn(0)
     const wrapper = await mountAt('/links')
@@ -299,6 +352,138 @@ describe('AppShell (signed in)', () => {
     const wrapper = await mountAt('/orgs')
     expect(wrapper.find('[data-app-shell]').exists()).toBe(true)
     wrapper.unmount()
+  })
+})
+
+describe('Command palette shortcut', () => {
+  const palette = () => document.body.querySelector('[data-slot="dialog-content"]')
+
+  async function pressShortcut(target: EventTarget = document.body, init: KeyboardEventInit = {}) {
+    const event = new KeyboardEvent('keydown', { key: 'k', bubbles: true, cancelable: true, ...init })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('opens on Ctrl+K and Cmd+K', async () => {
+    signIn()
+    await mountAt('/links')
+
+    await pressShortcut(document.body, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+
+    palette()!.querySelector<HTMLElement>('[role="option"]')!.click()
+    await flushPromises()
+    await vi.waitFor(() => expect(palette()).toBeNull())
+
+    await pressShortcut(document.body, { metaKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('closes on Escape and restores focus through the mounted palette', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    const trigger = wrapper.get('button[aria-label="Search and jump"]').element as HTMLButtonElement
+    trigger.focus()
+
+    await pressShortcut(trigger, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+    const field = palette()!.querySelector<HTMLInputElement>('[role="combobox"]')!
+    await vi.waitFor(() => expect(document.activeElement).toBe(field))
+
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => expect(palette()).toBeNull())
+    await vi.waitFor(() => expect(document.activeElement).toBe(trigger))
+
+    // The lazy component stays mounted after the first open, so reopening is immediate.
+    await pressShortcut(trigger, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('stays inert on public pages', async () => {
+    await mountAt('/')
+    await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+
+  it('ignores the shortcut while focus is in an input, textarea, select or editable element', async () => {
+    signIn()
+    await mountAt('/links')
+
+    for (const tag of ['input', 'textarea', 'select']) {
+      const field = document.createElement(tag)
+      if (tag === 'input') field.setAttribute('type', 'text')
+      document.body.appendChild(field)
+      ;(field as HTMLElement).focus()
+      await pressShortcut(field, { ctrlKey: true })
+      await flushPromises()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(palette()).toBeNull()
+      field.remove()
+    }
+
+    const editable = document.createElement('div')
+    editable.contentEditable = 'true'
+    editable.tabIndex = 0
+    document.body.appendChild(editable)
+    editable.focus()
+    await pressShortcut(editable, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+
+  it('ignores an event another handler already consumed', async () => {
+    signIn()
+    await mountAt('/links')
+    const event = new KeyboardEvent('keydown', { key: 'k', bubbles: true, cancelable: true, ctrlKey: true })
+    event.preventDefault()
+    document.body.dispatchEvent(event)
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+
+  it('does not open over another open dialog', async () => {
+    signIn()
+    await mountAt('/links')
+    const other = document.createElement('div')
+    other.setAttribute('role', 'dialog')
+    other.setAttribute('data-state', 'open')
+    document.body.appendChild(other)
+    const event = await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+    expect(event.defaultPrevented).toBe(false)
+    other.remove()
+  })
+
+  it('opens one palette when the shortcut is pressed twice quickly', async () => {
+    signIn()
+    await mountAt('/links')
+    await pressShortcut(document.body, { ctrlKey: true })
+    await pressShortcut(document.body, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+    expect(document.body.querySelectorAll('[data-slot="dialog-content"]')).toHaveLength(1)
+  })
+
+  it('opens from the search button in the side rail', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    await wrapper.get('button[aria-label="Search and jump"]').trigger('click')
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('removes the shortcut listener on unmount', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    wrapper.unmount()
+    await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
   })
 })
 

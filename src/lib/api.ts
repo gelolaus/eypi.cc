@@ -9,6 +9,8 @@ function pathnameOf(path: string): string {
 export type ApiRequestOptions = {
   headers?: HeadersInit
   signal?: AbortSignal
+  /** Lets the request finish after the page unloads. */
+  keepalive?: boolean
 }
 
 export class ApiError extends Error {
@@ -122,6 +124,7 @@ function jsonInit(method: string, body: unknown, opts?: ApiRequestOptions): Requ
     method,
     headers: opts?.headers,
     signal: opts?.signal,
+    keepalive: opts?.keepalive,
     body: body === undefined ? undefined : JSON.stringify(body),
   }
 }
@@ -140,7 +143,7 @@ export const api = {
     return request<T>(path, jsonInit('PUT', body, opts))
   },
   del<T>(path: string, opts?: ApiRequestOptions): Promise<T> {
-    return request<T>(path, { method: 'DELETE', headers: opts?.headers, signal: opts?.signal })
+    return request<T>(path, { method: 'DELETE', headers: opts?.headers, signal: opts?.signal, keepalive: opts?.keepalive })
   },
   raw(path: string, init: RequestInit = {}): Promise<Response> {
     return send(path, init)

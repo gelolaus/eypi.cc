@@ -205,7 +205,7 @@
                 variant="destructive"
                 :disabled="!!actionPending"
                 title="Remove"
-                @click="confirmRemove(attendee)"
+                @click="emit('remove', attendee.id)"
               >
                 Remove
               </Button>
@@ -252,7 +252,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useDialog } from '@/composables/useDialog'
 import { isPendingStatus, type AttendeeRow } from '@/composables/useEventAttendees'
 import { formatStoredDateTime } from '@/lib/tix/timestamps'
 import { Badge } from '@/components/ui/badge'
@@ -283,7 +282,6 @@ const emit = defineEmits<{
   saveCluster: [id: string, value: string | null]
 }>()
 
-const dialog = useDialog()
 const searchQuery = ref('')
 const sortField = ref<'name' | 'email' | 'status' | 'time'>('name')
 const sortDir = ref<'asc' | 'desc'>('asc')
@@ -377,16 +375,5 @@ function saveAttendeeCluster(id: string) {
   if (editingClusterAttendee.value !== id) return
   editingClusterAttendee.value = ''
   emit('saveCluster', id, attendeeClusterEditValue.value.trim() || null)
-}
-
-async function confirmRemove(attendee: AttendeeRow) {
-  const name = `${attendee.first_name} ${attendee.last_name}`.trim()
-  const ok = await dialog.confirm({
-    title: 'Remove this attendee?',
-    body: `${name} will be marked removed. You can restore them later.`,
-    confirmLabel: 'Remove attendee',
-  })
-  if (!ok) return
-  emit('remove', attendee.id)
 }
 </script>

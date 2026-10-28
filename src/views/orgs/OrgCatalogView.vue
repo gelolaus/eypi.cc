@@ -22,7 +22,10 @@
         aria-label="Search organizations"
       />
 
-      <div class="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+      <div
+        v-if="typeFilterOptions.length > 1"
+        class="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible"
+      >
         <Button
           v-for="option in typeFilterOptions"
           :key="option.value ?? 'all'"
@@ -37,20 +40,11 @@
       </div>
     </template>
 
-    <div
+    <CardGridSkeleton
       v-if="loading"
-      role="status"
-      aria-busy="true"
-      class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      <span class="sr-only">Loading</span>
-      <div
-        v-for="i in 6"
-        :key="i"
-        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+      :count="6"
+      :card-height="192"
+    />
 
     <Card
       v-else-if="error"
@@ -146,6 +140,7 @@
 <script setup lang="ts">
 import AppImage from '@/components/AppImage.vue'
 import AppPage from '@/components/layout/AppPage.vue'
+import CardGridSkeleton from '@/components/skeletons/CardGridSkeleton.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -173,10 +168,12 @@ const selectedOrgType = ref<OrgType | null>(null)
 
 const isAuthenticated = computed(() => session.user.value !== null)
 
-const typeFilterOptions = computed(() => [
-  { value: null as OrgType | null, label: 'All' },
-  ...ORG_TYPE_OPTIONS,
-])
+// Only offer categories that have at least one org, so a small directory has no dead chips.
+const typeFilterOptions = computed(() => {
+  const present = new Set(orgs.value.map((org) => org.orgType))
+  const options = ORG_TYPE_OPTIONS.filter((option) => present.has(option.value))
+  return options.length ? [{ value: null as OrgType | null, label: 'All' }, ...options] : []
+})
 
 const filteredOrgs = computed(() => {
   let list = orgs.value

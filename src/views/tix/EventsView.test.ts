@@ -76,4 +76,40 @@ describe('EventsView', () => {
     await flushPromises()
     expect(second.text()).toContain('Gala')
   })
+
+  it('shows one create action in the empty event list', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ status: 'ok', events: [] })))
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No events yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Create event')
+    expect(actions[0].attributes('href')).toBe('/manage/tix/new')
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('shows the org lockout with a real destination instead of a dead create action without an org', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const path = new URL(String(input), 'https://eypi.cc').pathname
+      if (path === '/api/orgs/invites') return json([])
+      return json({ status: 'locked', message: 'No org.' }, 403)
+    }))
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Access restricted')
+    expect(wrapper.find('[data-empty-state]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/manage/tix/new"]').exists()).toBe(false)
+    const action = wrapper.get('a[href="/orgs"]')
+    expect(action.text()).toBe('Browse orgs')
+    wrapper.unmount()
+  })
 })

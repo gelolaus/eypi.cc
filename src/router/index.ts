@@ -3,6 +3,7 @@ import HomeView from '@/views/HomeView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
+import { routeTransitions } from '@/lib/viewTransition'
 import { loadAppShell } from '@/components/layout/loadAppShell'
 import { routeNeedsSession, routeSkipsConsent } from './guards'
 
@@ -475,6 +476,9 @@ router.beforeEach(async (to, _from, next) => {
 
   next()
 })
+
+// Freeze/thaw the page around each route swap (see routeTransitions).
+routeTransitions(router)
 
 router.afterEach((to) => {
   const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')

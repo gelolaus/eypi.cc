@@ -8,18 +8,13 @@
       {{ banner }}
     </p>
 
-    <div
+    <ListSkeleton
       v-if="state === 'loading'"
-      role="status"
-      aria-busy="true"
-      class="space-y-4"
-    >
-      <span class="sr-only">Loading your ticket</span>
-      <div
-        class="h-64 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+      :rows="1"
+      :row-height="256"
+      :radius="24"
+      label="Loading your ticket"
+    />
 
     <Card
       v-else-if="state === 'gone'"
@@ -63,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import TicketCard from '@/components/tix/TicketCard.vue'

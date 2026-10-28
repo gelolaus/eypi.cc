@@ -19,12 +19,12 @@
             :href="link.to"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex min-h-11 items-center transition hover:text-foreground"
+            class="inline-flex min-h-11 min-w-11 items-center justify-center transition hover:text-foreground"
           >{{ link.label }}</a>
           <router-link
             v-else
             :to="link.to"
-            class="inline-flex min-h-11 items-center transition hover:text-foreground"
+            class="inline-flex min-h-11 min-w-11 items-center justify-center transition hover:text-foreground"
           >
             {{ link.label }}
           </router-link>

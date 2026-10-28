@@ -277,4 +277,30 @@ describe('AttendeesInboxView', () => {
     await flushPromises()
     expect(button('Restore')).toBeUndefined()
   })
+
+  it('uses the shared empty state without an action when nobody has registered', async () => {
+    handlers['GET /api/events/launch/attendees'] = () => json({ status: 'ok', attendees: [], counts: { pending: 0, entered: 0, waitlisted: 0, confirmed: 0, declined: 0, cancelled: 0 }, nextCursor: null })
+    await mountInbox()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No pending registrations')
+    expect(empty.findAll('a, button')).toHaveLength(0)
+    expect(wrapper.find('[data-skeleton-row]').exists()).toBe(false)
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+  })
+
+  it('names a search with no matches and still offers no action', async () => {
+    handlers['GET /api/events/launch/attendees'] = () => json({ status: 'ok', attendees: [], counts: { pending: 0, entered: 0, waitlisted: 0, confirmed: 0, declined: 0, cancelled: 0 }, nextCursor: null })
+    await mountInbox()
+
+    vi.useFakeTimers()
+    await wrapper.get('input[type="search"]').setValue('nobody')
+    vi.advanceTimersByTime(300)
+    vi.useRealTimers()
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No results for "nobody"')
+    expect(empty.findAll('a, button')).toHaveLength(0)
+  })
 })

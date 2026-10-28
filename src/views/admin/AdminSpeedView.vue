@@ -15,7 +15,6 @@
         <Button
           v-for="d in [7, 28]"
           :key="d"
-          size="sm"
           :variant="days === d ? 'secondary' : 'outline'"
           :aria-pressed="days === d"
           @click="setDays(d)"
@@ -32,18 +31,26 @@
     >
       {{ error }}
     </p>
-    <p
+    <div
       v-else-if="loading && !data"
-      class="text-sm text-muted-foreground"
+      role="status"
+      aria-busy="true"
+      class="grid grid-cols-2 gap-3 md:grid-cols-5"
     >
-      Loading…
-    </p>
-    <p
+      <span class="sr-only">Loading speed data</span>
+      <Skeleton
+        v-for="n in 5"
+        :key="n"
+        :h="126"
+        :radius="16"
+      />
+    </div>
+    <EmptyState
       v-else-if="data && data.rows.length === 0"
-      class="text-sm text-muted-foreground"
-    >
-      No speed data for this period yet.
-    </p>
+      title="No speed data yet"
+      body="Samples appear after visitors load pages with real-user monitoring."
+      :action="null"
+    />
 
     <template v-if="data && data.rows.length > 0">
       <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -75,9 +82,11 @@
 </template>
 
 <script setup lang="ts">
+import Skeleton from '@/components/ui/Skeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import BarList from '@/components/charts/BarList.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import SparkLine from '@/components/charts/SparkLine.vue'
 import StatTile from '@/components/charts/StatTile.vue'
 import { api } from '@/lib/api'

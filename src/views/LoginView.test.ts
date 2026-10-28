@@ -56,3 +56,11 @@ describe('LoginView', () => {
     expect(wrapper.get('[role="alert"]').text()).toBe(copy)
   })
 })
+
+describe('LoginView header', () => {
+  it('does not repeat the brand logo the public header already shows', () => {
+    const wrapper = mount(LoginView)
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).not.toMatch(/^Eypi/)
+  })
+})

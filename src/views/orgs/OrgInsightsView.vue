@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import SparkLine from '@/components/charts/SparkLine.vue'
 import StatTile from '@/components/charts/StatTile.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -56,6 +57,18 @@ const number = new Intl.NumberFormat('en-PH')
 const viewValues = computed(() => (data.value?.profileViews.daily ?? []).map((d) => d.n))
 const memberValues = computed(() => (data.value?.members.daily ?? []).map((d) => d.count))
 const memberCount = computed(() => memberValues.value[memberValues.value.length - 1] ?? 0)
+const hasActivity = computed(() => {
+  const d = data.value
+  if (!d) return false
+  return d.profileViews.total > 0
+    || d.frames.campaigns > 0
+    || d.frames.views > 0
+    || d.frames.downloads > 0
+    || d.tix.events > 0
+    || d.tix.registrations > 0
+    || d.tix.checkIns > 0
+    || memberCount.value > 0
+})
 </script>
 
 <template>
@@ -118,6 +131,13 @@ const memberCount = computed(() => memberValues.value[memberValues.value.length 
         </Button>
       </div>
     </Card>
+
+    <EmptyState
+      v-else-if="data && !hasActivity"
+      title="No activity yet"
+      body="Share the public profile to start seeing views, frames, and tickets here."
+      :action="{ label: 'Open the public profile', to: `/orgs/${encodeURIComponent(orgId)}` }"
+    />
 
     <template v-else-if="data">
       <div class="grid gap-3 sm:grid-cols-2">

@@ -1,19 +1,13 @@
 <template>
   <div class="w-full">
     <div class="flex flex-col gap-3">
-      <div
+      <ListSkeleton
         v-if="loading && items.length === 0"
-        class="flex flex-col gap-3"
-        role="status"
-      >
-        <span class="sr-only">Loading links</span>
-        <div
-          v-for="n in 3"
-          :key="n"
-          aria-hidden="true"
-          class="h-28 rounded-xl bg-muted motion-safe:animate-pulse"
-        />
-      </div>
+        :rows="3"
+        :row-height="212"
+        :md-row-height="100"
+        label="Loading links"
+      />
       <template v-else-if="items.length > 0">
         <LinkRow
           v-for="link in items"
@@ -31,17 +25,13 @@
       </template>
       <Card
         v-else
-        class="items-center px-6 py-16 text-center"
+        class="rounded-3xl p-0"
       >
-        <h2 class="text-base font-semibold text-foreground">
-          {{ filtered ? 'No matching links' : 'No links yet' }}
-        </h2>
-        <p
-          v-if="!filtered"
-          class="mx-auto max-w-md text-base text-muted-foreground"
-        >
-          Create a short link with New link.
-        </p>
+        <EmptyState
+          :title="filtered ? 'No matching links' : 'No links yet'"
+          :body="filtered ? 'Try another search term or status filter.' : 'Create a short link and share it anywhere.'"
+          :action="filtered ? null : { label: 'Create a link', onClick: () => emit('create') }"
+        />
       </Card>
     </div>
     <Button
@@ -58,6 +48,8 @@
 </template>
 
 <script setup lang="ts">
+import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import LinkRow from '@/components/links/LinkRow.vue'
@@ -79,6 +71,7 @@ const emit = defineEmits<{
   delete: [link: LinkListItem]
   disable: [link: LinkListItem]
   enable: [link: LinkListItem]
+  create: []
   'load-more': []
 }>()
 </script>

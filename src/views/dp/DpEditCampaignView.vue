@@ -3,16 +3,12 @@
     <AppPage title="Edit Campaign">
       <div class="mx-auto w-full max-w-xl">
         <!-- Loading -->
-        <div
+        <DetailSkeleton
           v-if="loading"
-          role="status"
-          aria-busy="true"
-          class="space-y-4"
-        >
-          <span class="sr-only">Loading</span>
-          <div class="mx-auto h-8 w-1/2 rounded-lg bg-muted motion-safe:animate-pulse" />
-          <div class="h-72 rounded-3xl bg-muted motion-safe:animate-pulse" />
-        </div>
+          align="center"
+          :title-height="32"
+          :body-height="288"
+        />
 
         <!-- Not found / error -->
         <Card
@@ -190,9 +186,11 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import AppPage from '@/components/layout/AppPage.vue'
+import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import { defineAsyncComponent, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
+import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -288,22 +286,28 @@ async function onAddFrame(dataUrl: string, file?: File) {
   }
 }
 
-async function onRemoveFrame(index: number) {
+function onRemoveFrame(index: number) {
   const frame = frames.value[index]
   if (!frame?.id) { frames.value.splice(index, 1); return }
   if (frames.value.length <= 1) { toast.error('A campaign needs at least one frame.'); return }
-  frameBusyIndex.value = index
-  try {
-    const res = await api.raw(`/api/dp/${campaignId.value}/frames/${frame.id}`, { method: 'DELETE' })
-    const data = await res.json() as { status: string; message?: string }
-    if (!res.ok) throw new Error(data.message ?? 'Could not remove frame.')
-    frames.value.splice(index, 1)
-    toast.success('Frame removed.')
-  } catch (err: unknown) {
-    toast.error(err instanceof Error ? err.message : 'Could not remove frame.')
-  } finally {
-    frameBusyIndex.value = null
-  }
+  const id = frame.id
+  const campaign = campaignId.value
+  const headers = activeOrgHeaders()
+  const keyOf = (f: DpUploaderFrame) => String(f.id)
+  const prev = previousKey(frames.value, id, keyOf)
+  const same = () => campaignId.value === campaign
+  runWithUndo({
+    message: 'Frame removed.',
+    apply: () => { if (same()) frames.value = frames.value.filter((f) => f.id !== id) },
+    revert: () => { if (same()) frames.value = reinsert(frames.value, frame, prev, keyOf) },
+    commit: async () => {
+      const res = await api.raw(`/api/dp/${campaign}/frames/${id}`, { method: 'DELETE', headers, keepalive: true })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { message?: string }
+        throw new Error(data.message ?? 'Could not remove frame.')
+      }
+    },
+  })
 }
 
 async function onReorderFrame(from: number, to: number) {

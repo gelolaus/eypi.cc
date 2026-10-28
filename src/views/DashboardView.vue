@@ -1,7 +1,7 @@
 <template>
   <AppPage
     :title="userName ? `Hi, ${userName}.` : 'Hi.'"
-    description="Your links, your org, and the platform at a glance."
+    description="Pick up where you left off."
   >
     <Card
       v-if="pendingInviteCount > 0"
@@ -29,20 +29,29 @@
           >
             Link totals are unavailable right now.
           </p>
-          <p
+          <EmptyState
             v-else-if="linkSummary && linkSummary.count === 0"
-            class="text-base text-muted-foreground"
+            title="No links yet"
+            body="Create a short link and share it anywhere."
+            :action="{ label: 'Create your first link', to: '/links' }"
+          />
+          <div
+            v-else-if="!linkSummary"
+            role="status"
+            aria-busy="true"
+            class="grid grid-cols-2 gap-3"
           >
-            No links yet. Create your first short link.
-            <router-link
-              to="/links"
-              class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"
-            >
-              Open Links
-            </router-link>
-          </p>
+            <span class="sr-only">Loading link totals</span>
+            <Skeleton
+              v-for="n in 2"
+              :key="n"
+              data-skeleton-tile
+              :h="STAT_TILE_HEIGHT"
+              :radius="16"
+            />
+          </div>
           <dl
-            v-else-if="linkSummary"
+            v-else
             class="grid grid-cols-2 gap-3"
           >
             <div class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4">
@@ -96,8 +105,23 @@
           >
             Org totals are unavailable right now.
           </p>
+          <div
+            v-else-if="!orgSummary"
+            role="status"
+            aria-busy="true"
+            class="grid grid-cols-2 gap-3"
+          >
+            <span class="sr-only">Loading org totals</span>
+            <Skeleton
+              v-for="n in 4"
+              :key="n"
+              data-skeleton-tile
+              :h="STAT_TILE_HEIGHT"
+              :radius="16"
+            />
+          </div>
           <dl
-            v-else-if="orgSummary"
+            v-else
             class="grid grid-cols-2 gap-3"
           >
             <div
@@ -142,6 +166,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import { Card } from '@/components/ui/card'
+import EmptyState from '@/components/EmptyState.vue'
+import Skeleton from '@/components/ui/Skeleton.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
@@ -150,6 +176,9 @@ import { useQuery } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
 import { orgSlugLabel } from '@/types/orgs'
 
+
+// p-4 (32) + text-sm line (20) + text-3xl line (36) + 2px border
+const STAT_TILE_HEIGHT = 90
 
 const LiveClicks = defineAsyncComponent(() => import('@/components/links/LiveClicks.vue'))
 

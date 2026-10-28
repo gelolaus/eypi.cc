@@ -187,6 +187,8 @@ describe('AnalyticsPanel', () => {
     })
     await flushPromises()
     expect(document.body.textContent).toContain('No clicks in this period yet')
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.findAll('a, button')).toHaveLength(0)
     expect(wrapper.findComponent(LineChart).exists()).toBe(false)
     wrapper.unmount()
   })

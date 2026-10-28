@@ -136,7 +136,6 @@
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 @click="dismissConflicts"
               >
                 Dismiss
@@ -167,7 +166,6 @@
                   <span class="min-w-0 truncate text-base">{{ hit.firstName }} {{ hit.lastName }}</span>
                   <Button
                     type="button"
-                    size="sm"
                     :variant="hit.checkedIn ? 'secondary' : 'default'"
                     :disabled="hit.checkedIn"
                     @click="checkInManually(hit.id)"
@@ -190,7 +188,6 @@
           <Button
             type="button"
             variant="outline"
-            size="sm"
             data-door-clear
             @click="clearOfflineData"
           >

@@ -72,7 +72,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground;
@@ -204,6 +204,19 @@
   .animate-sparkle,
   .animate-blink-caret,
   .marketing-block-enter {
+    animation: none;
+  }
+}
+
+/* Route changes: a quick cross-fade between pages. */
+::view-transition-group(root) {
+  animation-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none;
   }
 }

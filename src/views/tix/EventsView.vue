@@ -41,14 +41,13 @@
 
       <Card
         v-else-if="!filteredEvents.length"
-        class="gap-0 rounded-3xl p-12 text-center"
+        class="rounded-3xl p-0"
       >
-        <p class="text-sm font-medium text-foreground">
-          {{ events.length ? 'No matching events' : 'No events yet' }}
-        </p>
-        <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {{ events.length ? 'Try another search term.' : 'Create your first event to start taking registrations.' }}
-        </p>
+        <EmptyState
+          :title="events.length ? 'No matching events' : 'No events yet'"
+          :body="events.length ? 'Try another search term.' : 'Create your first event to start taking registrations.'"
+          :action="events.length ? null : { label: 'Create event', to: '/manage/tix/new' }"
+        />
       </Card>
 
       <div
@@ -137,6 +136,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import EmptyState from '@/components/EmptyState.vue'
 import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
 import { invalidate, useQuery } from '@/lib/queryCache'

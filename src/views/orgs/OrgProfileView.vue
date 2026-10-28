@@ -1,25 +1,6 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
-    <div
-      v-if="loading"
-      role="status"
-      aria-busy="true"
-      class="space-y-6"
-    >
-      <span class="sr-only">Loading</span>
-      <div
-        class="h-48 rounded-3xl bg-muted motion-safe:animate-pulse md:h-56"
-        aria-hidden="true"
-      />
-      <div
-        class="h-8 w-2/3 rounded-lg bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-      <div
-        class="h-40 rounded-3xl bg-muted motion-safe:animate-pulse"
-        aria-hidden="true"
-      />
-    </div>
+    <OrgProfileSkeleton v-if="loading" />
 
     <Card
       v-else-if="error"
@@ -99,7 +80,7 @@
 
           <p
             v-if="profile.tagline"
-            class="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground"
+            class="mt-3 max-w-3xl text-base leading-relaxed text-muted-foreground"
           >
             {{ profile.tagline }}
           </p>
@@ -137,7 +118,7 @@
       >
         <div
           v-if="aboutHtml"
-          class="max-w-none text-sm leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
+          class="max-w-none text-base leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
           v-html="aboutHtml"
         />
         <p
@@ -186,12 +167,12 @@
           >
             {{ group.title }}
           </h2>
-          <p
+          <EmptyState
             v-if="group.items.length === 0"
-            class="text-sm leading-relaxed text-muted-foreground"
-          >
-            {{ group.empty }}
-          </p>
+            :title="group.empty"
+            :body="group.body"
+            :action="group.action"
+          />
           <ul
             v-else
             class="space-y-4"
@@ -224,7 +205,9 @@
 </template>
 
 <script setup lang="ts">
+import OrgProfileSkeleton from '@/components/skeletons/OrgProfileSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -255,9 +238,38 @@ const events = ref<{ upcoming: PublicOrgEvent[]; past: PublicOrgEvent[] }>({
 })
 const activeTab = ref(0)
 
+const upcomingEmptyAction = computed(() => {
+  const first = visibleSocialLinks.value[0]
+  if (!first) return { label: 'Browse orgs', to: '/orgs' }
+  return {
+    label: first.key === 'website' ? 'Visit website' : `Follow on ${first.label}`,
+    to: first.url,
+  }
+})
+
+const upcomingEmptyBody = computed(() => (
+  visibleSocialLinks.value.length
+    ? 'New dates are announced on the org social accounts.'
+    : 'Look for other student organizations in the public directory.'
+))
+
 const eventGroups = computed(() => [
-  { title: 'Upcoming events', items: events.value.upcoming, empty: 'No upcoming events.', muted: false },
-  { title: 'Past events', items: events.value.past, empty: 'No past events yet.', muted: true },
+  {
+    title: 'Upcoming events',
+    items: events.value.upcoming,
+    empty: 'No upcoming events',
+    body: upcomingEmptyBody.value,
+    action: upcomingEmptyAction.value,
+    muted: false,
+  },
+  {
+    title: 'Past events',
+    items: events.value.past,
+    empty: 'No past events yet',
+    body: '',
+    action: null,
+    muted: true,
+  },
 ])
 
 const aboutHtml = computed(() => renderMarkdown(profile.value?.aboutMarkdown))
