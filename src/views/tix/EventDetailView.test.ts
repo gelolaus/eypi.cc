@@ -306,3 +306,35 @@ describe('EventDetailView status controls', () => {
     wrapper.unmount()
   })
 })
+
+describe('EventDetailView insights tab', () => {
+  async function openInsights(insights: unknown) {
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (new URL(raw).pathname === '/api/events/launch/insights') return json(insights)
+      return base(input, init)
+    }))
+    const wrapper = mount(EventDetailView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    await tab(wrapper, 'Insights')
+    return wrapper
+  }
+
+  it('fetches the event insights when the tab is opened', async () => {
+    const wrapper = await openInsights({ byStatus: [], registrationsDaily: [], byAnswer: [], showUpRate: null, checkInCurve: [] })
+    await vi.waitFor(() => {
+      expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('/api/events/launch/insights'))).toBe(true)
+    })
+    wrapper.unmount()
+  })
+
+  it('shows No data for a null show-up rate when there are registrations', async () => {
+    const wrapper = await openInsights({
+      byStatus: [{ status: 'pending', n: 2 }], registrationsDaily: [], byAnswer: [], showUpRate: null, checkInCurve: [],
+    })
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Show-up rate'))
+    expect(wrapper.text()).toContain('No data')
+    wrapper.unmount()
+  })
+})

@@ -160,8 +160,8 @@ app.get('/api/events/:slug/insights', async (c) => {
     client.execute({ sql: 'SELECT questions FROM events WHERE id = ?', args: [eventId] }),
     client.execute({
       sql: `SELECT COUNT(*) AS confirmed,
-                   COALESCE(SUM((SELECT ci.action FROM check_ins ci WHERE ci.attendee_id = a.id
-                                 ORDER BY ci.actioned_at DESC, ci.rowid DESC LIMIT 1) = 'checked_in'), 0) AS checked_in
+                   COALESCE(SUM(EXISTS (SELECT 1 FROM check_ins ci
+                                   WHERE ci.attendee_id = a.id AND ci.action = 'checked_in')), 0) AS checked_in
             FROM attendees a WHERE a.event_id = ? AND a.status = 'confirmed'`,
       args: [eventId],
     }),

@@ -243,3 +243,17 @@ describe('GET /api/events/:slug/insights', () => {
     expect((await request('/api/events/door/insights')).status).toBe(401)
   })
 })
+
+describe('show-up rate with door check-outs', () => {
+  it('counts a confirmed attendee who checked in and then out as shown up', async () => {
+    const { request } = await tixApp(async (client) => {
+      await attendee(client, 'a1', 'confirmed', '2026-10-25 03:00:00')
+      await attendee(client, 'a2', 'confirmed', '2026-10-25 03:00:00')
+      await checkIn(client, 'k1', 'a1', 'checked_in', '2026-10-26 01:05:00.000')
+      await checkIn(client, 'k2', 'a1', 'checked_out', '2026-10-26 01:30:00.000')
+    })
+    const body = await (await request('/api/events/door/insights', { headers })).json() as { showUpRate: number | null; checkInCurve: { n: number }[] }
+    expect(body.showUpRate).toBe(0.5)
+    expect(body.checkInCurve.reduce((sum, b) => sum + b.n, 0)).toBe(1)
+  })
+})
