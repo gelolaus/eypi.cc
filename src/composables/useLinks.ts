@@ -1,5 +1,5 @@
 import { ref, type InjectionKey } from 'vue'
-import { ApiError, api } from '@/lib/api'
+import { ApiError, api, type ApiRequestOptions } from '@/lib/api'
 import { linksListKey, linksListPath } from '@/lib/queries'
 import { CacheClearedError, fetchQuery, invalidate, peekQuery } from '@/lib/queryCache'
 import type { LinkQrConfig } from '@shared/linkQrConfig'
@@ -149,14 +149,14 @@ export function useLinks() {
     return updated
   }
 
-  async function remove(id: string): Promise<void> {
-    await api.del(`/api/links/${id}`, { keepalive: true })
+  async function remove(id: string, opts?: ApiRequestOptions): Promise<void> {
+    await api.del(`/api/links/${id}`, { keepalive: true, ...opts })
     mutated()
     items.value = items.value.filter((item) => item.id !== id)
   }
 
-  async function bulk(action: 'delete' | 'disable' | 'enable', ids: string[]): Promise<void> {
-    await api.post('/api/links/bulk', { action, ids }, { keepalive: true })
+  async function bulk(action: 'delete' | 'disable' | 'enable', ids: string[], opts?: ApiRequestOptions): Promise<void> {
+    await api.post('/api/links/bulk', { action, ids }, { keepalive: true, ...opts })
     mutated()
     if (action === 'delete') {
       const drop = new Set(ids)

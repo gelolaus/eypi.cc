@@ -545,7 +545,7 @@ import { useSession } from '@/stores/session'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useToast } from '@/composables/useToast'
-import { runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
@@ -893,21 +893,31 @@ async function sendInvite() {
 
 // Both are reversible: a removed member can be re-invited. The request waits out the undo window.
 function removeWithUndo(email: string, message: string, fallback: string) {
-  const before = members.value
+  // Everything the request needs is fixed now; the route may change before it is sent.
+  const orgSlug = slug.value
+  const headers = { 'Content-Type': 'application/json', ...activeOrgHeaders() }
+  const member = members.value.find((row) => row.email === email)
+  if (!member) return
+  const prev = previousKey(members.value, email, (row) => row.email)
+  const same = () => slug.value === orgSlug
   membersActionError.value = ''
   runWithUndo({
     message,
-    apply: () => { members.value = before.filter((member) => member.email !== email) },
-    revert: () => { members.value = before },
+    apply: () => {
+      if (same()) members.value = members.value.filter((row) => row.email !== email)
+    },
+    revert: () => {
+      if (same()) members.value = reinsert(members.value, member, prev, (row) => row.email)
+    },
     commit: async () => {
-      const res = await api.raw(`/api/orgs/${slug.value}/members`, {
+      const res = await api.raw(`/api/orgs/${orgSlug}/members`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email }),
         keepalive: true,
       })
-      if (!res.ok) throw new Error(fallback)
-      await fetchMembers()
+      if (!res.ok) throw new Error(messageFrom(await res.json().catch(() => null), fallback))
+      if (same()) await fetchMembers()
     },
   })
 }

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useToast } from '@/composables/useToast'
 import LinksView from './LinksView.vue'
 
 const { push, replace, route, confirm, analytics } = vi.hoisted(() => {
@@ -208,6 +209,117 @@ describe('LinksView mobile layout', () => {
     expect(list.compareDocumentPosition(bar.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     // keep the actions clear of the floating back-to-top button
     expect(bar.classes()).toContain('pr-20')
+    wrapper.unmount()
+  })
+})
+
+describe('LinksView undo', () => {
+  const beta = { ...sampleLink, id: 'link-2', slug: 'beta', url: 'https://example.com/b' }
+  let writes: Array<{ url: string; method: string; headers: Headers; keepalive?: boolean }>
+
+  function installList() {
+    writes = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const method = init?.method ?? 'GET'
+      if (method !== 'GET') {
+        writes.push({ url: requestUrl(input), method, headers: new Headers(init?.headers), keepalive: init?.keepalive })
+        return json(200, {})
+      }
+      return json(200, { items: [sampleLink, beta], nextCursor: null })
+    }))
+  }
+
+  async function mountList() {
+    installList()
+    const wrapper = mount(LinksView)
+    await flushPromises()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    return wrapper
+  }
+
+  function undo(message: string) {
+    const toast = useToast().toasts.value.find((t) => t.message === message)
+    expect(toast?.action?.label).toBe('Undo')
+    toast!.action!.onClick()
+  }
+
+  afterEach(() => {
+    window.dispatchEvent(new Event('pagehide'))
+    useToast().toasts.value = []
+    vi.useRealTimers()
+  })
+
+  it('deletes without a confirm, hides the row, and sends the DELETE after 5 s', async () => {
+    const wrapper = await mountList()
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('alpha')
+    expect(writes).toEqual([])
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(writes).toHaveLength(1)
+    expect(writes[0]).toMatchObject({ method: 'DELETE', keepalive: true })
+    expect(writes[0].url).toContain('/api/links/link-1')
+    wrapper.unmount()
+  })
+
+  it('Undo brings the row back and nothing is sent', async () => {
+    const wrapper = await mountList()
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    undo('Link deleted.')
+    await vi.advanceTimersByTimeAsync(10_000)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('alpha')
+    expect(writes).toEqual([])
+    wrapper.unmount()
+  })
+
+  it('keeps overlapping deletes independent', async () => {
+    const wrapper = await mountList()
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    expect(wrapper.text()).not.toContain('alpha')
+    expect(wrapper.text()).not.toContain('beta')
+
+    const toasts = useToast().toasts.value.filter((t) => t.message === 'Link deleted.')
+    expect(toasts).toHaveLength(2)
+    toasts[0].action!.onClick()
+    await flushPromises()
+    expect(wrapper.text()).toContain('alpha')
+    expect(wrapper.text()).not.toContain('beta')
+
+    toasts[1].action!.onClick()
+    await flushPromises()
+    expect(wrapper.text()).toContain('alpha')
+    expect(wrapper.text()).toContain('beta')
+    wrapper.unmount()
+  })
+
+  it('undoing an earlier disable does not bring back a link deleted since', async () => {
+    const wrapper = await mountList()
+    const disabledBefore = wrapper.text().split('Disabled').length
+    await wrapper.get('[aria-label="Select beta"]').setValue(true)
+    await wrapper.get('[aria-label="Disable selected"]').trigger('click')
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    expect(wrapper.text().split('Disabled').length).toBeGreaterThan(disabledBefore)
+    undo('Link disabled.')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('alpha')
+    expect(wrapper.text()).toContain('beta')
+    expect(wrapper.text().split('Disabled').length).toBe(disabledBefore)
+    wrapper.unmount()
+  })
+
+  it('sends the delete to the org that was active when it started', async () => {
+    localStorage.setItem('active_org_id', 'org-1')
+    const wrapper = await mountList()
+    await wrapper.findAll('[aria-label="Delete"]')[0].trigger('click')
+    localStorage.setItem('active_org_id', 'org-2')
+    await vi.advanceTimersByTimeAsync(5_000)
+
+    expect(writes[0].headers.get('X-Active-Org-Id')).toBe('org-1')
     wrapper.unmount()
   })
 })

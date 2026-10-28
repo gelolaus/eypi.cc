@@ -110,7 +110,7 @@ import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
-import { runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import {
   linksKey,
   useLinks,
@@ -235,8 +235,11 @@ async function copyLink(link: LinkListItem) {
 }
 
 // Delete waits out the undo window before it is sent, so nothing is lost if Undo is tapped.
+// Reverts work per link id so overlapping Undo actions never undo each other.
 function deleteLink(link: LinkListItem) {
-  const index = items.value.findIndex((item) => item.id === link.id)
+  const prev = previousKey(items.value, link.id, (row) => row.id)
+  const wasSelected = selectedIds.value.includes(link.id)
+  const headers = activeOrgHeaders()
   runWithUndo({
     message: 'Link deleted.',
     apply: () => {
@@ -244,11 +247,10 @@ function deleteLink(link: LinkListItem) {
       selectedIds.value = selectedIds.value.filter((id) => id !== link.id)
     },
     revert: () => {
-      const next = items.value.slice()
-      next.splice(Math.min(Math.max(index, 0), next.length), 0, link)
-      items.value = next
+      items.value = reinsert(items.value, link, prev, (row) => row.id)
+      if (wasSelected && !selectedIds.value.includes(link.id)) selectedIds.value = [...selectedIds.value, link.id]
     },
-    commit: () => remove(link.id),
+    commit: () => remove(link.id, { headers }),
   })
 }
 
@@ -272,21 +274,27 @@ async function confirmBulkDelete() {
 function disableSelected() {
   const ids = selectedIds.value.slice()
   if (ids.length === 0) return
-  const before = items.value
   const stamp = new Date().toISOString()
+  const headers = activeOrgHeaders()
+  const changed = new Map<string, { disabledAt: string | null; disabledReason: string | null }>()
   runWithUndo({
     message: ids.length === 1 ? 'Link disabled.' : `${ids.length} links disabled.`,
     apply: () => {
-      items.value = before.map((item) => (ids.includes(item.id) && !item.disabledAt
-        ? { ...item, disabledAt: stamp, disabledReason: 'user' }
-        : item))
-      selectedIds.value = []
+      items.value = items.value.map((item) => {
+        if (!ids.includes(item.id) || item.disabledAt) return item
+        changed.set(item.id, { disabledAt: item.disabledAt, disabledReason: item.disabledReason })
+        return { ...item, disabledAt: stamp, disabledReason: 'user' }
+      })
+      selectedIds.value = selectedIds.value.filter((id) => !ids.includes(id))
     },
     revert: () => {
-      items.value = before
-      selectedIds.value = ids
+      items.value = items.value.map((item) => {
+        const original = changed.get(item.id)
+        return original ? { ...item, ...original } : item
+      })
+      selectedIds.value = [...selectedIds.value, ...ids.filter((id) => !selectedIds.value.includes(id))]
     },
-    commit: () => bulk('disable', ids),
+    commit: () => bulk('disable', ids, { headers }),
   })
 }
 

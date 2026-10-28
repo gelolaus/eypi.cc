@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { api } from '@/lib/api'
 import { useToast } from '@/composables/useToast'
-import { runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, runWithUndo } from '@/composables/useUndoToast'
 import { attendeeQrFileName, downloadAttendeeQr, downloadAttendeeQrZip } from '@/lib/tix/qrFiles'
 
 export interface AttendeeRow {
@@ -98,20 +98,27 @@ export function useEventAttendees(slug: string) {
 
   /** Marks the row removed now; the request is sent after the undo window. */
   function removeAttendee(attendeeId: string) {
-    const row = attendees.value.find((attendee) => attendee.id === attendeeId)
-    if (!row) return
-    const previous = row.status
+    const first = attendees.value.find((attendee) => attendee.id === attendeeId)
+    if (!first) return
+    const previous = first.status
+    const headers = activeOrgHeaders()
+    // Rows are looked up by id each time: a refetch during the window replaces the objects.
+    const rowNow = () => attendees.value.find((attendee) => attendee.id === attendeeId)
     runWithUndo({
       message: 'Attendee removed.',
-      apply: () => { row.status = 'removed' },
-      revert: () => { row.status = previous },
+      apply: () => { const row = rowNow(); if (row) row.status = 'removed' },
+      revert: () => { const row = rowNow(); if (row) row.status = previous },
       commit: async () => {
         const res = await api.raw(`/api/events/${slug}/remove`, {
           method: 'POST',
+          headers,
           body: JSON.stringify({ attendeeId }),
           keepalive: true,
         })
-        if (!res.ok) throw new Error('Action failed.')
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({})) as { message?: string }
+          throw new Error(data.message ?? 'Action failed.')
+        }
         await fetchAttendees()
       },
     })

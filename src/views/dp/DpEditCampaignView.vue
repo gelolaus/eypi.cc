@@ -190,7 +190,7 @@ import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import { defineAsyncComponent, ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
-import { runWithUndo } from '@/composables/useUndoToast'
+import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -291,16 +291,21 @@ function onRemoveFrame(index: number) {
   if (!frame?.id) { frames.value.splice(index, 1); return }
   if (frames.value.length <= 1) { toast.error('A campaign needs at least one frame.'); return }
   const id = frame.id
+  const campaign = campaignId.value
+  const headers = activeOrgHeaders()
+  const keyOf = (f: DpUploaderFrame) => String(f.id)
+  const prev = previousKey(frames.value, id, keyOf)
+  const same = () => campaignId.value === campaign
   runWithUndo({
     message: 'Frame removed.',
-    apply: () => {
-      const at = frames.value.findIndex((f) => f.id === id)
-      if (at > -1) frames.value.splice(at, 1)
-    },
-    revert: () => { frames.value.splice(Math.min(index, frames.value.length), 0, frame) },
+    apply: () => { if (same()) frames.value = frames.value.filter((f) => f.id !== id) },
+    revert: () => { if (same()) frames.value = reinsert(frames.value, frame, prev, keyOf) },
     commit: async () => {
-      const res = await api.raw(`/api/dp/${campaignId.value}/frames/${id}`, { method: 'DELETE', keepalive: true })
-      if (!res.ok) throw new Error('Could not remove frame.')
+      const res = await api.raw(`/api/dp/${campaign}/frames/${id}`, { method: 'DELETE', headers, keepalive: true })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { message?: string }
+        throw new Error(data.message ?? 'Could not remove frame.')
+      }
     },
   })
 }
