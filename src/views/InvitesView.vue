@@ -11,12 +11,12 @@
       {{ loadError }}
     </p>
     <PageSkeleton v-else-if="loading" />
-    <p
+    <EmptyState
       v-else-if="invites.length === 0"
-      class="text-sm text-muted-foreground"
-    >
-      No pending invites.
-    </p>
+      title="No pending invites"
+      body="When an org invites you, it shows up here."
+      :action="{ label: 'Browse orgs', to: '/orgs' }"
+    />
     <div
       v-else
       class="flex flex-col gap-4"
@@ -35,6 +35,7 @@
 import { onMounted, ref } from 'vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import InviteCard from '@/components/orgs/InviteCard.vue'
 import { loadPendingInvites, type OrgInvite } from '@/components/orgs/invites'
 import { ApiError } from '@/lib/api'

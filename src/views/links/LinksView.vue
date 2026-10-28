@@ -53,6 +53,7 @@
         :selected-ids="selectedIds"
         @analytics="openAnalytics"
         @copy="copyLink"
+        @create="openCreate"
         @delete="deleteLink"
         @disable="setDisabled($event, true)"
         @edit="openEdit"

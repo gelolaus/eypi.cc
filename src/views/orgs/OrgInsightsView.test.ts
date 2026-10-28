@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import OrgInsightsView from './OrgInsightsView.vue'
+import StatTile from '@/components/charts/StatTile.vue'
 
 const payload = {
   profileViews: { total: 120, daily: [{ day: '2026-10-25', n: 50 }, { day: '2026-10-26', n: 70 }] },
@@ -79,5 +80,24 @@ describe('OrgInsightsView', () => {
     await flushPromises()
     expect(wrapper.find('[role="alert"]').text()).toContain('Could not load insights')
     expect(wrapper.findAll('button').some((b) => b.text() === 'Try again')).toBe(true)
+  })
+
+  it('shows one public profile action when the period has no activity', async () => {
+    fetchMock.mockResolvedValue(respond({
+      profileViews: { total: 0, daily: [] },
+      frames: { campaigns: 0, views: 0, downloads: 0 },
+      tix: { events: 0, registrations: 0, checkIns: 0 },
+      members: { daily: [] },
+    }))
+    const wrapper = await mountView()
+    await flushPromises()
+
+    expect(wrapper.findAllComponents(StatTile)).toHaveLength(0)
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No activity yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Open the public profile')
+    expect(actions[0].attributes('href')).toBe('/orgs/jpcs')
   })
 })

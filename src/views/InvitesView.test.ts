@@ -154,8 +154,13 @@ describe('InvitesView', () => {
     installFetch([])
     const wrapper = await mountInbox()
 
-    expect(wrapper.text()).toContain('No pending invites.')
-    expect(wrapper.find('button').exists()).toBe(false)
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No pending invites')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Browse orgs')
+    expect(actions[0].attributes('href')).toBe('/orgs')
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -230,7 +235,7 @@ describe('InvitesView', () => {
     await flushPromises()
 
     expect(calls().some((call) => pathname(call[0]) === '/api/orgs/invites/jpcs/decline' && (call[1]?.method ?? 'GET') === 'POST')).toBe(true)
-    expect(wrapper.text()).toContain('No pending invites.')
+    expect(wrapper.text()).toContain('No pending invites')
     expect(wrapper.text()).not.toContain('JPCS')
     wrapper.unmount()
   })

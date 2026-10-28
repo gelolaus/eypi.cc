@@ -73,4 +73,19 @@ describe('AdminSpeedView', () => {
     expect(wrapper.findAll('[data-testid="speed-tile"]')).toHaveLength(0)
     expect(wrapper.text()).toContain('Could not load speed data')
   })
+
+  it('shows the shared empty state when the period has no samples', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      thresholds: payload.thresholds,
+      rows: [],
+      trend: [],
+    }), { headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(AdminSpeedView)
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No speed data yet')
+    expect(empty.findAll('a, button')).toHaveLength(0)
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+  })
 })

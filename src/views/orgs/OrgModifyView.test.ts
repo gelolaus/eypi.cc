@@ -224,6 +224,26 @@ describe('OrgModifyView members', () => {
     expect(wrapper.text()).not.toContain('Invite an active member before transferring ownership.')
     wrapper.unmount()
   })
+
+  it('offers one invite action when the org has no members and focuses the invite field', async () => {
+    installFetch({ asOwner: true, members: [] })
+    const wrapper = mount(Harness, {
+      attachTo: document.body,
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No members yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Invite your first member')
+    expect(wrapper.find('[data-skeleton-row]').exists()).toBe(false)
+
+    await actions[0].trigger('click')
+    expect(document.activeElement?.id).toBe('invite-email')
+    wrapper.unmount()
+  })
 })
 
 describe('OrgModifyView images', () => {

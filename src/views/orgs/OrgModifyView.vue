@@ -292,12 +292,16 @@
         >
           {{ membersError }}
         </p>
-        <p
+        <Card
           v-else-if="members.length === 0"
-          class="mb-6 text-sm text-muted-foreground"
+          class="mb-6 rounded-2xl p-0"
         >
-          No members yet.
-        </p>
+          <EmptyState
+            title="No members yet"
+            body="Invite a teammate to help manage this org."
+            :action="{ label: 'Invite your first member', onClick: focusInviteEmail }"
+          />
+        </Card>
         <div
           v-else
           class="mb-6 overflow-x-auto md:rounded-2xl md:border md:border-border"
@@ -531,8 +535,10 @@
 import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
 import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { uploadVariants } from '@/lib/images/uploadVariants'
 import type { ImageMeta } from '@/lib/images/variants'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -644,6 +650,10 @@ function isOwnerMember(member: OrgMember): boolean {
 function memberLabel(member: OrgMember): string {
   const name = member.name?.trim()
   return name ? `${name} (${member.email})` : member.email
+}
+
+function focusInviteEmail() {
+  document.getElementById('invite-email')?.focus()
 }
 
 function messageFrom(data: unknown, fallback: string): string {

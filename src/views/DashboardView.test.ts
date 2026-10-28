@@ -127,9 +127,14 @@ describe('DashboardView summaries', () => {
     const wrapper = mountDashboard(0)
     await flushPromises()
     const card = wrapper.get('[data-card="links"]')
-    expect(card.text()).toContain('No links yet. Create your first short link.')
+    const empty = card.get('[data-empty-state]')
+    expect(empty.text()).toContain('No links yet')
     expect(card.text()).not.toContain('NaN')
-    expect(card.find('a[href="/links"]').exists()).toBe(true)
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Create your first link')
+    expect(actions[0].attributes('href')).toBe('/links')
+    expect(card.find('[aria-busy="true"]').exists()).toBe(false)
   })
 
   it('shows the org card with CAPS slug and counts when an org is active', async () => {

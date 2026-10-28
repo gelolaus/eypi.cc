@@ -108,6 +108,26 @@ describe('LinksView session expiry', () => {
   })
 })
 
+describe('LinksView empty state', () => {
+  it('shows one create action and opens the editor', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json(200, { items: [], nextCursor: null })))
+
+    const wrapper = mount(LinksView)
+    await flushPromises()
+
+    const empty = wrapper.get('[data-empty-state]')
+    expect(empty.text()).toContain('No links yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Create a link')
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false)
+
+    await actions[0].trigger('click')
+    expect(document.querySelector('#link-editor')).toBeTruthy()
+    wrapper.unmount()
+  })
+})
+
 describe('LinksView create and analytics', () => {
   it('prefills ?url= and does not create a link', async () => {
     const calls: Array<{ url: string; method: string }> = []

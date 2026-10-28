@@ -46,12 +46,12 @@
         :radius="16"
       />
     </div>
-    <p
+    <EmptyState
       v-else-if="data && data.rows.length === 0"
-      class="text-sm text-muted-foreground"
-    >
-      No speed data for this period yet.
-    </p>
+      title="No speed data yet"
+      body="Samples appear after visitors load pages with real-user monitoring."
+      :action="null"
+    />
 
     <template v-if="data && data.rows.length > 0">
       <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -87,6 +87,7 @@ import Skeleton from '@/components/ui/Skeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import BarList from '@/components/charts/BarList.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import SparkLine from '@/components/charts/SparkLine.vue'
 import StatTile from '@/components/charts/StatTile.vue'
 import { api } from '@/lib/api'

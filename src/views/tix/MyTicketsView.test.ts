@@ -38,8 +38,13 @@ describe('MyTicketsView', () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ tickets: [] })))
     const w = mount(MyTicketsView, { global: { stubs } })
     await flushPromises()
-    expect(w.text()).toContain('No tickets yet')
-    expect(w.find('a[href="/orgs"]').exists()).toBe(true)
+    const empty = w.get('[data-empty-state]')
+    expect(empty.text()).toContain('No tickets yet')
+    const actions = empty.findAll('a, button')
+    expect(actions).toHaveLength(1)
+    expect(actions[0].text()).toBe('Browse events')
+    expect(actions[0].attributes('href')).toBe('/orgs')
+    expect(w.find('[aria-busy="true"]').exists()).toBe(false)
   })
 
   it('shows an error with retry', async () => {

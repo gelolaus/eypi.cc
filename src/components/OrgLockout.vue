@@ -35,6 +35,17 @@
           @declined="removeInvite"
         />
       </div>
+
+      <Button
+        v-else-if="loaded"
+        as-child
+        variant="outline"
+        class="w-full sm:w-auto"
+      >
+        <router-link to="/orgs">
+          Browse orgs
+        </router-link>
+      </Button>
     </Card>
   </div>
 </template>
@@ -42,6 +53,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ShieldAlert } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import InviteCard from '@/components/orgs/InviteCard.vue'
 import { loadPendingInvites, type OrgInvite } from '@/components/orgs/invites'
@@ -49,6 +61,7 @@ import { ApiError } from '@/lib/api'
 
 const invites = ref<OrgInvite[]>([])
 const loadError = ref('')
+const loaded = ref(false)
 
 function removeInvite(orgId: string) {
   invites.value = invites.value.filter((invite) => invite.orgId !== orgId)
@@ -59,6 +72,8 @@ onMounted(async () => {
     invites.value = await loadPendingInvites()
   } catch (err) {
     loadError.value = err instanceof ApiError ? err.message : 'Could not load invites. Try again.'
+  } finally {
+    loaded.value = true
   }
 })
 </script>

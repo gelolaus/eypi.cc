@@ -167,12 +167,12 @@
           >
             {{ group.title }}
           </h2>
-          <p
+          <EmptyState
             v-if="group.items.length === 0"
-            class="text-sm leading-relaxed text-muted-foreground"
-          >
-            {{ group.empty }}
-          </p>
+            :title="group.empty"
+            :body="group.body"
+            :action="group.action"
+          />
           <ul
             v-else
             class="space-y-4"
@@ -207,6 +207,7 @@
 <script setup lang="ts">
 import OrgProfileSkeleton from '@/components/skeletons/OrgProfileSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -237,9 +238,38 @@ const events = ref<{ upcoming: PublicOrgEvent[]; past: PublicOrgEvent[] }>({
 })
 const activeTab = ref(0)
 
+const upcomingEmptyAction = computed(() => {
+  const first = visibleSocialLinks.value[0]
+  if (!first) return { label: 'Browse orgs', to: '/orgs' }
+  return {
+    label: first.key === 'website' ? 'Visit website' : `Follow on ${first.label}`,
+    to: first.url,
+  }
+})
+
+const upcomingEmptyBody = computed(() => (
+  visibleSocialLinks.value.length
+    ? 'New dates are announced on the org social accounts.'
+    : 'Look for other student organizations in the public directory.'
+))
+
 const eventGroups = computed(() => [
-  { title: 'Upcoming events', items: events.value.upcoming, empty: 'No upcoming events.', muted: false },
-  { title: 'Past events', items: events.value.past, empty: 'No past events yet.', muted: true },
+  {
+    title: 'Upcoming events',
+    items: events.value.upcoming,
+    empty: 'No upcoming events',
+    body: upcomingEmptyBody.value,
+    action: upcomingEmptyAction.value,
+    muted: false,
+  },
+  {
+    title: 'Past events',
+    items: events.value.past,
+    empty: 'No past events yet',
+    body: '',
+    action: null,
+    muted: true,
+  },
 ])
 
 const aboutHtml = computed(() => renderMarkdown(profile.value?.aboutMarkdown))

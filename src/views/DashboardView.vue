@@ -29,18 +29,12 @@
           >
             Link totals are unavailable right now.
           </p>
-          <p
+          <EmptyState
             v-else-if="linkSummary && linkSummary.count === 0"
-            class="text-base text-muted-foreground"
-          >
-            No links yet. Create your first short link.
-            <router-link
-              to="/links"
-              class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4"
-            >
-              Open Links
-            </router-link>
-          </p>
+            title="No links yet"
+            body="Create a short link and share it anywhere."
+            :action="{ label: 'Create your first link', to: '/links' }"
+          />
           <div
             v-else-if="!linkSummary"
             role="status"
@@ -172,6 +166,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
 import { Card } from '@/components/ui/card'
+import EmptyState from '@/components/EmptyState.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'

@@ -45,14 +45,13 @@
 
       <Card
         v-else-if="!filteredCampaigns.length"
-        class="relative rounded-3xl p-12 text-center"
+        class="rounded-3xl p-0"
       >
-        <p class="text-sm font-medium text-muted-foreground">
-          {{ campaigns.length ? 'No matching frames' : 'No campaigns yet' }}
-        </p>
-        <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {{ campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.' }}
-        </p>
+        <EmptyState
+          :title="campaigns.length ? 'No matching frames' : 'No campaigns yet'"
+          :body="campaigns.length ? 'Try another search term.' : 'Upload transparent PNG frames to generate a shareable frame link.'"
+          :action="campaigns.length ? null : { label: 'New frame', to: '/manage/frames/new' }"
+        />
       </Card>
 
       <div
@@ -125,6 +124,7 @@ import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { Button } from '@/components/ui/button'

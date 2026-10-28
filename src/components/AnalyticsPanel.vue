@@ -101,12 +101,13 @@
         Loading analytics…
       </p>
       <template v-else-if="analytics">
-        <p
+        <EmptyState
           v-if="isEmpty"
-          class="mb-6 text-base text-muted-foreground"
-        >
-          No clicks in this period yet
-        </p>
+          class="mb-6"
+          title="No clicks in this period yet"
+          body="Share the link to start collecting clicks."
+          :action="null"
+        />
         <Card
           v-if="peakLabel && !isEmpty"
           class="mb-6 border border-primary/30 bg-primary/10 px-4 py-4 font-mono text-base text-foreground"
@@ -208,6 +209,7 @@ import HeatGrid from '@/components/charts/HeatGrid.vue'
 import BarList from '@/components/charts/BarList.vue'
 import LineChart from '@/components/charts/LineChart.vue'
 import StatTile from '@/components/charts/StatTile.vue'
+import EmptyState from '@/components/EmptyState.vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
