@@ -2,6 +2,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from '@/composables/useToast'
+import { clearQueryCache } from '@/lib/queryCache'
 import LinksView from './LinksView.vue'
 
 const { push, replace, route, confirm, analytics } = vi.hoisted(() => {
@@ -147,6 +148,19 @@ describe('LinksView header actions', () => {
     const wrapper = mount(LinksView)
     await flushPromises()
 
+    expect(headerButtons(wrapper).map((b) => b.text()).sort()).toEqual(['Export CSV', 'New link'])
+    wrapper.unmount()
+  })
+
+  it('keeps them when loading the links failed', async () => {
+    clearQueryCache()
+    vi.stubGlobal('fetch', vi.fn(async () => json(500, {
+      error: { code: 'server_error', message: 'Boom.' },
+    })))
+    const wrapper = mount(LinksView)
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
     expect(headerButtons(wrapper).map((b) => b.text()).sort()).toEqual(['Export CSV', 'New link'])
     wrapper.unmount()
   })

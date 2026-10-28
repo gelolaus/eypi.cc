@@ -169,8 +169,8 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const filtered = computed(() => query.value.trim().length > 0 || status.value !== 'all')
 // The header actions only hide when the account has no links at all. A filter that matches
-// nothing, or a reload in flight, keeps them so the header never flickers.
-const hasLinks = computed(() => items.value.length > 0 || filtered.value || loading.value)
+// nothing, a reload in flight, or a failed load keeps them so the header never flickers or vanishes.
+const hasLinks = computed(() => items.value.length > 0 || filtered.value || loading.value || Boolean(error.value))
 
 function prefillFromRoute() {
   const value = route.query.url
