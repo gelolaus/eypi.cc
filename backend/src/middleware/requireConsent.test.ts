@@ -53,7 +53,7 @@ describe('requireConsent', () => {
   it('allows the request when the current privacy and terms are stored', async () => {
     const res = await gateRequest(`
       INSERT INTO legal_consents (id, user_id, document, version) VALUES
-        ('c-privacy', 'user-1', 'privacy', '2026-11-01'),
+        ('c-privacy', 'user-1', 'privacy', '2026-11-15'),
         ('c-terms', 'user-1', 'terms', '2026-11-01')
     `)
 
@@ -76,7 +76,7 @@ describe('requireConsent', () => {
     const res = await gateRequest(`
       INSERT INTO legal_consents (id, user_id, document, version) VALUES
         ('c-aup', 'user-1', 'acceptable-use', '2026-11-01'),
-        ('c-privacy', 'user-1', 'privacy', '2026-11-01'),
+        ('c-privacy', 'user-1', 'privacy', '2026-11-15'),
         ('c-terms', 'user-1', 'terms', '2026-11-01')
     `)
 

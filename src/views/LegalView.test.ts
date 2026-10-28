@@ -17,10 +17,10 @@ beforeEach(() => {
 
 describe('LegalView', () => {
   it.each([
-    ['/privacy', 'Privacy policy'],
-    ['/terms', 'Terms of service'],
-    ['/acceptable-use', 'Acceptable use'],
-  ])('shows the version and the effective date on %s', async (path, title) => {
+    ['/privacy', 'Privacy policy', '2026-11-15', '15 November 2026'],
+    ['/terms', 'Terms of service', '2026-11-01', '1 November 2026'],
+    ['/acceptable-use', 'Acceptable use', '2026-11-01', '1 November 2026'],
+  ])('shows the version and the effective date on %s', async (path, title, version, effective) => {
     await router.push(path)
     await router.isReady()
 
@@ -30,7 +30,7 @@ describe('LegalView', () => {
 
     expect(router.currentRoute.value.path).toBe(path)
     expect(wrapper.text()).toContain(title)
-    expect(wrapper.text()).toContain('2026-11-01')
-    expect(wrapper.text()).toContain('1 November 2026')
+    expect(wrapper.text()).toContain(version)
+    expect(wrapper.text()).toContain(effective)
   })
 })

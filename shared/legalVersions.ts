@@ -1,5 +1,5 @@
 export const LEGAL_VERSIONS = {
-  privacy: '2026-11-01',
+  privacy: '2026-11-15',
   terms: '2026-11-01',
   'acceptable-use': '2026-11-01',
 } as const

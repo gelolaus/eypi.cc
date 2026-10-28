@@ -64,7 +64,7 @@ async function seedSession(opts: {
       if (opts.consent === 'current') {
         await db.execute({
           sql: `INSERT INTO legal_consents (id, user_id, document, version) VALUES
-            ('consent-privacy', 'ada-id', 'privacy', '2026-11-01'),
+            ('consent-privacy', 'ada-id', 'privacy', '2026-11-15'),
             ('consent-terms', 'ada-id', 'terms', '2026-11-01')`,
         })
       }
@@ -114,7 +114,7 @@ describe('GET /api/me', () => {
     })
     expect(body.pendingInviteCount).toBe(1)
     expect(body.needsConsent).toEqual([
-      { document: 'privacy', version: '2026-11-01' },
+      { document: 'privacy', version: '2026-11-15' },
       { document: 'terms', version: '2026-11-01' },
     ])
     expect(body.orgs.map((org) => org.org_id)).toEqual(['org-alpha'])
@@ -143,7 +143,7 @@ describe('GET /api/me', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { needsConsent: unknown[] }
     expect(body.needsConsent).toEqual([
-      { document: 'privacy', version: '2026-11-01' },
+      { document: 'privacy', version: '2026-11-15' },
       { document: 'terms', version: '2026-11-01' },
     ])
   })
