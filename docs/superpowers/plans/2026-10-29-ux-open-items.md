@@ -125,11 +125,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 - Modify: `src/views/forms/generators/VisitorsPassView.vue:228`, `src/views/forms/generators/LetterOfIntentView.vue:161`, `src/components/tix/AttendeeTable.vue`, `src/views/tix/AttendeesInboxView.vue`
 - Test: `src/views/forms/formsMobile.test.ts`, `src/components/tix/AttendeeTable.test.ts`, `src/views/orgs/…` members test if present
 
-- [ ] **Step 1: Failing tests.** Forms: `guest list stacks as cards below md` and `signer list stacks as cards below md` (the wrapper has no `overflow-x-auto` below `md`; each row renders its field labels visibly; `md:overflow-x-auto` allowed). AttendeeTable: `attendee name is text-base` and `email on mobile card is text-sm` (`text-xs` removed). Members (UX-29): `members wrapper does not scroll sideways below md` regression guard.
-- [ ] **Step 2:** Run the three test files; expect FAIL except the UX-29 guard.
-- [ ] **Step 3:** Rework each forms table to the pattern `AttendeeTable` uses: `block` rows with `md:table-row`, a per-cell label shown below `md` (`md:hidden`), inputs `min-h-11`. Attendee name `font-mono text-base font-bold`, email `text-sm`.
-- [ ] **Step 4:** Run tests, then `npm run typecheck` and `npm run lint`; expect PASS. Check `AttendeesInboxView.vue` for any other `text-xs` on attendee rows and raise to `text-sm`.
-- [ ] **Step 5:** Set UX-45 and UX-38 `fixed`, UX-29 `fixed (verified in Task 10)` or leave `partial` if Task 10 finds a defect, commit `fix(mobile): stack forms tables and enlarge attendee text`.
+- [x] **Step 1: Failing tests.** Forms: `guest list stacks as cards below md` and `signer list stacks as cards below md` (the wrapper has no `overflow-x-auto` below `md`; each row renders its field labels visibly; `md:overflow-x-auto` allowed). AttendeeTable: `attendee name is text-base` and `email on mobile card is text-sm` (`text-xs` removed). Members (UX-29): `members wrapper does not scroll sideways below md` regression guard.
+- [x] **Step 2:** Run the three test files; expect FAIL except the UX-29 guard.
+- [x] **Step 3:** Rework each forms table to the pattern `AttendeeTable` uses: `block` rows with `md:table-row`, a per-cell label shown below `md` (`md:hidden`), inputs `min-h-11`. Attendee name `font-mono text-base font-bold`, email `text-sm`.
+- [x] **Step 4:** Run tests, then `npm run typecheck` and `npm run lint`; expect PASS. Check `AttendeesInboxView.vue` for any other `text-xs` on attendee rows and raise to `text-sm`.
+- [x] **Step 5:** Set UX-45 and UX-38 `fixed`, UX-29 `fixed (verified in Task 10)` or leave `partial` if Task 10 finds a defect, commit `fix(mobile): stack forms tables and enlarge attendee text`.
 
 ### Task 8: Frame canvas keyboard (UX-17)
 
