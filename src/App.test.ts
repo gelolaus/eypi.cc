@@ -102,8 +102,19 @@ describe('boot skeleton', () => {
     wrapper.unmount()
   })
 
+  it('matches the skeleton header height to the real 56 px header', async () => {
+    const { wrapper } = coldMount()
+    await flushPromises()
+    const bar = wrapper.get('[data-boot-skeleton] > div')
+    expect(bar.classes()).toContain('h-14')
+    expect(bar.classes()).not.toContain('h-16')
+    wrapper.unmount()
+  })
+
   it('swaps the skeleton for the shell once ready', async () => {
     const { coldRouter, wrapper, release } = coldMount()
+    await flushPromises()
+    expect(wrapper.find('[data-boot-skeleton]').exists()).toBe(true)
     release()
     await coldRouter.push('/')
     await coldRouter.isReady()
