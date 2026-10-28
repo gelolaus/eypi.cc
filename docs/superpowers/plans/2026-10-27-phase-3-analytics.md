@@ -41,11 +41,11 @@
 - Migration: `analytics ADD device TEXT, ADD browser TEXT, ADD app TEXT`; tables `analytics_daily(link_id, day, clicks, uniques, qr, PRIMARY KEY(link_id, day))`, `analytics_daily_dim(link_id, day, dim, value, clicks, PRIMARY KEY(link_id, day, dim, value))`, `module_events(id INTEGER PK AUTOINCREMENT, org_id, module, subject_id, action, visitor_hash, day, created_at DEFAULT CURRENT_TIMESTAMP)` with index `(subject_id, day)`, `module_daily(subject_id, module, action, day, n, uniques, PRIMARY KEY(subject_id, module, action, day))`; index `analytics(created_at)`.
 - Produces: `parseUserAgent(ua: string | null): { device: Device; browser: Browser; app: App | null }`; `LinkClickMetadata` gains `device`, `browser`, `app`; `logLinkClick` writes them.
 
-- [ ] **Step 1: Failing tests:** table of real UA strings: iPhone Messenger (`FBAN/MessengerForiOS`) → `mobile/Safari/messenger`; Android Facebook (`FB_IAB`/`FBAV`) → `mobile/Chrome/facebook`; Instagram, TikTok (`musical_ly`/`BytedanceWebview`), Line, Discord, X (`Twitter for`); iPad → tablet; Edge desktop (`Edg/`) → `desktop/Edge`; Samsung Internet; `empty user agent` → `desktop/Other/null`. Worker test asserts the inserted row has the three fields.
-- [ ] **Step 2: Run** `npx vitest run shared/linkAnalytics.test.ts worker/index.test.ts` → FAIL.
-- [ ] **Step 3: Implement** (ordered regex checks, in-app markers before browser markers).
-- [ ] **Step 4: Run** → PASS; `npm test`.
-- [ ] **Step 5: Commit** `feat(links): record device, browser and source app per click`.
+- [x] **Step 1: Failing tests:** table of real UA strings: iPhone Messenger (`FBAN/MessengerForiOS`) → `mobile/Safari/messenger`; Android Facebook (`FB_IAB`/`FBAV`) → `mobile/Chrome/facebook`; Instagram, TikTok (`musical_ly`/`BytedanceWebview`), Line, Discord, X (`Twitter for`); iPad → tablet; Edge desktop (`Edg/`) → `desktop/Edge`; Samsung Internet; `empty user agent` → `desktop/Other/null`. Worker test asserts the inserted row has the three fields.
+- [x] **Step 2: Run** `npx vitest run shared/linkAnalytics.test.ts worker/index.test.ts` → FAIL.
+- [x] **Step 3: Implement** (ordered regex checks, in-app markers before browser markers).
+- [x] **Step 4: Run** → PASS; `npm test`.
+- [x] **Step 5: Commit** `feat(links): record device, browser and source app per click`.
 
 ### Task 2: Link and module rollups
 

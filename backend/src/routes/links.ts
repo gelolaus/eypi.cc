@@ -14,7 +14,7 @@ import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
 import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
 import { reportError } from '../lib/reportError'
 import { manilaDaySpan, manilaSql, manilaTimestamp, manilaWindow } from '../lib/manilaTime'
-import { getOS, logLinkClick, sanitizeReferrer } from '../../../shared/linkAnalytics'
+import { getOS, logLinkClick, parseUserAgent, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
 import { generateSlug, normalizeSlugInput, validateSlug } from '../../../shared/slugRules'
 import { validateDestination, type DestinationCode } from '../../../shared/urlSafety'
@@ -394,6 +394,7 @@ async function recordClick(
   await logLinkClick(db(c), {
     linkId,
     os: getOS(userAgent),
+    ...parseUserAgent(userAgent),
     country,
     referrer: sanitizeReferrer(referrer),
     source,
