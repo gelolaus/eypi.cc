@@ -72,6 +72,8 @@ describe('legal documents', () => {
       'guest ticket link',
       'puts those links in the file',
       'registrations an organizer imported',
+      'per visitor, per campaign (or organization page), per action each hour',
+      'other than registrations for events you lead, which are deleted with the account',
       'after 400 days',
       'name and email address stay on those kept records',
       'Cloudflare',

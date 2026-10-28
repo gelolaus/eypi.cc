@@ -40,7 +40,7 @@ export const privacy: LegalDocument = {
       heading: 'Frames and organization page activity',
       paragraphs: [
         'When someone views a Frame, adds a photo to it, downloads the result, or shares it, eypi.cc stores that action with the Frame, the day, and the same kind of daily hashed visitor id described above. It does the same when someone views a public organization profile. The photo itself is not uploaded.',
-        'eypi.cc limits these events to a small number per visitor, per page, per action each hour. It adds them up into daily totals that the organization sees.',
+        'eypi.cc limits these events to a small number per visitor, per campaign (or organization page), per action each hour. It adds them up into daily totals that the organization sees.',
       ],
     },
     {
@@ -68,7 +68,7 @@ export const privacy: LegalDocument = {
         'Event leads can upload a CSV. eypi.cc stores those rows in event_csv_rows. A row can include names, email addresses, and any other columns in the file. Selected attendees are stored with a name, an email address, a ticket token, and an optional cluster. Check-in stores that a ticket was scanned.',
         "Signed-in students can register for an event on eypi.cc. A registration stores your account link, your name and email address, your status (for example confirmed, waitlisted, or cancelled), the time you registered, and your answers to the organizer's registration questions. Organizers of that event can see these and can export them.",
         "Organizers can issue a private guest ticket link to an attendee who has no account. Anyone who has the link can open the ticket without signing in. The ticket shows the event name, date, time and location, the ticket status, the ticket QR code, the answers to the registration questions, and the waitlist position. eypi.cc stores only a hash of the link's token. An organizer can issue a new link at any time, which stops the old link from working. Keep the link private. When an organizer exports the attendee CSV, eypi.cc issues guest ticket links for confirmed attendees who have no account and no link yet, and puts those links in the file.",
-        "If you delete your account, your future self-registrations that have no check-ins are deleted. Every other registration linked to your account is kept as the organization's attendance record with the account link removed. That includes past registrations, registrations with a check-in, and registrations an organizer imported for you, even for future events. Your name and email address stay on those kept records.",
+        "If you delete your account, your future self-registrations that have no check-ins are deleted. Every other registration linked to your account, other than registrations for events you lead, which are deleted with the account (an event of an organization owned by someone else is handed to that owner instead), is kept as the organization's attendance record with the account link removed. That includes past registrations, registrations with a check-in, and registrations an organizer imported for you, even for future events. Your name and email address stay on those kept records.",
         "To have a kept attendance record erased, ask through /contact. The organization that holds the record may need to confirm it first.",
         'Google Wallet is the wallet pass eypi.cc issues. Google receives the holder name, the ticket number, the event name, date, time, and location, the tier, and any custom fields placed on the pass.',
       ],
