@@ -75,21 +75,33 @@
           class="flex shrink-0 flex-col gap-2 border-t border-border"
           :class="collapsed ? 'p-2' : 'p-3'"
         >
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            class="self-end"
-            :class="collapsed ? 'self-center' : ''"
-            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-            :aria-expanded="collapsed ? 'false' : 'true'"
-            @click="toggleRail"
+          <div
+            class="flex items-center"
+            :class="collapsed ? 'flex-col gap-2' : 'justify-between'"
           >
-            <component
-              :is="collapsed ? PanelLeftOpen : PanelLeftClose"
-              aria-hidden="true"
-            />
-          </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Search and jump"
+              @click="showPalette = true"
+            >
+              <Search aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+              :aria-expanded="collapsed ? 'false' : 'true'"
+              @click="toggleRail"
+            >
+              <component
+                :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+                aria-hidden="true"
+              />
+            </Button>
+          </div>
           <OrgSwitcher
             block
             :collapsed="collapsed"
@@ -176,6 +188,11 @@
         </nav>
       </div>
     </div>
+
+    <CommandPalette
+      v-if="showPalette"
+      v-model:open="showPalette"
+    />
   </div>
 
   <!-- Public pages: top bar only, normal document scroll. -->
@@ -199,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BrandLogo from '@/components/brand/BrandLogo.vue'
 import { vPrefetch } from '@/directives/prefetch'
@@ -208,7 +225,7 @@ import OrgSwitcher from '@/components/OrgSwitcher.vue'
 import ScrollTop from '@/components/ScrollTop.vue'
 import MarketingFooter from '@/components/marketing/MarketingFooter.vue'
 import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-vue-next'
+import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useActiveOrg } from '@/composables/useActiveOrg'
@@ -229,6 +246,8 @@ const { orgs, activeOrg, fetchOrgs } = useActiveOrg()
 
 const { collapsed, toggle: toggleRail } = useRailCollapsed()
 const paneRef = ref<HTMLElement | null>(null)
+const CommandPalette = defineAsyncComponent(() => import('@/components/CommandPalette.vue'))
+const showPalette = ref(false)
 
 const isAuthenticated = computed(() => session.user.value !== null)
 const isAdmin = computed(() => session.user.value?.role === 'admin')
@@ -251,6 +270,16 @@ function isActive(entry: AppNavEntry): boolean {
   return isAppNavEntryActive(entry, route.path)
 }
 
+// Ctrl+K opens the palette. It stays out of text fields so typing keeps working.
+function onShortcut(event: KeyboardEvent) {
+  if (!appShell.value || event.defaultPrevented) return
+  if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return
+  const target = event.target as HTMLElement | null
+  if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return
+  event.preventDefault()
+  showPalette.value = true
+}
+
 // The pane, not the window, scrolls inside the app shell.
 watch(paneRef, (pane) => {
   container.value = pane
@@ -271,10 +300,12 @@ watch(isAuthenticated, (signedIn) => {
 onMounted(() => {
   container.value = paneRef.value
   if (isAuthenticated.value) fetchOrgs()
+  document.addEventListener('keydown', onShortcut)
 })
 
 onUnmounted(() => {
   disposePaneScroll()
   container.value = null
+  document.removeEventListener('keydown', onShortcut)
 })
 </script>

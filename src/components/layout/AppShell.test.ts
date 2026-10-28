@@ -302,6 +302,95 @@ describe('AppShell (signed in)', () => {
   })
 })
 
+describe('Command palette shortcut', () => {
+  const palette = () => document.body.querySelector('[data-slot="dialog-content"]')
+
+  async function pressShortcut(target: EventTarget = document.body, init: KeyboardEventInit = {}) {
+    const event = new KeyboardEvent('keydown', { key: 'k', bubbles: true, cancelable: true, ...init })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('opens on Ctrl+K and Cmd+K', async () => {
+    signIn()
+    await mountAt('/links')
+
+    await pressShortcut(document.body, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+
+    palette()!.querySelector<HTMLElement>('[role="option"]')!.click()
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    await pressShortcut(document.body, { metaKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('ignores the shortcut while focus is in an input, textarea, select or editable element', async () => {
+    signIn()
+    await mountAt('/links')
+
+    for (const tag of ['input', 'textarea', 'select']) {
+      const field = document.createElement(tag)
+      if (tag === 'input') field.setAttribute('type', 'text')
+      document.body.appendChild(field)
+      ;(field as HTMLElement).focus()
+      await pressShortcut(field, { ctrlKey: true })
+      await flushPromises()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(palette()).toBeNull()
+      field.remove()
+    }
+
+    const editable = document.createElement('div')
+    editable.contentEditable = 'true'
+    editable.tabIndex = 0
+    document.body.appendChild(editable)
+    editable.focus()
+    await pressShortcut(editable, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+
+  it('ignores an event another handler already consumed', async () => {
+    signIn()
+    await mountAt('/links')
+    const event = new KeyboardEvent('keydown', { key: 'k', bubbles: true, cancelable: true, ctrlKey: true })
+    event.preventDefault()
+    document.body.dispatchEvent(event)
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+
+  it('opens one palette when the shortcut is pressed twice quickly', async () => {
+    signIn()
+    await mountAt('/links')
+    await pressShortcut(document.body, { ctrlKey: true })
+    await pressShortcut(document.body, { ctrlKey: true })
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+    expect(document.body.querySelectorAll('[data-slot="dialog-content"]')).toHaveLength(1)
+  })
+
+  it('opens from the search button in the side rail', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    await wrapper.get('button[aria-label="Search and jump"]').trigger('click')
+    await vi.waitFor(() => expect(palette()).not.toBeNull())
+  })
+
+  it('removes the shortcut listener on unmount', async () => {
+    signIn()
+    const wrapper = await mountAt('/links')
+    wrapper.unmount()
+    await pressShortcut(document.body, { ctrlKey: true })
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(palette()).toBeNull()
+  })
+})
+
 describe('AppShell (public)', () => {
   it('keeps the top bar and normal document scroll', async () => {
     const wrapper = await mountAt('/')
