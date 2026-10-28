@@ -15,7 +15,7 @@
       <dl
         v-else
         aria-label="Platform totals"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3"
+        class="grid grid-cols-2 gap-3"
       >
         <div
           v-for="item in visibleItems"

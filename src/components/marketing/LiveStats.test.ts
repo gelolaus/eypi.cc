@@ -131,3 +131,15 @@ describe('LiveStats even tiles', () => {
     expect(wrapper.findAll('[aria-hidden="true"].animate-pulse')).toHaveLength(10)
   })
 })
+
+describe('LiveStats grid', () => {
+  // Tile counts are always even (see evenTiles), so a 3-column grid would orphan the last tile.
+  it('stays two columns at every width', async () => {
+    stubFetch(async () => new Response(JSON.stringify({ ...stats, orgs: 0, members: 0, frames: 0, frameDownloads: 0, checkIns: 0, tickets: 0 }), { headers: { 'Content-Type': 'application/json' } }))
+    const wrapper = mount(LiveStats)
+    await flushPromises()
+    const classes = wrapper.get('dl').classes()
+    expect(classes).toContain('grid-cols-2')
+    expect(classes.filter(name => /grid-cols-(?!2$)\d/.test(name))).toEqual([])
+  })
+})
