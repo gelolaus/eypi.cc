@@ -7,6 +7,8 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss(), cloudflare()],
+  // No component uses the Options API (defineComponent with props and setup, as in EventBuilderView, is unaffected).
+  define: { __VUE_OPTIONS_API__: false },
   build: {
     manifest: true,
     rollupOptions: {
