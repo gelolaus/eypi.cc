@@ -75,7 +75,7 @@ describe('legal documents', () => {
       'per visitor, per campaign (or organization page), per action each hour',
       'other than registrations for events you lead, which are deleted with the account',
       'after 400 days',
-      'name and email address stay on those kept records',
+      'name, email address and form answers are removed from those kept records',
       'Cloudflare',
       'Turso',
       'Resend',

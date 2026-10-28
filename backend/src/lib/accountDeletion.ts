@@ -140,8 +140,19 @@ export async function deleteAccount(
       text(row.id),
       row.max_attendees == null ? null : Number(row.max_attendees),
     ) as Statement),
-    // Past or checked-in registrations stay as the org's attendance record, unlinked from the account.
-    { sql: 'UPDATE attendees SET user_id = NULL WHERE user_id = ?', args: [userId] },
+    // Past or checked-in registrations stay as the org's attendance record, unlinked from the account and
+    // stripped of personal details. The email is unique per event, so each row gets its own placeholder.
+    {
+      sql: `UPDATE attendees
+            SET user_id = NULL,
+                first_name = 'Deleted user',
+                last_name = NULL,
+                email = 'deleted-' || id || '@deleted.invalid',
+                answers = '{}',
+                guest_token_hash = NULL
+            WHERE user_id = ?`,
+      args: [userId],
+    },
     { sql: `DELETE FROM dp_frames WHERE campaign_id IN (${campaignIds})`, args: [userId] },
     { sql: `DELETE FROM dp_slug_history WHERE campaign_id IN (${campaignIds})`, args: [userId] },
     { sql: `DELETE FROM dp_campaigns WHERE ${createdByUser}`, args: [userId] },

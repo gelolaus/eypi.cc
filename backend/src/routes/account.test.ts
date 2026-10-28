@@ -688,6 +688,53 @@ describe('account routes', () => {
     expect(await column(client, "SELECT id FROM users WHERE id = 'ada-id'")).toEqual([])
   })
 
+  it('scrubs personal details from the attendance rows it keeps', async () => {
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute('PRAGMA foreign_keys = ON')
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertUser(db, 'lead-id', 'lead@apc.edu.ph', 'Lead')
+        await insertSession(db, await sha256Hex(TOKEN), 'ada-id', CHROME_WINDOWS)
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location)
+                VALUES (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'ev-1', 'ev-1', 'lead-id', 'One', '2020-01-01', '10:00', 'APC',
+            'ev-2', 'ev-2', 'lead-id', 'Two', '2020-01-02', '10:00', 'APC',
+          ],
+        })
+        for (const [id, event, token] of [['a-1', 'ev-1', 'q1'], ['a-2', 'ev-2', 'q2']]) {
+          await db.execute({
+            sql: `INSERT INTO attendees (id, event_id, first_name, last_name, email, qr_token, user_id, status, source, answers, guest_token_hash)
+                  VALUES (?, ?, 'Ada', 'Lovelace', 'ada@apc.edu.ph', ?, 'ada-id', 'confirmed', 'self', '{"q":"secret"}', 'hash-' || ?)`,
+            args: [id as string, event as string, token as string, id as string],
+          })
+        }
+        await db.execute({
+          sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token, status, source)
+                VALUES ('b-1', 'ev-1', 'Bob', 'bob@example.com', 'q3', 'confirmed', 'import')`,
+          args: [],
+        })
+      },
+    })
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: 'ada@apc.edu.ph' }))
+    expect(res.status).toBe(204)
+
+    const kept = await client.execute("SELECT * FROM attendees WHERE id IN ('a-1', 'a-2') ORDER BY id")
+    expect(kept.rows).toHaveLength(2)
+    for (const row of kept.rows) {
+      expect(row.user_id).toBeNull()
+      expect(row.first_name).toBe('Deleted user')
+      expect(row.last_name).toBeNull()
+      expect(row.answers).toBe('{}')
+      expect(row.guest_token_hash).toBeNull()
+      expect(String(row.email)).not.toContain('ada')
+    }
+    expect(new Set(kept.rows.map((r) => r.email)).size).toBe(2)
+    expect(await column(client, "SELECT first_name FROM attendees WHERE id = 'b-1'")).toEqual(['Bob'])
+  })
+
   it('still returns 204 when a QR logo cannot be deleted, without logging the email or user id', async () => {
     const currentId = await sha256Hex(TOKEN)
     const media = {
