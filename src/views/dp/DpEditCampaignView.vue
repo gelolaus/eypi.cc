@@ -5,6 +5,7 @@
         <!-- Loading -->
         <DetailSkeleton
           v-if="loading"
+          align="center"
           :title-height="32"
           :body-height="288"
         />

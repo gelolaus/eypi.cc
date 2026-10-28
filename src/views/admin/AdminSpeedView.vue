@@ -42,7 +42,7 @@
       <Skeleton
         v-for="n in 5"
         :key="n"
-        :h="90"
+        :h="126"
         :radius="16"
       />
     </div>

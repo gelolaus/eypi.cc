@@ -32,7 +32,8 @@
     <ListSkeleton
       v-if="loading"
       :rows="6"
-      :row-height="72"
+      :row-height="206"
+      :md-row-height="77"
       :radius="16"
     />
 

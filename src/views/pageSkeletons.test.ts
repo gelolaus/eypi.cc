@@ -51,3 +51,24 @@ describe('page-load skeletons', () => {
     vi.unstubAllGlobals()
   })
 })
+
+describe('per-view skeleton heights match the loaded markup', () => {
+  it.each([
+    ['adminUsers', adminUsers, 210, 53],
+    ['adminLinks', adminLinks, 206, 77],
+    ['adminAudit', adminAudit, 226, 77],
+    ['linkList', linkList, 212, 100],
+  ])('%s reserves %ipx (md %ipx) rows', (_n, src, h, md) => {
+    expect(src).toContain(`:row-height="${h}"`)
+    expect(src).toContain(`:md-row-height="${md}"`)
+  })
+
+  it('admin speed tiles include the status and sparkline line (90 + 36)', () => {
+    expect(adminSpeed).toContain(':h="126"')
+  })
+
+  it('org profile uses its own skeleton and the campaign editor centres its title', () => {
+    expect(orgProfile).toContain('<OrgProfileSkeleton')
+    expect(dpEdit).toContain('align="center"')
+  })
+})

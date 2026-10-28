@@ -4,7 +4,8 @@
       <ListSkeleton
         v-if="loading && items.length === 0"
         :rows="3"
-        :row-height="112"
+        :row-height="212"
+        :md-row-height="100"
         label="Loading links"
       />
       <template v-else-if="items.length > 0">

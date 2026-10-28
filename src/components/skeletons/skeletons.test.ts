@@ -38,3 +38,27 @@ describe('skeleton layouts', () => {
     }
   })
 })
+
+describe('skeleton geometry', () => {
+  it('DetailSkeleton centres the title only when asked', () => {
+    expect(mount(DetailSkeleton).find('[data-skeleton-block]').classes()).not.toContain('mx-auto')
+    expect(mount(DetailSkeleton, { props: { align: 'center' } }).find('[data-skeleton-block]').classes()).toContain('mx-auto')
+  })
+
+  it('ListSkeleton swaps to the desktop row height at md', () => {
+    const wrapper = mount(ListSkeleton, { props: { rows: 2, rowHeight: 210, mdRowHeight: 53 } })
+    expect(heights(wrapper, '[data-skeleton-row]')).toEqual(['210px', '210px'])
+    expect(heights(wrapper, '[data-skeleton-row-md]')).toEqual(['53px', '53px'])
+  })
+
+  it('OrgProfileSkeleton mirrors hero, tabs and about card with 24px radii', async () => {
+    const OrgProfileSkeleton = (await import('./OrgProfileSkeleton.vue')).default
+    const wrapper = mount(OrgProfileSkeleton)
+    const el = (s: string) => wrapper.get(s).element as HTMLElement
+    expect(el('[data-skeleton-hero]').style.height).toBe('368px')
+    expect(el('[data-skeleton-hero-md]').style.height).toBe('412px')
+    expect(el('[data-skeleton-hero]').style.borderRadius).toBe('24px')
+    expect(el('[data-skeleton-tabs]').style.height).toBe('44px')
+    expect(el('[data-skeleton-body]').style.height).toBe('200px')
+  })
+})

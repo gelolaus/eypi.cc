@@ -1,11 +1,6 @@
 <template>
   <section class="relative mx-auto w-full max-w-5xl px-4 pb-24 pt-8 sm:px-6 md:pt-12 lg:px-8">
-    <DetailSkeleton
-      v-if="loading"
-      :title-height="192"
-      title-width="100%"
-      :body-height="200"
-    />
+    <OrgProfileSkeleton v-if="loading" />
 
     <Card
       v-else-if="error"
@@ -210,7 +205,7 @@
 </template>
 
 <script setup lang="ts">
-import DetailSkeleton from '@/components/skeletons/DetailSkeleton.vue'
+import OrgProfileSkeleton from '@/components/skeletons/OrgProfileSkeleton.vue'
 import AppImage from '@/components/AppImage.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
