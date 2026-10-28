@@ -155,11 +155,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Consumes: `runWithUndo` (`apply`, `revert`, `commit`, `windowMs`), `activeOrgHeaders` from `src/composables/useUndoToast.ts`; the existing `patchUser` PATCH call and the admin link disable request.
 
-- [ ] **Step 1: Failing tests.** `disabling an account applies immediately and shows an Undo toast without a confirm dialog`, `undo restores the account and sends no request`, `request fires after the window`, `a failed commit reverts the row`, `enabling still happens at once`, `delete account keeps its confirm`; same trio for admin links disable (the reason textarea stays; its text is captured when the action starts).
-- [ ] **Step 2:** Run `npx vitest run src/views/admin`; expect FAIL.
-- [ ] **Step 3:** Replace the `dialog.confirm` in `toggleDisabled` and the link disable flow with `runWithUndo`, optimistic row update in `apply`, restore in `revert`, request in `commit` with `{ keepalive: true }`. Leave `forceLogout` and delete account as they are.
-- [ ] **Step 4:** Run the admin tests; expect PASS.
-- [ ] **Step 5:** Set UX-48 `fixed`, commit `feat(admin): undo for disabling accounts and links`.
+- [x] **Step 1: Failing tests.** `disabling an account applies immediately and shows an Undo toast without a confirm dialog`, `undo restores the account and sends no request`, `request fires after the window`, `a failed commit reverts the row`, `enabling still happens at once`, `delete account keeps its confirm`; same trio for admin links disable (the reason textarea stays; its text is captured when the action starts).
+- [x] **Step 2:** Run `npx vitest run src/views/admin`; expect FAIL.
+- [x] **Step 3:** Replace the `dialog.confirm` in `toggleDisabled` and the link disable flow with `runWithUndo`, optimistic row update in `apply`, restore in `revert`, request in `commit` with `{ keepalive: true }`. Leave `forceLogout` and delete account as they are.
+- [x] **Step 4:** Run the admin tests; expect PASS.
+- [x] **Step 5:** Set UX-48 `fixed`, commit `feat(admin): undo for disabling accounts and links`.
 
 ### Task 10: Browser pass and Outcomes (UX-46, UX-29, all visual checks)
 
