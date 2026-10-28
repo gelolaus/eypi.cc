@@ -14,6 +14,8 @@ export interface ToastOptions {
   /** Called when hover or focus pauses the toast timer, and when it resumes. */
   onPause?: () => void
   onResume?: () => void
+  /** Called once when the toast leaves the screen by any path. */
+  onDismiss?: () => void
 }
 
 export interface Toast {
@@ -25,6 +27,7 @@ export interface Toast {
   action?: ToastAction
   onPause?: () => void
   onResume?: () => void
+  onDismiss?: () => void
 }
 
 const MAX_TOASTS = 3
@@ -65,7 +68,9 @@ function removeToast(id: number) {
   remaining.delete(id)
   startedAt.delete(id)
   const index = toasts.value.findIndex((t) => t.id === id)
-  if (index > -1) toasts.value.splice(index, 1)
+  if (index === -1) return
+  const [gone] = toasts.value.splice(index, 1)
+  gone.onDismiss?.()
 }
 
 function pauseToast(id: number) {
@@ -95,7 +100,7 @@ function resumeToast(id: number) {
 function resolveDuration(
   type: ToastType,
   second?: number | ToastOptions,
-): { detail?: string; duration: number; action?: ToastAction; onPause?: () => void; onResume?: () => void } {
+): { detail?: string; duration: number; action?: ToastAction; onPause?: () => void; onResume?: () => void; onDismiss?: () => void } {
   if (typeof second === 'number') {
     return { duration: second }
   }
@@ -104,12 +109,13 @@ function resolveDuration(
     action: second?.action,
     onPause: second?.onPause,
     onResume: second?.onResume,
+    onDismiss: second?.onDismiss,
     duration: second?.duration ?? DEFAULT_DURATION[type],
   }
 }
 
 function addToast(message: string, type: ToastType, second?: number | ToastOptions) {
-  const { detail, duration, action, onPause, onResume } = resolveDuration(type, second)
+  const { detail, duration, action, onPause, onResume, onDismiss } = resolveDuration(type, second)
 
   const existing = action ? undefined : toasts.value.find((t) => t.type === type && t.message === message && t.detail === detail)
   if (existing) {
@@ -125,7 +131,7 @@ function addToast(message: string, type: ToastType, second?: number | ToastOptio
   }
 
   const id = nextId++
-  toasts.value.push({ id, message, detail, type, duration, action, onPause, onResume })
+  toasts.value.push({ id, message, detail, type, duration, action, onPause, onResume, onDismiss })
   scheduleRemove(id, duration)
   return id
 }

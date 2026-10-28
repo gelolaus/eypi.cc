@@ -142,6 +142,44 @@ describe('runWithUndo', () => {
     expect(o.commit).toHaveBeenCalledTimes(1)
   })
 
+  it('commits once when a paused toast is dismissed (Escape or swipe)', async () => {
+    const o = opts()
+    runWithUndo(o)
+    const { toasts, pause, dismiss } = useToast()
+    const id = toasts.value[0].id
+    pause(id)
+    dismiss(id)
+    expect(o.commit).toHaveBeenCalledTimes(1)
+    expect(o.revert).not.toHaveBeenCalled()
+    dismiss(id)
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(o.commit).toHaveBeenCalledTimes(1)
+  })
+
+  it('Undo after a pause reverts and never commits, even though the toast then closes', async () => {
+    const o = opts()
+    runWithUndo(o)
+    const { toasts, pause, dismiss } = useToast()
+    const id = toasts.value[0].id
+    pause(id)
+    toasts.value[0].action!.onClick()
+    dismiss(id)
+    window.dispatchEvent(new Event('pagehide'))
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(o.revert).toHaveBeenCalledTimes(1)
+    expect(o.commit).not.toHaveBeenCalled()
+  })
+
+  it('does not double-commit when the timer flush dismisses its own toast', async () => {
+    const o = opts()
+    runWithUndo(o)
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(o.commit).toHaveBeenCalledTimes(1)
+    window.dispatchEvent(new Event('pagehide'))
+    expect(o.commit).toHaveBeenCalledTimes(1)
+  })
+
   it('never evicts a pending Undo toast', () => {
     const a = opts({ message: 'A' })
     runWithUndo(a)

@@ -108,6 +108,8 @@ export function runWithUndo(opts: UndoOptions): void {
         revert()
       },
     },
+    // Closing the toast any other way (Escape, swipe, timer) accepts the action.
+    onDismiss: entry.flush,
     // Hover and focus hold the toast, so they hold the commit too.
     onPause() {
       if (settled) return
