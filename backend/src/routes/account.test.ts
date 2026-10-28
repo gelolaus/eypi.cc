@@ -571,6 +571,123 @@ describe('account routes', () => {
     expect(await column(client, 'SELECT id FROM users')).toEqual(['joana-id'])
   })
 
+  it('deletes future self-registrations, promotes the waitlist, and keeps past ones without the user id', async () => {
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute('PRAGMA foreign_keys = ON')
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertUser(db, 'lead-id', 'lead@apc.edu.ph', 'Lead')
+        await insertSession(db, await sha256Hex(TOKEN), 'ada-id', CHROME_WINDOWS)
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, max_attendees)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'event-future', 'future-event', 'lead-id', 'Future', '2099-01-01', '10:00', 'APC', 1,
+            'event-past', 'past-event', 'lead-id', 'Past', '2020-01-01', '10:00', 'APC', 1,
+            'event-import', 'import-event', 'lead-id', 'Import', '2099-02-01', '10:00', 'APC', 5,
+          ],
+        })
+        await db.execute({
+          sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token, user_id, status, source, registered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?),
+                       (?, ?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'att-future', 'event-future', 'Ada', 'ada@apc.edu.ph', 'qr-future', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000',
+            'att-wait', 'event-future', 'Wes', 'wes@example.com', 'qr-wait', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000',
+            'att-past', 'event-past', 'Ada', 'ada@apc.edu.ph', 'qr-past', 'ada-id', 'confirmed', 'self', '2019-01-01 00:00:00.000',
+            'att-import', 'event-import', 'Ada', 'ada.alt@apc.edu.ph', 'qr-import', 'ada-id', 'confirmed', 'import', '2026-01-03 00:00:00.000',
+          ],
+        })
+      },
+    })
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: 'ada@apc.edu.ph' }))
+    expect(res.status).toBe(204)
+
+    expect(await column(client, "SELECT id FROM attendees WHERE id = 'att-future'")).toEqual([])
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'att-wait'")).toEqual(['confirmed'])
+    const past = await client.execute("SELECT user_id FROM attendees WHERE id = 'att-past'")
+    expect(past.rows).toHaveLength(1)
+    expect(past.rows[0]?.user_id).toBeNull()
+    const imported = await client.execute("SELECT user_id FROM attendees WHERE id = 'att-import'")
+    expect(imported.rows[0]?.user_id).toBeNull()
+  })
+
+  it('keeps checked-in and past registrations, deletes the rest, and handles edge cases', async () => {
+    const todayManila = new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10)
+    const { request, client } = await createTestApp({
+      seed: async (db) => {
+        await db.execute('PRAGMA foreign_keys = ON')
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertUser(db, 'lead-id', 'lead@apc.edu.ph', 'Lead')
+        await insertSession(db, await sha256Hex(TOKEN), 'ada-id', CHROME_WINDOWS)
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, max_attendees)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?),
+                       (?, ?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            'ev-today', 'ev-today', 'lead-id', 'Today', todayManila, '10:00', 'APC', 1,
+            'ev-checked', 'ev-checked', 'lead-id', 'Checked', '2099-01-01', '10:00', 'APC', 1,
+            'ev-unlimited', 'ev-unlimited', 'lead-id', 'Unlimited', '2099-01-02', '10:00', 'APC', null,
+            'ev-pending', 'ev-pending', 'lead-id', 'Pending', '2099-01-03', '10:00', 'APC', 1,
+            'ev-own', 'ev-own', 'ada-id', 'Own', '2099-01-04', '10:00', 'APC', 1,
+          ],
+        })
+        await db.execute({
+          sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, max_attendees)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: ['ev-other', 'ev-other', 'lead-id', 'Other', '2099-01-05', '10:00', 'APC', 1],
+        })
+        const row = [
+          // id, event, first, email, qr, user, status, source, registered_at
+          ['a-today', 'ev-today', 'Ada', 'ada@apc.edu.ph', 'q1', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000'],
+          ['w-today', 'ev-today', 'Wes', 'wes@example.com', 'q2', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000'],
+          ['a-checked', 'ev-checked', 'Ada', 'ada@apc.edu.ph', 'q3', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000'],
+          ['w-checked', 'ev-checked', 'Wes', 'wes2@example.com', 'q4', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000'],
+          ['a-unl', 'ev-unlimited', 'Ada', 'ada@apc.edu.ph', 'q5', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000'],
+          ['w-unl', 'ev-unlimited', 'Wes', 'wes3@example.com', 'q6', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000'],
+          ['a-pending', 'ev-pending', 'Ada', 'ada@apc.edu.ph', 'q7', 'ada-id', 'pending', 'self', '2026-01-01 00:00:00.000'],
+          ['b-conf', 'ev-pending', 'Bob', 'bob@example.com', 'q8', null, 'confirmed', 'self', '2026-01-01 00:00:00.000'],
+          ['w-pending', 'ev-pending', 'Wes', 'wes4@example.com', 'q9', null, 'waitlisted', 'self', '2026-01-02 00:00:00.000'],
+          ['a-other', 'ev-other', 'Ada', 'ada@apc.edu.ph', 'q10', 'ada-id', 'confirmed', 'self', '2026-01-01 00:00:00.000'],
+        ]
+        for (const r of row) {
+          await db.execute({
+            sql: `INSERT INTO attendees (id, event_id, first_name, email, qr_token, user_id, status, source, registered_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: r,
+          })
+        }
+        await db.execute({
+          sql: `INSERT INTO check_ins (id, attendee_id, event_id, action) VALUES (?, ?, ?, ?)`,
+          args: ['ci-1', 'a-checked', 'ev-checked', 'checked_in'],
+        })
+      },
+    })
+
+    const res = await request('/api/account', jsonRequest('DELETE', { confirmEmail: 'ada@apc.edu.ph' }))
+    expect(res.status).toBe(204)
+
+    // Event dated today (Manila): no check-in, so deleted and the waitlist is promoted.
+    expect(await column(client, "SELECT id FROM attendees WHERE id = 'a-today'")).toEqual([])
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'w-today'")).toEqual(['confirmed'])
+    // Checked in: row and check-in kept, user unlinked, no seat freed.
+    const kept = await client.execute("SELECT user_id FROM attendees WHERE id = 'a-checked'")
+    expect(kept.rows).toHaveLength(1)
+    expect(kept.rows[0]?.user_id).toBeNull()
+    expect(await column(client, "SELECT id FROM check_ins WHERE id = 'ci-1'")).toEqual(['ci-1'])
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'w-checked'")).toEqual(['waitlisted'])
+    // Unlimited capacity (NULL max_attendees) still promotes.
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'w-unl'")).toEqual(['confirmed'])
+    // Non-confirmed row is deleted but frees no seat (Bob still holds it).
+    expect(await column(client, "SELECT id FROM attendees WHERE id = 'a-pending'")).toEqual([])
+    expect(await column(client, "SELECT status FROM attendees WHERE id = 'w-pending'")).toEqual(['waitlisted'])
+    // Self row on another lead's event is deleted; the led event is gone.
+    expect(await column(client, "SELECT id FROM attendees WHERE id = 'a-other'")).toEqual([])
+    expect(await column(client, "SELECT id FROM events WHERE id = 'ev-own'")).toEqual([])
+    expect(await column(client, "SELECT id FROM users WHERE id = 'ada-id'")).toEqual([])
+  })
+
   it('still returns 204 when a QR logo cannot be deleted, without logging the email or user id', async () => {
     const currentId = await sha256Hex(TOKEN)
     const media = {

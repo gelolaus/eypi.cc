@@ -133,20 +133,11 @@ export async function loadPassContext(
 
   const aRes = await client.execute({
     sql: `SELECT id, first_name, last_name, email, qr_token, cluster_value, csv_row_id FROM attendees
-          WHERE id = ? AND event_id = ?`,
+          WHERE id = ? AND event_id = ? AND status = 'confirmed'`,
     args: [attendeeId, event.id],
   })
   if (aRes.rows.length === 0) return null
   const a = aRes.rows[0]
-
-  const latest = await client.execute({
-    sql: `SELECT action FROM check_ins
-          WHERE attendee_id = ?
-          ORDER BY actioned_at DESC, rowid DESC
-          LIMIT 1`,
-    args: [attendeeId],
-  })
-  if (latest.rows[0]?.action === 'removed') return null
 
   const customFields = await loadAllowlistedFields(
     client,

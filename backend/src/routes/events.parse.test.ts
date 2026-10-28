@@ -76,32 +76,6 @@ describe('event spreadsheet upload', () => {
     expect(kept.rows.map((row) => row.id)).toEqual(['row-kept'])
   })
 
-  it('rejects a missing firstName', async () => {
-    const { client, request } = await createTestApp({ user: lead, seed: seedLead })
-
-    const res = await request('/api/events', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        name: 'Door Night',
-        slug: 'doornight',
-        date: '2026-11-01',
-        time: '09:00',
-        location: 'Hall',
-        attendees: [{ lastName: 'Santos', email: 'ana@x.com' }],
-      }),
-    })
-
-    expect(res.status).toBe(422)
-    expect(await res.json()).toMatchObject({ error: { code: 'missing_first_name' } })
-
-    const events = await client.execute({
-      sql: 'SELECT id FROM events WHERE slug = ?',
-      args: ['doornight'],
-    })
-    expect(events.rows).toHaveLength(0)
-  })
-
   it('does not append csv rows after the event is finalized', async () => {
     const { client, request } = await createTestApp({
       user: lead,

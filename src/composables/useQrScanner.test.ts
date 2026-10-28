@@ -61,4 +61,18 @@ describe('useQrScanner', () => {
     await flushPromises()
     expect(submitted).toEqual([TOKEN, OTHER])
   })
+
+  it('hands decoded codes to onToken without checking in', () => {
+    vi.useFakeTimers()
+    const tokens: string[] = []
+    const submit = vi.fn()
+    const { onDecoded } = useQrScanner({ slug: 'door', now: () => 1_000, submit, onToken: (t) => tokens.push(t) })
+    onDecoded(` ${TOKEN} `)
+    onDecoded(OTHER) // still cooling down
+    vi.advanceTimersByTime(800)
+    onDecoded(OTHER)
+    onDecoded(OTHER) // same code inside the 5 s window
+    expect(tokens).toEqual([TOKEN, OTHER])
+    expect(submit).not.toHaveBeenCalled()
+  })
 })

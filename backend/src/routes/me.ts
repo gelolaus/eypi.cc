@@ -28,7 +28,7 @@ app.get('/api/me', requireAuth, async (c) => {
 
   const client = db(c)
   const email = sessionUser?.email ?? c.var.userEmail ?? ''
-  const [invites, orgs, needsConsent] = await Promise.all([
+  const [invites, orgs, needsConsent, updates] = await Promise.all([
     client.execute({
       sql: `SELECT COUNT(*) AS n
             FROM org_members
@@ -51,6 +51,12 @@ app.get('/api/me', requireAuth, async (c) => {
       args: [userId, userId, userId],
     }),
     needsConsentList(client, userId),
+    client.execute({
+      sql: `SELECT COUNT(*) AS n FROM attendees
+            WHERE user_id = ? AND decided_at IS NOT NULL
+              AND decided_at > COALESCE((SELECT tickets_seen_at FROM users WHERE id = ?), '')`,
+      args: [userId, userId],
+    }),
   ])
 
   return c.json({
@@ -62,6 +68,7 @@ app.get('/api/me', requireAuth, async (c) => {
     },
     pendingInviteCount: Number(invites.rows[0]?.n ?? 0),
     needsConsent,
+    ticketUpdates: Number(updates.rows[0]?.n ?? 0),
     orgs: orgs.rows.map((row) => ({
       org_id: String(row.org_id),
       org_name: String(row.org_name),

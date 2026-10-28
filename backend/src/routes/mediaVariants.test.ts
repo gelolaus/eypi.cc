@@ -313,6 +313,55 @@ describe('PUT /api/media/variants validation', () => {
   })
 })
 
+describe('event covers', () => {
+  const COVER_KEY = 'events/ev-1/cover-0123abcd.png'
+
+  async function withEvent(user?: TestUser) {
+    const app = await setup(user)
+    await app.client.execute({
+      sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, org_id, cover_key)
+            VALUES ('ev-1', 'ev1', ?, 'Ev', '2099-01-01', '09:00', 'Hall', 'alpha', ?)`,
+      args: [admin.id, COVER_KEY],
+    })
+    await app.env.MEDIA.put(COVER_KEY, png(2400, 1200))
+    return app
+  }
+
+  it('classifies only the content-addressed cover shape', async () => {
+    const { classifyKey } = await import('./mediaVariants')
+    expect(classifyKey(COVER_KEY)).toEqual({ kind: 'banner', column: 'cover' })
+    for (const bad of ['events/ev-1/other-0123abcd.png', 'events/ev-1/cover.png', 'events/a/b/cover-0123abcd.png', 'events/../cover-0123abcd.png', 'events/ev-1/cover-0123abcd.gif']) {
+      expect(classifyKey(bad), bad).toBeNull()
+    }
+  })
+
+  it('lets a member of the event org write cover variants and records events.cover_meta', async () => {
+    const app = await withEvent(member)
+    const res = await put(app, validBody(COVER_KEY, [640, 1280]))
+    expect(res.status).toBe(200)
+    const row = await app.client.execute("SELECT cover_meta FROM events WHERE id = 'ev-1'")
+    expect(JSON.parse(String(row.rows[0].cover_meta)).widths).toEqual([640, 1280])
+    expect(await keys(app)).toContain(variantKey(COVER_KEY, 1280, 'webp'))
+    const audit = await app.client.execute("SELECT target_type, target_id FROM audit_events WHERE action = 'media.variants'")
+    expect(audit.rows[0]).toMatchObject({ target_type: 'event', target_id: 'ev-1' })
+  })
+
+  it('rejects a member of another org and widths outside the banner profile', async () => {
+    const other = await withEvent(outsider)
+    expect((await put(other, validBody(COVER_KEY, [640]))).status).toBe(403)
+    const row = await other.client.execute("SELECT cover_meta FROM events WHERE id = 'ev-1'")
+    expect(row.rows[0].cover_meta).toBeNull()
+    const mine = await withEvent(member)
+    expect((await put(mine, validBody(COVER_KEY, [96]))).status).toBe(422)
+  })
+
+  it('lets an admin write and answers 404 for a cover key no event holds', async () => {
+    const app = await withEvent(admin)
+    expect((await put(app, validBody(COVER_KEY, [640]))).status).toBe(200)
+    expect((await put(app, validBody('events/ev-9/cover-0123abcd.png', [640]))).status).toBe(404)
+  })
+})
+
 describe('variantKey', () => {
   it('swaps the extension for -{width}.{ext}', () => {
     expect(variantKey('orgs/a/logo-0123abcd.png', 96, 'webp')).toBe('orgs/a/logo-0123abcd-96.webp')

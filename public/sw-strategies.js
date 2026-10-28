@@ -38,7 +38,7 @@
   // First path segment of every SPA route in src/router/index.ts, except "unlock" (the Worker redirects
   // short links there, so it must hit the network). Anything else extensionless may be a short link.
   var SPA_SEGMENTS = [
-    'login', 'dashboard', 'invites', 'links', 'forms', 'manage', 'frames', 'tix', 'orgs', 'account',
+    'login', 'dashboard', 'invites', 'links', 'forms', 'manage', 'frames', 'tix', 'tickets', 't', 'orgs', 'account',
     'settings', 'admin', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact', 'expired', 'report',
   ]
 
@@ -171,6 +171,11 @@
       throw err
     }
     if (res.status === 401 || res.status === 403) {
+      await cache.delete(request, { ignoreVary: true })
+      return res
+    }
+    // A rotated or cancelled guest link answers 404; the cached copy must not keep rendering offline.
+    if (res.status === 404 && /^\/api\/tickets\/guest\//.test(new URL(request.url).pathname)) {
       await cache.delete(request, { ignoreVary: true })
       return res
     }

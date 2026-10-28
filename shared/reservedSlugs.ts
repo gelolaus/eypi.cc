@@ -9,6 +9,8 @@ export const RESERVED_SLUGS = [
   // Planned suite routes and static prefixes
   'admin', 'account', 'assets', 'auth', 'logout', 'signup', 'help', 'about',
   'qr', 'static', 'invites', 'report', 'unlock', 'expired', 'media', 'p',
+  // Tix: /tickets (my tickets) and /t/:token (guest ticket)
+  't', 'tickets',
 ] as const
 
 export const RESERVED_SLUG_SET = new Set(RESERVED_SLUGS.map((s) => s.toLowerCase()))

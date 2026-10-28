@@ -1,3 +1,5 @@
+import { clearDoorData } from '@/lib/tix/doorCleanup'
+
 const TICKETS_CACHE = 'eypi-tickets-v1'
 
 /** Registers the service worker in production, after the page has loaded and the browser is idle. */
@@ -28,7 +30,10 @@ export function noteSignedInUser(id: string | null): void {
   try {
     const previous = localStorage.getItem(LAST_USER_KEY)
     if (id === null) return
-    if (previous !== null && previous !== id) void clearTicketsCache()
+    if (previous !== null && previous !== id) {
+      void clearTicketsCache()
+      void clearDoorData('account')
+    }
     localStorage.setItem(LAST_USER_KEY, id)
   } catch {
     // Storage is blocked; the reset and 401 paths still clear the cache.

@@ -610,12 +610,13 @@ const SPEED_THRESHOLDS = {
  */
 app.get('/api/admin/media/pending', requireAuth, requireAdmin, async (c) => {
   const client = db(c)
-  const [orgs, frames] = await Promise.all([
+  const [orgs, frames, covers] = await Promise.all([
     client.execute(
       `SELECT logo_url AS logo, banner_url AS banner, logo_meta, banner_meta FROM organizations
        WHERE (logo_url IS NOT NULL AND logo_meta IS NULL) OR (banner_url IS NOT NULL AND banner_meta IS NULL)`,
     ),
     client.execute(`SELECT image_url AS url FROM dp_frames WHERE image_meta IS NULL`),
+    client.execute(`SELECT cover_key AS url FROM events WHERE cover_key IS NOT NULL AND cover_meta IS NULL`),
   ])
   const seen = new Set<string>()
   const items: { key: string; profile: 'orgLogo' | 'banner' | 'frame' }[] = []
@@ -632,6 +633,7 @@ app.get('/api/admin/media/pending', requireAuth, requireAdmin, async (c) => {
     if (row.banner_meta == null) add(row.banner)
   }
   for (const row of frames.rows) add(row.url)
+  for (const row of covers.rows) add(row.url)
   return c.json({ items })
 })
 

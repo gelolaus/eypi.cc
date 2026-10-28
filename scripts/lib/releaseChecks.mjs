@@ -51,8 +51,14 @@ const ENTRY_CSS_BUDGET = 22 * KB
 const ROUTE_CHUNK_BUDGET = 40 * KB
 const PUBLIC_ROUTE_BUDGET = 110 * KB
 const HEAVY_CHUNK_EXEMPT = /useDocxGenerator|exceljs|AttendeeSelection|jszip|papaparse|qr-scanner/
-// Public routes a visitor lands on cold. guest-ticket joins once its view exists.
-const PUBLIC_ROUTES = [/views\/dp\/DpPublicView/, /views\/tix\/TicketLookupView/, /guest-?ticket/i]
+// Public routes a visitor lands on cold.
+// A pattern that matches no chunk fails the check (a rename must not silently drop the budget),
+// except `optional` ones whose view does not exist yet.
+const PUBLIC_ROUTES = [
+  { re: /views\/dp\/DpPublicView/ },
+  { re: /EventPageView/ },
+  { re: /GuestTicketView/ },
+]
 
 const fmt = (bytes) => `${(bytes / KB).toFixed(1)} kB`
 
@@ -94,8 +100,13 @@ export function checkBundleBudgets(manifest, gzSize) {
     }
   }
 
+  for (const { re, optional } of PUBLIC_ROUTES) {
+    if (!optional && !routes.some(([key, chunk]) => re.test(`${chunk.src ?? ''} ${key} ${chunk.file}`))) {
+      problems.push(`public route budget pattern ${re} matches no chunk in the manifest; update PUBLIC_ROUTES in scripts/lib/releaseChecks.mjs`)
+    }
+  }
   for (const [key, chunk] of routes) {
-    if (!PUBLIC_ROUTES.some((re) => re.test(chunk.src ?? key))) continue
+    if (!PUBLIC_ROUTES.some(({ re }) => re.test(`${chunk.src ?? ''} ${key} ${chunk.file}`))) continue
     const keys = staticClosure(manifest, [...entryKeys, key])
     let total = 0
     for (const k of keys) total += gzSize(manifest[k].file)

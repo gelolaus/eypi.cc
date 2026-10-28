@@ -4,9 +4,10 @@ import { visitorHash } from '../backend/src/lib/ipHash'
 import { isBot } from '../backend/src/lib/links/bots'
 import { getOS, logLinkClick, sanitizeReferrer } from '../shared/linkAnalytics'
 import { decodeLinkKv } from '../shared/linksKv'
+import { markdownToPlainText } from '../shared/plainText'
 import { isReservedSlug } from '../shared/reservedSlugs'
 
-const PUBLIC_MEDIA_PREFIXES = ['frames/', 'orgs/', 'qr-logos/']
+const PUBLIC_MEDIA_PREFIXES = ['events/', 'frames/', 'orgs/', 'qr-logos/']
 const IMMUTABLE_MEDIA_CACHE = 'public, max-age=31536000, immutable'
 // The edge copy expires daily so removed media cannot linger there for a year.
 const EDGE_MEDIA_CACHE = 'public, max-age=86400'
@@ -239,6 +240,7 @@ const SPA_EXACT_PATHS = new Set([
   '/contact',
   '/expired',
   '/report',
+  '/tickets',
   '/manage/frames',
   '/manage/frames/new',
   '/manage/tix',
@@ -287,7 +289,10 @@ export function isSpaRoute(pathname: string): boolean {
     || /^\/manage\/frames\/[^/]+\/edit$/.test(path)
     || /^\/manage\/tix\/[^/]+$/.test(path)
     || /^\/manage\/tix\/[^/]+\/select$/.test(path)
+    || /^\/manage\/tix\/[^/]+\/edit$/.test(path)
+    || /^\/manage\/tix\/[^/]+\/door$/.test(path)
     || /^\/tix\/[^/]+$/.test(path)
+    || /^\/t\/[^/]+$/.test(path)
     || /^\/orgs\/modify\/[^/]+$/.test(path)
     || /^\/orgs\/[^/]+$/.test(path)
     || /^\/settings\/orgs\/[^/]+$/.test(path)
@@ -304,6 +309,16 @@ function orgProfileSlug(pathname: string): string | null {
     return decodeURIComponent(match[1])
   } catch {
     return match[1]
+  }
+}
+
+function eventPageSlug(pathname: string): string | null {
+  const match = normalizePath(pathname).match(/^\/tix\/([^/]+)$/)
+  if (!match) return null
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return null
   }
 }
 
@@ -425,6 +440,58 @@ async function loadPublicOrg(env: Env, slug: string): Promise<PublicOrg | null> 
   } catch {
     return null
   }
+}
+
+type PublicEvent = {
+  slug: string
+  name: string
+  description: string
+  coverKey: string | null
+}
+
+// Drafts never leave the database through here: the preview must not reveal a name before publish.
+async function loadPublicEvent(env: Env, slug: string): Promise<PublicEvent | null> {
+  try {
+    return await withTurso(env, async (client) => {
+      const result = await client.execute({
+        sql: `SELECT slug, name, event_date, event_time, location, description, cover_key
+              FROM events
+              WHERE slug = ? AND status != 'draft'
+              LIMIT 1`,
+        args: [slug],
+      })
+      const row = result.rows[0]
+      if (!row) return null
+      const name = textCell(row.name).trim()
+      if (!name) return null
+      const plain = markdownToPlainText(textCell(row.description))
+      const fallback = `${textCell(row.event_date)} ${textCell(row.event_time)} · ${textCell(row.location)}`.trim()
+      return {
+        slug: textCell(row.slug) || slug,
+        name,
+        description: plain || fallback,
+        coverKey: textCell(row.cover_key).trim() || null,
+      }
+    })
+  } catch {
+    return null
+  }
+}
+
+function eventMeta(event: PublicEvent, origin: string): string {
+  const pageUrl = `${origin}/tix/${encodeURIComponent(event.slug)}`
+  const cover = absolutePublicMedia(origin, event.coverKey)
+  const title = escapeHtmlAttr(event.name)
+  const description = escapeHtmlAttr(event.description)
+  return [
+    description ? `<meta name="description" content="${description}">` : '',
+    `<meta property="og:title" content="${title}">`,
+    description ? `<meta property="og:description" content="${description}">` : '',
+    `<meta property="og:url" content="${escapeHtmlAttr(pageUrl)}">`,
+    `<meta property="og:type" content="website">`,
+    cover ? `<meta property="og:image" content="${escapeHtmlAttr(cover)}">` : '',
+    `<meta name="twitter:card" content="${cover ? 'summary_large_image' : 'summary'}">`,
+  ].join('')
 }
 
 function sitemapDocument(origin: string, catalog: SitemapCatalog | null): string {
@@ -611,6 +678,24 @@ export default {
         if (!org) return asset
         return rewriteDocument(asset, org.name, orgMeta(org, origin))
       })
+    }
+
+    const eventSlug = eventPageSlug(path)
+    if (eventSlug) {
+      return rewrittenShell(request, env, async (asset, origin) => {
+        const event = await loadPublicEvent(env, eventSlug)
+        if (!event) return asset
+        return rewriteDocument(asset, event.name, eventMeta(event, origin))
+      })
+    }
+
+    // Private guest ticket links: the shell is served, but never indexed.
+    if (/^\/t\/[^/]+$/.test(path)) {
+      const asset = await env.ASSETS.fetch(request)
+      const headers = new Headers(asset.headers)
+      headers.set('X-Robots-Tag', 'noindex')
+      headers.set('Referrer-Policy', 'no-referrer')
+      return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers })
     }
 
     const match = path.match(/^\/([^/]+)$/)

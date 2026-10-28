@@ -27,6 +27,8 @@ const PLANNED_RESERVED_SLUGS = [
   'expired',
   'media',
   'p',
+  't',
+  'tickets',
 ] as const
 
 describe('isReservedSlug', () => {
@@ -34,6 +36,12 @@ describe('isReservedSlug', () => {
     expect(isReservedSlug('links')).toBe(true)
     expect(isReservedSlug('orgs')).toBe(true)
     expect(isReservedSlug('dp')).toBe(true)
+  })
+
+  it('reserves the ticket paths /tickets and /t/:token', () => {
+    expect(isReservedSlug('tickets')).toBe(true)
+    expect(isReservedSlug('t')).toBe(true)
+    expect(isReservedSlug('T')).toBe(true)
   })
 
   it('is case-insensitive', () => {

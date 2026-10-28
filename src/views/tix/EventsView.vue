@@ -47,7 +47,7 @@
           {{ events.length ? 'No matching events' : 'No events yet' }}
         </p>
         <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {{ events.length ? 'Try another search term.' : 'Create your first event to generate attendee QR tickets.' }}
+          {{ events.length ? 'Try another search term.' : 'Create your first event to start taking registrations.' }}
         </p>
       </Card>
 
@@ -56,13 +56,13 @@
         class="space-y-3 md:space-y-0 md:overflow-hidden md:rounded-2xl md:border md:border-border"
       >
         <div class="hidden grid-cols-12 border-b border-border bg-card px-4 py-3 font-mono text-xs font-semibold text-muted-foreground md:grid">
-          <div class="col-span-5">
+          <div class="col-span-4">
             Event
           </div>
-          <div class="col-span-4">
+          <div class="col-span-3">
             Date &amp; Time
           </div>
-          <div class="col-span-3 text-right">
+          <div class="col-span-5 text-right">
             Actions
           </div>
         </div>
@@ -73,15 +73,23 @@
           data-event-row
           class="gap-3 rounded-2xl p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-b md:border-border md:bg-transparent md:py-4 md:ring-0 md:last:border-b-0"
         >
-          <div class="min-w-0 md:col-span-5">
+          <div class="min-w-0 md:col-span-4">
             <p class="break-words text-base font-semibold text-foreground">
               {{ event.name }}
             </p>
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <Badge :variant="statusVariant(event.status)">
+                {{ statusLabel(event.status) }}
+              </Badge>
+              <Badge variant="outline">
+                {{ modeLabel(event.admission_mode) }}
+              </Badge>
+            </div>
             <p class="mt-1 font-mono text-sm text-muted-foreground md:hidden">
               {{ formatDate(event.event_date as string) }}<span v-if="event.event_time"> · {{ event.event_time }}</span>
             </p>
           </div>
-          <div class="hidden md:col-span-4 md:block">
+          <div class="hidden md:col-span-3 md:block">
             <p class="font-mono text-sm text-foreground">
               {{ formatDate(event.event_date as string) }}
             </p>
@@ -89,7 +97,7 @@
               {{ event.event_time }}
             </p>
           </div>
-          <div class="flex items-center gap-2 md:col-span-3 md:justify-end">
+          <div class="flex items-center gap-2 md:col-span-5 md:justify-end">
             <Button
               as-child
               variant="outline"
@@ -97,6 +105,15 @@
             >
               <router-link :to="`/manage/tix/${event.slug}`">
                 Manage
+              </router-link>
+            </Button>
+            <Button
+              as-child
+              variant="outline"
+              class="flex-1 md:flex-none"
+            >
+              <router-link :to="`/manage/tix/${event.slug}/edit`">
+                Edit
               </router-link>
             </Button>
             <Button
@@ -116,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -139,6 +157,8 @@ interface Event {
   event_time: unknown
   location: unknown
   created_at: unknown
+  status?: unknown
+  admission_mode?: unknown
 }
 
 const query = useQuery(
@@ -172,6 +192,24 @@ const filteredEvents = computed(() => {
     String(event.location ?? '').toLowerCase().includes(q)
   )
 })
+
+const STATUS_LABELS: Record<string, string> = { draft: 'Draft', published: 'Published', closed: 'Closed', cancelled: 'Cancelled' }
+const MODE_LABELS: Record<string, string> = { fcfs: 'First come, first served', lottery: 'Lottery', approval: 'Approval', import: 'CSV import' }
+
+function statusLabel(status: unknown) {
+  return STATUS_LABELS[String(status)] ?? 'Published'
+}
+function modeLabel(mode: unknown) {
+  return MODE_LABELS[String(mode)] ?? 'CSV import'
+}
+function statusVariant(status: unknown): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (String(status)) {
+    case 'draft': return 'outline'
+    case 'closed': return 'secondary'
+    case 'cancelled': return 'destructive'
+    default: return 'default'
+  }
+}
 
 function formatDate(d: string) {
   if (!d) return ''

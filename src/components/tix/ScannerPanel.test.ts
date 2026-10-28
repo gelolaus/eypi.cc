@@ -3,8 +3,10 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+const seen = vi.hoisted(() => ({ options: null as { onToken?: (t: string) => void } | null }))
+
 vi.mock('@/composables/useQrScanner', () => ({
-  useQrScanner: () => ({
+  useQrScanner: (options: { onToken?: (t: string) => void }) => (seen.options = options, {
     videoRef: ref(null),
     scannerError: ref(''),
     scanStatus: ref('idle'),
@@ -40,5 +42,18 @@ describe('ScannerPanel action bar', () => {
     expect(bar.classes()).toContain('sticky')
     expect(bar.classes()).toContain('bottom-0')
     expect(bar.classes().join(' ')).toContain('safe-area-inset-bottom')
+  })
+})
+
+describe('ScannerPanel emit-only mode', () => {
+  it('emits the decoded token and leaves check-in to the parent', () => {
+    const wrapper = mount(ScannerPanel, { props: { slug: 'launch', emitOnly: true } })
+    seen.options?.onToken?.('tok-1')
+    expect(wrapper.emitted('scan')).toEqual([['tok-1']])
+  })
+
+  it('checks people in itself by default', () => {
+    mount(ScannerPanel, { props: { slug: 'launch' } })
+    expect(seen.options?.onToken).toBeUndefined()
   })
 })

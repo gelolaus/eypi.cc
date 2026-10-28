@@ -128,14 +128,26 @@ const router = createRouter({
         {
           path: 'new',
           name: 'event-new',
-          component: () => import('@/views/tix/NewEventView.vue'),
+          component: () => import('@/views/tix/EventBuilderView.vue'),
           meta: { title: 'New event' },
+        },
+        {
+          path: ':id/edit',
+          name: 'event-edit',
+          component: () => import('@/views/tix/EventBuilderView.vue'),
+          meta: { title: 'Edit event' },
         },
         {
           path: ':id/select',
           name: 'event-select',
           component: () => import('@/views/tix/AttendeeSelectionView.vue'),
           meta: { title: 'Attendee selection' },
+        },
+        {
+          path: ':id/door',
+          name: 'event-door',
+          component: () => import('@/views/tix/DoorModeView.vue'),
+          meta: { requiresOrg: true, title: 'Door mode' },
         },
         {
           path: ':id',
@@ -146,11 +158,25 @@ const router = createRouter({
       ],
     },
     {
-      // Public attendee ticket lookup — STRICTLY NO auth
-      path: '/tix/:eventId',
-      name: 'ticket-lookup',
-      component: () => import('@/views/tix/TicketLookupView.vue'),
-      meta: { layout: 'public', title: 'Ticket lookup' },
+      // Public event page: readable signed out, registration needs sign-in
+      path: '/tix/:slug',
+      name: 'event-page',
+      component: () => import('@/views/tix/EventPageView.vue'),
+      meta: { layout: 'public', title: 'Event' },
+    },
+
+    // My tickets (signed in) and the private guest ticket link (no sign-in).
+    {
+      path: '/tickets',
+      name: 'tickets',
+      component: () => import('@/views/tix/MyTicketsView.vue'),
+      meta: { requiresAuth: true, title: 'My tickets' },
+    },
+    {
+      path: '/t/:token',
+      name: 'guest-ticket',
+      component: () => import('@/views/tix/GuestTicketView.vue'),
+      meta: { layout: 'public', title: 'Your ticket' },
     },
 
     // ── Orgs module (coordinator org settings) ─────────────────────────────

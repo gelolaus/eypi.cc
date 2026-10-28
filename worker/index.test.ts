@@ -366,6 +366,23 @@ describe('public media route', () => {
     expect(logLinkClick).not.toHaveBeenCalled()
   })
 
+  it('serves event covers and their variants publicly, but not other prefixes', async () => {
+    const cover = new Uint8Array([1, 2, 3])
+    const env = mediaEnv({
+      'events/ev-1/cover-0123abcd.png': cover,
+      'events/ev-1/cover-0123abcd-640.webp': new Uint8Array([4]),
+      'private/ev-1/cover.png': new Uint8Array([5]),
+    }, vi.fn(async () => new Response('asset')))
+    const hit = await worker.fetch(new Request('https://eypi.cc/media/events/ev-1/cover-0123abcd.png'), env, ctx())
+    expect(hit.status).toBe(200)
+    expect(hit.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(new Uint8Array(await hit.arrayBuffer())).toEqual(cover)
+    const variant = await worker.fetch(new Request('https://eypi.cc/media/events/ev-1/cover-0123abcd-640.webp'), env, ctx())
+    expect(variant.headers.get('Content-Type')).toBe('image/webp')
+    const traversal = await worker.fetch(new Request('https://eypi.cc/media/events/../private/ev-1/cover.png'), env, ctx())
+    expect(traversal.status).not.toBe(200)
+  })
+
   it('returns 404 when a public media object is missing', async () => {
     const fetchAsset = vi.fn(async () => new Response('asset', { status: 200 }))
     const response = await worker.fetch(
@@ -631,6 +648,19 @@ function frameShellFetch() {
     },
   }))
 }
+
+describe('guest ticket shell', () => {
+  it('is served with X-Robots-Tag: noindex', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/t/abcDEF123'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.status).toBe(200)
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex')
+  })
+
+  it('does not leak the token path in the Referer header', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/t/abcDEF123'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.headers.get('Referrer-Policy')).toBe('no-referrer')
+  })
+})
 
 describe('frame campaign share preview', () => {
   beforeEach(() => {
@@ -1005,5 +1035,74 @@ describe('seo surface', () => {
     }
 
     expect(logLinkClick).not.toHaveBeenCalled()
+  })
+})
+
+describe('event share preview', () => {
+  const EVENT_ROW = {
+    slug: 'fest',
+    name: 'Fest "2099" <script>alert(1)</script>',
+    event_date: '2099-01-01',
+    event_time: '09:00',
+    location: 'Hall & Court',
+    description: '# Welcome\n\n**Join** us <img src=x onerror=alert(1)> at "the" hall. ' + 'long '.repeat(80),
+    cover_key: 'events/id-1/cover-ab.webp',
+    org_name: 'Alpha',
+  }
+
+  beforeEach(() => {
+    execute.mockReset()
+    execute.mockImplementation(async (query?: { sql?: string; args?: unknown[] }) => {
+      if (/from events/i.test(String(query?.sql)) && query?.args?.[0] === 'fest') return { rows: [EVENT_ROW] }
+      return { rows: [] }
+    })
+    createClient.mockClear()
+    vi.stubGlobal('HTMLRewriter', SharePreviewHTMLRewriter)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('adds escaped title, description and og:image on /tix/fest', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/fest'), makeEnv({}, frameShellFetch()), ctx())
+    const html = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(html).toContain('<title>Fest &quot;2099&quot; &lt;script&gt;alert(1)&lt;/script&gt;</title>'.replace(/&quot;/g, '"'))
+    expect(html).toContain('<meta property="og:title" content="Fest &quot;2099&quot; &lt;script&gt;alert(1)&lt;/script&gt;">')
+    expect(html).toContain('<meta property="og:image" content="https://eypi.cc/media/events/id-1/cover-ab.webp">')
+    expect(html).toContain('<meta property="og:url" content="https://eypi.cc/tix/fest">')
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">')
+    const description = /<meta property="og:description" content="([^"]*)">/.exec(html)?.[1] ?? ''
+    expect(description.startsWith('Welcome Join us')).toBe(true)
+    expect(description).toContain('&quot;the&quot;')
+    expect(description).not.toMatch(/[<>]|onerror|\*\*/)
+    expect([...description.replace(/&quot;/g, '"')].length).toBeLessThanOrEqual(200)
+    expect(html).not.toContain('<script>alert')
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
+      sql: expect.stringMatching(/status\s*!=\s*'draft'/i),
+      args: ['fest'],
+    }))
+  })
+
+  it('serves the plain shell for a draft or unknown event without leaking a name', async () => {
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/ghost'), makeEnv({}, frameShellFetch()), ctx())
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe(FRAME_SHELL)
+  })
+
+  it('falls back to the plain shell when the database throws', async () => {
+    execute.mockRejectedValue(new Error('down'))
+    const response = await worker.fetch(new Request('https://eypi.cc/tix/fest'), makeEnv({}, frameShellFetch()), ctx())
+    expect(await response.text()).toBe(FRAME_SHELL)
+  })
+
+  it('leaves /tix and /tix/new untouched', async () => {
+    for (const path of ['/tix', '/tix/new']) {
+      execute.mockClear()
+      const response = await worker.fetch(new Request(`https://eypi.cc${path}`), makeEnv({}, frameShellFetch()), ctx())
+      expect(response.status).toBe(200)
+    }
   })
 })

@@ -111,6 +111,8 @@ describe('pickStrategy', () => {
     ['https://eypi.cc/links', true],
     ['https://eypi.cc/frames/spring', true],
     ['https://eypi.cc/orgs/apc-mc', true],
+    ['https://eypi.cc/tickets', true],
+    ['https://eypi.cc/t/abcDEF123_-xyz', true],
     ['https://eypi.cc/admin/users', true],
     ['https://eypi.cc/abc123', false],
     ['https://eypi.cc/unlock/abc123', false],
@@ -134,6 +136,7 @@ describe('pickStrategy', () => {
   it('bypasses anything that is not a plain GET', () => {
     expect(pick('https://eypi.cc/assets/x.js', { method: 'POST' })).toBe('bypass')
     expect(pick('https://api.eypi.cc/api/tickets', { method: 'DELETE' })).toBe('bypass')
+    expect(pick('https://api.eypi.cc/api/tickets/att-1/pass', { method: 'POST' })).toBe('bypass')
     expect(pick('https://eypi.cc/media/v.mp4', { headers: { Range: 'bytes=0-10' } })).toBe('bypass')
   })
 })
@@ -301,6 +304,19 @@ describe('tickets', () => {
     const res = await sw.ticketsNetworkFirst(req(url), deps(async () => new Response('no', { status: 401 }), caches))
     expect(res.status).toBe(401)
     expect(await store.match(url)).toBeUndefined()
+  })
+
+  it('drops a cached guest ticket when the link now answers 404, but keeps /api/tickets on 404', async () => {
+    const guest = 'https://api.eypi.cc/api/tickets/guest/tok123'
+    const caches = new FakeCaches()
+    const store = await caches.open('eypi-tickets-v1')
+    await store.put(guest, new Response('{}'))
+    await store.put(url, new Response('[1]'))
+    const res = await sw.ticketsNetworkFirst(req(guest), deps(async () => new Response('no', { status: 404 }), caches))
+    expect(res.status).toBe(404)
+    expect(await store.match(guest)).toBeUndefined()
+    await sw.ticketsNetworkFirst(req(url), deps(async () => new Response('no', { status: 404 }), caches))
+    expect(await store.match(url)).toBeDefined()
   })
 
   it('does not cache errors, set-cookie responses or opaque responses', async () => {

@@ -1,5 +1,7 @@
 import type { Client } from '@libsql/client/web'
 import type { Bindings } from './db'
+import { manilaDay } from './manilaTime'
+import { promoteWaitlistStatement } from './tix/registration'
 
 export const OWNS_ORG_MESSAGE = 'Transfer ownership before deleting your account.'
 
@@ -64,7 +66,8 @@ export async function deleteAccount(
   userId: string,
   email: string,
 ): Promise<string[]> {
-  const [logos, audits] = await Promise.all([
+  const today = manilaDay(new Date())
+  const [logos, audits, freedSeats] = await Promise.all([
     client.execute({
       sql: 'SELECT slug, qr_config FROM links WHERE user_id = ?',
       args: [userId],
@@ -73,6 +76,17 @@ export async function deleteAccount(
       sql: `SELECT id, meta FROM audit_events
             WHERE meta IS NOT NULL AND instr(lower(meta), ?) > 0`,
       args: [email],
+    }),
+    // Events where a confirmed future self-registration without check-ins is about to be deleted. Events the
+    // user leads are deleted below, so they need no promotion.
+    client.execute({
+      sql: `SELECT DISTINCT e.id, e.max_attendees
+            FROM attendees a
+            JOIN events e ON e.id = a.event_id
+            WHERE a.user_id = ? AND a.source = 'self' AND a.status = 'confirmed'
+              AND e.event_date >= ? AND e.lead_user_id != ?
+              AND NOT EXISTS (SELECT 1 FROM check_ins c WHERE c.attendee_id = a.id)`,
+      args: [userId, today, userId],
     }),
   ])
   const logoKeys = [...new Set(logos.rows.map((row) => qrLogoKey(row.qr_config)).filter((key): key is string => key != null))]
@@ -115,6 +129,19 @@ export async function deleteAccount(
     { sql: `DELETE FROM event_column_mappings WHERE event_id IN (${eventIds})`, args: [userId] },
     { sql: `DELETE FROM event_csv_rows WHERE event_id IN (${eventIds})`, args: [userId] },
     { sql: `DELETE FROM events WHERE ${ledByUser}`, args: [userId] },
+    {
+      sql: `DELETE FROM attendees
+            WHERE user_id = ? AND source = 'self'
+              AND event_id IN (SELECT id FROM events WHERE event_date >= ?)
+              AND NOT EXISTS (SELECT 1 FROM check_ins c WHERE c.attendee_id = attendees.id)`,
+      args: [userId, today],
+    },
+    ...freedSeats.rows.map((row) => promoteWaitlistStatement(
+      text(row.id),
+      row.max_attendees == null ? null : Number(row.max_attendees),
+    ) as Statement),
+    // Past or checked-in registrations stay as the org's attendance record, unlinked from the account.
+    { sql: 'UPDATE attendees SET user_id = NULL WHERE user_id = ?', args: [userId] },
     { sql: `DELETE FROM dp_frames WHERE campaign_id IN (${campaignIds})`, args: [userId] },
     { sql: `DELETE FROM dp_slug_history WHERE campaign_id IN (${campaignIds})`, args: [userId] },
     { sql: `DELETE FROM dp_campaigns WHERE ${createdByUser}`, args: [userId] },

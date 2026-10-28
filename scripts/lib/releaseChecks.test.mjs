@@ -48,7 +48,8 @@ describe('checkBundleBudgets', () => {
     'index.html': { file: 'assets/index-a.js', isEntry: true, css: ['assets/index-a.css'], imports: ['_vendor.js'] },
     '_vendor.js': { file: 'assets/vendor-a.js' },
     'src/views/dp/DpPublicView.vue': { file: 'assets/DpPublicView-a.js', isDynamicEntry: true, src: 'src/views/dp/DpPublicView.vue', imports: ['_vendor.js'] },
-    'src/views/tix/TicketLookupView.vue': { file: 'assets/TicketLookupView-a.js', isDynamicEntry: true, src: 'src/views/tix/TicketLookupView.vue', imports: ['_vendor.js'] },
+    'src/views/tix/EventPageView.vue': { file: 'assets/EventPageView-a.js', isDynamicEntry: true, src: 'src/views/tix/EventPageView.vue', imports: ['_vendor.js'] },
+    'src/views/tix/GuestTicketView.vue': { file: 'assets/GuestTicketView-a.js', isDynamicEntry: true, src: 'src/views/tix/GuestTicketView.vue', imports: ['_vendor.js'] },
     'src/views/tix/AttendeeSelectionView.vue': { file: 'assets/AttendeeSelectionView-a.js', isDynamicEntry: true, src: 'src/views/tix/AttendeeSelectionView.vue' },
   })
   const set = (o) => {
@@ -58,7 +59,8 @@ describe('checkBundleBudgets', () => {
       'assets/index-a.css': 10 * KB,
       'assets/vendor-a.js': 20 * KB,
       'assets/DpPublicView-a.js': 10 * KB,
-      'assets/TicketLookupView-a.js': 10 * KB,
+      'assets/EventPageView-a.js': 10 * KB,
+      'assets/GuestTicketView-a.js': 10 * KB,
       'assets/AttendeeSelectionView-a.js': 10 * KB,
       ...o,
     })
@@ -85,12 +87,24 @@ describe('checkBundleBudgets', () => {
     expect(problems).not.toMatch(/AttendeeSelection/)
   })
   it('flags a public route whose entry, imports and chunk exceed 110 KB', () => {
-    set({ 'assets/index-a.js': 60 * KB, 'assets/vendor-a.js': 30 * KB, 'assets/TicketLookupView-a.js': 25 * KB })
-    expect(checkBundleBudgets(manifest(), gz).join('\n')).toMatch(/TicketLookupView/)
+    set({ 'assets/index-a.js': 60 * KB, 'assets/vendor-a.js': 30 * KB, 'assets/EventPageView-a.js': 25 * KB })
+    expect(checkBundleBudgets(manifest(), gz).join('\n')).toMatch(/EventPageView/)
   })
-  it('skips the guest-ticket route while it does not exist', () => {
+  it('fails when a public route pattern matches no chunk (rename guard)', () => {
     set({})
-    expect(checkBundleBudgets(manifest(), gz)).toEqual([])
+    const m = manifest()
+    delete m['src/views/tix/EventPageView.vue']
+    expect(checkBundleBudgets(m, gz).join('\n')).toMatch(/EventPageView.*matches no chunk/)
+  })
+  it('budgets the guest ticket page like the other public routes', () => {
+    set({ 'assets/index-a.js': 60 * KB, 'assets/vendor-a.js': 30 * KB, 'assets/GuestTicketView-a.js': 25 * KB })
+    expect(checkBundleBudgets(manifest(), gz).join('\n')).toMatch(/GuestTicketView/)
+  })
+  it('fails when the guest ticket chunk disappears from the manifest', () => {
+    set({})
+    const m = manifest()
+    delete m['src/views/tix/GuestTicketView.vue']
+    expect(checkBundleBudgets(m, gz).join('\n')).toMatch(/GuestTicketView.*matches no chunk/)
   })
 })
 

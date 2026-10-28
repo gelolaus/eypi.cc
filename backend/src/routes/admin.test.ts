@@ -801,6 +801,15 @@ describe('admin media pending route', () => {
         await frame('f1', 'frames/camp-1/f1-0123abcd.png', null)
         await frame('f2', 'frames/camp-1/f2-0123abcd.png', meta)
         await frame('f3', 'https://example.com/f.png', null)
+        const event = (id: string, cover: string | null, coverMeta: string | null) =>
+          client.execute({
+            sql: `INSERT INTO events (id, slug, lead_user_id, name, event_date, event_time, location, org_id, cover_key, cover_meta)
+                  VALUES (?, ?, ?, 'E', '2099-01-01', '09:00', 'H', 'org-a', ?, ?)`,
+            args: [id, id, admin.id, cover, coverMeta],
+          })
+        await event('ev1', 'events/ev1/cover-0123abcd.png', null)
+        await event('ev2', 'events/ev2/cover-0123abcd.png', meta)
+        await event('ev3', null, null)
       },
     })
     const res = await request('/api/admin/media/pending')
@@ -808,6 +817,7 @@ describe('admin media pending route', () => {
     const body = await res.json() as { items: { key: string; profile: string }[] }
     const sorted = [...body.items].sort((a, b) => a.key.localeCompare(b.key))
     expect(sorted).toEqual([
+      { key: 'events/ev1/cover-0123abcd.png', profile: 'banner' },
       { key: 'frames/camp-1/f1-0123abcd.png', profile: 'frame' },
       { key: 'orgs/org-a/logo-0123abcd.png', profile: 'orgLogo' },
       { key: 'orgs/org-b/banner-89abcdef.webp', profile: 'banner' },

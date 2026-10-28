@@ -16,6 +16,7 @@ const router = createRouter({
     { path: '/dashboard', component: stub, meta: { requiresAuth: true } },
     { path: '/links', component: stub, meta: { requiresAuth: true } },
     { path: '/manage/tix', component: stub, meta: { requiresAuth: true } },
+    { path: '/tickets', component: stub, meta: { requiresAuth: true } },
     { path: '/manage/frames', component: stub, meta: { requiresAuth: true } },
     { path: '/forms', component: stub, meta: { requiresAuth: true } },
     { path: '/invites', component: stub, meta: { requiresAuth: true } },
@@ -122,7 +123,7 @@ describe('AppShell (signed in)', () => {
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
     expect(links.map((link) => link.text().replace(/\d+$/, '').trim())).toEqual([
-      'Dashboard', 'Links', 'Tix', 'Frames', 'Forms', 'Orgs', 'Invites',
+      'Dashboard', 'Links', 'Tix', 'My tickets', 'Frames', 'Forms', 'Orgs', 'Invites',
     ])
     wrapper.unmount()
   })
@@ -176,7 +177,7 @@ describe('AppShell (signed in)', () => {
     const nav = wrapper.get('nav[aria-label="Primary"]')
     for (const cls of ['fixed', 'inset-x-0', 'bottom-0', 'lg:hidden']) expect(nav.classes()).toContain(cls)
     const tabs = nav.findAll('a')
-    expect(tabs.map((tab) => tab.text())).toEqual(['Dashboard', 'Links', 'Tix', 'Frames'])
+    expect(tabs.map((tab) => tab.text())).toEqual(['Dashboard', 'Links', 'Tix', 'My tickets'])
     expect(nav.get('[data-tab-grid]').classes()).toEqual(expect.arrayContaining(['grid', 'h-[4.5rem]', 'grid-cols-4']))
     expect(nav.get('[aria-current="page"]').text()).toBe('Tix')
     wrapper.unmount()
@@ -323,6 +324,29 @@ describe('AppShell (public)', () => {
     const sheet = document.getElementById('site-nav-sidebar')!
     expect(sheet.getAttribute('role')).toBe('dialog')
     expect(sheet.querySelector('a[href="/orgs"]')).not.toBeNull()
+    wrapper.unmount()
+  })
+
+  it('badges My tickets with the number of new updates, readable by screen readers', async () => {
+    signIn()
+    useSession().ticketUpdates.value = 2
+    const wrapper = await mountAt('/dashboard')
+    const badges = wrapper.findAll('[data-ticket-updates]')
+    expect(badges.length).toBeGreaterThanOrEqual(2) // rail and tab bar
+    for (const badge of badges) expect(badge.find('.sr-only').text()).toBe('2 new updates')
+    useSession().ticketUpdates.value = 0
+    await flushPromises()
+    expect(wrapper.find('[data-ticket-updates]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('caps the visible My tickets badge at 9+ but reads the exact count aloud', async () => {
+    signIn()
+    useSession().ticketUpdates.value = 12
+    const wrapper = await mountAt('/dashboard')
+    const badge = wrapper.get('[data-ticket-updates]')
+    expect(badge.get('[aria-hidden="true"]').text()).toBe('9+')
+    expect(badge.get('.sr-only').text()).toBe('12 new updates')
     wrapper.unmount()
   })
 })

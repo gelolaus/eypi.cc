@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { manilaDay, manilaDaySpan, manilaHour, manilaTimestamp, manilaWindow } from './manilaTime'
+import { manilaDay, manilaDaySpan, manilaEventStart, manilaHour, manilaTimestamp, manilaWindow } from './manilaTime'
 
 describe('manilaTime', () => {
   it('maps 2026-10-25T17:00:00Z onto Manila day 2026-10-26', () => {
@@ -31,5 +31,10 @@ describe('manilaTime', () => {
       start: '2026-10-19 16:00:00',
       end: '2026-10-26 16:00:00',
     })
+  })
+
+  it('turns a Manila event date and time into the UTC instant', () => {
+    expect(manilaEventStart('2026-11-02', '09:30').toISOString()).toBe('2026-11-02T01:30:00.000Z')
+    expect(manilaEventStart('2026-11-02', '00:15:00').toISOString()).toBe('2026-11-01T16:15:00.000Z')
   })
 })

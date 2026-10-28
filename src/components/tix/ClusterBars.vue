@@ -95,6 +95,7 @@ import { useToast } from '@/composables/useToast'
 import { downloadAttendeeQr } from '@/lib/tix/qrFiles'
 
 export interface EventClusterBar {
+  clusterCol?: string | null
   id?: string | null
   value: string
   maxCount: number | null

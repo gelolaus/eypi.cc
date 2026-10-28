@@ -47,8 +47,8 @@ async function seedRaffleEvent(client: Client) {
       args: ['att-removed', 'event-1', 'Removed', 'Two', 'removed@x.com', 'qr-removed', 'A'],
     },
     {
-      sql: `INSERT INTO check_ins (id, attendee_id, event_id, action, actioned_at) VALUES (?, ?, ?, 'removed', ?)`,
-      args: ['check-1', 'att-removed', 'event-1', '2026-10-25 00:00:00'],
+      sql: `UPDATE attendees SET status = 'cancelled' WHERE id = ?`,
+      args: ['att-removed'],
     },
     {
       sql: 'INSERT INTO event_csv_rows (id, event_id, row_index, raw_data, is_selected) VALUES (?, ?, ?, ?, 0)',

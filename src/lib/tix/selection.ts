@@ -145,3 +145,8 @@ export function selectAttendees(rows: readonly SelectionRow[], opts: SelectAtten
     byCluster,
   }
 }
+
+/** Deterministic seeded order of ids; used for the lottery waitlist so the draw order can be re-derived. */
+export function seededOrder<T>(items: readonly T[], seed: string): T[] {
+  return shuffle(items, seed)
+}

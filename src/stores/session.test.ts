@@ -152,6 +152,17 @@ describe('useSession', () => {
     expect(session.needsConsent.value).toEqual([])
   })
 
+  it('keeps ticketUpdates from GET /api/me and clears it on logout', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { ...meBody(0), ticketUpdates: 3 }))
+    const session = useSession()
+    await session.load()
+    expect(session.ticketUpdates.value).toBe(3)
+
+    fetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+    await session.logout()
+    expect(session.ticketUpdates.value).toBe(0)
+  })
+
   it('treats a 401 from /api/me as signed out', async () => {
     fetchMock.mockResolvedValue(jsonResponse(401, {
       error: { code: 'unauthorized', message: 'Sign in to continue.' },

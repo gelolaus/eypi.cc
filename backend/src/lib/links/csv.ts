@@ -1,4 +1,4 @@
-const FORMULA_PREFIX = /^[=+\-@]/
+const FORMULA_PREFIX = /^[=+\-@\t\r]/
 
 function cell(value: string): string {
   const guarded = FORMULA_PREFIX.test(value) ? `'${value}` : value
@@ -8,7 +8,7 @@ function cell(value: string): string {
   return guarded
 }
 
-/** RFC 4180 CSV. Cells that start with `=`, `+`, `-`, or `@` are prefixed with `'`. */
+/** RFC 4180 CSV. Cells that start with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`. */
 export function toCsv(rows: string[][]): string {
   if (rows.length === 0) return ''
   return `${rows.map((row) => row.map(cell).join(',')).join('\r\n')}\r\n`
