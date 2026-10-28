@@ -1,10 +1,9 @@
-import { nextTick } from 'vue'
-import { createRouter, createWebHistory, START_LOCATION } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import { useOrgMembership } from '@/composables/useOrgMembership'
 import { useSession } from '@/stores/session'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
-import { withViewTransition } from '@/lib/viewTransition'
+import { routeTransitions } from '@/lib/viewTransition'
 import { loadAppShell } from '@/components/layout/loadAppShell'
 import { routeNeedsSession, routeSkipsConsent } from './guards'
 
@@ -478,26 +477,8 @@ router.beforeEach(async (to, _from, next) => {
   next()
 })
 
-// Guards have passed and the lazy chunk is loaded: freeze the old page, let the
-// router swap the route, and release the freeze once Vue has rendered it (or
-// the navigation ended any other way, so the page can never stay frozen).
-let finishSwap: (() => void) | undefined
-function endSwap(): void {
-  const done = finishSwap
-  finishSwap = undefined
-  if (done) void nextTick(done)
-}
-router.beforeResolve((to, from) => {
-  if (from === START_LOCATION || to.path === from.path) return
-  endSwap()
-  return new Promise<void>((resolve) => {
-    withViewTransition(() => {
-      resolve()
-      return new Promise<void>((done) => { finishSwap = done })
-    }).catch(() => resolve())
-  })
-})
-router.afterEach(endSwap)
+// Freeze/thaw the page around each route swap (see routeTransitions).
+routeTransitions(router)
 
 router.afterEach((to) => {
   const titled = [...to.matched].reverse().find((record) => typeof record.meta.title === 'string')
@@ -519,7 +500,6 @@ router.afterEach((to) => {
 })
 
 router.onError((error, to) => {
-  endSwap()
   reloadOnceForChunkError(error, to.fullPath)
 })
 

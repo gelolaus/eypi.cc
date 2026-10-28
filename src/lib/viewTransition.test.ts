@@ -61,7 +61,7 @@ describe('withViewTransition', () => {
     await expect(withViewTransition(async () => { throw new Error('animated') })).rejects.toThrow('animated')
   })
 
-  it('skips a still-running transition when a new one starts', async () => {
+  it('skips the previous transition while it is still running when a new one starts', async () => {
     const first = { ...transition(), finished: new Promise<void>(() => {}) }
     const second = transition()
     const queue = [first, second]
@@ -73,5 +73,26 @@ describe('withViewTransition', () => {
     await withViewTransition(() => {})
     expect(first.skipTransition).toHaveBeenCalledTimes(1)
     expect(second.skipTransition).not.toHaveBeenCalled()
+  })
+})
+
+describe('withViewTransition edge cases', () => {
+  afterEach(() => {
+    delete (document as Doc).startViewTransition
+    vi.unstubAllGlobals()
+  })
+
+  it('animates when matchMedia is absent', async () => {
+    vi.stubGlobal('matchMedia', undefined)
+    const start = vi.fn((cb: () => Promise<void>) => { void cb(); return transition() })
+    ;(document as Doc).startViewTransition = start
+    await withViewTransition(() => {})
+    expect(start).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects when startViewTransition throws synchronously', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+    ;(document as Doc).startViewTransition = () => { throw new Error('sync') }
+    await expect(withViewTransition(() => {})).rejects.toThrow('sync')
   })
 })
