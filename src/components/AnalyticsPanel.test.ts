@@ -11,7 +11,7 @@ const heat = new Array<number>(168).fill(0)
 heat[15] = 9
 
 const payload = {
-  totals: { clicks: 42, avgDailyUniques: 10, qrShare: 7 / 42 },
+  totals: { clicks: 42, avgDailyUniques: 3.5, qrShare: 7 / 42 },
   timeline: [{ day: '2026-10-26', clicks: 4, uniques: 10 }],
   heat,
   top: {
@@ -96,7 +96,7 @@ describe('AnalyticsPanel', () => {
     expect(bars[1]!.props('items')).toEqual([{ label: 'PH', value: 6 }])
     expect(bars[2]!.props('items')).toEqual([{ label: 'Campus mail', value: 5 }])
     const tiles = wrapper.findAllComponents(StatTile).map((t) => [t.props('label'), t.props('value')])
-    expect(tiles).toEqual([['Total', '42'], ['Unique visitors', '10'], ['QR scans', '7'], ['Direct', '35']])
+    expect(tiles).toEqual([['Total', '42'], ['Avg daily uniques', '3.5'], ['QR scans', '7'], ['Direct', '35']])
     wrapper.unmount()
   })
 

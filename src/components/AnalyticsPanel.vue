@@ -216,7 +216,7 @@ const tiles = computed(() => {
   if (!data) return []
   return [
     { label: 'Total', value: String(data.totals.clicks) },
-    { label: 'Unique visitors', value: String(data.timeline.reduce((sum, point) => sum + point.uniques, 0)) },
+    { label: 'Avg daily uniques', value: String(data.totals.avgDailyUniques) },
     { label: 'QR scans', value: String(Math.round(data.totals.qrShare * data.totals.clicks)) },
     { label: 'Direct', value: String(data.totals.clicks - Math.round(data.totals.qrShare * data.totals.clicks)) },
   ]
