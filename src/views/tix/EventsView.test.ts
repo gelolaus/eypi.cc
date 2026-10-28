@@ -120,6 +120,18 @@ describe('EventsView', () => {
     wrapper.unmount()
   })
 
+  it('keeps New Event when the events fetch failed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ status: 'error', message: 'Boom.' }, 500)))
+    const wrapper = mount(EventsView, {
+      global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },
+    })
+    await flushPromises()
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('Boom.')
+    expect(wrapper.findAll('a').filter((a) => a.text() === 'New Event')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it('keeps the header when a search matches nothing', async () => {
     const wrapper = mount(EventsView, {
       global: { stubs: { RouterLink: { props: ['to'], template: '<a :href="String(to)"><slot /></a>' } } },

@@ -7,7 +7,7 @@
       description="Manage tickets & check-in"
     >
       <div
-        v-if="!isLocked && events.length > 0"
+        v-if="!isLocked && (events.length > 0 || error)"
         class="mb-6 flex flex-col gap-3 sm:flex-row"
       >
         <Input
