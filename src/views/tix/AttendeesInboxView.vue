@@ -185,15 +185,15 @@
               >
             </label>
             <div class="min-w-0 flex-1">
-              <p class="break-words font-mono text-sm font-bold">
+              <p class="break-words font-mono text-base font-bold">
                 {{ fullName(row) }}
               </p>
-              <p class="truncate font-mono text-xs text-muted-foreground">
+              <p class="truncate font-mono text-sm text-muted-foreground">
                 {{ row.email }}
               </p>
               <p
                 v-if="row.registered_at"
-                class="font-mono text-xs text-muted-foreground"
+                class="font-mono text-sm text-muted-foreground"
               >
                 {{ row.source === 'self' ? 'Registered' : 'Added' }} {{ formatStoredDateTime(row.registered_at) }}
               </p>

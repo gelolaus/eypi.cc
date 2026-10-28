@@ -77,6 +77,15 @@ const button = (label: string) => wrapper.findAll('button').find((b) => b.text()
   ?? wrapper.findAll('button').find((b) => b.text().includes(label))
 
 describe('AttendeesInboxView', () => {
+  it('shows attendee names at text-base and meta at text-sm', async () => {
+    await mountInbox()
+    for (const row of wrapper.findAll('[data-attendee-row]')) {
+      for (const text of row.findAll('p')) expect(text.classes(), text.text()).not.toContain('text-xs')
+      const name = row.get('p.font-bold')
+      expect(name.classes()).toEqual(expect.arrayContaining(['font-mono', 'text-base', 'font-bold']))
+    }
+  })
+
   it('uses paged mode and shows a count on each status tab', async () => {
     await mountInbox()
     const first = listCalls()[0]

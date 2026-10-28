@@ -117,10 +117,10 @@
             class="gap-3 rounded-2xl p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:rounded-none md:border-b md:border-border md:bg-transparent md:px-0 md:py-3 md:ring-0 md:last:border-0"
           >
             <div class="min-w-0 md:col-span-4 md:px-4">
-              <p class="break-words font-mono text-sm font-bold text-foreground">
+              <p class="break-words font-mono text-base font-bold text-foreground">
                 {{ attendee.first_name }} {{ attendee.last_name }}
               </p>
-              <p class="truncate font-mono text-xs text-muted-foreground md:hidden">
+              <p class="truncate font-mono text-sm text-muted-foreground md:hidden">
                 {{ attendee.email }}
               </p>
               <template v-if="editingClusterAttendee === attendee.id">
@@ -141,7 +141,7 @@
                 type="button"
                 variant="ghost"
                 size="sm"
-                class="-ml-2 mt-0.5 h-11 px-2 font-mono text-xs text-muted-foreground"
+                class="-ml-2 mt-0.5 h-11 px-2 font-mono text-sm text-muted-foreground"
                 :title="attendee.cluster_value ? 'Edit cluster' : 'Assign cluster'"
                 @click="startEditAttendeeCluster(attendee.id, attendee.cluster_value)"
               >
@@ -149,7 +149,7 @@
               </Button>
             </div>
             <div class="hidden min-w-0 md:col-span-3 md:block md:px-4">
-              <p class="truncate font-mono text-xs text-muted-foreground">
+              <p class="truncate font-mono text-sm text-muted-foreground">
                 {{ attendee.email }}
               </p>
             </div>
@@ -159,7 +159,7 @@
               </Badge>
               <p
                 v-if="attendee.actioned_at"
-                class="mt-1 font-mono text-xs text-muted-foreground"
+                class="mt-1 font-mono text-sm text-muted-foreground"
               >
                 {{ formatStoredDateTime(attendee.actioned_at) }}
               </p>

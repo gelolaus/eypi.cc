@@ -46,6 +46,24 @@ describe('AttendeeTable mobile layout', () => {
     expect(html).not.toContain('text-[0.65rem]')
   })
 
+  it('attendee name is text-base', () => {
+    const wrapper = mountTable()
+    for (const row of wrapper.findAll('[data-attendee-row]')) {
+      const name = row.get('p.font-bold')
+      expect(name.classes()).toEqual(expect.arrayContaining(['font-mono', 'text-base', 'font-bold']))
+    }
+  })
+
+  it('email on mobile card is text-sm', () => {
+    const wrapper = mountTable()
+    for (const row of wrapper.findAll('[data-attendee-row]')) {
+      for (const text of row.findAll('p')) expect(text.classes(), text.text()).not.toContain('text-xs')
+      const email = row.findAll('p').filter((p) => p.text().includes('@x.com'))
+      expect(email.length).toBeGreaterThan(0)
+      for (const p of email) expect(p.classes()).toContain('text-sm')
+    }
+  })
+
   it('gives every row action a 44px target', () => {
     const wrapper = mountTable()
     for (const row of wrapper.findAll('[data-attendee-row]')) {
