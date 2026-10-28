@@ -225,6 +225,18 @@ describe('admin links disable undo', () => {
 
   it('a failed commit reverts the row and keeps the disable control', async () => {
     const { wrapper } = await mountLinks()
+    postResponse = json(500, { error: { code: 'boom', message: 'Could not disable the link.' } })
+    await wrapper.get('button[aria-label="Disable /one"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(5_000)
+    await flushPromises()
+    expect(calls).toHaveLength(1)
+    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Disabled')
+    expect(useToast().toasts.value.find((t) => t.type === 'error')?.detail).toBe('Could not disable the link.')
+  })
+
+  it('keeps the link disabled when only its edge cache clear fails', async () => {
+    const { wrapper } = await mountLinks()
     postResponse = json(502, {
       error: {
         code: 'edge_delete_failed',
@@ -235,10 +247,10 @@ describe('admin links disable undo', () => {
     await vi.advanceTimersByTimeAsync(5_000)
     await flushPromises()
     expect(calls).toHaveLength(1)
-    expect(wrapper.find('button[aria-label="Disable /one"]').exists()).toBe(true)
-    expect(wrapper.text()).not.toContain('Disabled')
+    expect(wrapper.text()).toContain('Disabled')
     const err = useToast().toasts.value.find((t) => t.type === 'error')
-    expect(err?.detail).toContain('edge cache could not be cleared')
+    expect(err?.message).toContain('edge cache could not be cleared')
+    expect(`${err?.message} ${err?.detail ?? ''}`).not.toContain('restored')
   })
 
   it('an already-disabled link offers no disable control', async () => {

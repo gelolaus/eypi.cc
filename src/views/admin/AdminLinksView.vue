@@ -161,7 +161,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { onMounted, ref } from 'vue'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { useToast } from '@/composables/useToast'
 import { activeOrgHeaders, runWithUndo } from '@/composables/useUndoToast'
 
@@ -249,7 +249,17 @@ function disable(link: AdminLink) {
     apply: () => setState(true),
     revert: () => setState(false),
     async commit() {
-      await api.post(`/api/admin/links/${encodeURIComponent(id)}/disable`, { reason }, { keepalive: true, headers })
+      try {
+        await api.post(`/api/admin/links/${encodeURIComponent(id)}/disable`, { reason }, { keepalive: true, headers })
+      } catch (err) {
+        // The link is already disabled server-side; only the edge cache clear failed.
+        // Keep the row disabled and say so, rather than claiming it was restored.
+        if (err instanceof ApiError && err.code === 'edge_delete_failed') {
+          toast.error(err.message || 'The link is disabled but the edge cache could not be cleared.')
+          return
+        }
+        throw err
+      }
     },
   })
 }
