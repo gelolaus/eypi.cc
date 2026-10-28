@@ -140,11 +140,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Produces from `useDpCanvas`: `nudge(dx: number, dy: number): void` (canvas-pixel units, adds to `offsetX/Y`), `zoomBy(factor: number): void` (zooms about the canvas centre via `applyZoom`, clamped to min/max scale), `onKeydown(e: KeyboardEvent): void` (arrows nudge by 10 canvas px, Shift+arrow by 40, `+`/`=` zoom ×1.1, `-` zoom ÷1.1, `0` resets; calls `preventDefault` only for handled keys).
 
-- [ ] **Step 1: Failing tests.** Composable: `arrow keys nudge the offset`, `shift arrow nudges farther`, `plus and minus change scale within limits`, `unhandled keys are not prevented`, `reset key centres and resets zoom`. View: `canvas has role img, a label and tabindex 0`, `renders Zoom in, Zoom out and Reset position buttons at 44px`, `buttons change the scale`.
-- [ ] **Step 2:** Run both; expect FAIL.
-- [ ] **Step 3:** Implement the three functions and export them. In the view add `role="img"`, `aria-label="Photo preview. Use arrow keys to move and plus or minus to zoom."`, `tabindex="0"`, `@keydown="onKeydown"`, visible focus ring classes on the canvas container (`focus-visible:ring-3 focus-visible:ring-ring/50`), and a row of three `Button` controls under the canvas (`Zoom out`, `Zoom in`, `Reset position`) with `min-h-11`, disabled until a photo is loaded.
-- [ ] **Step 4:** Run both; expect PASS.
-- [ ] **Step 5:** Set UX-17 `fixed`, commit `feat(frames): move and zoom the photo from the keyboard`.
+- [x] **Step 1: Failing tests.** Composable: `arrow keys nudge the offset`, `shift arrow nudges farther`, `plus and minus change scale within limits`, `unhandled keys are not prevented`, `reset key centres and resets zoom`. View: `canvas has role img, a label and tabindex 0`, `renders Zoom in, Zoom out and Reset position buttons at 44px`, `buttons change the scale`.
+- [x] **Step 2:** Run both; expect FAIL.
+- [x] **Step 3:** Implement the three functions and export them. In the view add `role="img"`, `aria-label="Photo preview. Use arrow keys to move and plus or minus to zoom."`, `tabindex="0"`, `@keydown="onKeydown"`, visible focus ring classes on the canvas container (`focus-visible:ring-3 focus-visible:ring-ring/50`), and a row of three `Button` controls under the canvas (`Zoom out`, `Zoom in`, `Reset position`) with `min-h-11`, disabled until a photo is loaded. Controller ruling: the Zoom in / Zoom out / Reset position buttons were dropped, because the existing Zoom slider and Reset button already cover pointer-free zoom and reset once a photo is loaded; the view tests for those buttons are therefore not written.
+- [x] **Step 4:** Run both; expect PASS. Also added an `isEnabled` option so keys do nothing before a photo is loaded; ctrl/meta/alt combos are ignored so browser zoom shortcuts keep working. The focus ring sits on the preview container via `has-[:focus-visible]` so it follows the circle and rounded shapes.
+- [x] **Step 5:** Set UX-17 `fixed`, commit `feat(frames): move and zoom the photo from the keyboard`.
 
 ### Task 9: Admin Undo (UX-48)
 
