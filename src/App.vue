@@ -7,7 +7,16 @@
   <!-- Page transition overlay -->
   <AppTransition ref="appTransitionRef" />
 
-  <component :is="Shell">
+  <!-- Until the first navigation settles there is no layout yet and the lazy route chunk is still loading. -->
+  <div v-if="!routerReady" role="status" aria-busy="true" data-boot-skeleton>
+    <div class="h-16 border-b border-border" />
+    <div class="mx-auto max-w-5xl space-y-4 p-4">
+      <div class="h-28 rounded-3xl bg-muted motion-safe:animate-pulse" />
+      <div class="h-28 rounded-3xl bg-muted motion-safe:animate-pulse" />
+    </div>
+    <span class="sr-only">Loading</span>
+  </div>
+  <component :is="Shell" v-else>
     <router-view v-slot="{ Component }">
       <component :is="Component" />
     </router-view>
@@ -20,7 +29,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, type Component as VueComponent, ref, provide, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { loadAppShell } from '@/components/layout/loadAppShell'
 import PublicShell from '@/components/layout/PublicShell.vue'
 import { reloadOnceForChunkError } from '@/lib/chunkReload'
@@ -52,6 +61,9 @@ watch(() => toasts.value.length, (n) => { if (n > 0) toastsNeeded.value = true }
 watch(currentDialog, (d) => { if (d) dialogNeeded.value = true })
 
 const route = useRoute()
+const router = useRouter()
+const routerReady = ref(false)
+void router.isReady().then(() => { routerReady.value = true })
 const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)

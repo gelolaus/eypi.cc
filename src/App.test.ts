@@ -68,6 +68,52 @@ describe('App layouts', () => {
   })
 })
 
+describe('boot skeleton', () => {
+  function coldMount() {
+    const coldRouter = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: stub, meta: { layout: 'public' } },
+        { path: '/links', component: stub },
+      ],
+    })
+    // Hold the first navigation open, as a lazy route chunk does on a cold load.
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    coldRouter.beforeEach(() => gate)
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: {
+        plugins: [coldRouter],
+        stubs: { AppTransition: true, ToastContainer: true, DialogHost: true, PublicShell: { template: '<div data-public-shell><slot /></div>' } },
+      },
+    })
+    return { coldRouter, wrapper, release }
+  }
+
+  it('shows the boot skeleton until the router is ready', async () => {
+    const { wrapper } = coldMount()
+    await flushPromises()
+    const skeleton = wrapper.find('[data-boot-skeleton]')
+    expect(skeleton.exists()).toBe(true)
+    expect(skeleton.attributes('aria-busy')).toBe('true')
+    expect(wrapper.find('[data-public-shell]').exists()).toBe(false)
+    expect(wrapper.find('[data-app-shell-stub]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('swaps the skeleton for the shell once ready', async () => {
+    const { coldRouter, wrapper, release } = coldMount()
+    release()
+    await coldRouter.push('/')
+    await coldRouter.isReady()
+    await flushPromises()
+    expect(wrapper.find('[data-boot-skeleton]').exists()).toBe(false)
+    expect(wrapper.find('[data-public-shell]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+})
+
 describe('lazy overlay hosts', () => {
   it('shows a toast and a dialog raised before the hosts have mounted', async () => {
     const { useToast } = await import('@/composables/useToast')

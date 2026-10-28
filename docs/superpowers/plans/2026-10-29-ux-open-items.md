@@ -40,11 +40,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Produces: in `App.vue`, `const routerReady = ref(false)` set by `router.isReady()`; while false, the template renders a `<div role="status" aria-busy="true" data-boot-skeleton>` (header-height bar plus two `h-28 rounded-3xl bg-muted motion-safe:animate-pulse` blocks and an `sr-only` "Loading") instead of `<component :is="Shell">`.
 
-- [ ] **Step 1: Write failing tests in `src/App.test.ts`:** `shows the boot skeleton until the router is ready` (assert `[data-boot-skeleton]` exists, has `aria-busy="true"`, and `PublicShell`/`AppShell` are not rendered) and `swaps the skeleton for the shell once ready` (resolve `router.isReady()`, `flushPromises`, assert the skeleton is gone and the shell renders). Follow the file's existing router mocking.
-- [ ] **Step 2:** Run `npx vitest run src/App.test.ts`; expect both new tests FAIL.
-- [ ] **Step 3: Implement** the `routerReady` ref and the `v-if`/`v-else` in `App.vue`; inline the markup, do not import `PageSkeleton` (budget). Pulse blocks use `motion-safe:animate-pulse`.
-- [ ] **Step 4:** Run the same command; expect PASS. Run `npm run build` then `npm run release:check`; expect entry JS ≤ 70,000 B. If over, trim the markup first, then report to the owner before cutting anything else.
-- [ ] **Step 5:** Tick this task, set UX-4 to `fixed` in the audit doc (note: `document.title` stays generic until the chunk loads), commit `feat(ui): show a boot skeleton on cold route loads`.
+- [x] **Step 1: Write failing tests in `src/App.test.ts`:** `shows the boot skeleton until the router is ready` (assert `[data-boot-skeleton]` exists, has `aria-busy="true"`, and `PublicShell`/`AppShell` are not rendered) and `swaps the skeleton for the shell once ready` (resolve `router.isReady()`, `flushPromises`, assert the skeleton is gone and the shell renders). Follow the file's existing router mocking.
+- [x] **Step 2:** Run `npx vitest run src/App.test.ts`; expect both new tests FAIL.
+- [x] **Step 3: Implement** the `routerReady` ref and the `v-if`/`v-else` in `App.vue`; inline the markup, do not import `PageSkeleton` (budget). Pulse blocks use `motion-safe:animate-pulse`.
+- [x] **Step 4:** Run the same command; expect PASS. Run `npm run build` then `npm run release:check`; expect entry JS ≤ 70,000 B. If over, trim the markup first, then report to the owner before cutting anything else.
+- [x] **Step 5:** Tick this task, set UX-4 to `fixed` in the audit doc (note: `document.title` stays generic until the chunk loads), commit `feat(ui): show a boot skeleton on cold route loads`.
 
 ### Task 2: Home page (UX-6, UX-7)
 
