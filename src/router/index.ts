@@ -12,11 +12,15 @@ const session = useSession()
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior(_to, _from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return savedPosition
     const reduce = typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    return { top: 0, behavior: reduce ? 'auto' : 'smooth' }
+    const behavior = reduce ? 'auto' : 'smooth'
+    // Plain in-page links (`<a href="#id">`) change the hash without a RouterLink; scroll to
+    // the target instead of jumping to the top.
+    if (to.hash) return { el: to.hash, behavior }
+    return { top: 0, behavior }
   },
   routes: [
     { path: '/', name: 'home', component: HomeView, meta: { layout: 'public', title: 'Home' } },

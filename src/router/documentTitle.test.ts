@@ -106,6 +106,17 @@ describe('route titles', () => {
     expect(document.getElementById('route-announcer')?.classList.contains('sr-only')).toBe(true)
   })
 
+  it('scrolls to the hash target instead of the top for in-page links', () => {
+    vi.stubGlobal('matchMedia', () => media(false))
+    const current = router.currentRoute.value
+    const target = { ...current, hash: '#cookies' }
+    expect(router.options.scrollBehavior?.(target, current, null)).toEqual({
+      el: '#cookies',
+      behavior: 'smooth',
+    })
+    vi.unstubAllGlobals()
+  })
+
   it('scrolls without smooth behavior when reduced motion is requested', () => {
     vi.stubGlobal('matchMedia', (query: string) => media(query.includes('prefers-reduced-motion')))
     const current = router.currentRoute.value

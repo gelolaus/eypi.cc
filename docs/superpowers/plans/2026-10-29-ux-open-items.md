@@ -70,11 +70,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 **Interfaces:**
 - Produces: `sectionIds(headings: string[]): string[]` returns unique, URL-safe ids: lowercase, non-alphanumerics collapsed to `-`, trimmed, prefixed `s-` when empty, de-duplicated with `-2`, `-3` suffixes.
 
-- [ ] **Step 1: Failing tests.** `sectionId.test.ts`: `slugs headings`, `de-duplicates repeated headings`, `handles punctuation-only headings`. `LegalView.test.ts`: `renders an On this page list with one link per section`, `each link href matches a section id`, `scroll offset leaves the sticky header clear` (section has `scroll-mt-20`).
-- [ ] **Step 2:** Run `npx vitest run src/legal src/views/LegalView.test.ts`; expect FAIL.
-- [ ] **Step 3:** Implement `sectionIds`; in `LegalView.vue` add a `<nav aria-label="On this page">` with an `<ol>` of `min-h-11` links above the first section, set `id` and `scroll-mt-20` on each `<section>`. Anchor clicks must not break under the router: use plain `href="#id"`.
-- [ ] **Step 4:** Run the tests; expect PASS.
-- [ ] **Step 5:** Set UX-10 `fixed`, commit `feat(legal): add an on this page contents list`.
+- [x] **Step 1: Failing tests.** `sectionId.test.ts`: `slugs headings`, `de-duplicates repeated headings`, `handles punctuation-only headings`. `LegalView.test.ts`: `renders an On this page list with one link per section`, `each link href matches a section id`, `scroll offset leaves the sticky header clear` (section has `scroll-mt-20`).
+- [x] **Step 2:** Run `npx vitest run src/legal src/views/LegalView.test.ts`; expect FAIL.
+- [x] **Step 3:** Implement `sectionIds`; in `LegalView.vue` add a `<nav aria-label="On this page">` with an `<ol>` of `min-h-11` links above the first section, set `id` and `scroll-mt-20` on each `<section>`. Anchor clicks must not break under the router: use plain `href="#id"`.
+- [x] **Step 4:** Run the tests; expect PASS.
+- [x] **Step 5:** Set UX-10 `fixed`, commit `feat(legal): add an on this page contents list`.
 
 ### Task 4: Org banner ratio (UX-14)
 
