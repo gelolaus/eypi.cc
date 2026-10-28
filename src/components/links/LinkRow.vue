@@ -69,6 +69,7 @@
       </Button>
       <Button
         v-if="!moderatorLocked"
+        class="hidden md:inline-flex"
         size="icon"
         variant="ghost"
         type="button"
@@ -79,6 +80,7 @@
         <Pause v-else />
       </Button>
       <Button
+        class="hidden md:inline-flex"
         aria-label="Delete"
         size="icon"
         variant="destructive"
@@ -87,16 +89,63 @@
       >
         <Trash2 />
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button
+            class="md:hidden"
+            :aria-label="`More actions for ${link.slug}`"
+            size="icon"
+            variant="ghost"
+            type="button"
+          >
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          class="min-w-44 p-1"
+        >
+          <DropdownMenuItem
+            v-if="!moderatorLocked"
+            class="min-h-11 rounded-lg px-3 text-base"
+            @select="link.disabledAt ? emit('enable') : emit('disable')"
+          >
+            <Play
+              v-if="link.disabledAt"
+              aria-hidden="true"
+            />
+            <Pause
+              v-else
+              aria-hidden="true"
+            />
+            {{ link.disabledAt ? 'Enable' : 'Disable' }}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            class="min-h-11 rounded-lg px-3 text-base"
+            @select="emit('delete')"
+          >
+            <Trash2 aria-hidden="true" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </Card>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { BarChart3, Copy, Pause, Pencil, Play, Trash2 } from 'lucide-vue-next'
+import { BarChart3, Copy, MoreHorizontal, Pause, Pencil, Play, Trash2 } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { linkBadges, type LinkListItem } from '@/composables/useLinks'
 
 const props = defineProps<{

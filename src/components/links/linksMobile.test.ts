@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import LinkFilters from './LinkFilters.vue'
 import LinkList from './LinkList.vue'
 import LinkRow from './LinkRow.vue'
@@ -59,6 +60,92 @@ describe('LinkRow card', () => {
 
   it('lets the action group wrap at 375px', () => {
     expect(wrapper.get('[data-row-actions]').classes()).toContain('flex-wrap')
+  })
+})
+
+describe('LinkRow actions menu below md', () => {
+  const mounted: Array<{ unmount: () => void }> = []
+
+  afterEach(() => {
+    while (mounted.length) mounted.pop()!.unmount()
+    document.body.innerHTML = ''
+  })
+
+  function mountRow(overrides: Partial<LinkListItem> = {}) {
+    const wrapper = mount(LinkRow, {
+      props: { link: { ...link, ...overrides }, selected: false },
+      attachTo: document.body,
+    })
+    mounted.push(wrapper)
+    return wrapper
+  }
+
+  async function openMenu(wrapper: ReturnType<typeof mountRow>) {
+    await wrapper.get('button[aria-label="More actions for alpha"]').trigger('click')
+    await nextTick()
+    return [...document.body.querySelectorAll<HTMLElement>('[data-slot="dropdown-menu-item"]')]
+  }
+
+  const hiddenBelowMd = (el: Element) => el.classList.contains('hidden')
+
+  it('shows three visible actions and a More actions menu below md', () => {
+    const wrapper = mountRow()
+    const buttons = wrapper.findAll('[data-row-actions] button')
+    const visible = buttons.filter((b) => !hiddenBelowMd(b.element) && !b.classes().includes('md:hidden'))
+    expect(visible.map((b) => b.attributes('aria-label'))).toEqual(['Copy link', 'Analytics', 'Edit'])
+    const trigger = wrapper.get('button[aria-label="More actions for alpha"]')
+    expect(trigger.classes()).toContain('size-11')
+    expect(trigger.classes()).toContain('md:hidden')
+    expect(trigger.attributes('aria-haspopup')).toBe('menu')
+  })
+
+  it('keeps all five actions as buttons from md', () => {
+    const wrapper = mountRow()
+    for (const name of ['Disable alpha', 'Delete']) {
+      const button = wrapper.get(`button[aria-label="${name}"]`)
+      expect(button.classes()).toEqual(expect.arrayContaining(['hidden', 'md:inline-flex']))
+    }
+  })
+
+  it('menu offers Disable and Delete', async () => {
+    const wrapper = mountRow()
+    const items = await openMenu(wrapper)
+    expect(items.map((i) => i.textContent?.trim())).toEqual(['Disable', 'Delete'])
+    for (const item of items) expect(item.className).toContain('min-h-11')
+    expect(items[1].getAttribute('data-variant')).toBe('destructive')
+  })
+
+  it('menu items emit disable and delete', async () => {
+    const wrapper = mountRow()
+    let items = await openMenu(wrapper)
+    items[0].click()
+    await nextTick()
+    expect(wrapper.emitted('disable')).toHaveLength(1)
+    items = await openMenu(wrapper)
+    items[1].click()
+    await nextTick()
+    expect(wrapper.emitted('delete')).toHaveLength(1)
+  })
+
+  it('menu offers Enable for a user-disabled link', async () => {
+    const wrapper = mountRow({ disabledAt: '2026-10-02T00:00:00.000Z', disabledReason: 'user' })
+    const items = await openMenu(wrapper)
+    expect(items.map((i) => i.textContent?.trim())).toEqual(['Enable', 'Delete'])
+    items[0].click()
+    await nextTick()
+    expect(wrapper.emitted('enable')).toHaveLength(1)
+  })
+
+  it('moderator-locked link has no Enable or Disable item', async () => {
+    for (const disabledReason of ['admin', 'abuse'] as const) {
+      const wrapper = mountRow({ disabledAt: '2026-10-02T00:00:00.000Z', disabledReason })
+      const items = await openMenu(wrapper)
+      expect(items.map((i) => i.textContent?.trim())).toEqual(['Delete'])
+      expect(wrapper.find('button[aria-label^="Enable"], button[aria-label^="Disable"]').exists()).toBe(false)
+      wrapper.unmount()
+      mounted.pop()
+      document.body.innerHTML = ''
+    }
   })
 })
 
