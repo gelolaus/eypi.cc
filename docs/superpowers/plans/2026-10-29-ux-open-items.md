@@ -97,11 +97,11 @@ Finding: `main.ts` mounts before the first navigation settles. Until then `route
 - Modify: `worker/index.ts:498-509`
 - Test: `worker/index.test.ts`
 
-- [ ] **Step 1: Failing test** `sitemap lists the static public pages`: the XML contains `/`, `/orgs`, `/contact`, `/privacy`, `/terms`, `/acceptable-use`, `/login` once each, followed by org and frame URLs.
-- [ ] **Step 2:** Run `npx vitest run worker/index.test.ts -t sitemap`; expect FAIL.
-- [ ] **Step 3:** Extend `locs` in `sitemapDocument` with the missing paths, in the order above.
-- [ ] **Step 4:** Run the test; expect PASS.
-- [ ] **Step 5:** Set UX-57 `fixed`, commit `fix(seo): list the static public pages in the sitemap`.
+- [x] **Step 1: Failing test** `sitemap lists the static public pages`: the XML contains `/`, `/orgs`, `/contact`, `/privacy`, `/terms`, `/acceptable-use`, `/login` once each, followed by org and frame URLs.
+- [x] **Step 2:** Run `npx vitest run worker/index.test.ts -t sitemap`; expect FAIL.
+- [x] **Step 3:** Extend `locs` in `sitemapDocument` with the missing paths, in the order above.
+- [x] **Step 4:** Run the test; expect PASS.
+- [x] **Step 5:** Set UX-57 `fixed`, commit `fix(seo): list the static public pages in the sitemap`.
 
 ### Task 6: Links row overflow and header Create (UX-28)
 
