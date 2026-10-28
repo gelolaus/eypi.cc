@@ -79,8 +79,8 @@
 **Interfaces:**
 - Consumes Task 3 payload and Phase 1 charts (`StatTile` with `delta`, `LineChart`, `HeatGrid`, `BarList`).
 
-- [ ] **Step 1: Failing tests:** range buttons 7/30/90 + custom dates send `from`/`to`; compare toggle shows deltas as `+12%` text; "Source apps" list labels `messenger` as "Messenger"; empty range shows the empty state copy "No clicks in this period yet".
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(links): show device, app and hour-of-week analytics`.
+- [x] **Step 1: Failing tests:** range buttons 7/30/90 + custom dates send `from`/`to`; compare toggle shows deltas as `+12%` text; "Source apps" list labels `messenger` as "Messenger"; empty range shows the empty state copy "No clicks in this period yet".
+- [x] **Step 2–4.** **Step 5: Commit** `feat(links): show device, app and hour-of-week analytics`.
 
 ### Task 5: Module beacons (Frames and org profile)
 
