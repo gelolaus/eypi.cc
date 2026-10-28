@@ -40,7 +40,7 @@
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
           <div
-            class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid transition-all duration-300 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 lg:max-w-[70dvh]"
+            class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid motion-safe:transition-all motion-safe:duration-300 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 lg:max-w-[70dvh]"
             :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
             :style="{ aspectRatio: frameAspect }"
           >

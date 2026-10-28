@@ -241,6 +241,15 @@ describe('DpPublicView audit fixes', () => {
     const wrapper = await mountReady()
     expect(wrapper.get('canvas').element.parentElement!.className).toContain('lg:max-w-[70dvh]')
   })
+
+  it('only animates the canvas wrapper when motion is allowed', async () => {
+    const wrapper = await mountReady()
+    const classes = wrapper.get('canvas').element.parentElement!.className.split(/\s+/)
+    expect(classes).toContain('motion-safe:transition-all')
+    expect(classes).toContain('motion-safe:duration-300')
+    expect(classes).not.toContain('transition-all')
+    expect(classes).not.toContain('duration-300')
+  })
 })
 
 describe('DpPublicView canvas keyboard', () => {
