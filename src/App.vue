@@ -63,7 +63,9 @@ watch(currentDialog, (d) => { if (d) dialogNeeded.value = true })
 const route = useRoute()
 const router = useRouter()
 const routerReady = ref(false)
-void router.isReady().then(() => { routerReady.value = true })
+// Also clear on a failed first navigation, so the router error path renders instead of an endless skeleton.
+const markReady = () => { routerReady.value = true }
+void router.isReady().then(markReady, markReady)
 const Shell = computed(() => (route.meta.layout === 'public' ? PublicShell : AppShell))
 
 const appTransitionRef = ref<InstanceType<typeof AppTransition> | null>(null)

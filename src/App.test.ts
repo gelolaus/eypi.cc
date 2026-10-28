@@ -114,6 +114,30 @@ describe('boot skeleton', () => {
   })
 })
 
+describe('boot skeleton on failure', () => {
+  it('clears the skeleton when the first navigation fails', async () => {
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    const coldRouter = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: stub, meta: { layout: 'public' } }] })
+    let fail!: (e: Error) => void
+    const gate = new Promise<void>((_, reject) => { fail = reject })
+    coldRouter.beforeEach(() => gate)
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: { plugins: [coldRouter], stubs: { AppTransition: true, ToastContainer: true, DialogHost: true, PublicShell: { template: '<div data-public-shell><slot /></div>' } } },
+    })
+    await flushPromises()
+    expect(wrapper.find('[data-boot-skeleton]').exists()).toBe(true)
+    fail(new Error('chunk failed'))
+    await flushPromises()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(wrapper.find('[data-boot-skeleton]').exists()).toBe(false)
+    expect(unhandled).not.toHaveBeenCalled()
+    process.off('unhandledRejection', unhandled)
+    wrapper.unmount()
+  })
+})
+
 describe('lazy overlay hosts', () => {
   it('shows a toast and a dialog raised before the hosts have mounted', async () => {
     const { useToast } = await import('@/composables/useToast')
