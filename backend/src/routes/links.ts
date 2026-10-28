@@ -9,11 +9,13 @@ import { requireConsent } from '../middleware/requireConsent'
 import { checkRateLimit } from '../lib/rateLimit'
 import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
+import { addDays, daysBetween, isDay, loadLinkPeriod, MAX_RANGE_DAYS } from '../lib/links/analyticsQuery'
 import { toCsv } from '../lib/links/csv'
+import { manilaDay } from '../jobs/rollups'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
 import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
 import { reportError } from '../lib/reportError'
-import { manilaDaySpan, manilaSql, manilaTimestamp, manilaWindow } from '../lib/manilaTime'
+import { manilaTimestamp } from '../lib/manilaTime'
 import { getOS, logLinkClick, parseUserAgent, sanitizeReferrer } from '../../../shared/linkAnalytics'
 import { encodeLinkKv, type LinkKvEntry } from '../../../shared/linksKv'
 import { generateSlug, normalizeSlugInput, validateSlug } from '../../../shared/slugRules'
@@ -120,6 +122,7 @@ function linkStatus(row: Pick<LinkRow, 'disabled_at' | 'expires_at' | 'password_
   return 'active'
 }
 
+/** Legacy `range=N` shortcut for the last N days; `from` and `to` take precedence. */
 function analyticsRange(value: string | undefined): 7 | 30 | 90 {
   if (value === '7' || value === '30' || value === '90') return Number(value) as 7 | 30 | 90
   return 30
@@ -576,99 +579,35 @@ app.get('/api/links/:id/analytics', requireAuth, async (c) => {
   const row = await loadOwned(c, c.req.param('id'))
   if (!row) return fail(c, 404, 'not_found', 'Not found')
 
-  const range = analyticsRange(c.req.query('range'))
-  const now = new Date()
-  const bounds = manilaWindow(range, now)
-  const where = `link_id = ? AND datetime(created_at) >= datetime(?) AND datetime(created_at) < datetime(?)`
-  const args: InValue[] = [row.id, bounds.start, bounds.end]
-  const dayExpr = `date(${manilaSql('created_at')})`
-  const hourExpr = `strftime('%H', ${manilaSql('created_at')})`
+  const today = manilaDay(new Date())
+  const rangeDays = analyticsRange(c.req.query('range'))
+  const from = c.req.query('from') ?? addDays(today, -(rangeDays - 1))
+  const to = c.req.query('to') ?? today
+  if (!isDay(from) || !isDay(to)) {
+    return fail(c, 422, 'invalid_range', 'Use dates like 2026-10-26.', { from: 'Use YYYY-MM-DD.', to: 'Use YYYY-MM-DD.' })
+  }
+  const length = daysBetween(from, to)
+  if (length < 1) return fail(c, 422, 'invalid_range', 'The start date must not be after the end date.')
+  if (length > MAX_RANGE_DAYS) {
+    return fail(c, 422, 'invalid_range', `Pick a range of ${MAX_RANGE_DAYS} days or fewer.`)
+  }
+
   const client = db(c)
-  const [summaryResult, referrerResult, countryResult, osResult, timelineResult, peakResult] = await Promise.all([
-    client.execute({
-      sql: `SELECT COUNT(*) AS total,
-          COUNT(DISTINCT visitor_hash) AS unique_visitors,
-          COALESCE(SUM(CASE WHEN source = 'qr' THEN 1 ELSE 0 END), 0) AS qr,
-          COALESCE(SUM(CASE WHEN source = 'qr' THEN 0 ELSE 1 END), 0) AS direct
-        FROM analytics WHERE ${where}`,
-      args,
-    }),
-    client.execute({
-      sql: `SELECT referrer, COUNT(*) AS n FROM analytics
-        WHERE ${where} AND referrer IS NOT NULL AND referrer != ''
-        GROUP BY referrer ORDER BY n DESC LIMIT 5`,
-      args,
-    }),
-    client.execute({
-      sql: `SELECT country, COUNT(*) AS n FROM analytics
-        WHERE ${where} AND country IS NOT NULL AND country != ''
-        GROUP BY country ORDER BY n DESC LIMIT 5`,
-      args,
-    }),
-    client.execute({
-      sql: `SELECT os, COUNT(*) AS n FROM analytics
-        WHERE ${where} AND os IS NOT NULL AND os != ''
-        GROUP BY os ORDER BY n DESC LIMIT 5`,
-      args,
-    }),
-    client.execute({
-      sql: `SELECT ${dayExpr} AS day, COUNT(*) AS n FROM analytics
-        WHERE ${where} GROUP BY ${dayExpr} ORDER BY day ASC`,
-      args,
-    }),
-    client.execute({
-      sql: `SELECT ${hourExpr} AS peak_hour FROM analytics
-        WHERE ${where} GROUP BY ${hourExpr} ORDER BY COUNT(*) DESC LIMIT 1`,
-      args,
-    }),
-  ])
-
-  const summary = summaryResult.rows[0] as unknown as {
-    total: number
-    unique_visitors: number
-    qr: number
-    direct: number
-  } | undefined
-  const clicksByDay = new Map(timelineResult.rows.map((item) => {
-    const point = item as unknown as { day: string; n: number }
-    return [String(point.day), Number(point.n)] as const
-  }))
-  const peak = peakResult.rows[0] as unknown as { peak_hour: string | number } | undefined
-
-  return c.json({
-    total: Number(summary?.total ?? 0),
-    unique: Number(summary?.unique_visitors ?? 0),
-    qr: Number(summary?.qr ?? 0),
-    direct: Number(summary?.direct ?? 0),
-    timeline: manilaDaySpan(range, now).map((day) => ({
-      day,
-      clicks: clicksByDay.get(day) ?? 0,
-    })),
-    topReferrers: referrerResult.rows.map((item) => {
-      const ranked = item as unknown as { referrer: string; n: number }
-      return { referrer: String(ranked.referrer), count: Number(ranked.n) }
-    }),
-    topCountries: countryResult.rows.map((item) => {
-      const ranked = item as unknown as { country: string; n: number }
-      return { country: String(ranked.country), count: Number(ranked.n) }
-    }),
-    topOs: osResult.rows.map((item) => {
-      const ranked = item as unknown as { os: string; n: number }
-      return { os: String(ranked.os), count: Number(ranked.n) }
-    }),
-    peakHour: peak ? Number(peak.peak_hour) : null,
-  })
+  const current = await loadLinkPeriod(client, row.id, from, to, today)
+  if (c.req.query('compare') !== '1') return c.json(current)
+  const previous = await loadLinkPeriod(client, row.id, addDays(from, -length), addDays(from, -1), today)
+  return c.json({ ...current, previous })
 })
 
 app.get('/api/links/:id/analytics.csv', requireAuth, async (c) => {
   const row = await loadOwned(c, c.req.param('id'))
   if (!row) return fail(c, 404, 'not_found', 'Not found')
   const result = await db(c).execute({
-    sql: `SELECT created_at, country, os, referrer, source
+    sql: `SELECT created_at, country, os, referrer, source, device, browser, app
       FROM analytics WHERE link_id = ? ORDER BY created_at ASC, id ASC`,
     args: [row.id],
   })
-  const rows: string[][] = [['timestamp', 'country', 'os', 'referrer', 'source']]
+  const rows: string[][] = [['timestamp', 'country', 'os', 'referrer', 'source', 'device', 'browser', 'app']]
   for (const item of result.rows) {
     const click = item as unknown as Record<string, unknown>
     rows.push([
@@ -677,6 +616,9 @@ app.get('/api/links/:id/analytics.csv', requireAuth, async (c) => {
       text(click.os) ?? '',
       text(click.referrer) ?? '',
       text(click.source) ?? '',
+      text(click.device) ?? '',
+      text(click.browser) ?? '',
+      text(click.app) ?? '',
     ])
   }
   return csvResponse(toCsv(rows), 'analytics.csv')

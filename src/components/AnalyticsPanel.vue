@@ -171,16 +171,12 @@ import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useFocusTrap } from '@/composables/useFocusTrap'
 
+type TopItem = { value: string; clicks: number }
 type AnalyticsPayload = {
-  total: number
-  unique: number
-  qr: number
-  direct: number
-  timeline: { day: string; clicks: number }[]
-  topReferrers: { referrer: string; count: number }[]
-  topCountries: { country: string; count: number }[]
-  topOs: { os: string; count: number }[]
-  peakHour: number | null
+  totals: { clicks: number; avgDailyUniques: number; qrShare: number }
+  timeline: { day: string; clicks: number; uniques: number }[]
+  heat: number[]
+  top: Record<'referrer' | 'app' | 'country' | 'device' | 'browser' | 'os', TopItem[]>
 }
 
 const props = defineProps<{
@@ -206,8 +202,10 @@ const ranges = [
 ]
 
 const peakLabel = computed(() => {
-  const hour = analytics.value?.peakHour
-  if (typeof hour !== 'number' || !Number.isFinite(hour)) return ''
+  const heat = analytics.value?.heat ?? []
+  const peak = Math.max(0, ...heat)
+  if (peak === 0) return ''
+  const hour = heat.indexOf(peak) % 24
   const period = hour >= 12 ? 'PM' : 'AM'
   const hour12 = hour % 12 === 0 ? 12 : hour % 12
   return `${hour12}:00 ${period}`
@@ -217,10 +215,10 @@ const tiles = computed(() => {
   const data = analytics.value
   if (!data) return []
   return [
-    { label: 'Total', value: String(data.total) },
-    { label: 'Unique visitors', value: String(data.unique) },
-    { label: 'QR scans', value: String(data.qr) },
-    { label: 'Direct', value: String(data.direct) },
+    { label: 'Total', value: String(data.totals.clicks) },
+    { label: 'Unique visitors', value: String(data.timeline.reduce((sum, point) => sum + point.uniques, 0)) },
+    { label: 'QR scans', value: String(Math.round(data.totals.qrShare * data.totals.clicks)) },
+    { label: 'Direct', value: String(data.totals.clicks - Math.round(data.totals.qrShare * data.totals.clicks)) },
   ]
 })
 
@@ -228,9 +226,11 @@ const timelineSeries = computed(() => [{
   label: 'Clicks',
   points: (analytics.value?.timeline ?? []).map((point) => ({ x: point.day, y: point.clicks })),
 }])
-const topOsItems = computed(() => (analytics.value?.topOs ?? []).map((i) => ({ label: i.os, value: i.count })))
-const topCountryItems = computed(() => (analytics.value?.topCountries ?? []).map((i) => ({ label: i.country, value: i.count })))
-const topReferrerItems = computed(() => (analytics.value?.topReferrers ?? []).map((i) => ({ label: i.referrer, value: i.count })))
+const topItems = (dim: keyof AnalyticsPayload['top']) =>
+  (analytics.value?.top[dim] ?? []).slice(0, 5).map((i) => ({ label: i.value, value: i.clicks }))
+const topOsItems = computed(() => topItems('os'))
+const topCountryItems = computed(() => topItems('country'))
+const topReferrerItems = computed(() => topItems('referrer'))
 
 let request = 0
 

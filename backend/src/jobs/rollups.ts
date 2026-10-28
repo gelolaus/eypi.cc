@@ -60,7 +60,7 @@ function sqlTimestamp(ms: number): string {
 }
 
 /** UTC range `[day-1 16:00, day 16:00)` of a Manila day, as `created_at` text. */
-function manilaDayRange(day: string): [string, string] {
+export function manilaDayRange(day: string): [string, string] {
   const end = Date.parse(`${day}T00:00:00Z`) - MANILA_OFFSET_MS + DAY_MS
   return [sqlTimestamp(end - DAY_MS), sqlTimestamp(end)]
 }

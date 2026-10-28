@@ -7,16 +7,21 @@ import BarList from './charts/BarList.vue'
 import LineChart from './charts/LineChart.vue'
 import StatTile from './charts/StatTile.vue'
 
+const heat = new Array<number>(168).fill(0)
+heat[15] = 9
+
 const payload = {
-  total: 42,
-  unique: 10,
-  qr: 7,
-  direct: 35,
-  timeline: [{ day: '2026-10-26', clicks: 4 }],
-  topReferrers: [{ referrer: 'Campus mail', count: 5 }],
-  topCountries: [{ country: 'PH', count: 6 }],
-  topOs: [{ os: 'Windows', count: 8 }],
-  peakHour: 15,
+  totals: { clicks: 42, avgDailyUniques: 10, qrShare: 7 / 42 },
+  timeline: [{ day: '2026-10-26', clicks: 4, uniques: 10 }],
+  heat,
+  top: {
+    referrer: [{ value: 'Campus mail', clicks: 5 }],
+    app: [],
+    country: [{ value: 'PH', clicks: 6 }],
+    device: [],
+    browser: [],
+    os: [{ value: 'Windows', clicks: 8 }],
+  },
 }
 
 function requestUrl(input: RequestInfo | URL): string {
@@ -97,7 +102,7 @@ describe('AnalyticsPanel', () => {
 
   it('shows No data for empty top lists', async () => {
     fetchMock.mockImplementation(async () => new Response(JSON.stringify({
-      ...payload, topOs: [], topCountries: [], topReferrers: [],
+      ...payload, top: { ...payload.top, os: [], country: [], referrer: [] },
     }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
     const wrapper = mount(AnalyticsPanel, {
       props: { linkId: 'link-1', isOpen: true, shortUrl: 'eypi.cc/alpha' },

@@ -68,8 +68,8 @@
 **Interfaces:**
 - Produces: `GET /api/links/:id/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD&compare=1` (default last 30 days; max range 400 days) → `{ totals: { clicks, avgDailyUniques, qrShare }, previous?: same shape, timeline: { day, clicks, uniques }[], heat: number[168], top: { referrer, app, country, device, browser, os: { value, clicks }[] /* top 8 */ } }`. CSV adds columns `device,browser,app`.
 
-- [ ] **Step 1: Failing tests:** `today counted once` (rollup for yesterday + raw for today); compare returns the equal-length previous range; `heat.length === 168`; range > 400 days → 422; authz unchanged (owner only, admin allowed); CSV header exact.
-- [ ] **Step 2–4.** **Step 5: Commit** `feat(links): serve analytics from rollups with period comparison`.
+- [x] **Step 1: Failing tests:** `today counted once` (rollup for yesterday + raw for today); compare returns the equal-length previous range; `heat.length === 168`; range > 400 days → 422; authz unchanged (owner only, admin allowed); CSV header exact.
+- [x] **Step 2–4.** **Step 5: Commit** `feat(links): serve analytics from rollups with period comparison`.
 
 ### Task 4: Analytics panel redesign
 
