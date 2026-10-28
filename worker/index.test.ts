@@ -937,6 +937,29 @@ describe('seo surface', () => {
     expect(execute).not.toHaveBeenCalled()
   })
 
+  it('sitemap lists the static public pages', async () => {
+    vi.stubGlobal('caches', { default: new SitemapMemoryCache() })
+    const response = await worker.fetch(
+      new Request('https://eypi.cc/sitemap.xml'),
+      makeEnv({}, vi.fn(async () => new Response(FRAME_SHELL, { status: 200 }))),
+      ctx(),
+    )
+    const xml = await response.text()
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+
+    expect(locs).toEqual([
+      'https://eypi.cc/',
+      'https://eypi.cc/orgs',
+      'https://eypi.cc/contact',
+      'https://eypi.cc/privacy',
+      'https://eypi.cc/terms',
+      'https://eypi.cc/acceptable-use',
+      'https://eypi.cc/login',
+      'https://eypi.cc/orgs/foo',
+      'https://eypi.cc/frames/rams-day',
+    ])
+  })
+
   it('serves the static sitemap without the hour cache when the catalog query fails', async () => {
     execute.mockRejectedValue(new Error('turso down'))
     const fetchAsset = vi.fn(async () => new Response(FRAME_SHELL, { status: 200 }))

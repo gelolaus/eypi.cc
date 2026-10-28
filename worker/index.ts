@@ -500,8 +500,12 @@ function sitemapDocument(origin: string, catalog: SitemapCatalog | null): string
   const campaigns = catalog?.campaigns ?? []
   const locs = [
     `${origin}/`,
+    `${origin}/orgs`,
+    `${origin}/contact`,
     `${origin}/privacy`,
     `${origin}/terms`,
+    `${origin}/acceptable-use`,
+    `${origin}/login`,
     ...orgs.map((id) => `${origin}/orgs/${encodeURIComponent(id)}`),
     ...campaigns.map((slug) => `${origin}/frames/${encodeURIComponent(slug)}`),
   ]
