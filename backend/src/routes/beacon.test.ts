@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createTestApp } from '../test/createTestApp'
 import { manilaDay } from '../lib/manilaTime'
+import { visitorHash } from '../lib/ipHash'
 
 const env = { IP_HASH_SECRET: 'test-ip-secret' }
 
@@ -29,6 +30,8 @@ async function rows(client: Awaited<ReturnType<typeof createTestApp>>['client'])
   return (await client.execute('SELECT * FROM module_events')).rows
 }
 
+afterEach(() => vi.useRealTimers())
+
 describe('POST /api/beacon', () => {
   it('records a frames view with org, manila day and hashed visitor', async () => {
     const { request, client } = await createTestApp({ env, seed })
@@ -41,6 +44,26 @@ describe('POST /api/beacon', () => {
     expect(JSON.stringify(row)).not.toContain('203.0.113.7')
   })
 
+  it('stamps the Manila calendar day, which is ahead of UTC late in the evening', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-27T17:00:00Z')) // 01:00 on 2026-10-28 in Manila
+    const { request, client } = await createTestApp({ env, seed })
+    await request('/api/beacon', post({ module: 'frames', subjectId: 'c1', action: 'view' }))
+    const [row] = await rows(client)
+    expect(row.day).toBe('2026-10-28')
+  })
+
+  it('does not reuse the click visitor hash for the beacon visitor hash', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-27T05:00:00Z')) // UTC and Manila agree on the day
+    const { request, client } = await createTestApp({ env, seed })
+    await request('/api/beacon', post({ module: 'frames', subjectId: 'c1', action: 'view' }, '203.0.113.7', 'Mozilla/5.0'))
+    const [row] = await rows(client)
+    const clickHash = await visitorHash(env.IP_HASH_SECRET, '20261027', '203.0.113.7', 'Mozilla/5.0')
+    expect(String(row.visitor_hash)).toMatch(/^[0-9a-f]{16}$/)
+    expect(row.visitor_hash).not.toBe(clickHash)
+  })
+
   it('accepts campaign:frame subjects and rejects unknown frames silently', async () => {
     const { request, client } = await createTestApp({ env, seed })
     expect((await request('/api/beacon', post({ module: 'frames', subjectId: 'c1:f1', action: 'download' }))).status).toBe(204)
@@ -48,6 +71,22 @@ describe('POST /api/beacon', () => {
     const stored = await rows(client)
     expect(stored).toHaveLength(1)
     expect(stored[0]).toMatchObject({ subject_id: 'c1:f1', org_id: 'acme', action: 'download' })
+  })
+
+  it('ignores a frame id that belongs to another campaign', async () => {
+    const { request, client } = await createTestApp({
+      env,
+      seed: async (db) => {
+        await seed(db)
+        await db.execute({
+          sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES ('c2', 'u1', 'acme', 'T2', 't2', '')",
+          args: [],
+        })
+        await db.execute({ sql: "INSERT INTO dp_frames (id, campaign_id, image_url) VALUES ('f-other', 'c2', 'x')", args: [] })
+      },
+    })
+    expect((await request('/api/beacon', post({ module: 'frames', subjectId: 'c1:f-other', action: 'download' }))).status).toBe(204)
+    expect(await rows(client)).toHaveLength(0)
   })
 
   it('records org profile views for public orgs only', async () => {
@@ -96,6 +135,30 @@ describe('POST /api/beacon', () => {
     await request('/api/beacon', post({ module: 'frames', subjectId: 'c1', action: 'view' }, '203.0.113.8'))
     await request('/api/beacon', post({ module: 'frames', subjectId: 'c1', action: 'download' }))
     expect(await rows(client)).toHaveLength(22)
+  })
+
+  it('limits a visitor per campaign across its frames, not per exact subject', async () => {
+    const { request, client } = await createTestApp({
+      env,
+      seed: async (db) => {
+        await seed(db)
+        for (const id of ['f2', 'f3', 'f4']) {
+          await db.execute({ sql: 'INSERT INTO dp_frames (id, campaign_id, image_url) VALUES (?, ?, ?)', args: [id, 'c1', 'x'] })
+        }
+        await db.execute({
+          sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES ('c10', 'u1', 'acme', 'T', 't10', '')",
+          args: [],
+        })
+      },
+    })
+    const subjects = ['c1:f1', 'c1:f2', 'c1:f3', 'c1:f4', 'c1']
+    for (let i = 0; i < 25; i++) {
+      await request('/api/beacon', post({ module: 'frames', subjectId: subjects[i % subjects.length], action: 'download' }))
+    }
+    expect(await rows(client)).toHaveLength(20)
+    // c10 shares a prefix with c1 but is a different campaign
+    await request('/api/beacon', post({ module: 'frames', subjectId: 'c10', action: 'download' }))
+    expect(await rows(client)).toHaveLength(21)
   })
 
   it('stores nothing when the hash secret is not configured', async () => {

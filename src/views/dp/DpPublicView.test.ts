@@ -169,6 +169,36 @@ describe('DpPublicView mobile controls', () => {
 })
 
 describe('DpPublicView beacons', () => {
+  it('sends view as soon as the campaign loads, before the frame images do', async () => {
+    class StalledImage extends FakeImage {
+      set src(_value: string) { /* never loads */ }
+    }
+    vi.stubGlobal('Image', StalledImage)
+    mount(DpPublicView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toEqual([['frames', 'camp-1', 'view']])
+  })
+
+  it('sends a share beacon for the selected frame when the caption is copied', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const body = (await campaignResponse().json()) as { campaign: { captionTemplate: string | null } }
+      body.campaign.captionTemplate = 'Hello #eypi'
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    const wrapper = await mountReady()
+    const copy = wrapper.findAll('button').find((button) => button.text() === 'Copy to clipboard')
+    expect(copy).toBeTruthy()
+    await copy!.trigger('click')
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith('Hello #eypi')
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toEqual([
+      ['frames', 'camp-1', 'view'],
+      ['frames', 'camp-1:frame-1', 'share'],
+    ])
+  })
+
   it('sends view once per page load, then photo_added and download', async () => {
     vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close() {} })))
     const wrapper = await mountReady()

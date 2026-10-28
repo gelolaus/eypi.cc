@@ -92,7 +92,7 @@ describe('GET /api/dp/:id/insights', () => {
       daily: { day: string; views: number; downloads: number }[]
     }
     expect(body.funnel).toEqual({ view: 24, photo_added: 6, downloadOrShare: 105 })
-    expect(body.conversion).toBeCloseTo(105 / 24)
+    expect(body.conversion).toBe(1) // downloads can exceed views (bare-subject rows), the rate is capped
     expect(body.perFrame).toEqual([
       { frameId: 'f1', label: 'Blue', downloads: 5 },
       { frameId: 'f2', label: 'Frame 2', downloads: 1 },
@@ -100,6 +100,23 @@ describe('GET /api/dp/:id/insights', () => {
     expect(body.daily).toHaveLength(30)
     expect(body.daily.at(-1)).toEqual({ day: '2026-10-26', views: 4, downloads: 2 })
     expect(body.daily.find((d) => d.day === '2026-10-24')).toEqual({ day: '2026-10-24', views: 10, downloads: 102 })
+  })
+
+  it('does not match campaign ids that only look alike (underscore is not a wildcard)', async () => {
+    const { request } = await framesApp(async (client) => {
+      await client.execute({
+        sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES ('camp_1', 'owner', 'org-1', 'u', 'u', '')",
+        args: [],
+      })
+      await daily(client, 'camp_1', 'view', '2026-10-25', 3)
+      await daily(client, 'camp_1:f1', 'download', '2026-10-25', 1)
+      await daily(client, 'camp11', 'view', '2026-10-25', 50)
+      await daily(client, 'camp11:f1', 'download', '2026-10-25', 50)
+      await daily(client, 'camp1', 'view', '2026-10-25', 7)
+      await raw(client, 'camp11', 'view', '2026-10-26', 9)
+    })
+    const body = await (await request('/api/dp/camp_1/insights', { headers })).json() as { funnel: { view: number; downloadOrShare: number } }
+    expect(body.funnel).toMatchObject({ view: 3, downloadOrShare: 1 })
   })
 
   it('respects the days window', async () => {

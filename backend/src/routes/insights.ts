@@ -28,10 +28,10 @@ type SubjectRow = { subject: string; action: string; day: string; n: number }
 /**
  * Campaign events for Manila days from..to. Days before today come from module_daily; today comes from raw
  * module_events (the hourly rollup lags), so a rollup row for today is never read. The subject match is exact or
- * `<id>:` prefix via substr, never LIKE, because '_' is a wildcard.
+ * the range [`<id>:`, `<id>;`) (';' follows ':'), never LIKE, because '_' is a wildcard.
  */
 async function loadCampaignRows(client: Client, id: string, from: string, to: string, today: string): Promise<SubjectRow[]> {
-  const match = "module = 'frames' AND (subject_id = ?1 OR substr(subject_id, 1, length(?1) + 1) = ?1 || ':')"
+  const match = "module = 'frames' AND (subject_id = ?1 OR (subject_id >= ?1 || ':' AND subject_id < ?1 || ';'))"
   const rows: SubjectRow[] = []
   const rollupTo = to < today ? to : addDays(today, -1)
   if (from <= rollupTo) {
@@ -110,7 +110,8 @@ app.get('/api/dp/:id/insights', isOrgFeature, async (c) => {
   c.header('Cache-Control', 'private, no-store')
   return c.json({
     funnel: { view, photo_added: photoAdded, downloadOrShare },
-    conversion: view > 0 ? downloadOrShare / view : 0,
+    // Downloads can outnumber views (a visitor may download several frames), so the rate is capped at 1.
+    conversion: view > 0 ? Math.min(1, downloadOrShare / view) : 0,
     perFrame,
     daily,
   })
@@ -241,9 +242,9 @@ async function loadOrgViewRows(client: Client, orgId: string, from: string, toda
   return rows
 }
 
-/** Frames events for every campaign of the org in the window; same exact-or-`<id>:` match as above, never LIKE. */
+/** Frames events for every campaign of the org in the window; same exact-or-range match as above, never LIKE. */
 async function loadOrgFramesTotals(client: Client, orgId: string, from: string, today: string): Promise<{ views: number; downloads: number }> {
-  const join = "JOIN dp_campaigns c ON c.org_id = ?1 AND (t.subject_id = c.id OR substr(t.subject_id, 1, length(c.id) + 1) = c.id || ':')"
+  const join = "JOIN dp_campaigns c ON c.org_id = ?1 AND (t.subject_id = c.id OR (t.subject_id >= c.id || ':' AND t.subject_id < c.id || ';'))"
   const totals = { views: 0, downloads: 0 }
   const add = (rows: Record<string, unknown>[]) => {
     for (const r of rows) {

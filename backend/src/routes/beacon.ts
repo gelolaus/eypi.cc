@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { db, type Bindings } from '../lib/db'
 import { badRequest } from '../lib/errors'
 import { visitorHash } from '../lib/ipHash'
@@ -22,11 +23,17 @@ const app = new Hono<{ Bindings: Bindings }>()
  * Public, no session, no cookies: navigator.sendBeacon posts text/plain.
  * Well-formed bodies always get 204, whether or not the subject exists or the event was kept.
  */
-app.post('/api/beacon', async (c) => {
-  const declared = Number(c.req.header('content-length') ?? 0)
-  if (declared > MAX_BODY_BYTES) throw badRequest('invalid', INVALID)
+// bodyLimit counts bytes and also stops a chunked body that lies about (or omits) its length.
+const limitBody = bodyLimit({
+  maxSize: MAX_BODY_BYTES,
+  onError: () => {
+    throw badRequest('invalid', INVALID)
+  },
+})
+
+app.post('/api/beacon', limitBody, async (c) => {
   const text = await c.req.text()
-  if (text.length > MAX_BODY_BYTES) throw badRequest('invalid', INVALID)
+  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) throw badRequest('invalid', INVALID)
 
   let body: unknown
   try {
@@ -73,18 +80,23 @@ app.post('/api/beacon', async (c) => {
 
   const now = new Date()
   const day = manilaDay(now)
+  // 'b|' keeps this hash apart from the link click hash, so a visitor cannot be joined across the two tables.
+  // A visitor who changes User-Agent gets a new hash and a fresh limit; that only inflates the organizer's own numbers.
   const visitor = await visitorHash(
     secret,
-    day.replace(/-/g, ''),
+    `b|${day.replace(/-/g, '')}`,
     c.req.header('CF-Connecting-IP') ?? '',
     c.req.header('User-Agent') ?? '',
   )
 
+  // Limit per campaign (or org page), not per exact subject, so cycling through frames cannot dodge it.
+  // The subject range [id:, id;) matches every 'id:frame' without LIKE ('_' is a wildcard there); ';' follows ':'.
+  // The created_at bound keeps the count to the last hour (idx_module_events_visitor).
   const recent = await client.execute({
     sql: `SELECT COUNT(*) AS n FROM module_events
-          WHERE visitor_hash = ? AND subject_id = ? AND action = ?
-            AND created_at >= datetime('now', '-1 hour')`,
-    args: [visitor, subjectId, action],
+          WHERE visitor_hash = ?1 AND action = ?3 AND created_at >= datetime('now', '-1 hour')
+            AND (subject_id = ?2 OR (subject_id >= ?2 || ':' AND subject_id < ?2 || ';'))`,
+    args: [visitor, campaignId, action],
   })
   if (Number(recent.rows[0]?.n ?? 0) >= MAX_PER_HOUR) return c.body(null, 204)
 

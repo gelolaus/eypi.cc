@@ -403,11 +403,12 @@ onMounted(async () => {
 
     Object.assign(campaign, data.campaign)
     if (!campaign.frames.length) throw new Error('This campaign has no frames yet.')
+    // The campaign exists and is shown: count the visit now, not after every frame image has downloaded.
+    sendModuleBeacon('frames', campaign.id, 'view')
 
     frameImgs.value = await Promise.all(campaign.frames.map((frame) => loadImage(frame.url)))
 
     loading.value = false
-    sendModuleBeacon('frames', campaign.id, 'view')
     await nextTick()
     scheduleDraw()
   } catch (err: unknown) {
