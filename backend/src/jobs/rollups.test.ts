@@ -2,6 +2,7 @@ import { createClient } from '@libsql/client/node'
 import type { Client as WebClient } from '@libsql/client/web'
 import { describe, expect, it, vi } from 'vitest'
 import { applyMigrations } from '../test/createTestApp'
+import { loadLinkPeriod } from '../lib/links/analyticsQuery'
 import { manilaDay, manilaHourOfWeek, p75, rollupLinks, rollupModules, runHourlyRollups } from './rollups'
 
 const NOW = new Date('2026-10-26T19:15:00.000Z')
@@ -211,7 +212,7 @@ describe('rollupLinks', () => {
     expect((await dump(client)).daily).toEqual([])
   })
 
-  it('runHourlyRollups rolls up Manila yesterday and today', async () => {
+  it('runHourlyRollups rolls up Manila yesterday and today, and backfills the older unrolled day', async () => {
     const client = await linkDb()
     // NOW is 2026-10-26T19:15Z = 2026-10-27 03:15 Manila.
     await click(client, { at: '2026-10-26 10:00:00', hash: 'a' })
@@ -219,7 +220,7 @@ describe('rollupLinks', () => {
     await click(client, { at: '2026-10-20 10:00:00', hash: 'c' })
     await runHourlyRollups(web(client), NOW)
     const { daily } = await dump(client)
-    expect(daily.map((r) => [r.day, r.clicks])).toEqual([['2026-10-26', 1], ['2026-10-27', 1]])
+    expect(daily.map((r) => [r.day, r.clicks])).toEqual([['2026-10-20', 1], ['2026-10-26', 1], ['2026-10-27', 1]])
   })
 })
 
@@ -275,5 +276,68 @@ describe('scheduled', () => {
     vi.doUnmock('./rollups')
     vi.doUnmock('./retention')
     vi.doUnmock('@libsql/client/web')
+  })
+})
+
+describe('runHourlyRollups backfill', () => {
+  async function linkWithClicks(client: ReturnType<typeof createClient>, stamps: string[]) {
+    await client.execute({
+      sql: 'INSERT OR IGNORE INTO users (id, email, name) VALUES (?, ?, ?)',
+      args: ['u1', 'u1@student.apc.edu.ph', 'U'],
+    })
+    await client.execute({
+      sql: 'INSERT OR IGNORE INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
+      args: ['l1', 'u1', 'https://a.example', 'a'],
+    })
+    for (const at of stamps) {
+      await client.execute({
+        sql: "INSERT INTO analytics (link_id, os, country, referrer, visitor_hash, created_at) VALUES ('l1', 'x', 'PH', 'd', 'h', ?)",
+        args: [at],
+      })
+    }
+  }
+  const days = async (client: ReturnType<typeof createClient>) =>
+    (await client.execute('SELECT day FROM analytics_daily ORDER BY day')).rows.map((r) => String(r.day))
+
+  it('rolls up old days that have raw clicks and no rollup, and is a no-op afterwards', async () => {
+    const client = await memoryDb()
+    await linkWithClicks(client, ['2026-06-01 04:00:00', '2026-06-01 05:00:00', '2026-09-15 04:00:00'])
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    expect(await days(client)).toEqual(['2026-06-01', '2026-09-15'])
+    const first = (await client.execute("SELECT clicks FROM analytics_daily WHERE day = '2026-06-01'")).rows[0]
+    expect(Number(first.clicks)).toBe(2)
+
+    const spy = vi.spyOn(client, 'batch')
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    const rebuiltOld = spy.mock.calls.some((call) =>
+      JSON.stringify(call[0]).includes('2026-06-01') || JSON.stringify(call[0]).includes('2026-09-15'))
+    expect(rebuiltOld).toBe(false)
+    expect(await days(client)).toEqual(['2026-06-01', '2026-09-15'])
+  })
+
+  it('takes at most 14 days per run, newest first, and finishes on later runs', async () => {
+    const client = await memoryDb()
+    const stamps: string[] = []
+    for (let d = 1; d <= 20; d++) stamps.push(`2026-08-${String(d).padStart(2, '0')} 04:00:00`)
+    await linkWithClicks(client, stamps)
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    expect(await days(client)).toHaveLength(14)
+    expect((await days(client))[0]).toBe('2026-08-07')
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    expect(await days(client)).toHaveLength(20)
+  })
+
+  it('makes backfilled days visible to a 90-day analytics read', async () => {
+    const client = await memoryDb()
+    await linkWithClicks(client, ['2026-08-10 04:00:00', '2026-08-10 05:00:00', '2026-09-20 04:00:00'])
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    const period = await loadLinkPeriod(client as unknown as WebClient, 'l1', '2026-07-29', '2026-10-26', '2026-10-27')
+    expect(period.totals.clicks).toBe(3)
+  })
+
+  it('does nothing when there are no raw clicks', async () => {
+    const client = await memoryDb()
+    await runHourlyRollups(client as unknown as WebClient, NOW)
+    expect(await days(client)).toEqual([])
   })
 })

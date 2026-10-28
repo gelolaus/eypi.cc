@@ -142,4 +142,38 @@ describe('runRetention', () => {
       ['link-a', '2026-10-01 04:00:00'],
     ])
   })
+
+  it('deletes module events older than 400 days only when their day is rolled up', async () => {
+    const client = await memoryDb()
+    // 400 days before NOW (2026-10-26 19:00Z) is Manila day 2025-09-22. Older days are candidates.
+    await client.execute({
+      sql: `INSERT INTO module_events (module, subject_id, action, visitor_hash, day) VALUES
+            ('frames', 'c1', 'view', 'v1', '2025-09-10'),
+            ('frames', 'c1', 'view', 'v2', '2025-09-10'),
+            ('frames', 'c1', 'download', 'v1', '2025-09-10'),
+            ('frames', 'c2', 'view', 'v1', '2025-09-10'),
+            ('frames', 'c1', 'view', 'v1', '2025-09-11'),
+            ('org', 'o1', 'view', 'v1', '2025-09-22'),
+            ('org', 'o1', 'view', 'v1', '2026-10-01')`,
+      args: [],
+    })
+    await client.execute({
+      sql: `INSERT INTO module_daily (subject_id, module, action, day, n, uniques) VALUES
+            ('c1', 'frames', 'view', '2025-09-10', 2, 2),
+            ('o1', 'org', 'view', '2025-09-22', 1, 1),
+            ('o1', 'org', 'view', '2026-10-01', 1, 1)`,
+      args: [],
+    })
+
+    await runRetention(client as unknown as WebClient, NOW)
+
+    const left = await client.execute('SELECT subject_id, action, day FROM module_events ORDER BY id')
+    expect(left.rows.map((r) => [String(r.subject_id), String(r.action), String(r.day)])).toEqual([
+      ['c1', 'download', '2025-09-10'], // no rollup for this action
+      ['c2', 'view', '2025-09-10'], // no rollup for this subject
+      ['c1', 'view', '2025-09-11'], // no rollup for this day
+      ['o1', 'view', '2025-09-22'], // exactly 400 days old stays
+      ['o1', 'view', '2026-10-01'],
+    ])
+  })
 })

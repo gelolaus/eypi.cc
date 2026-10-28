@@ -129,7 +129,38 @@ export async function rollupModules(database: Client, days: string[]): Promise<v
   }
 }
 
-/** Hourly job: refreshes yesterday's and today's speed (UTC) and link and module (Manila) rollups. */
+/** Most missing Manila days rebuilt per run, so a first backfill spreads over a few hours. */
+export const BACKFILL_DAYS_PER_RUN = 14
+
+/**
+ * Rebuilds link rollups for old Manila days that have raw clicks but no `analytics_daily` row for that link.
+ * Each step reads the newest unrolled click through `idx_analytics_created` (a backward scan with one primary-key
+ * probe on `analytics_daily` per row) and stops at the first hit, then rebuilds that whole day. A hit disappears once
+ * its day is rebuilt, so the loop is bounded, idempotent and finds nothing when everything is rolled up.
+ */
+export async function backfillLinkRollups(database: Client, now: Date): Promise<void> {
+  const yesterday = manilaDay(new Date(now.getTime() - DAY_MS))
+  const [before] = manilaDayRange(yesterday)
+  for (let i = 0; i < BACKFILL_DAYS_PER_RUN; i++) {
+    const found = await database.execute({
+      sql: `SELECT date(a.created_at, '+8 hours') AS day
+            FROM analytics a
+            WHERE a.created_at < ?
+              AND NOT EXISTS (
+                SELECT 1 FROM analytics_daily d
+                WHERE d.link_id = a.link_id AND d.day = date(a.created_at, '+8 hours')
+              )
+            ORDER BY a.created_at DESC
+            LIMIT 1`,
+      args: [before],
+    })
+    const day = found.rows[0]?.day
+    if (typeof day !== 'string') return
+    await rollupLinks(database, [day])
+  }
+}
+
+/** Hourly job: refreshes yesterday's and today's speed (UTC) and link and module (Manila) rollups, then backfills old link days. */
 export async function runHourlyRollups(database: Client, now: Date): Promise<void> {
   const today = now.toISOString().slice(0, 10)
   const yesterday = new Date(now.getTime() - DAY_MS).toISOString().slice(0, 10)
@@ -139,4 +170,5 @@ export async function runHourlyRollups(database: Client, now: Date): Promise<voi
   const manilaDays = [manilaDay(new Date(now.getTime() - DAY_MS)), manilaDay(now)]
   await rollupLinks(database, manilaDays)
   await rollupModules(database, manilaDays)
+  await backfillLinkRollups(database, now)
 }
