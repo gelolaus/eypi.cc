@@ -3,7 +3,7 @@ import type { Client as WebClient } from '@libsql/client/web'
 import { describe, expect, it, vi } from 'vitest'
 import { applyMigrations } from '../test/createTestApp'
 import { loadLinkPeriod } from '../lib/links/analyticsQuery'
-import { manilaDay, manilaHourOfWeek, p75, rollupLinks, rollupModules, runHourlyRollups } from './rollups'
+import { backfillLinkRollups, manilaDay, manilaHourOfWeek, p75, rollupLinks, rollupModules, runHourlyRollups } from './rollups'
 
 const NOW = new Date('2026-10-26T19:15:00.000Z')
 
@@ -339,5 +339,93 @@ describe('runHourlyRollups backfill', () => {
     const client = await memoryDb()
     await runHourlyRollups(client as unknown as WebClient, NOW)
     expect(await days(client)).toEqual([])
+  })
+})
+
+describe('backfill steady state', () => {
+  const NOON = new Date('2026-10-26T12:00:00.000Z') // 20:00 Manila
+  const DAILY_SCAN = new Date('2026-10-26T19:00:00.000Z') // 03:00 Manila
+
+  async function seedClicks(client: ReturnType<typeof createClient>, stamps: string[]) {
+    await client.execute({
+      sql: 'INSERT OR IGNORE INTO users (id, email, name) VALUES (?, ?, ?)',
+      args: ['u1', 'u1@student.apc.edu.ph', 'U'],
+    })
+    await client.execute({
+      sql: 'INSERT OR IGNORE INTO links (id, user_id, original_url, slug) VALUES (?, ?, ?, ?)',
+      args: ['l1', 'u1', 'https://a.example', 'a'],
+    })
+    for (const at of stamps) {
+      await client.execute({
+        sql: "INSERT INTO analytics (link_id, os, country, referrer, visitor_hash, created_at) VALUES ('l1', 'x', 'PH', 'd', 'h', ?)",
+        args: [at],
+      })
+    }
+  }
+  const rolled = async (client: ReturnType<typeof createClient>) =>
+    (await client.execute('SELECT day FROM analytics_daily ORDER BY day')).rows.map((r) => String(r.day))
+
+  it('only probes when the oldest click is rolled up', async () => {
+    const client = await memoryDb()
+    await seedClicks(client, ['2026-06-01 04:00:00', '2026-09-15 04:00:00'])
+    await runHourlyRollups(client as unknown as WebClient, NOON)
+    expect(await rolled(client)).toEqual(['2026-06-01', '2026-09-15'])
+
+    const sqls: string[] = []
+    const execute = client.execute.bind(client)
+    vi.spyOn(client, 'execute').mockImplementation(((stmt: unknown) => {
+      sqls.push(typeof stmt === 'string' ? stmt : (stmt as { sql: string }).sql)
+      return execute(stmt as never)
+    }) as never)
+    const batch = vi.spyOn(client, 'batch')
+    await backfillLinkRollups(client as unknown as WebClient, NOON)
+    expect(sqls.some((sql) => sql.includes('NOT EXISTS'))).toBe(false)
+    expect(sqls.length).toBeLessThanOrEqual(2)
+    expect(batch).not.toHaveBeenCalled()
+  })
+
+  it('finds a hole in the middle only at the daily scan', async () => {
+    const client = await memoryDb()
+    await seedClicks(client, ['2026-06-01 04:00:00', '2026-08-10 04:00:00', '2026-09-15 04:00:00'])
+    await runHourlyRollups(client as unknown as WebClient, NOON)
+    await client.execute("DELETE FROM analytics_daily WHERE day = '2026-08-10'")
+    await client.execute("DELETE FROM analytics_daily_dim WHERE day = '2026-08-10'")
+
+    await backfillLinkRollups(client as unknown as WebClient, NOON)
+    expect(await rolled(client)).toEqual(['2026-06-01', '2026-09-15'])
+
+    await backfillLinkRollups(client as unknown as WebClient, DAILY_SCAN)
+    expect(await rolled(client)).toEqual(['2026-06-01', '2026-08-10', '2026-09-15'])
+  })
+
+  it('still scans when the oldest click is not rolled up', async () => {
+    const client = await memoryDb()
+    await seedClicks(client, ['2026-06-01 04:00:00'])
+    await backfillLinkRollups(client as unknown as WebClient, NOON)
+    expect(await rolled(client)).toEqual(['2026-06-01'])
+  })
+})
+
+describe('runHourlyRollups stage isolation', () => {
+  it('runs later stages when one fails, then rethrows', async () => {
+    const client = await memoryDb()
+    await client.execute({
+      sql: `INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('o', 'dp', 's', 'view', 'v', '2026-10-27')`,
+    })
+    const execute = client.execute.bind(client)
+    vi.spyOn(client, 'execute').mockImplementation(((stmt: unknown) => {
+      const sql = typeof stmt === 'string' ? stmt : (stmt as { sql: string }).sql
+      if (sql.includes('FROM rum_samples')) return Promise.reject(new Error('rum down'))
+      return execute(stmt as never)
+    }) as never)
+    const batch = client.batch.bind(client)
+    vi.spyOn(client, 'batch').mockImplementation(((stmts: { sql: string }[], mode: never) => {
+      if (stmts.some((s) => s.sql.includes('analytics_daily'))) return Promise.reject(new Error('links down'))
+      return batch(stmts as never, mode)
+    }) as never)
+
+    await expect(runHourlyRollups(client as unknown as WebClient, NOW)).rejects.toThrow()
+    const rows = await client.execute('SELECT n FROM module_daily')
+    expect(rows.rows).toHaveLength(1)
   })
 })

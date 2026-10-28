@@ -1,4 +1,5 @@
 import type { Client, InStatement } from '@libsql/client/web'
+import { manilaHour } from '../lib/manilaTime'
 
 /** Nearest-rank 75th percentile: sort ascending, take index `ceil(0.75 * n) - 1`. */
 export function p75(values: number[]): number {
@@ -132,13 +133,32 @@ export async function rollupModules(database: Client, days: string[]): Promise<v
 /** Most missing Manila days rebuilt per run, so a first backfill spreads over a few hours. */
 export const BACKFILL_DAYS_PER_RUN = 14
 
+/** Manila hour at which the full hole scan runs once a day. */
+const FULL_SCAN_HOUR = 3
+
 /**
  * Rebuilds link rollups for old Manila days that have raw clicks but no `analytics_daily` row for that link.
  * Each step reads the newest unrolled click through `idx_analytics_created` (a backward scan with one primary-key
  * probe on `analytics_daily` per row) and stops at the first hit, then rebuilds that whole day. A hit disappears once
  * its day is rebuilt, so the loop is bounded, idempotent and finds nothing when everything is rolled up.
+ *
+ * That scan walks up to 400 days of clicks when nothing is missing, so outside the daily scan hour it first probes
+ * the oldest click: if that day is rolled up the backlog is done (oldest days are rebuilt last) and the run stops.
+ * Holes in the middle, for example from a cron outage, are found by the full scan at `FULL_SCAN_HOUR`:00 Manila.
  */
 export async function backfillLinkRollups(database: Client, now: Date): Promise<void> {
+  if (manilaHour(now) !== FULL_SCAN_HOUR) {
+    const oldest = await database.execute(
+      "SELECT link_id, date(created_at, '+8 hours') AS day FROM analytics ORDER BY created_at ASC LIMIT 1",
+    )
+    const first = oldest.rows[0]
+    if (!first) return
+    const probe = await database.execute({
+      sql: 'SELECT 1 FROM analytics_daily WHERE link_id = ? AND day = ?',
+      args: [String(first.link_id), String(first.day)],
+    })
+    if (probe.rows.length > 0) return
+  }
   const yesterday = manilaDay(new Date(now.getTime() - DAY_MS))
   const [before] = manilaDayRange(yesterday)
   for (let i = 0; i < BACKFILL_DAYS_PER_RUN; i++) {
@@ -160,15 +180,31 @@ export async function backfillLinkRollups(database: Client, now: Date): Promise<
   }
 }
 
-/** Hourly job: refreshes yesterday's and today's speed (UTC) and link and module (Manila) rollups, then backfills old link days. */
+/**
+ * Hourly job: refreshes yesterday's and today's speed (UTC) and link and module (Manila) rollups, then backfills old
+ * link days. Each stage runs on its own so one failure does not starve the others; the errors are rethrown together.
+ */
 export async function runHourlyRollups(database: Client, now: Date): Promise<void> {
   const today = now.toISOString().slice(0, 10)
   const yesterday = new Date(now.getTime() - DAY_MS).toISOString().slice(0, 10)
-  await rollUpRumDay(database, yesterday)
-  await rollUpRumDay(database, today)
-
   const manilaDays = [manilaDay(new Date(now.getTime() - DAY_MS)), manilaDay(now)]
-  await rollupLinks(database, manilaDays)
-  await rollupModules(database, manilaDays)
-  await backfillLinkRollups(database, now)
+  const stages: Array<() => Promise<void>> = [
+    async () => {
+      await rollUpRumDay(database, yesterday)
+      await rollUpRumDay(database, today)
+    },
+    () => rollupLinks(database, manilaDays),
+    () => rollupModules(database, manilaDays),
+    () => backfillLinkRollups(database, now),
+  ]
+  const errors: unknown[] = []
+  for (const stage of stages) {
+    try {
+      await stage()
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) throw new AggregateError(errors, 'Hourly rollups failed in ' + errors.length + ' stages')
 }

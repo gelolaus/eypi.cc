@@ -518,21 +518,23 @@ app.get('/api/links/summary', requireAuth, async (c) => {
 })
 
 // Dashboard live view: clicks per minute for the last 60 minutes plus the 10 latest clicks.
-// Only the window is read (idx_analytics_created), and only time, country and app leave the server.
+// Only the window is read (idx_analytics_link_created, one range per owned link), and only time, country and app leave the server.
 app.get('/api/links/summary/live', requireAuth, async (c) => {
   const database = db(c)
   const [buckets, latest] = await Promise.all([
     database.execute({
       sql: `SELECT CAST((strftime('%s', 'now') - strftime('%s', a.created_at)) / 60 AS INTEGER) AS ago, COUNT(*) AS n
-            FROM analytics a JOIN links l ON l.id = a.link_id
-            WHERE l.user_id = ? AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
+            FROM analytics a
+            WHERE a.link_id IN (SELECT id FROM links WHERE user_id = ?)
+              AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
             GROUP BY ago`,
       args: [c.var.userId],
     }),
     database.execute({
       sql: `SELECT a.created_at AS at, a.country AS country, a.app AS app
-            FROM analytics a JOIN links l ON l.id = a.link_id
-            WHERE l.user_id = ? AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
+            FROM analytics a
+            WHERE a.link_id IN (SELECT id FROM links WHERE user_id = ?)
+              AND a.created_at >= strftime('%Y-%m-%d %H:%M:%S', 'now', '-60 minutes')
             ORDER BY a.created_at DESC, a.id DESC LIMIT 10`,
       args: [c.var.userId],
     }),
