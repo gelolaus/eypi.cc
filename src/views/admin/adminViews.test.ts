@@ -6,6 +6,7 @@ import AdminLinksView from './AdminLinksView.vue'
 import AdminReportsView from './AdminReportsView.vue'
 import AdminUsersView from './AdminUsersView.vue'
 import { useToast } from '@/composables/useToast'
+import { useSession } from '@/stores/session'
 
 const confirm = vi.fn(async () => true)
 
@@ -282,6 +283,27 @@ describe('admin users icon actions', () => {
     for (const b of wrapper.findAll('[data-admin-row] button')) expect(b.text()).toBe('')
     expect(wrapper.get('[data-admin-row] button').element.parentElement?.className).toContain('md:flex-nowrap')
     vi.unstubAllGlobals()
+  })
+})
+
+describe('admin users self actions', () => {
+  it('does not offer Disable on the signed-in admin own row, only on others', async () => {
+    useSession().user.value = { id: 'me', email: 'me@apc.edu.ph', name: 'Me', role: 'admin' }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      items: [
+        { id: 'me', email: 'me@apc.edu.ph', name: 'Me', role: 'admin', disabled: false, createdAt: '2026-06-30 17:30:00' },
+        { id: 'u2', email: 'bo@apc.edu.ph', name: 'Bo', role: 'user', disabled: false, createdAt: '2026-06-30 17:30:00' },
+      ],
+      nextCursor: null,
+    }), { headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(AdminUsersView)
+    await flushPromises()
+    try {
+      expect(wrapper.find('button[aria-label="Disable me@apc.edu.ph"]').exists()).toBe(false)
+      expect(wrapper.find('button[aria-label="Disable bo@apc.edu.ph"]').exists()).toBe(true)
+    } finally {
+      useSession().user.value = null
+    }
   })
 })
 

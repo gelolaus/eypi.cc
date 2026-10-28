@@ -206,10 +206,12 @@ function actionsFor(user: AdminUser): UserAction[] {
   } else if (!isSelf(user)) {
     list.push({ id: 'role', label: `Make ${user.email} a regular user`, tip: 'Make user', icon: ShieldOff, run: () => setRole(user, 'user') })
   }
+  if (user.disabled) {
+    list.push({ id: 'disabled', label: `Enable ${user.email}`, tip: 'Enable', icon: UserCheck, run: () => void toggleDisabled(user) })
+  } else if (!isSelf(user)) {
+    list.push({ id: 'disabled', label: `Disable ${user.email}`, tip: 'Disable', icon: UserX, run: () => void toggleDisabled(user) })
+  }
   list.push(
-    user.disabled
-      ? { id: 'disabled', label: `Enable ${user.email}`, tip: 'Enable', icon: UserCheck, run: () => void toggleDisabled(user) }
-      : { id: 'disabled', label: `Disable ${user.email}`, tip: 'Disable', icon: UserX, run: () => void toggleDisabled(user) },
     { id: 'logout', label: `Force logout for ${user.email}`, tip: 'Log out', icon: LogOut, run: () => void forceLogout(user) },
     { id: 'delete', label: `Delete ${user.email}`, tip: 'Delete', icon: Trash2, destructive: true, run: () => void remove(user) },
   )
