@@ -21,7 +21,8 @@ const SLUG_MAX = 60
 const MAX_FRAMES = 10
 const MIN_FRAME_PX = 1080
 const MAX_FRAME_BYTES = 10 * 1024 * 1024
-const DOWNLOAD_WINDOW_SEC = 24 * 60 * 60
+const DOWNLOAD_LIMIT_PER_HOUR = 30
+const DOWNLOAD_WINDOW_SEC = 60 * 60
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 type StoredFrame = {
@@ -584,7 +585,7 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
 })
 
 // ── POST /api/dp/:id/download ─────────────────────────────────────────────────
-// Public counter. One increment per IP per campaign per day, after a real save.
+// Public counter. Counts every save; a loose hourly guard per IP per campaign stops scripted floods.
 app.post('/api/dp/:id/download', async (c) => {
   const id = c.req.param('id')!
   const client = db(c)
@@ -593,13 +594,13 @@ app.post('/api/dp/:id/download', async (c) => {
 
   const ip = c.req.header('CF-Connecting-IP')?.trim() || 'unknown'
   const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-    bucket: 'dp-download',
+    bucket: 'dp-download-hour',
     subject: `${id}:${ip}`,
-    limit: 1,
+    limit: DOWNLOAD_LIMIT_PER_HOUR,
     windowSec: DOWNLOAD_WINDOW_SEC,
   })
   if (!decision.ok) {
-    return c.json({ status: 'error', message: 'You already downloaded this frame today.' }, 429)
+    return c.json({ status: 'error', message: 'You are saving too fast. Try again in a little while.' }, 429)
   }
 
   await client.execute({

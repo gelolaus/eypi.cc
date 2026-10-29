@@ -4,7 +4,6 @@ import { createTestApp, type TestUser } from '../test/createTestApp'
 
 const ORIGIN = 'https://eypi.cc'
 const IP_A = '203.0.113.10'
-const IP_B = '203.0.113.11'
 
 const member: TestUser = {
   id: 'user-member',
@@ -241,43 +240,61 @@ describe('frame campaigns', () => {
     expect(history.rows[0]?.campaign_id).toBe(createdBody.campaign.id)
   })
 
-  it('increments the download counter once per IP per day', async () => {
-    const { request, client } = await createTestApp({
-      user: member,
-      seed: async (db) => {
-        await seedOrg(db)
-        await db.batch([
-          {
-            sql: `INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: ['camp-a', member.id, 'org-1', 'A', 'camp-a', ''],
-          },
-          {
-            sql: `INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: ['camp-b', member.id, 'org-1', 'B', 'camp-b', ''],
-          },
-        ])
-      },
-    })
-
-    function download(id: string, ip: string) {
-      return request(`/api/dp/${id}/download`, {
-        method: 'POST',
-        headers: {
-          Origin: ORIGIN,
-          'CF-Connecting-IP': ip,
+  describe('download counter', () => {
+    async function setup() {
+      const app = await createTestApp({
+        user: member,
+        seed: async (db) => {
+          await seedOrg(db)
+          await db.batch([
+            {
+              sql: `INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url)
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+              args: ['camp-a', member.id, 'org-1', 'A', 'camp-a', ''],
+            },
+            {
+              sql: `INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url)
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+              args: ['camp-b', member.id, 'org-1', 'B', 'camp-b', ''],
+            },
+          ])
         },
       })
+      const download = (id: string, ip: string) =>
+        app.request(`/api/dp/${id}/download`, {
+          method: 'POST',
+          headers: { Origin: ORIGIN, 'CF-Connecting-IP': ip },
+        })
+      return { client: app.client, download }
     }
 
-    expect((await download('camp-a', IP_A)).status).toBe(200)
-    const repeat = await download('camp-a', IP_A)
-    expect(repeat.status).toBe(429)
-    expect((await download('camp-a', IP_B)).status).toBe(200)
-    expect((await download('camp-b', IP_A)).status).toBe(200)
+    it('counts every save from the same connection', async () => {
+      const { client, download } = await setup()
+      for (let i = 0; i < 3; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
+      expect(await downloadCount(client, 'camp-a')).toBe(3)
+    })
 
-    expect(await downloadCount(client, 'camp-a')).toBe(2)
-    expect(await downloadCount(client, 'camp-b')).toBe(1)
+    it('refuses the 31st save in an hour without counting it', async () => {
+      const { client, download } = await setup()
+      for (let i = 0; i < 30; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
+      const over = await download('camp-a', IP_A)
+      expect(over.status).toBe(429)
+      expect(((await over.json()) as { message: string }).message).toBe('You are saving too fast. Try again in a little while.')
+      expect(await downloadCount(client, 'camp-a')).toBe(30)
+    })
+
+    it('limits each frame on its own', async () => {
+      const { client, download } = await setup()
+      for (let i = 0; i < 30; i++) await download('camp-a', IP_A)
+      expect((await download('camp-b', IP_A)).status).toBe(200)
+      expect(await downloadCount(client, 'camp-b')).toBe(1)
+    })
+
+    it('returns 404 for an unknown frame without counting', async () => {
+      const { client, download } = await setup()
+      expect((await download('nope', IP_A)).status).toBe(404)
+      expect(await downloadCount(client, 'camp-a')).toBe(0)
+      expect(await downloadCount(client, 'camp-b')).toBe(0)
+    })
   })
 })
