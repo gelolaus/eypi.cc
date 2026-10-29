@@ -16,6 +16,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Dark mode (System / Light / Dark / True black), what and why | `docs/superpowers/specs/2026-10-29-dark-mode-design.md` |
 | Dark mode, task-by-task | `docs/superpowers/plans/2026-10-29-dark-mode.md` |
 | Avatar picker (icon and colour presets, build after dark mode) | `docs/superpowers/specs/2026-10-29-avatar-picker-design.md` |
+| Avatar picker, task-by-task | `docs/superpowers/plans/2026-10-29-avatar-picker.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
 | Live database schema | `docs/db/schema-baseline.md` (versioned migrations land in `backend/migrations/` with the overhaul) |
 | Deploys | `docs/RELEASE.md` |
