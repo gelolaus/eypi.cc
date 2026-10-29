@@ -1,6 +1,6 @@
 # eypi.cc Design System
 
-The wantap design language (layout, components, type, motion) in the APC light palette. Light only. Every value below is read from the code (`src/styles/tokens.css`, `src/styles/main.css`, `src/components/ui/*`, `src/components/layout/*`, `src/components/marketing/*`) and guarded by `src/styles/design.test.ts`. If the code and this file disagree, the code wins: fix this file.
+The wantap design language (layout, components, type, motion) in the APC palette, in three themes: Light, Dark and True black. Every value below is read from the code (`src/styles/tokens.css`, `src/styles/main.css`, `src/components/ui/*`, `src/components/layout/*`, `src/components/marketing/*`) and guarded by `src/styles/design.test.ts`. If the code and this file disagree, the code wins: fix this file.
 
 ## Contents
 
@@ -25,7 +25,8 @@ The wantap design language (layout, components, type, motion) in the APC light p
 
 - The reference for layout, components, type and motion is the wantap.cc repository. Where a class string is shared, copy it from wantap.cc; do not reinvent it. The palette is eypi's own.
 - The palette is the APC brand on warm neutrals: APC blue (`#35438c`) is the primary and APC gold (`#deac4b`) is the accent. Gold is used for fills and washes (`--accent`, `--chart-2`) and is never text on a light surface or the background of white text.
-- The app is light only. `index.html` declares `color-scheme: light`, the palette lives in the `:root` block of `tokens.css`, and no `dark:` utility exists anywhere (Tailwind's default `dark` variant follows the OS, so one stray `dark:` class would darken part of the UI). There is no dark theme and no theme toggle.
+- The app has three themes: Light, Dark and True black. Light is the `:root` block of `tokens.css`, Dark is the `.dark` block, and True black is `.dark.black`, which overrides surfaces only (section 2). The theme is applied only through tokens: no `dark:` utility exists anywhere (Tailwind's default `dark` variant follows the OS, so one stray `dark:` class would darken part of the UI), and `main.css` sets `color-scheme` to `light` on `:root` and `dark` on `html.dark`.
+- The picker offers System, Light and Dark, plus a True black switch that applies to Dark. It lives in the account menu under "Appearance" and on the sign-in screen. The default is System, which follows the OS. The preference is stored on the device in `localStorage` under the single key `eypi.theme` as `{ mode, black }`. `public/theme-init.js` reads it and sets the `dark` and `black` classes on `<html>` and the `theme-color` meta before first paint (it is an external script because the page forbids inline scripts), and `useTheme` (`src/composables/useTheme.ts`) keeps the classes, the meta and the stored value in sync afterwards, including when the OS setting changes under System.
 - Components never hard-code colors. They use the token utilities (`bg-background`, `text-muted-foreground`, `border-border`, `bg-primary/15`). Two allowances exist, both enforced by `design.test.ts`: the Microsoft logo fills in `LoginView.vue` (fixed by Microsoft brand rules) and the camera viewfinder scrim in `ScannerPanel.vue`.
 - Wordmark: `BrandLogo` (`src/components/brand/BrandLogo.vue`) shows the Eypi mascot (`public/eypi-mark.png`) beside the Eypi name. Eypi is a baby ram, the APC spirit animal: cream wool, royal blue horns and eyes, honey gold background. The source image is `docs/logo/eypi-icon-source.png`; the favicon, apple-touch icon and manifest icons in `public/` are resized from it.
 
@@ -69,6 +70,58 @@ Defined once, in the `:root` block of `src/styles/tokens.css`. `src/styles/main.
 | `--radius` | `0.875rem` | Base radius (section 4) |
 
 `design.test.ts` asserts every value in this table, and that this file names every token in `tokens.css` and no token that does not exist there.
+
+### Dark and True black
+
+The table above is the Light palette. The `.dark` block redefines the same tokens; `.dark.black` is applied on top of it and overrides only the surfaces listed after the Dark table. The values below are read from `tokens.css`, which wins if this file disagrees.
+
+| Token | Dark |
+|---|---|
+| `--background` | `#0a0a0a` |
+| `--foreground` | `#ededed` |
+| `--card` | `#141414` |
+| `--card-foreground` | `#ededed` |
+| `--popover` | `#181818` |
+| `--popover-foreground` | `#ededed` |
+| `--primary` | `#8b97d8` |
+| `--primary-foreground` | `#0a0a0a` |
+| `--secondary` | `#1f1f1f` |
+| `--secondary-foreground` | `#ededed` |
+| `--muted` | `#1f1f1f` |
+| `--muted-foreground` | `#a3a3a3` |
+| `--accent` | `color-mix(in srgb, #deac4b 20%, transparent)` |
+| `--accent-foreground` | `#ededed` |
+| `--destructive` | `#ef7373` |
+| `--border` | `#262626` |
+| `--input` | `#6b6b6b` |
+| `--ring` | `#8b97d8` |
+| `--chart-1` | `#8b97d8` |
+| `--chart-2` | `#deac4b` |
+| `--chart-3` | `#5a68b8` |
+| `--chart-4` | `#f0d08a` |
+| `--chart-5` | `#9aa0b8` |
+| `--sidebar` | `#101010` |
+| `--sidebar-foreground` | `#ededed` |
+| `--sidebar-primary` | `#8b97d8` |
+| `--sidebar-primary-foreground` | `#0a0a0a` |
+| `--sidebar-accent` | `#1b1e30` |
+| `--sidebar-accent-foreground` | `#ededed` |
+| `--sidebar-border` | `#262626` |
+| `--sidebar-ring` | `#8b97d8` |
+
+`--radius` is shared by all three themes. True black overrides nine tokens and inherits the rest from Dark:
+
+| Token | True black |
+|---|---|
+| `--background` | `#000000` |
+| `--card` | `#0d0d0d` |
+| `--popover` | `#121212` |
+| `--secondary` | `#181818` |
+| `--muted` | `#181818` |
+| `--border` | `#1f1f1f` |
+| `--sidebar` | `#080808` |
+| `--sidebar-accent` | `#12141f` |
+| `--sidebar-border` | `#1f1f1f` |
 
 ## 3. Typography
 
@@ -206,7 +259,7 @@ All primitives live in `src/components/ui/<name>/` and are imported from the fol
 | `Tabs` | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `TabsList` `variant`: `default` (`bg-muted`) or `line` (transparent, underline on the active trigger). `h-11`, horizontal or vertical. |
 | `Tooltip` | `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent` | Inverted: `bg-foreground text-background text-xs rounded-md`, `max-w-xs`. |
 | `Avatar` | `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarGroupCount` | `size`: `sm` `size-6`, `default` `size-8`, `lg` `size-10`. |
-| `Toaster` | `Toaster` (vue-sonner wrapper) | Light theme, mapped to the popover tokens. See section 12. |
+| `Toaster` | `Toaster` (vue-sonner wrapper) | Sonner `theme="light"` with its base colors mapped to the popover tokens. See section 12. |
 
 Focus on every interactive primitive: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50` (badges, tabs and the slider thumb use the same ring at `3px`).
 
@@ -253,7 +306,7 @@ Skeletons (`PageSkeleton`, blocks shaped like the final layout) are used instead
 
 ## 9. Accessibility
 
-**Contrast.** `design.test.ts` computes WCAG contrast from the token values (sRGB to linear light, the accent wash blended over the background) and requires the thresholds below. Measured ratios with the current tokens:
+**Contrast.** `design.test.ts` computes WCAG contrast from the token values (sRGB to linear light, the accent wash blended over the background) and requires the thresholds below in all three palettes: Light, Dark and True black. In Dark and True black it also requires 3:1 for every chart colour against `--card`; Light is exempt because its gold fill is decorative. The measured ratios below are for the Light palette:
 
 | Pair | Required | Measured |
 |---|---|---|
@@ -305,7 +358,7 @@ Toasts are rendered by vue-sonner, which manages its own stacking.
 
 ## 11. QR output
 
-QR codes must stay dark on a light background to scan. The QR preview in `QrDesigner.vue` is therefore always white; there is no theme to follow, so this is a rule for QR output, not an exception. Do not theme QR output.
+QR codes must stay dark on a light background to scan. The QR preview in `QrDesigner.vue` is therefore always white, in Light, Dark and True black alike. Do not theme QR output. Two other things also ignore the theme: the Microsoft sign-in logo keeps its brand fills, and emails are unchanged.
 
 ## 12. Toasts
 

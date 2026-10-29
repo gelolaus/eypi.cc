@@ -68,7 +68,7 @@ function paletteFor(name: 'light' | 'dark' | 'black'): (token: string) => string
   }
 }
 
-type Rgb =[number, number, number]
+type Rgb = [number, number, number]
 
 function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
@@ -306,6 +306,13 @@ describe('DESIGN_SYSTEM.md', () => {
     const defined = new Set([...paletteBlock().matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]))
     expect([...named].filter((n) => !defined.has(n))).toEqual([])
     expect([...defined].filter((n) => !named.has(n))).toEqual([])
+  })
+
+  it('describes the three themes and no longer says the app is light only', () => {
+    for (const phrase of ['Dark', 'True black', 'theme-init.js', 'useTheme']) {
+      expect(doc, phrase).toContain(phrase)
+    }
+    expect(doc).not.toMatch(/light[- ]only/i)
   })
 
   it('carries no legacy design vocabulary or em dashes', () => {

@@ -86,7 +86,7 @@ Use these terms. Prefer them over invented synonyms.
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |
 | **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list |
 | **Legacy redirects** | `redirects/` | Only `tix.eypi.cc` / `forms.eypi.cc` → unified `eypi.cc` — **not** general short links |
-| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (wantap layout and components in the APC light palette: light only, APC blue and gold, Plus Jakarta Sans, Syne, JetBrains Mono) |
+| **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (wantap layout and components in the APC palette with Light, Dark and True black themes, APC blue and gold, Plus Jakarta Sans, Syne, JetBrains Mono) |
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |
 | **Runbooks** | `docs/RELEASE.md`, `docs/operations.md` | Deploys, cutover, restore, rotation, incidents, accepted risks |
 
