@@ -265,7 +265,7 @@ describe('frame campaigns', () => {
           method: 'POST',
           headers: { Origin: ORIGIN, 'CF-Connecting-IP': ip },
         })
-      return { client: app.client, download }
+      return { client: app.client, download, request: app.request }
     }
 
     it('counts every save from the same connection', async () => {
@@ -288,6 +288,23 @@ describe('frame campaigns', () => {
       for (let i = 0; i < 30; i++) await download('camp-a', IP_A)
       expect((await download('camp-b', IP_A)).status).toBe(200)
       expect(await downloadCount(client, 'camp-b')).toBe(1)
+    })
+
+    it('public payload includes downloadCount', async () => {
+      const { client, download, request } = await setup()
+      expect((await download('camp-a', IP_A)).status).toBe(200)
+      expect((await download('camp-a', IP_A)).status).toBe(200)
+      await client.execute({
+        sql: 'INSERT INTO dp_slug_history (old_slug, campaign_id) VALUES (?, ?)',
+        args: ['camp-a-old', 'camp-a'],
+      })
+      const get = async (slug: string) => {
+        const res = await request(`/api/dp/${slug}`)
+        return (await res.json()) as { campaign: { downloadCount: number } }
+      }
+      expect((await get('camp-a')).campaign.downloadCount).toBe(2)
+      expect((await get('camp-a-old')).campaign.downloadCount).toBe(2)
+      expect((await get('camp-b')).campaign.downloadCount).toBe(0)
     })
 
     it('returns 404 for an unknown frame without counting', async () => {

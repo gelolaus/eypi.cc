@@ -365,6 +365,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
+      downloadCount: Number(row.download_count ?? 0),
       frames: await loadFrames(c.env, client, String(row.id)),
     },
   })
@@ -618,7 +619,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   const slug = c.req.param('slug')!
   const client = db(c)
   let result = await client.execute({
-    sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
+    sql: 'SELECT id, title, slug, description, caption_template, download_count FROM dp_campaigns WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) {
@@ -628,7 +629,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
     })
     if (history.rows.length > 0) {
       result = await client.execute({
-        sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE id = ?',
+        sql: 'SELECT id, title, slug, description, caption_template, download_count FROM dp_campaigns WHERE id = ?',
         args: [history.rows[0]?.campaign_id],
       })
     }
@@ -644,6 +645,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
+      downloadCount: Number(row.download_count ?? 0),
       frames: await loadFrames(c.env, client, String(row.id)),
     },
   })
