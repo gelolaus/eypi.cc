@@ -34,6 +34,22 @@ describe('insights components', () => {
     expect(text).toContain('Blue')
   })
 
+  it('FramesInsights labels the trend and per-frame figures as downloads and shares', async () => {
+    fetchMock.mockResolvedValue(respond({
+      funnel: { view: 40, photo_added: 20, downloadOrShare: 10 },
+      conversion: 0.25,
+      perFrame: [{ frameId: 'f1', label: 'Blue', downloads: 10 }],
+      daily: [{ day: '2026-10-26', views: 40, downloads: 10 }],
+    }))
+    const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
+    await flushPromises()
+    const headings = wrapper.findAll('h3').map((h) => h.text())
+    expect(headings).toContain('Downloads and shares per day (Manila time)')
+    expect(headings).toContain('Downloads and shares per frame')
+    expect(wrapper.findComponent({ name: 'LineChart' }).props('series').map((s: { label: string }) => s.label))
+      .toContain('Downloads and shares')
+  })
+
   it('FramesInsights refetches when the range changes', async () => {
     fetchMock.mockImplementation(async () => respond({
       funnel: { view: 1, photo_added: 0, downloadOrShare: 0 }, conversion: 0, perFrame: [], daily: [],

@@ -53,7 +53,7 @@ const funnelItems = computed(() => [
 const frameItems = computed(() => (data.value?.perFrame ?? []).map((f) => ({ label: f.label, value: f.downloads })))
 const trend = computed(() => [
   { label: 'Views', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.views })) },
-  { label: 'Downloads', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.downloads })) },
+  { label: 'Downloads and shares', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.downloads })) },
 ])
 const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.value?.funnel.downloadOrShare ?? 0) === 0)
 </script>
@@ -152,7 +152,7 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
-          Views and downloads per day (Manila time)
+          Downloads and shares per day (Manila time)
         </h3>
         <LineChart
           :series="trend"
@@ -162,7 +162,7 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
 
       <div v-if="frameItems.length">
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
-          Downloads per frame
+          Downloads and shares per frame
         </h3>
         <BarList :items="frameItems" />
       </div>
