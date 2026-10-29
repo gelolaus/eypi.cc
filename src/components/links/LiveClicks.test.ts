@@ -21,4 +21,17 @@ describe('LiveClicks', () => {
     expect(wrapper.text()).toContain('Unknown')
     wrapper.unmount()
   })
+
+  it('keeps showing the loading line when the payload has no click series', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    const errors: unknown[] = []
+    const onRejection = (e: unknown) => errors.push(e)
+    process.on('unhandledRejection', onRejection)
+    const wrapper = mount(LiveClicks)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Loading live clicks')
+    expect(errors).toEqual([])
+    process.off('unhandledRejection', onRejection)
+    wrapper.unmount()
+  })
 })
