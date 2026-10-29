@@ -14,6 +14,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Next round (task-by-task, one plan per phase) | `docs/superpowers/plans/2026-10-27-phase-{1-speed,2-tix,3-analytics,4-ux}.md` |
 | Owner-only steps for that round | `docs/owner-guide-speed-tix-analytics.md` |
 | Dark mode (System / Light / Dark / True black) | `docs/superpowers/specs/2026-10-29-dark-mode-design.md` |
+| Avatar picker (icon and colour presets, build after dark mode) | `docs/superpowers/specs/2026-10-29-avatar-picker-design.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
 | Live database schema | `docs/db/schema-baseline.md` (versioned migrations land in `backend/migrations/` with the overhaul) |
 | Deploys | `docs/RELEASE.md` |
