@@ -1,3 +1,5 @@
+> **Status: done.** Shipped in 80a8bbb. Boxes below were not ticked at the time.
+
 # Test Foundation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
