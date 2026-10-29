@@ -37,11 +37,11 @@
 **Interfaces:**
 - Produces: `POST /api/dp/:id/download` increments `download_count` by 1 per request until the caller exceeds 30 requests per hour for that campaign, then returns 429 `{ status: 'error', message }` without incrementing. Constants `DOWNLOAD_LIMIT_PER_HOUR = 30`, `DOWNLOAD_WINDOW_SEC = 60 * 60`; limiter bucket `dp-download-hour`.
 
-- [ ] **Step 1: Failing tests in `backend/src/routes/dp.test.ts`** (reuse the file's `download(id, ip)` helper and `downloadCount(client, id)`): `counts every save from the same connection` (3 requests from `IP_A` give count 3), `refuses the 31st save in an hour without counting it` (30 give 200, the 31st gives 429 and the count stays 30), `limits each frame on its own` (30 on camp-a then 1 on camp-b from the same IP still gives 200), `returns 404 for an unknown frame without counting`. Remove the old once-per-day test.
-- [ ] **Step 2:** Run `npx vitest run backend/src/routes/dp.test.ts -t download` (from the repo root, or the backend test command in `backend/package.json`); expect the repeat-save tests FAIL.
-- [ ] **Step 3: Implement** in `dp.ts`: set `DOWNLOAD_LIMIT_PER_HOUR = 30`, `DOWNLOAD_WINDOW_SEC = 60 * 60`, bucket `dp-download-hour`, `limit: DOWNLOAD_LIMIT_PER_HOUR`; change the 429 message to `You are saving too fast. Try again in a little while.`
-- [ ] **Step 4:** Re-run; expect PASS. Run `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(frames): count every save with an hourly guard`.
+- [x] **Step 1: Failing tests in `backend/src/routes/dp.test.ts`** (reuse the file's `download(id, ip)` helper and `downloadCount(client, id)`): `counts every save from the same connection` (3 requests from `IP_A` give count 3), `refuses the 31st save in an hour without counting it` (30 give 200, the 31st gives 429 and the count stays 30), `limits each frame on its own` (30 on camp-a then 1 on camp-b from the same IP still gives 200), `returns 404 for an unknown frame without counting`. Remove the old once-per-day test.
+- [x] **Step 2:** Run `npx vitest run backend/src/routes/dp.test.ts -t download` (from the repo root, or the backend test command in `backend/package.json`); expect the repeat-save tests FAIL.
+- [x] **Step 3: Implement** in `dp.ts`: set `DOWNLOAD_LIMIT_PER_HOUR = 30`, `DOWNLOAD_WINDOW_SEC = 60 * 60`, bucket `dp-download-hour`, `limit: DOWNLOAD_LIMIT_PER_HOUR`; change the 429 message to `You are saving too fast. Try again in a little while.`
+- [x] **Step 4:** Re-run; expect PASS. Run `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(frames): count every save with an hourly guard`.
 
 ### Task 2: Show the count on the public frame page
 
