@@ -1,0 +1,48 @@
+import type { Component } from 'vue'
+import {
+  Backpack, Bike, Bird, BookOpen, Calculator, Cat, Dices, Dog, Dumbbell, Fish, Flame, Flower2,
+  Gamepad2, GraduationCap, Guitar, Headphones, Heart, Leaf, Lightbulb, Moon, Mountain, Music,
+  Pencil, Puzzle, Rabbit, Rocket, Snail, Squirrel, Star, Sun, Target, TreePine, Trophy, Turtle,
+  Volleyball, Zap,
+} from 'lucide-vue-next'
+import type { AvatarIcon } from '@shared/avatars'
+
+/** One static import per icon so the bundle only ships the 36 presets. */
+export const AVATAR_ICON_COMPONENTS: Record<AvatarIcon, Component> = {
+  cat: Cat,
+  dog: Dog,
+  bird: Bird,
+  fish: Fish,
+  rabbit: Rabbit,
+  squirrel: Squirrel,
+  turtle: Turtle,
+  snail: Snail,
+  'book-open': BookOpen,
+  'graduation-cap': GraduationCap,
+  pencil: Pencil,
+  backpack: Backpack,
+  lightbulb: Lightbulb,
+  calculator: Calculator,
+  dumbbell: Dumbbell,
+  bike: Bike,
+  trophy: Trophy,
+  volleyball: Volleyball,
+  target: Target,
+  music: Music,
+  headphones: Headphones,
+  guitar: Guitar,
+  'gamepad-2': Gamepad2,
+  dices: Dices,
+  puzzle: Puzzle,
+  leaf: Leaf,
+  'flower-2': Flower2,
+  sun: Sun,
+  moon: Moon,
+  mountain: Mountain,
+  'tree-pine': TreePine,
+  star: Star,
+  heart: Heart,
+  zap: Zap,
+  flame: Flame,
+  rocket: Rocket,
+}

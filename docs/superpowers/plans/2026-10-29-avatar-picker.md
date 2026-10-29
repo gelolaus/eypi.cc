@@ -104,14 +104,14 @@
 - Produces `AVATAR_ICON_COMPONENTS: Record<AvatarIcon, Component>` in `avatarIcons.ts`: one static import per icon from `lucide-vue-next` (PascalCase of the key, for example `book-open` is `BookOpen`, `gamepad-2` is `Gamepad2`, `flower-2` is `Flower2`, `tree-pine` is `TreePine`). If a name does not exist in the installed package, substitute the nearest icon and change that key in `shared/avatars.ts` and its test in the same commit.
 - Produces `UserAvatar.vue` props: `name: string`, `icon?: string | null`, `color?: string | null`, `class?: string` (merged with `cn`, so callers pass the size classes the account menu uses today: `size-8` header, `size-9` collapsed, `size-11` sidebar, `size-12` menu header, and `size-8` in lists; the default is `size-8`). Renders the icon (`size-[55%]`, `aria-hidden`) coloured `var(--avatar-<color>)` on a wash `color-mix(in srgb, var(--avatar-<color>) 15%, transparent)`, via inline style; when icon or color is null or not in the lists, renders the existing `Avatar`/`AvatarFallback` with the initials of `name`. Decorative by default (the name is shown next to it everywhere it is used); no `aria-label` on the wrapper.
 
-- [ ] **Step 1: Write the failing tests:**
+- [x] **Step 1: Write the failing tests:**
   - `avatarIcons.test.ts`: the map's keys equal `AVATAR_ICONS` exactly (both directions), and every value is defined.
   - `UserAvatar.test.ts` (`// @vitest-environment happy-dom`): with `icon:'cat', color:'blue'` it renders an `svg` and the element's inline style references `--avatar-blue`, with no initials text; with null icon, null color, one null, an unknown icon `'nope'`, and an unknown colour it renders the initials (`'Ada Lovelace'` gives `AD`); a one-letter name `'x'` gives `X`; an empty name gives a non-empty fallback (use `'?'`); a name starting with an emoji does not throw.
   - `design.test.ts`: every `AVATAR_COLORS` key has `--avatar-<key>` in the light and dark palettes (and True black through inheritance); for each of light, dark and black, the avatar colour against its wash blended over the card **and** over the background is at least 3:1 (non-text graphic); the True black block still overrides only the nine existing surface tokens. Extend the existing "names every token" check by naming each `--avatar-*` token in `DESIGN_SYSTEM.md` (a short table row per token group is enough).
-- [ ] **Step 2: Run to verify they fail** (`npx vitest run src/components/avatar src/styles`).
-- [ ] **Step 3: Implement** the tokens, the map and the component. Reuse `over()` and `ratio()` helpers already in `design.test.ts`.
-- [ ] **Step 4: Run to verify they pass**, then `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(avatar): add the avatar swatch tokens, icon map and UserAvatar`.
+- [x] **Step 2: Run to verify they fail** (`npx vitest run src/components/avatar src/styles`).
+- [x] **Step 3: Implement** the tokens, the map and the component. Reuse `over()` and `ratio()` helpers already in `design.test.ts`.
+- [x] **Step 4: Run to verify they pass**, then `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(avatar): add the avatar swatch tokens, icon map and UserAvatar`.
 
 ---
 

@@ -59,6 +59,7 @@ Defined once, in the `:root` block of `src/styles/tokens.css`. `src/styles/main.
 | `--chart-3` | `#7783c4` | Chart series 3 |
 | `--chart-4` | `#a87a1c` | Chart series 4 |
 | `--chart-5` | `#9aa0b8` | Chart series 5 |
+| `--avatar-blue`, `--avatar-indigo`, `--avatar-violet`, `--avatar-pink`, `--avatar-red`, `--avatar-orange`, `--avatar-gold`, `--avatar-green`, `--avatar-teal`, `--avatar-sky`, `--avatar-slate`, `--avatar-brown` | one hex each (see `tokens.css`) | Avatar icon colours (3:1 against their own 15% wash); Dark and True black share one set |
 | `--sidebar` | `#ffffff` | Sidebar background |
 | `--sidebar-foreground` | `#0a0a0a` | Sidebar text |
 | `--sidebar-primary` | `#35438c` | Sidebar accent |

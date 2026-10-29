@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { AVATAR_COLORS } from '../../shared/avatars'
 
 const tokens = readFileSync('src/styles/tokens.css', 'utf8')
 const mainCss = readFileSync('src/styles/main.css', 'utf8')
@@ -201,6 +202,30 @@ describe('wantap design tokens', () => {
       }
       // Borders must be distinguishable from the page.
       expect(ratio(lum('border'), bgLum)).toBeGreaterThanOrEqual(1.1)
+    })
+  }
+
+  it('defines an avatar swatch token for every colour in each palette', () => {
+    for (const palette of ['light', 'dark', 'black'] as const) {
+      for (const color of AVATAR_COLORS) {
+        expect(paletteFor(palette)(`avatar-${color}`), `${palette} --avatar-${color}`).toMatch(/^#[0-9a-f]{6}$/)
+      }
+    }
+    // True black inherits the Dark swatches rather than redefining them.
+    expect(blockOf(/\.dark\.black\s*\{([^}]*)\}/)).not.toContain('--avatar-')
+  })
+
+  for (const palette of ['light', 'dark', 'black'] as const) {
+    it(`${palette} avatar swatches are a 3:1 graphic on their own wash over the card and the page`, () => {
+      const t = paletteFor(palette)
+      for (const color of AVATAR_COLORS) {
+        const swatch = t(`avatar-${color}`)
+        const lum = luminanceOf(parseColor(swatch).rgb)
+        for (const base of ['card', 'background']) {
+          const wash = luminanceOf(over(swatch, t(base), 0.15))
+          expect(ratio(lum, wash), `${palette} ${color} on wash over ${base}`).toBeGreaterThanOrEqual(3)
+        }
+      }
     })
   }
 
