@@ -71,6 +71,7 @@ function googleApi(existingStatus: number, existingBody: unknown): (call: FetchC
 }
 
 function decodeSavePayload(url: string): {
+  eventTicketClasses: Record<string, unknown>[]
   eventTicketObjects: { validTimeInterval?: { start?: { date?: string }; end?: { date?: string } } }[]
 } {
   const token = url.slice(url.lastIndexOf('/') + 1)
@@ -114,6 +115,32 @@ describe('Google Wallet class upsert', () => {
       eventName: { defaultValue: { language: 'en-US', value: 'Launch Night' } },
     })
     expect(calls.filter((call) => call.method === 'PATCH')).toHaveLength(0)
+  })
+})
+
+describe('Google Wallet review status', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('sets UNDER_REVIEW only when inserting a new class', async () => {
+    const calls = installFetch(googleApi(404, {}))
+
+    await buildGoogleWalletSaveUrl(passContext('Launch Night'), await walletEnv())
+
+    const insert = calls.find((call) => call.method === 'POST' && call.url === CLASS_COLLECTION)
+    expect(JSON.parse(insert!.body!)).toMatchObject({ reviewStatus: 'UNDER_REVIEW' })
+  })
+
+  it('keeps reviewStatus out of the save token so an approved class stays approved', async () => {
+    installFetch(googleApi(200, { id: CLASS_ID }))
+
+    const payload = decodeSavePayload(
+      await buildGoogleWalletSaveUrl(passContext('Launch Night'), await walletEnv()),
+    )
+
+    expect(payload.eventTicketClasses).toHaveLength(1)
+    expect(payload.eventTicketClasses[0]).not.toHaveProperty('reviewStatus')
   })
 })
 

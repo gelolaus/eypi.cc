@@ -142,7 +142,7 @@ function classUrl(classId: string): string {
   return `${CLASS_COLLECTION}/${classId}`
 }
 
-/** PATCH must not send reviewStatus or an approved class is forced back under review. */
+/** PATCH and the save token must not carry reviewStatus, or an approved class is forced back under review. */
 function classPatchBody(eventTicketClass: Record<string, unknown>): Record<string, unknown> {
   const next = { ...eventTicketClass }
   delete next.reviewStatus
@@ -231,7 +231,7 @@ export async function buildGoogleWalletSaveUrl(
       typ: 'savetowallet',
       origins: ['eypi.cc'],
       payload: {
-        eventTicketClasses: [eventTicketClass],
+        eventTicketClasses: [classPatchBody(eventTicketClass)],
         eventTicketObjects: [eventTicketObject],
       },
     })
