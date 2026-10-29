@@ -125,7 +125,7 @@ export const privacy: LegalDocument = {
       heading: 'Data on your device',
       paragraphs: [
         'This browser stores one localStorage key. active_org_id remembers the organization selected in this browser. The app also keeps a copy of your ticket list on your device so tickets can open offline. Door mode keeps the guest roster (names and ticket codes) on the device until you sign out.',
-        'The only cookie is the session cookie. Its name is __Host-eypi_session in production and eypi_session in development. It is HttpOnly, Secure, and SameSite=Lax. It is strictly necessary to keep you signed in. eypi.cc does not use analytics or advertising cookies, and it does not show a cookie banner.',
+        'The session cookie keeps you signed in. Its name is __Host-eypi_session in production and eypi_session in development. It is HttpOnly, Secure, and SameSite=Lax. It is strictly necessary to keep you signed in. Sign-in also sets a short-lived cookie named eypi_oauth. That cookie lasts 10 minutes. It is HttpOnly, Secure, and SameSite=Lax, and the browser sends it only to /api/auth. eypi.cc does not use analytics or advertising cookies, and it does not show a cookie banner.',
       ],
     },
   ],

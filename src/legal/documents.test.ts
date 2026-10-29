@@ -93,6 +93,7 @@ describe('legal documents', () => {
       'active_org_id',
       '__Host-eypi_session',
       'eypi_session in development',
+      'eypi_oauth',
       'strictly necessary',
       'cookie banner',
     ]
@@ -104,5 +105,6 @@ describe('legal documents', () => {
     expect(text).not.toMatch(/bcrypt/i)
     expect(text).not.toMatch(/argon2/i)
     expect(text).not.toMatch(/apple wallet/i)
+    expect(text).not.toContain('The only cookie is the session cookie')
   })
 })
