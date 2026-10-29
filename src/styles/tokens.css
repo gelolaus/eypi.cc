@@ -1,4 +1,4 @@
-/* The :root block is the only palette. The app is light only: APC blue and APC gold on warm-neutral surfaces. */
+/* Three palettes: Light on :root, Dark on .dark, True black on .dark.black (surfaces only). APC blue and APC gold throughout. */
 :root {
   --background: #f5f5f5;
   --foreground: #0a0a0a;
@@ -32,4 +32,50 @@
   --sidebar-border: #e2e2e2;
   --sidebar-ring: #35438c;
   --radius: 0.875rem;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #141414;
+  --card-foreground: #ededed;
+  --popover: #181818;
+  --popover-foreground: #ededed;
+  --primary: #8b97d8;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1f1f1f;
+  --secondary-foreground: #ededed;
+  --muted: #1f1f1f;
+  --muted-foreground: #a3a3a3;
+  --accent: color-mix(in srgb, #deac4b 20%, transparent);
+  --accent-foreground: #ededed;
+  --destructive: #ef7373;
+  --border: #262626;
+  --input: #6b6b6b;
+  --ring: #8b97d8;
+  --chart-1: #8b97d8;
+  --chart-2: #deac4b;
+  --chart-3: #5a68b8;
+  --chart-4: #f0d08a;
+  --chart-5: #9aa0b8;
+  --sidebar: #101010;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #8b97d8;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #1b1e30;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #262626;
+  --sidebar-ring: #8b97d8;
+}
+
+.dark.black {
+  --background: #000000;
+  --card: #0d0d0d;
+  --popover: #121212;
+  --secondary: #181818;
+  --muted: #181818;
+  --border: #1f1f1f;
+  --sidebar: #080808;
+  --sidebar-accent: #12141f;
+  --sidebar-border: #1f1f1f;
 }

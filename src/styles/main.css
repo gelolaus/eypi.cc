@@ -81,6 +81,9 @@
     @apply font-sans;
     color-scheme: light;
   }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     accent-color: var(--primary);
   }

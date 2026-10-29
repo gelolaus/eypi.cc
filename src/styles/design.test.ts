@@ -49,7 +49,26 @@ function token(name: string): string {
   return match ? match[1].trim() : ''
 }
 
-type Rgb = [number, number, number]
+function blockOf(selector: RegExp): string {
+  return tokens.match(selector)?.[1] ?? ''
+}
+
+/** Token reader for a palette: `:root`, then `.dark` over it, then `.dark.black` over that. */
+function paletteFor(name: 'light' | 'dark' | 'black'): (token: string) => string {
+  const blocks = [paletteBlock()]
+  if (name !== 'light') blocks.push(blockOf(/\.dark\s*\{([^}]*)\}/))
+  if (name === 'black') blocks.push(blockOf(/\.dark\.black\s*\{([^}]*)\}/))
+  return (tok) => {
+    let value = ''
+    for (const block of blocks) {
+      const match = block.match(new RegExp(`--${tok}:\\s*([^;]+);`))
+      if (match) value = match[1].trim()
+    }
+    return value
+  }
+}
+
+type Rgb =[number, number, number]
 
 function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
@@ -114,42 +133,76 @@ describe('wantap design tokens', () => {
     }
   })
 
-  it('meets WCAG AA for text pairs', () => {
-    const bg = token('background')
-    const bgLum = oklchToLuminance(bg)
-    const lum = (name: string) => oklchToLuminance(token(name))
-    expect(ratio(lum('foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('muted-foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('muted-foreground'), lum('muted'))).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('primary-foreground'), lum('primary'))).toBeGreaterThanOrEqual(4.5)
-    // Links and active nav use --primary as text on the page and on cards.
-    expect(ratio(lum('primary'), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('primary'), lum('card'))).toBeGreaterThanOrEqual(4.5)
-    // Error text sits on the page and on cards.
-    expect(ratio(lum('destructive'), bgLum)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('destructive'), lum('card'))).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('card-foreground'), lum('card'))).toBeGreaterThanOrEqual(4.5)
-    // Text on the gold wash (menu hover) and on the sidebar hover fill.
-    const goldWash = luminanceOf(over('#deac4b', bg, 0.25))
-    expect(ratio(lum('accent-foreground'), goldWash)).toBeGreaterThanOrEqual(4.5)
-    expect(ratio(lum('sidebar-accent-foreground'), lum('sidebar-accent'))).toBeGreaterThanOrEqual(4.5)
-  })
-
-  it('meets 3:1 for control boundaries and the focus ring', () => {
-    const bgLum = oklchToLuminance(token('background'))
-    // Focused controls switch their border to the solid --ring (the halo is ring/50 on top of it).
-    expect(ratio(oklchToLuminance(token('ring')), bgLum)).toBeGreaterThanOrEqual(3)
-    expect(ratio(oklchToLuminance(token('ring')), oklchToLuminance(token('card')))).toBeGreaterThanOrEqual(3)
-    // Input borders must be visible on a white card and on the page.
-    expect(ratio(oklchToLuminance(token('input')), oklchToLuminance(token('card')))).toBeGreaterThanOrEqual(3)
-    expect(ratio(oklchToLuminance(token('input')), bgLum)).toBeGreaterThanOrEqual(3)
-  })
-
-  it('is light only', () => {
+  it('defines a dark and a true black palette', () => {
+    expect(tokens).toContain('.dark {')
+    expect(tokens).toContain('.dark.black {')
+    for (const name of Object.keys(expected)) {
+      if (name === 'radius') continue
+      for (const palette of ['light', 'dark', 'black'] as const) {
+        expect(paletteFor(palette)(name), `${palette} --${name}`).not.toBe('')
+      }
+    }
+    const blackBlock = blockOf(/\.dark\.black\s*\{([^}]*)\}/)
+    const defined = [...blackBlock.matchAll(/--([a-z0-9-]+):/g)].map((m) => m[1]).sort()
+    expect(defined).toEqual(
+      ['background', 'card', 'popover', 'secondary', 'muted', 'border', 'sidebar', 'sidebar-accent', 'sidebar-border'].sort(),
+    )
+    expect(mainCss).toMatch(/html\.dark\s*\{\s*color-scheme:\s*dark/)
     expect(mainCss).toMatch(/color-scheme:\s*light/)
     expect(mainCss).not.toContain('@custom-variant dark')
-    expect(tokens).not.toMatch(/\.dark\s*\{/)
   })
+
+  it('dark palettes: values match the spec', () => {
+    const dark = paletteFor('dark')
+    expect(dark('background')).toBe('#0a0a0a')
+    expect(dark('card')).toBe('#141414')
+    expect(dark('foreground')).toBe('#ededed')
+    expect(dark('primary')).toBe('#8b97d8')
+    expect(dark('primary-foreground')).toBe('#0a0a0a')
+    expect(dark('destructive')).toBe('#ef7373')
+    const black = paletteFor('black')
+    expect(black('background')).toBe('#000000')
+    expect(black('card')).toBe('#0d0d0d')
+    expect(black('border')).toBe('#1f1f1f')
+    expect(black('primary')).toBe('#8b97d8')
+  })
+
+  for (const palette of ['light', 'dark', 'black'] as const) {
+    it(`meets contrast in the ${palette} palette`, () => {
+      const t = paletteFor(palette)
+      const bgLum = oklchToLuminance(t('background'))
+      const lum = (name: string) => oklchToLuminance(t(name))
+      // Text pairs, AA.
+      expect(ratio(lum('foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('muted-foreground'), bgLum)).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('muted-foreground'), lum('muted'))).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('primary-foreground'), lum('primary'))).toBeGreaterThanOrEqual(4.5)
+      // Links and active nav use --primary as text on the page and on cards.
+      expect(ratio(lum('primary'), bgLum)).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('primary'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+      // Error text sits on the page and on cards.
+      expect(ratio(lum('destructive'), bgLum)).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('destructive'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('card-foreground'), lum('card'))).toBeGreaterThanOrEqual(4.5)
+      // Text on the gold wash (menu hover) uses this palette's own accent percentage.
+      const pct = Number(t('accent').match(/#deac4b\s+(\d+)%/)?.[1]) / 100
+      expect(pct).toBeGreaterThan(0)
+      const goldWash = luminanceOf(over('#deac4b', t('background'), pct))
+      expect(ratio(lum('accent-foreground'), goldWash)).toBeGreaterThanOrEqual(4.5)
+      expect(ratio(lum('sidebar-accent-foreground'), lum('sidebar-accent'))).toBeGreaterThanOrEqual(4.5)
+      // Control boundaries and the focus ring, 3:1. Focused controls switch their border to the solid --ring.
+      expect(ratio(lum('ring'), bgLum)).toBeGreaterThanOrEqual(3)
+      expect(ratio(lum('ring'), lum('card'))).toBeGreaterThanOrEqual(3)
+      expect(ratio(lum('input'), lum('card'))).toBeGreaterThanOrEqual(3)
+      expect(ratio(lum('input'), bgLum)).toBeGreaterThanOrEqual(3)
+      // Charts read against the card. Light is unchanged by spec (its gold fill is decorative at 2:1), so it is exempt.
+      for (const n of palette === 'light' ? [] : [1, 2, 3, 4, 5]) {
+        expect(ratio(lum(`chart-${n}`), lum('card')), `chart-${n}`).toBeGreaterThanOrEqual(3)
+      }
+      // Borders must be distinguishable from the page.
+      expect(ratio(lum('border'), bgLum)).toBeGreaterThanOrEqual(1.1)
+    })
+  }
 
   it('disables decorative animation under reduced motion', () => {
     const start = mainCss.indexOf('@media (prefers-reduced-motion: reduce)')
@@ -190,9 +243,7 @@ const LEGACY: Array<[string, RegExp]> = [
   ['eypi-gold', /eypi-gold/],
   ['#34418F', /#34418F/i],
   ['Geist', /Geist/],
-  ['useDarkMode', /useDarkMode/],
   ['dark: variant', /(?<![a-z0-9-])dark:[a-z[]/],
-  ['dark class', /class="dark"|classList\.add\('dark'\)|theme="dark"/],
   ['tap-scale', /tap-scale/],
   ['data-cursor', /data-cursor/],
   ['legacy-dot-grid', /legacy-dot-grid/],
