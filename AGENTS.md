@@ -19,7 +19,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Avatar picker, task-by-task | `docs/superpowers/plans/2026-10-29-avatar-picker.md` |
 | Next round: loose ends after dark mode and avatar picker (lint, accepted risks, stale plans, owner checklist) | `docs/superpowers/plans/2026-10-29-next-round.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
-| Live database schema | `docs/db/schema-baseline.md` (versioned migrations land in `backend/migrations/` with the overhaul) |
+| Live database schema | `docs/db/schema-baseline.md` (2026-10-25 snapshot) and `backend/migrations/` |
 | Deploys | `docs/RELEASE.md` |
 
 ## Stack and commands

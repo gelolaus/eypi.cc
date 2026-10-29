@@ -738,3 +738,100 @@ Execute with subagent-driven development:
 - Never connect a write token to production unless the owner says so. Local dev uses production Turso.
 Report after each workstream: tasks done, commits, test counts, open risks.
 ```
+
+## Finding outcomes
+
+Recorded 2026-10-29 from `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md`. Every CRIT, HIGH, and MED `F-*` finding is one row. `fixed in <hash>` is a commit in this repo. `accepted` means the finding, or the residual that remains, is a row under Accepted risks in `docs/operations.md`. `**unresolved**` means neither. Nothing in this table was changed in application code.
+
+The final-verification boxes above stay open. They ask for a production curl, a Turso rehearsal, a reserved-slug query against production, a manual Space check on `/links`, a post-deploy cache and CSP check, a green CI run of this tree, owner sign-off on accepted risks, or a manual production regression. `src` has no `AppCursor`, `AppLoader`, or `useKeyboardNav`, and that removal shipped in `cfcfcb3`. The box that includes that check also requires the manual Space press, so it stays unticked.
+
+| Finding | Status |
+|---|---|
+| F-SEC-1 | fixed in 5ab7d5e |
+| F-SEC-2 | fixed in a832a07 |
+| F-SEC-3 | fixed in 76ace4d |
+| F-SEC-4 | fixed in a832a07 |
+| F-SEC-5 | fixed in 4932ff7 |
+| F-SEC-6 | fixed in a7f80ec |
+| F-SEC-7 | accepted |
+| F-ORG-1 | fixed in bf3c34e |
+| F-ORG-2 | fixed in bf3c34e |
+| F-ORG-3 | fixed in 2c2adf0 |
+| F-ORG-4 | fixed in 472e824 |
+| F-ORG-5 | fixed in 2c2adf0 |
+| F-ORG-6 | fixed in 2c2adf0 |
+| F-ORG-7 | fixed in 3070c4c |
+| F-ORG-13 | fixed in 2c2adf0 |
+| F-LINK-1 | fixed in 15b3e1a |
+| F-LINK-2 | fixed in 15b3e1a |
+| F-LINK-3 | fixed in e339ca5 |
+| F-LINK-4 | fixed in 15b3e1a |
+| F-LINK-5 | fixed in 15b3e1a |
+| F-LINK-6 | fixed in 1fa68cd |
+| F-LINK-7 | fixed in 7db054b |
+| F-LINK-8 | fixed in 7db054b |
+| F-LINK-9 | fixed in eb60822 |
+| F-LINK-10 | fixed in 15b3e1a |
+| F-LINK-11 | fixed in 1ac4196 |
+| F-LINK-18 | fixed in 54ad04c |
+| F-TIX-1 | fixed in 94668ac |
+| F-TIX-2 | accepted |
+| F-TIX-3 | fixed in 57642a0 |
+| F-TIX-4 | fixed in 068388b |
+| F-TIX-5 | fixed in 068388b |
+| F-TIX-6 | fixed in 068388b |
+| F-TIX-7 | fixed in 94668ac |
+| F-TIX-8 | fixed in 94668ac |
+| F-TIX-9 | fixed in 068388b |
+| F-TIX-10 | fixed in 57642a0 |
+| F-TIX-11 | fixed in 4899792 |
+| F-TIX-12 | accepted |
+| F-TIX-13 | fixed in 4899792 |
+| F-TIX-14 | accepted |
+| F-TIX-15 | **unresolved** |
+| F-TIX-20 | fixed in 94668ac |
+| F-FORM-1 | fixed in 2424821 |
+| F-FORM-2 | fixed in dd340fc |
+| F-FORM-3 | fixed in dd340fc |
+| F-FORM-4 | fixed in dd340fc |
+| F-FRAME-1 | fixed in cad8142 |
+| F-FRAME-2 | fixed in cad8142 |
+| F-FRAME-3 | fixed in cad8142 |
+| F-FRAME-4 | fixed in cad8142 |
+| F-FRAME-5 | fixed in cad8142 |
+| F-FRAME-6 | fixed in cad8142 |
+| F-FRAME-7 | fixed in cad8142 |
+| F-FRAME-8 | fixed in 7cd6a78 |
+| F-DB-1 | fixed in 353acea |
+| F-DB-2 | fixed in 7a8e08a |
+| F-DB-3 | fixed in 2d9ed34 |
+| F-DB-4 | fixed in 57642a0 |
+| F-DB-5 | **unresolved** |
+| F-DB-6 | fixed in 7a8e08a |
+| F-DB-10 | fixed in 5db0e88 |
+| F-DB-11 | fixed in 353acea |
+| F-DB-12 | fixed in c9e1fd8 |
+| F-PLAT-1 | fixed in 5db0e88 |
+| F-PLAT-2 | fixed in 8f69635 |
+| F-PLAT-3 | fixed in 8f69635 |
+| F-PERF-1 | fixed in 1b4a463 |
+| F-PERF-2 | fixed in cfcfcb3 |
+| F-PERF-3 | fixed in 1b4a463 |
+| F-PERF-4 | fixed in cfcfcb3 |
+| F-A11Y-1 | fixed in cfcfcb3 |
+| F-A11Y-2 | fixed in 98d65ea |
+| F-A11Y-3 | fixed in 98d65ea |
+| F-A11Y-4 | fixed in 98d65ea |
+| F-A11Y-5 | fixed in 98d65ea |
+| F-A11Y-6 | fixed in 98d65ea |
+| F-UX-1 | fixed in a7f80ec |
+| F-UX-2 | fixed in 81b7868 |
+| F-UX-3 | fixed in 81b7868 |
+| F-SEO-1 | accepted |
+| F-SEO-2 | fixed in 125300d |
+| F-DEP-1 | fixed in 4899792 |
+| F-DEP-2 | fixed in 69551b1 |
+| F-OPS-1 | fixed in fd08730 |
+| F-OPS-3 | fixed in 85ef24d |
+| F-LEGAL-1 | fixed in 1f1af08 |
+| F-LEGAL-2 | fixed in 2d9ed34 |

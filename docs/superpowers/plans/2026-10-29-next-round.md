@@ -43,11 +43,11 @@ Items 5 (signed-in checks) and 6 need the owner. The agent prepares and records 
 
 **Files:** the plan files listed in finding 3; `AGENTS.md` (only if a table row is wrong).
 
-- [ ] **Step 1:** For each stale plan, verify the work exists in code (examples: `backend/src/middleware/requireAuth.ts`, `shared/admin.ts`, Vitest config and `*.test.ts` files, `scripts/doctor` and `scripts/release-check.mjs`, the toast and dialog host from the notifications plan). Use `git log --oneline -- <path>` as evidence.
-- [ ] **Step 2:** For each verified plan, add a first-line banner `> **Status: done.** Shipped in <commit>. Boxes below were not ticked at the time.` and do not rewrite the body. If a plan was only partly done, tick what is done and write what remains as a note, do not guess.
-- [ ] **Step 3:** In `docs/superpowers/plans/2026-10-25-eypi-overhaul.md` the unticked boxes at lines 127, 338-340, 391, 496, 594, 600 and 703-716 are verification steps. Do **not** tick the owner ones (curl against production, Turso rehearsal, manual regression). Tick only items you can prove from the repo (for example `grep -rn "AppCursor\|AppLoader\|useKeyboardNav" src` is empty; lint/typecheck/test/build green after Task 1).
-- [ ] **Step 4:** Line 704 requires every CRIT/HIGH/MED `F-*` finding to be fixed (cite the commit) or listed under Accepted risks. Produce a table in a new section at the end of the overhaul plan: finding ID, status (fixed with commit hash / accepted / **unresolved**). Any unresolved CRIT or HIGH is reported to the owner in the final message and not silently fixed in this task.
-- [ ] **Step 5:** Commit `docs(plan): mark shipped plans done and map findings to outcomes`.
+- [x] **Step 1:** For each stale plan, verify the work exists in code (examples: `backend/src/middleware/requireAuth.ts`, `shared/admin.ts`, Vitest config and `*.test.ts` files, `scripts/doctor` and `scripts/release-check.mjs`, the toast and dialog host from the notifications plan). Use `git log --oneline -- <path>` as evidence.
+- [x] **Step 2:** For each verified plan, add a first-line banner `> **Status: done.** Shipped in <commit>. Boxes below were not ticked at the time.` and do not rewrite the body. If a plan was only partly done, tick what is done and write what remains as a note, do not guess.
+- [x] **Step 3:** In `docs/superpowers/plans/2026-10-25-eypi-overhaul.md` the unticked boxes at lines 127, 338-340, 391, 496, 594, 600 and 703-716 are verification steps. Do **not** tick the owner ones (curl against production, Turso rehearsal, manual regression). Tick only items you can prove from the repo (for example `grep -rn "AppCursor\|AppLoader\|useKeyboardNav" src` is empty; lint/typecheck/test/build green after Task 1).
+- [x] **Step 4:** Line 704 requires every CRIT/HIGH/MED `F-*` finding to be fixed (cite the commit) or listed under Accepted risks. Produce a table in a new section at the end of the overhaul plan: finding ID, status (fixed with commit hash / accepted / **unresolved**). Any unresolved CRIT or HIGH is reported to the owner in the final message and not silently fixed in this task.
+- [x] **Step 5:** Commit `docs(plan): mark shipped plans done and map findings to outcomes`.
 
 ## Task 4: Close the cheap accepted risks (one commit each, test first)
 
