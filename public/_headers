@@ -15,6 +15,9 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+/theme-init.js
+  Cache-Control: no-cache
+
 /sw.js
   Cache-Control: no-cache
 
