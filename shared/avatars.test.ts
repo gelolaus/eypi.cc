@@ -15,6 +15,21 @@ describe('avatar lists', () => {
     expect(AVATAR_COLORS).toHaveLength(12)
   })
 
+  it('pins the exact order and contents', () => {
+    expect([...AVATAR_ICONS]).toEqual([
+      'cat', 'dog', 'bird', 'fish', 'rabbit', 'squirrel', 'turtle', 'snail',
+      'book-open', 'graduation-cap', 'pencil', 'backpack', 'lightbulb', 'calculator',
+      'dumbbell', 'bike', 'trophy', 'volleyball', 'target',
+      'music', 'headphones', 'guitar', 'gamepad-2', 'dices', 'puzzle',
+      'leaf', 'flower-2', 'sun', 'moon', 'mountain', 'tree-pine',
+      'star', 'heart', 'zap', 'flame', 'rocket',
+    ])
+    expect([...AVATAR_COLORS]).toEqual([
+      'blue', 'indigo', 'violet', 'pink', 'red', 'orange',
+      'gold', 'green', 'teal', 'sky', 'slate', 'brown',
+    ])
+  })
+
   it('keeps every icon key kebab-case', () => {
     for (const icon of AVATAR_ICONS) expect(icon).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/)
   })

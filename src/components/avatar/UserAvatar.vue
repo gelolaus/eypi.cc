@@ -12,7 +12,7 @@ const props = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const initials = computed(() => props.name.slice(0, 2).toUpperCase() || '?')
+const initials = computed(() => Array.from(props.name.trim()).slice(0, 2).join('').toUpperCase() || '?')
 
 /** The chosen pair, or null when either half is missing or unknown (initials show instead). */
 const chosen = computed(() =>

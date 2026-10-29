@@ -43,4 +43,23 @@ describe('UserAvatar', () => {
   it('does not throw for a name that starts with an emoji', () => {
     expect(() => render({ name: '\u{1F600} Smile' })).not.toThrow()
   })
+
+  it('keeps a whole emoji and never splits a surrogate pair', () => {
+    const text = render({ name: 'A\u{1F600}' }).text()
+    expect(text).toBe(Array.from('A\u{1F600}').join('').toUpperCase())
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i)
+      if (code >= 0xd800 && code <= 0xdbff) {
+        const next = text.charCodeAt(i + 1)
+        expect(next >= 0xdc00 && next <= 0xdfff, 'lone high surrogate').toBe(true)
+        i++
+      } else {
+        expect(code >= 0xdc00 && code <= 0xdfff, 'lone low surrogate').toBe(false)
+      }
+    }
+  })
+
+  it('shows ? for a whitespace-only name', () => {
+    expect(render({ name: '   ' }).text()).toBe('?')
+  })
 })

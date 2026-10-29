@@ -63,6 +63,20 @@ describe('AccountMenu avatar', () => {
   })
 })
 
+describe('AccountMenu attributes', () => {
+  it('does not warn about extraneous attributes with its two root nodes', async () => {
+    signIn(null, null)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await router.push('/')
+    await router.isReady()
+    const wrapper = mount(AccountMenu, { attrs: { 'data-x': '1' }, attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('Extraneous non-props attributes')
+    wrapper.unmount()
+    warn.mockRestore()
+  })
+})
+
 describe('AccountMenu avatar picker entry', () => {
   const item = () =>
     Array.from(document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')).find((el) =>

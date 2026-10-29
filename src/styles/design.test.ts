@@ -122,6 +122,17 @@ function over(foreground: string, background: string, extra = 1): Rgb {
   return f.rgb.map((c, i) => c * alpha + b.rgb[i] * (1 - alpha)) as Rgb
 }
 
+/** Browsers blend `color-mix(in srgb, ...)` on gamma-encoded channels; returns linear RGB for luminance. */
+function gammaWash(swatch: string, background: string, amount: number): Rgb {
+  const toByte = (hex: string) => {
+    const n = Number.parseInt(hex.slice(1), 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  }
+  const s = toByte(swatch)
+  const b = toByte(background)
+  return s.map((c, i) => srgbToLinear((c * amount + b[i] * (1 - amount)) / 255)) as Rgb
+}
+
 function ratio(a: number, b: number): number {
   const [hi, lo] = a > b ? [a, b] : [b, a]
   return (hi + 0.05) / (lo + 0.05)
@@ -216,13 +227,13 @@ describe('wantap design tokens', () => {
   })
 
   for (const palette of ['light', 'dark', 'black'] as const) {
-    it(`${palette} avatar swatches are a 3:1 graphic on their own wash over the card and the page`, () => {
+    it(`${palette} avatar swatches are a 3:1 graphic on their own wash over the card, the page and muted`, () => {
       const t = paletteFor(palette)
       for (const color of AVATAR_COLORS) {
         const swatch = t(`avatar-${color}`)
         const lum = luminanceOf(parseColor(swatch).rgb)
-        for (const base of ['card', 'background']) {
-          const wash = luminanceOf(over(swatch, t(base), 0.15))
+        for (const base of ['card', 'background', 'muted']) {
+          const wash = luminanceOf(gammaWash(swatch, t(base), 0.15))
           expect(ratio(lum, wash), `${palette} ${color} on wash over ${base}`).toBeGreaterThanOrEqual(3)
         }
       }

@@ -1,7 +1,7 @@
 <template>
   <Dialog
     :open="open"
-    @update:open="emit('update:open', $event)"
+    @update:open="onOpenChange"
   >
     <DialogContent class="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
       <DialogHeader>
@@ -189,6 +189,12 @@ function onKeydown<T extends string>(
   const next = (index + step + keys.length) % keys.length
   select(keys[next])
   void nextTick(() => buttons[next]?.focus())
+}
+
+/** Escape, the overlay and the X all land here; closing mid-save would let the late success emit close a reopened dialog. */
+function onOpenChange(value: boolean) {
+  if (!value && saving.value) return
+  emit('update:open', value)
 }
 
 async function send(next: { icon: AvatarIcon; color: AvatarColor } | { icon: null; color: null }, done: string) {

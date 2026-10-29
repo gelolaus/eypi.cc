@@ -170,6 +170,8 @@ import { useSession } from '@/stores/session'
 import { isAppNavEntryActive, menuEntries, type AppNavEntry } from './appNav'
 import { useSignOut } from './useSignOut'
 
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(
   defineProps<{
     variant?: 'sidebar' | 'header'

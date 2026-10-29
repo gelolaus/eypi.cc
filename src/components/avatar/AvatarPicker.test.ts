@@ -152,6 +152,24 @@ describe('AvatarPicker', () => {
     expect(useToast().toasts.value.map((t) => t.message)).toContain('Avatar reset')
   })
 
+  it('ignores close requests while saving, then closes once the save succeeds', async () => {
+    let resolve!: (value: unknown) => void
+    patch.mockReturnValue(new Promise((r) => (resolve = r)))
+    mountPicker()
+    await flushPromises()
+    iconBtn('rocket').click()
+    colorBtn('violet').click()
+    await flushPromises()
+    save().click()
+    await flushPromises()
+    q('[data-slot="dialog-content"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(wrapper!.emitted('update:open')).toBeUndefined()
+    resolve({})
+    await flushPromises()
+    expect(wrapper!.emitted('update:open')).toEqual([[false]])
+  })
+
   it('closes on Escape without calling the API', async () => {
     mountPicker()
     await flushPromises()
