@@ -52,11 +52,11 @@
 **Interfaces:**
 - Produces: `campaign.downloadCount: number` in the `GET /api/dp/:slug` response (default 0); `Campaign.downloadCount` in the view.
 
-- [ ] **Step 1: Failing tests.** Backend: `public payload includes downloadCount` (after 2 counted saves the payload says 2; a slug reached through `dp_slug_history` also returns it). View (`campaignResponse()` stays the fixture; override per test): `shows N downloads when the count is at least 1`, `says 1 download for one`, `formats thousands` (1234 shows `1,234 downloads`), `hides the count at 0`.
-- [ ] **Step 2:** Run both files; expect FAIL.
-- [ ] **Step 3: Implement** by adding `download_count` to both `SELECT` lists and `downloadCount: Number(row.download_count ?? 0)` to the response; in the view add the field (default 0) and a `<p class="text-center font-mono text-sm text-muted-foreground" data-download-count>` under the title block, rendered only when `campaign.downloadCount >= 1`, text `${n.toLocaleString('en-US')} download(s)`. Keep it inside the lazy view so the entry chunk does not grow.
-- [ ] **Step 4:** Run both files, then `npm run build` and `npm run release:check -- --allow-dirty`; expect PASS and entry JS ≤ 70,000 B.
-- [ ] **Step 5: Commit** `feat(frames): show the download count on the public page`.
+- [x] **Step 1: Failing tests.** Backend: `public payload includes downloadCount` (after 2 counted saves the payload says 2; a slug reached through `dp_slug_history` also returns it). View (`campaignResponse()` stays the fixture; override per test): `shows N downloads when the count is at least 1`, `says 1 download for one`, `formats thousands` (1234 shows `1,234 downloads`), `hides the count at 0`.
+- [x] **Step 2:** Run both files; expect FAIL.
+- [x] **Step 3: Implement** by adding `download_count` to both `SELECT` lists and `downloadCount: Number(row.download_count ?? 0)` to the response; in the view add the field (default 0) and a `<p class="text-center font-mono text-sm text-muted-foreground" data-download-count>` under the title block, rendered only when `campaign.downloadCount >= 1`, text `${n.toLocaleString('en-US')} download(s)`. Keep it inside the lazy view so the entry chunk does not grow.
+- [x] **Step 4:** Run both files, then `npm run build` and `npm run release:check -- --allow-dirty`; expect PASS and entry JS ≤ 70,000 B.
+- [x] **Step 5: Commit** `feat(frames): show the download count on the public page`.
 
 ### Task 3: Org side wording and sync
 
