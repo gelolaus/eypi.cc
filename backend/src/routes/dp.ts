@@ -365,7 +365,6 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
-      downloadCount: Number(row.download_count ?? 0),
       frames: await loadFrames(c.env, client, String(row.id)),
     },
   })

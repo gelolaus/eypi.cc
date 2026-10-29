@@ -307,6 +307,14 @@ describe('frame campaigns', () => {
       expect((await get('camp-b')).campaign.downloadCount).toBe(0)
     })
 
+    it('keeps the count out of the editor payload', async () => {
+      const { request } = await setup()
+      const res = await request('/api/dp/camp-a/edit', { headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'org-1' } })
+      expect(res.status).toBe(200)
+      const body = (await res.json()) as { campaign: Record<string, unknown> }
+      expect(body.campaign).not.toHaveProperty('downloadCount')
+    })
+
     it('returns 404 for an unknown frame without counting', async () => {
       const { client, download } = await setup()
       expect((await download('nope', IP_A)).status).toBe(404)
