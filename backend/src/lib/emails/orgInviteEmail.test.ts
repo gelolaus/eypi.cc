@@ -42,6 +42,8 @@ describe('renderOrgInviteEmail', () => {
     expect(rendered.html).toContain('alt="Eypi"')
     expect(rendered.html).toContain('>Eypi</')
     expect(rendered.html).toContain('#f7ead2')
+    expect(rendered.html).toContain('#deac4b')
+    expect(rendered.html).toContain('overflow:hidden;">')
     expect(rendered.html).not.toContain('>eypi.cc<')
     expect(rendered.html).not.toMatch(/on eypi\.cc/)
     expect(rendered.text).not.toMatch(/on eypi\.cc/)
