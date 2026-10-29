@@ -340,6 +340,12 @@ describe('DESIGN_SYSTEM.md', () => {
     expect(doc).not.toMatch(/light[- ]only/i)
   })
 
+  it('documents the avatar picker', () => {
+    for (const phrase of ['Avatar', 'UserAvatar', 'AvatarPicker']) {
+      expect(doc, phrase).toContain(phrase)
+    }
+  })
+
   it('carries no legacy design vocabulary or em dashes', () => {
     expect(doc).not.toContain(String.fromCharCode(0x2014))
     for (const re of [/mica/i, /Geist/, /#34418F/i]) expect(re.test(doc), String(re)).toBe(false)

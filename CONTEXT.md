@@ -38,6 +38,7 @@ Use these terms. Prefer them over invented synonyms.
 | **owner** | `organizations.owner_id` — the org's named owner. Changed only by a platform admin. Not a higher permission tier. |
 | **flat org model** | Every activated member has the same org permissions (edit profile, manage members, events, frames). There is no coordinator role. |
 | **admin** | `users.role = 'admin'`. Seeded by migration `0003`. Gates `/api/admin/*` and org creation. |
+| **avatar** | A user's chosen icon and colour (`users.avatar_icon`, `users.avatar_color`), set in the account menu via `PATCH /api/account/avatar`. Icons and colours are fixed presets from `shared/avatars.ts`; both are set or both are null, and null shows initials. Rendered by `UserAvatar`, chosen in `AvatarPicker`. |
 | **active org** | Org context for a multi-org user. Client: `localStorage.active_org_id`. API: `X-Active-Org-Id` (invalid value → 403, no silent fallback). |
 | **session** | Opaque server-side session in Turso (`sessions`). The cookie holds a random token; the table holds its sha256. |
 | **consent** | Versioned acceptance of privacy and terms (`/consent`). The API is gated until current versions are accepted. |

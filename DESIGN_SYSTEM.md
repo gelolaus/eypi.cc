@@ -287,6 +287,14 @@ Rules: color is never the only signal. `LineChart` gives each series its own das
 
 App-level components built on these: `AppPage`, `AppSection`, `BrandLogo`, `OrgSwitcher`, `AccountMenu`, `SiteNavSheet`, `DialogHost` (confirm and info dialogs via `useDialog()`), `PageSkeleton`, `ScrollTop`, `AppImage`.
 
+**Avatars** (`src/components/avatar/`, `shared/avatars.ts`): a signed-in user can pick an icon and a colour that replace their initials. Both halves are stored on the user (`avatar_icon`, `avatar_color`) and travel together; with either one missing or unknown, the initials show instead.
+
+- **Icons**: 36 Lucide icons in six groups. Animals: `cat`, `dog`, `bird`, `fish`, `rabbit`, `squirrel`, `turtle`, `snail`. School: `book-open`, `graduation-cap`, `pencil`, `backpack`, `lightbulb`, `calculator`. Sports: `dumbbell`, `bike`, `trophy`, `volleyball`, `target`. Music and games: `music`, `headphones`, `guitar`, `gamepad-2`, `dices`, `puzzle`. Nature: `leaf`, `flower-2`, `sun`, `moon`, `mountain`, `tree-pine`. Abstract: `star`, `heart`, `zap`, `flame`, `rocket`. The list lives in `shared/avatars.ts` and the icon components in `avatarIcons.ts`.
+- **Colours**: 12 swatches (blue, indigo, violet, pink, red, orange, gold, green, teal, sky, slate, brown), each one the `--avatar-*` token row in section 2. The icon is drawn in the swatch colour on a wash of the same colour at 15% (`color-mix`), so the pair stays legible in Light, Dark and True black.
+- **`UserAvatar`**: `name`, `icon?`, `color?` and a `class` for size. It draws the round swatch with the icon at 55% of the circle, and falls back to the standard `Avatar` initials. Sizes in use: `size-8` in lists (org members, admin users) and the account menu trigger, `size-9`, `size-11` and `size-12` in the account menu, and `size-20` for the live preview in the picker. The icon is `aria-hidden`; the name is always shown next to the avatar.
+- **`AvatarPicker`**: a `Dialog` opened from the `Change avatar` item in the account menu. It holds a live preview, an `Icon` radiogroup (6 columns) and a `Colour` radiogroup, then `Reset` (ghost) and `Save`. `Save` stays disabled until both an icon and a colour are chosen. It starts from the current avatar every time it opens.
+- **Accessibility**: each option is a `role="radio"` button inside a `radiogroup` with an `aria-label` (the icon name or colour name), `aria-checked`, and a roving `tabindex` (the selected one, or the first when none is selected). Arrow keys move and select. Targets are at least 44px (`min-h-11 min-w-11`). Focus uses the standard ring. The selection is shown by a ring (and a check mark on a colour swatch), never by colour alone. Closing the dialog returns focus to the account menu button.
+
 ## 8. Motion and reduced motion
 
 Only wantap motion exists. Keyframes and utilities are in `main.css`:

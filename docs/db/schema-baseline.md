@@ -13,6 +13,7 @@ Use this as the source for the first versioned migration (overhaul plan, WS1). `
 - `org_members`, `organizations`, `events`, `dp_campaigns`, `attendees`, `check_ins`, `event_*` reference parents **without** cascade.
 - `board_*` tables have no code that uses them (leftover from a removed feature).
 - `users.deleted_at` does not exist.
+- `users.avatar_icon` and `users.avatar_color` (both nullable TEXT) were added by migration `0013_user_avatar.sql` after this baseline was captured. They hold a Lucide icon key and a preset colour key, and the DDL below does not show them. Both are null until the user picks an avatar.
 
 ## DDL
 

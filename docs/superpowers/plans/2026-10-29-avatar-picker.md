@@ -157,9 +157,9 @@
 - Modify: `docs/db/schema-baseline.md`, `DESIGN_SYSTEM.md`, `CONTEXT.md` (add "Avatar" vocabulary in the existing style), `AGENTS.md` (index row for this plan)
 - Create: `docs/owner-guide-avatar-picker.md`
 
-- [ ] **Step 1: Write the failing check:** extend the `DESIGN_SYSTEM.md` test in `src/styles/design.test.ts` to assert the doc contains the strings `Avatar`, `UserAvatar` and `AvatarPicker`.
-- [ ] **Step 2: Run to verify it fails.**
-- [ ] **Step 3: Write the docs:** schema-baseline notes the two columns on `users`; `DESIGN_SYSTEM.md` gets an Avatars section (36 icons grouped as in the spec, the 12 swatches, the 15% wash, the three sizes, the picker and its accessibility rules); `docs/owner-guide-avatar-picker.md` says, in this order: (1) apply `backend/migrations/0013_user_avatar.sql` to the production Turso database, (2) then deploy the backend and frontend, and why the order matters (queries select the new columns); `AGENTS.md` gains a row for this plan next to the avatar spec row.
-- [ ] **Step 4: Run to verify it passes**, then the full gate: `npm run typecheck` and `npm test`.
+- [x] **Step 1: Write the failing check:** extend the `DESIGN_SYSTEM.md` test in `src/styles/design.test.ts` to assert the doc contains the strings `Avatar`, `UserAvatar` and `AvatarPicker`.
+- [x] **Step 2: Run to verify it fails.**
+- [x] **Step 3: Write the docs:** schema-baseline notes the two columns on `users`; `DESIGN_SYSTEM.md` gets an Avatars section (36 icons grouped as in the spec, the 12 swatches, the 15% wash, the three sizes, the picker and its accessibility rules); `docs/owner-guide-avatar-picker.md` says, in this order: (1) apply `backend/migrations/0013_user_avatar.sql` to the production Turso database, (2) then deploy the backend and frontend, and why the order matters (queries select the new columns); `AGENTS.md` gains a row for this plan next to the avatar spec row.
+- [x] **Step 4: Run to verify it passes**, then the full gate: `npm run typecheck` and `npm test`.
 - [ ] **Step 5: Browser check (controller, not an implementer):** run `npm run dev:local` against a read-only token if the migration is not applied, otherwise check with a seeded local database; open the picker, choose each of two icons and two colours in Light, Dark and True black at desktop and phone width; confirm focus returns to the menu and the avatar updates everywhere without a reload. If the migration cannot be applied locally, record that the picker was verified against mocked API responses only and ask the owner to check after applying `0013`.
-- [ ] **Step 6: Commit** `docs(avatar): document the avatar picker and its rollout`.
+- [x] **Step 6: Commit** `docs(avatar): document the avatar picker and its rollout`.
