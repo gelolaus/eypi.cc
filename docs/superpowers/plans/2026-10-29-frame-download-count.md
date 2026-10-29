@@ -66,7 +66,7 @@
 
 - [x] **Step 1: Failing tests.** FramesInsights: `labels the trend and per-frame figures as downloads and shares` (the series label and the two headings use "Downloads and shares", not bare "Downloads"). DpCampaignsView: `shows the lifetime count including zero` (0 renders `0 downloads`, 1 renders `1 download`).
 - [x] **Step 2:** Run both; expect the FramesInsights test FAIL.
-- [x] **Step 3: Implement** the label changes: series `Downloads and shares`, heading `Downloads and shares per day (Manila time)`, heading `Downloads and shares per frame`. Do not change calculations.
+- [x] **Step 3: Implement** the label changes: series `Downloads and shares`, heading `Views, downloads and shares per day (Manila time)`, heading `Downloads and shares per frame`. Do not change calculations.
 - [x] **Step 4:** Run both files; expect PASS.
 - [x] **Step 5: Commit** `fix(insights): label the windowed figures as downloads and shares`.
 

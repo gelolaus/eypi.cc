@@ -44,7 +44,7 @@ describe('insights components', () => {
     const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
     await flushPromises()
     const headings = wrapper.findAll('h3').map((h) => h.text())
-    expect(headings).toContain('Downloads and shares per day (Manila time)')
+    expect(headings).toContain('Views, downloads and shares per day (Manila time)')
     expect(headings).toContain('Downloads and shares per frame')
     expect(wrapper.findComponent({ name: 'LineChart' }).props('series').map((s: { label: string }) => s.label))
       .toContain('Downloads and shares')

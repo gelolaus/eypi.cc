@@ -152,7 +152,7 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
-          Downloads and shares per day (Manila time)
+          Views, downloads and shares per day (Manila time)
         </h3>
         <LineChart
           :series="trend"
