@@ -40,14 +40,15 @@ app.post('/api/legal/consent', requireAuth, async (c) => {
   const ipHash = secret ? await hmacIp(secret, ip) : null
   const userAgent = c.req.header('User-Agent') || null
   const client = db(c)
-  for (const document of documents) {
-    await client.execute({
+  await client.batch(
+    documents.map((document) => ({
       sql: `INSERT INTO legal_consents (id, user_id, document, version, ip_hash, user_agent)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (user_id, document, version) DO NOTHING`,
       args: [crypto.randomUUID(), userId, document, LEGAL_VERSIONS[document], ipHash, userAgent],
-    })
-  }
+    })),
+    'write',
+  )
   return c.json({ ok: true })
 })
 

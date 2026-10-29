@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createSession } from '../lib/auth/session'
 import type { Bindings } from '../lib/db'
 import { hmacIp } from '../lib/ipHash'
@@ -228,6 +228,36 @@ describe('POST /api/legal/consent', () => {
     const me = await request('/api/me')
     expect((await me.json() as { needsConsent: unknown[] }).needsConsent).toEqual([])
     expect(await consentRows(client)).toHaveLength(2)
+  })
+
+  it('stores no consent rows when the second insert fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { request, client } = await signedIn()
+    let consentInserts = 0
+    const originalExecute = client.execute.bind(client)
+    const originalBatch = client.batch.bind(client)
+    const failingInsert = {
+      sql: 'INSERT INTO legal_consents (id, user_id, document, version) VALUES (?, ?, ?, ?)',
+      args: [null, null, null, null],
+    }
+
+    function poison<T>(stmt: T): T {
+      const sql = typeof stmt === 'string' ? stmt : String((stmt as { sql?: unknown }).sql ?? '')
+      if (!sql.includes('INSERT INTO legal_consents')) return stmt
+      consentInserts += 1
+      if (consentInserts === 2) return failingInsert as T
+      return stmt
+    }
+
+    client.execute = (async (stmt: { sql: string }) => originalExecute(poison(stmt) as never)) as typeof client.execute
+    client.batch = (async (stmts: Array<{ sql: string } | string>, mode?: 'write') => {
+      return originalBatch(stmts.map((stmt) => poison(stmt)) as never, mode)
+    }) as typeof client.batch
+
+    const res = await request('/api/legal/consent', send('POST', { documents: ['privacy', 'terms'] }))
+
+    expect(res.status).toBe(500)
+    expect(await consentRows(client)).toEqual([])
   })
 
   it('stores a null ip hash when IP_HASH_SECRET is missing and a null user agent when the header is absent', async () => {
