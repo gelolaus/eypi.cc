@@ -62,3 +62,36 @@ describe('AccountMenu avatar', () => {
     wrapper.unmount()
   })
 })
+
+describe('AccountMenu avatar picker entry', () => {
+  const item = () =>
+    Array.from(document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')).find((el) =>
+      el.textContent?.includes('Change avatar'),
+    )
+
+  it('lists Change avatar before the Appearance items', async () => {
+    signIn(null, null)
+    const { wrapper, menu } = await open()
+    expect(item()).toBeDefined()
+    expect(menu.textContent!.indexOf('Change avatar')).toBeLessThan(menu.textContent!.indexOf('Appearance'))
+    wrapper.unmount()
+  })
+
+  it('opens the picker dialog, and focus returns to the menu trigger when it closes', async () => {
+    signIn(null, null)
+    const { wrapper } = await open()
+    item()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+    expect(document.body.querySelector('[data-slot="dialog-content"]')).not.toBeNull()
+    expect(document.body.textContent).toContain('Choose your avatar')
+
+    document.body
+      .querySelector('[data-slot="dialog-content"]')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(document.body.querySelector('[data-slot="dialog-content"]')).toBeNull()
+    expect(document.activeElement).toBe(wrapper.get('[data-account-menu="sidebar"]').element)
+    wrapper.unmount()
+  })
+})

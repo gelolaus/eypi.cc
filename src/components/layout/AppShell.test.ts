@@ -244,12 +244,12 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
-  it('lists Account, Contact, Privacy, Terms and Sign out in the sidebar menu', async () => {
+  it('lists Account, Change avatar, Contact, Privacy, Terms and Sign out in the sidebar menu', async () => {
     signIn()
     const wrapper = await mountAt('/links')
     const menu = await openAccountMenu(wrapper, 'sidebar')
     const items = Array.from(menu.querySelectorAll('[data-slot="dropdown-menu-item"]')).map((el) => el.textContent?.trim())
-    expect(items).toEqual(['Account', 'Contact', 'Privacy', 'Terms', 'Sign out'])
+    expect(items).toEqual(['Account', 'Change avatar', 'Contact', 'Privacy', 'Terms', 'Sign out'])
     wrapper.unmount()
   })
 

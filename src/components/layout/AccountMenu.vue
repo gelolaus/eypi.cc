@@ -103,6 +103,13 @@
         </router-link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <DropdownMenuItem
+        class="min-h-11 rounded-xl px-3 py-3 text-base"
+        @select="avatarOpen = true"
+      >
+        <Smile aria-hidden="true" />
+        Change avatar
+      </DropdownMenuItem>
       <ThemeMenuItems />
       <DropdownMenuSeparator />
       <template v-if="canInstall">
@@ -136,12 +143,17 @@
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
+  <AvatarPicker
+    v-model:open="avatarOpen"
+    @update:open="onAvatarOpen"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { ChevronDown, Download, LogOut } from 'lucide-vue-next'
+import { ChevronDown, Download, LogOut, Smile } from 'lucide-vue-next'
+import AvatarPicker from '@/components/avatar/AvatarPicker.vue'
 import UserAvatar from '@/components/avatar/UserAvatar.vue'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -179,6 +191,15 @@ const session = useSession()
 const route = useRoute()
 const signOut = useSignOut()
 const { canInstall, install } = useInstallPrompt()
+
+/** Lives outside the menu content so it survives the menu closing. */
+const avatarOpen = ref(false)
+
+/** The menu item that opened the dialog is gone by now, so hand focus back to the menu trigger. */
+function onAvatarOpen(value: boolean) {
+  if (value) return
+  void nextTick(() => document.querySelector<HTMLElement>(`[data-account-menu="${props.variant}"]`)?.focus())
+}
 
 const accountEntries = computed(() => menuEntries({ admin: session.user.value?.role === 'admin' }))
 const header = computed(() => props.variant === 'header')
