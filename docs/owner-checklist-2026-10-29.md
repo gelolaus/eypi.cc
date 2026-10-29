@@ -35,7 +35,7 @@ Source: `docs/owner-guide-avatar-picker.md`. Part 1, then part 2, then part 3.
 
 ### Part 2 — Deploy (only after part 1)
 
-- [ ] **2.1 Deploy the backend, then the frontend,** the way `docs/RELEASE.md` describes.
+- [x] **2.1 Deploy the backend, then the frontend,** the way `docs/RELEASE.md` describes.
 
   Send back: "backend and frontend deployed".
 
@@ -43,13 +43,13 @@ Source: `docs/owner-guide-avatar-picker.md`. Part 1, then part 2, then part 3.
 
 Sign in at <https://eypi.cc>.
 
-- [ ] **3.1 Pick an avatar.** Account menu → **Change avatar**. Choose an icon and a colour, then **Save**.
+- [x] **3.1 Pick an avatar.** Account menu → **Change avatar**. Choose an icon and a colour, then **Save**.
   Check: the dialog closes, focus is back on the account menu button, and the avatar shows in the account menu without a reload.
-- [ ] **3.2 Light, Dark, and True black.** Look at the avatar in each.
+- [x] **3.2 Light, Dark, and True black.** Look at the avatar in each.
   Check: the icon and its soft background are clearly visible in every theme.
-- [ ] **3.3 Lists.** Your org's member list, and Admin → Users.
+- [x] **3.3 Lists.** Your org's member list, and Admin → Users.
   Check: your avatar is next to your name in both. Other people still show their initials.
-- [ ] **3.4 Reset.** **Change avatar** → **Reset**.
+- [x] **3.4 Reset.** **Change avatar** → **Reset**.
   Check: your initials come back everywhere.
 
 Send back: "avatar picker checked", or what looked wrong, with the theme and screen size.
