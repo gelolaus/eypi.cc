@@ -1,13 +1,15 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 
 let wrapper: VueWrapper | undefined
+const menuOpen = ref(true)
 
 async function setup() {
   vi.resetModules()
   localStorage.clear()
+  menuOpen.value = true
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }))
   const { useTheme, initTheme } = await import('@/composables/useTheme')
   const { default: ThemeMenuItems } = await import('./ThemeMenuItems.vue')
@@ -15,7 +17,7 @@ async function setup() {
   initTheme()
   const Harness = defineComponent({
     setup: () => () =>
-      h(DropdownMenu, { open: true }, () => [
+      h(DropdownMenu, { open: menuOpen.value, 'onUpdate:open': (v: boolean) => (menuOpen.value = v) }, () => [
         h(DropdownMenuTrigger, null, () => 'Menu'),
         h(DropdownMenuContent, null, () => h(ThemeMenuItems)),
       ]),
@@ -63,7 +65,9 @@ describe('ThemeMenuItems', () => {
     await flushPromises()
     expect(theme.preference.value.mode).toBe('dark')
     expect(radios()[2].getAttribute('aria-checked')).toBe('true')
+    expect(menuOpen.value).toBe(true)
     expect(document.body.querySelector('[data-slot="dropdown-menu-content"]')).not.toBeNull()
+    expect(radios()).toHaveLength(3)
   })
 
   it('offers True black only in a dark theme', async () => {
@@ -78,5 +82,7 @@ describe('ThemeMenuItems', () => {
     await flushPromises()
     expect(theme.preference.value.black).toBe(true)
     expect(black()[0].getAttribute('aria-checked')).toBe('true')
+    expect(menuOpen.value).toBe(true)
+    expect(radios()).toHaveLength(3)
   })
 })
