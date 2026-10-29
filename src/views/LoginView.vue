@@ -63,6 +63,7 @@
         </a>
       </Button>
     </Card>
+    <ThemeToggle class="mt-6" />
   </section>
 </template>
 
@@ -71,6 +72,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import ThemeToggle from '@/components/theme/ThemeToggle.vue'
 import { API_BASE_URL } from '@/config/api'
 
 const route = useRoute()

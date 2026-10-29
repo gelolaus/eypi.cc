@@ -101,6 +101,8 @@
         </router-link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
+      <ThemeMenuItems />
+      <DropdownMenuSeparator />
       <template v-if="canInstall">
         <DropdownMenuItem
           class="min-h-11 rounded-xl px-3 py-3 text-base"
@@ -147,6 +149,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import ThemeMenuItems from '@/components/theme/ThemeMenuItems.vue'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { cn } from '@/lib/cn'
 import { useSession } from '@/stores/session'
