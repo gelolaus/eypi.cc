@@ -312,9 +312,9 @@ describe('POST /api/orgs/:id/members', () => {
     expect(res.status).toBe(201)
     expect(sendEmail).toHaveBeenCalledTimes(1)
     const payload = sendEmail.mock.calls[0][0] as { from: string; to: string; subject: string; html: string }
-    expect(payload.from).toBe('eypi.cc <invites@eypi.cc>')
+    expect(payload.from).toBe('Eypi <invites@eypi.cc>')
     expect(payload.to).toBe('new@apc.edu.ph')
-    expect(payload.subject).toBe("You're invited to join <script>alert(1)</script> on eypi.cc")
+    expect(payload.subject).toBe("You're invited to join <script>alert(1)</script> on Eypi")
     expect(payload.html).toContain('href="https://eypi.cc/invites"')
     expect(payload.html).not.toContain('<script>')
     expect(payload.html).toContain('&lt;script&gt;')

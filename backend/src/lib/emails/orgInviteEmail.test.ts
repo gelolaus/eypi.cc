@@ -9,7 +9,7 @@ describe('renderOrgInviteEmail', () => {
       inviteUrl: 'https://eypi.cc/invites',
     })
 
-    expect(rendered.subject).toBe("You're invited to join Alpha Org on eypi.cc")
+    expect(rendered.subject).toBe("You're invited to join Alpha Org on Eypi")
     expect(rendered.html).toContain('href="https://eypi.cc/invites"')
     expect(rendered.text).toContain('https://eypi.cc/invites')
     expect(rendered.text).toContain('Ada Owner')
@@ -31,6 +31,22 @@ describe('renderOrgInviteEmail', () => {
     expect(rendered.html).not.toMatch(/<(script|style|link)\b[^>]*(src|href)=/i)
   })
 
+  it('shows the Eypi mascot and name, never the eypi.cc brand text', () => {
+    const rendered = renderOrgInviteEmail({
+      orgName: 'Alpha Org',
+      inviterName: 'Ada Owner',
+      inviteUrl: 'https://eypi.cc/invites',
+    })
+
+    expect(rendered.html).toContain('<img src="https://eypi.cc/eypi-mark.png"')
+    expect(rendered.html).toContain('alt="Eypi"')
+    expect(rendered.html).toContain('>Eypi</')
+    expect(rendered.html).toContain('#deac4b')
+    expect(rendered.html).not.toContain('>eypi.cc<')
+    expect(rendered.html).not.toMatch(/on eypi\.cc/)
+    expect(rendered.text).not.toMatch(/on eypi\.cc/)
+  })
+
   it('keeps the plain-text part readable', () => {
     const rendered = renderOrgInviteEmail({
       orgName: 'Alpha Org',
@@ -40,7 +56,7 @@ describe('renderOrgInviteEmail', () => {
 
     expect(rendered.text).toBe(
       [
-        'Ada Owner invited you to join Alpha Org on eypi.cc.',
+        'Ada Owner invited you to join Alpha Org on Eypi.',
         '',
         'Review invites: https://eypi.cc/invites',
         '',
@@ -60,6 +76,6 @@ describe('renderOrgInviteEmail', () => {
     expect(rendered.html).not.toContain('<b>')
     expect(rendered.html).toContain('&lt;script&gt;')
     expect(rendered.html).toContain('&lt;b&gt;')
-    expect(rendered.subject).toBe("You're invited to join <script>alert(1)</script> on eypi.cc")
+    expect(rendered.subject).toBe("You're invited to join <script>alert(1)</script> on Eypi")
   })
 })
