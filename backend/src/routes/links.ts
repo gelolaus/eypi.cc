@@ -232,7 +232,10 @@ async function discardLogo(c: AppContext, key: string | null) {
   try {
     await deleteObject(c.env, key)
   } catch (err) {
-    reportError(c, err, { code: 'media_delete_failed', message: 'Could not delete the QR logo.' })
+    reportError(c, err, {
+      code: 'media_delete_failed',
+      message: `Could not delete the QR logo object ${key}.`,
+    })
   }
 }
 
@@ -831,6 +834,7 @@ app.post('/api/links/bulk', requireAuth, requireConsent, async (c) => {
         args: [row.id, c.var.userId],
       })
       await deleteKvKey(c.env.LINKS_KV, row.slug)
+      await discardLogo(c, readLogoKey(row.qr_config))
       continue
     }
     if (action === 'disable') {
@@ -1002,6 +1006,9 @@ app.patch('/api/links/:id', requireAuth, requireConsent, async (c) => {
   let logoWrite: LogoWrite | null = null
   if ('qrConfig' in body) {
     const prepared = prepareQrConfigForSave(parseLinkQrConfig(body.qrConfig))
+    if (prepared.logoOmitted) {
+      return fail(c, 422, 'file_too_large', 'That image is too large.')
+    }
     try {
       logoWrite = await writeQrLogo(c, current.id, prepared.config, current.qr_config)
     } catch (err) {
@@ -1071,6 +1078,7 @@ app.delete('/api/links/:id', requireAuth, requireConsent, async (c) => {
   })
   if (deleted.rowsAffected === 0) return fail(c, 404, 'not_found', 'Not found')
   await deleteKvKey(c.env.LINKS_KV, row.slug)
+  await discardLogo(c, readLogoKey(row.qr_config))
   return c.json({ ok: true })
 })
 
