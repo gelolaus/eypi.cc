@@ -4,6 +4,7 @@ import { createTestApp, type TestUser } from '../test/createTestApp'
 
 const ORIGIN = 'https://eypi.cc'
 const IP_A = '203.0.113.10'
+const IP_B = '203.0.113.11'
 
 const member: TestUser = {
   id: 'user-member',
@@ -281,6 +282,15 @@ describe('frame campaigns', () => {
       expect(over.status).toBe(429)
       expect(((await over.json()) as { message: string }).message).toBe('You are saving too fast. Try again in a little while.')
       expect(await downloadCount(client, 'camp-a')).toBe(30)
+    })
+
+    it('gives each connection its own hourly allowance', async () => {
+      const { client, download } = await setup()
+      for (let i = 0; i < 30; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
+      expect((await download('camp-a', IP_A)).status).toBe(429)
+      expect(await downloadCount(client, 'camp-a')).toBe(30)
+      expect((await download('camp-a', IP_B)).status).toBe(200)
+      expect(await downloadCount(client, 'camp-a')).toBe(31)
     })
 
     it('limits each frame on its own', async () => {
