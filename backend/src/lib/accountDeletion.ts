@@ -12,7 +12,11 @@ export class LastAdminDeletionError extends Error {
   }
 }
 
-const LAST_ADMIN_GUARD_SQL = `INSERT INTO users (id, email, name, role)
+// Selects the target's own row back into `users` only when it is the last active admin.
+// That duplicates the primary key, so the statement fails and rolls its batch back; for
+// anyone else it selects no rows and does nothing. An INSERT trigger on `users` would
+// fire for the last admin, so keep such triggers abort-only.
+const LAST_ADMIN_GUARD_SQL =`INSERT INTO users (id, email, name, role)
   SELECT target.id, target.email, target.name, target.role
   FROM users AS target
   WHERE target.id = ?
