@@ -1,81 +1,37 @@
 # eypi.cc
 
-URL shortener and org-tool suite for the Asia Pacific College student community.
+eypi.cc is a free toolkit for the Asia Pacific College (APC) student community. Sign in with your APC Microsoft account and get the everyday tools student organizations and students keep needing, in one place.
 
-## Prerequisites
+## What you can do
 
-- Node 20+ and npm
-- A Cloudflare account login is only needed for deploys (`wrangler deploy`), not for local development
+- **Short links.** Turn a long address into `eypi.cc/something`, share it, and see how many people opened it and from where. Links can be paused or removed at any time.
+- **Forms.** Fill in official paperwork templates and download the finished document, instead of editing a file by hand.
+- **Frames.** Organizations publish a profile picture frame for a campaign or event. Anyone can add their photo, save it, and share it. Each frame page shows how many times it has been downloaded.
+- **Tix.** Run event registration and tickets: first come first served, a lottery, or approval by an organizer. Attendees get a QR ticket, and organizers check people in at the door, even with a weak connection.
+- **Organization pages.** Each student organization gets a public page, a members list, and the tools above for everyone on its team.
 
-## Local setup
+## Who it is for
 
-```bash
-npm run setup
-```
+- **Students** sign in with their `@apc.edu.ph` or `@student.apc.edu.ph` account to make links, register for events, and keep their tickets.
+- **Student organizations** are set up by a platform admin and then manage their own members, events and frames.
+- **Anyone** can open a short link, a frame page or an organization page without signing in.
 
-That installs both packages, copies `backend/.dev.vars.example` to `backend/.dev.vars` if the file is missing, and fills fresh local values for `PASS_TOKEN_SECRET`, `AUTH_COOKIE_SECRET`, and `IP_HASH_SECRET`. It does not overwrite an existing `.dev.vars`.
+## Your privacy
 
-### Fill `backend/.dev.vars`
+eypi.cc keeps what it needs to work and nothing more. Click statistics are counted without storing your name, and IP addresses are stored only in scrambled form. The details are in the privacy policy and terms inside the app.
 
-Copy real values from `backend/.dev.vars.example` (comments there say where each value comes from). Status is key names only — never commit this file.
+## Contributing
 
-| Key | Required | Used for |
-|---|---|---|
-| `TURSO_DATABASE_URL` | yes | Production Turso database URL |
-| `TURSO_AUTH_TOKEN` | yes | Production Turso database token |
-| `PASS_TOKEN_SECRET` | yes | Signs Tix wallet pass tokens (`setup` generates one) |
-| `AUTH_COOKIE_SECRET` | yes | Signs the short-lived Microsoft sign-in cookie (`setup` generates one) |
-| `IP_HASH_SECRET` | yes | HMAC for hashed IPs in sessions, analytics, and reports (`setup` generates one) |
-| `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | no | Sign in with Microsoft. Without them `/api/auth/microsoft/start` redirects to `/login?error=server` |
-| `MS_ALLOWED_TENANT_IDS` | no | Comma list of allowed Entra tenant ids. APC is `aeb745e6-8166-4f8f-9233-179e8109c49e` |
-| `FRONTEND_ORIGIN` | no | SPA origin for sign-in redirects. `http://localhost:5173` locally, `https://eypi.cc` in production |
-| `ENVIRONMENT` | no | `development` locally. `production` drops localhost from CORS and CSRF and uses the `__Host-` session cookie |
-| `RESEND_API_KEY` | no | Org invite emails |
-| `SAFE_BROWSING_API_KEY` | no | Google Safe Browsing check on link create and edit. Unset skips it |
-| `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_WALLET_SERVICE_ACCOUNT_PRIVATE_KEY` | no | Google Wallet |
+eypi.cc is built in the open by students, for students. If you want a feature that does not exist yet, please help build it here rather than starting a separate copy, so the whole community gets it. Start with [CONTRIBUTING.md](CONTRIBUTING.md); it explains how to propose a change, how to run the project, and the [Contributor License Agreement](CLA.md) every contributor accepts once.
 
-`FRONTEND_ORIGIN` and `ENVIRONMENT` are not checked by `doctor`; the example file sets local values. For local Microsoft sign-in, register `http://localhost:8787/api/auth/microsoft/callback` as a redirect URI on the Entra app and fill the `MS_*` keys. Production secret names and the cutover order are in [docs/RELEASE.md](docs/RELEASE.md).
+## Reporting a problem
 
-Then check the file:
-
-```bash
-npm run doctor
-```
-
-`doctor` exits 0 only when every required key (the first five rows) is set (not empty, and not still the example placeholder).
-
-## Run locally
-
-```bash
-npm run dev:local
-```
-
-Starts the API at `http://127.0.0.1:8787` and the Vite app at `http://localhost:5173` with `VITE_API_BASE_URL=http://localhost:8787`.
-
-Local development uses the **production Turso database**. CONTEXT.md: "Do not insist on a separate dev database unless asked."
-
-## Checks
-
-```bash
-npm test
-npm run typecheck
-npm run lint
-npm run build
-```
-
-`npm run smoke` and `npm run release:check` are used before and after a deploy.
-
-## Database, media and operations
-
-Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run migrate --prefix backend -- --status` (then `--dry-run`, then `--yes`). Because local development points at the production database, never run `--yes` without the owner. Org logos, QR logos, frames and the private form templates live in the R2 bucket `eypi-media`. Restore, KV backfill, secret rotation and incident steps are in [docs/operations.md](docs/operations.md). Deploys and the Microsoft cutover are in [docs/RELEASE.md](docs/RELEASE.md). Agents start at [AGENTS.md](AGENTS.md).
-
-## Known issues
-
-- `public/_headers` sets `connect-src 'self' https://api.eypi.cc`. That header is served by the Worker, not by Vite. If a local API call is blocked in the browser console under `wrangler` preview, do not change `_headers` without a follow-up; use `npm run dev:local` (Vite) for day-to-day work.
-- Short-link redirects for existing slugs may 404 locally. `LINKS_KV` in `wrangler dev` is a local namespace and is often empty until backfilled.
+Open an issue on this repository. Please do not post passwords, tokens, or other people's personal details in an issue.
 
 ## License
 
-The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). If you run a modified version as a network service, you must offer its complete source to the people who use it, under the same license.
+The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). In plain terms: you can read, learn from and change it, but if you run a modified version as an online service you must share its complete source under the same license.
 
 The license covers the source code only. Organization logos and banners, the privacy policy, terms and acceptable use text, and the eypi.cc name and brand are not licensed for reuse.
+
+Contributions are accepted under the [Contributor License Agreement](CLA.md), which lets the maintainer keep the project's licensing flexible while you keep the copyright to your work.
