@@ -111,6 +111,8 @@ describe('GET /api/me', () => {
       email: 'ada@apc.edu.ph',
       name: 'Ada',
       role: 'user',
+      avatarIcon: null,
+      avatarColor: null,
     })
     expect(body.pendingInviteCount).toBe(1)
     expect(body.needsConsent).toEqual([
@@ -119,6 +121,19 @@ describe('GET /api/me', () => {
     ])
     expect(body.orgs.map((org) => org.org_id)).toEqual(['org-alpha'])
     expect(body.orgs[0]).toMatchObject({ org_name: 'Alpha', is_owner: 1 })
+  })
+
+  it('returns the saved avatar fields', async () => {
+    const { request, client, token } = await seedSession()
+    await client.execute({
+      sql: 'UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?',
+      args: ['cat', 'blue', 'ada-id'],
+    })
+
+    const res = await request('/api/me', { headers: { Cookie: `eypi_session=${token}` } })
+
+    const body = await res.json() as { user: { avatarIcon: string | null; avatarColor: string | null } }
+    expect(body.user).toMatchObject({ avatarIcon: 'cat', avatarColor: 'blue' })
   })
 
   it('returns an empty needsConsent after the current privacy and terms are accepted', async () => {

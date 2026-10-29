@@ -800,3 +800,99 @@ describe('account routes', () => {
     expect(logged).not.toContain('ada-id')
   })
 })
+
+describe('PATCH /api/account/avatar', () => {
+  async function seedTwoUsers() {
+    const currentId = await sha256Hex(TOKEN)
+    return createTestApp({
+      seed: async (db) => {
+        await insertUser(db, 'ada-id', 'ada@apc.edu.ph', 'Ada')
+        await insertUser(db, 'bea-id', 'bea@apc.edu.ph', 'Bea')
+        await insertSession(db, currentId, 'ada-id', CHROME_WINDOWS)
+      },
+    })
+  }
+
+  async function avatarOf(client: Client, id: string): Promise<(string | null)[]> {
+    const result = await client.execute({
+      sql: 'SELECT avatar_icon, avatar_color FROM users WHERE id = ?',
+      args: [id],
+    })
+    const row = result.rows[0]
+    return [
+      row.avatar_icon == null ? null : String(row.avatar_icon),
+      row.avatar_color == null ? null : String(row.avatar_color),
+    ]
+  }
+
+  it('returns 401 without a session', async () => {
+    const { request } = await createTestApp()
+    const res = await request('/api/account/avatar', {
+      method: 'PATCH',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ icon: 'cat', color: 'blue' }),
+    })
+    expect(res.status).toBe(401)
+    const body = await res.json() as { error: { code: string } }
+    expect(body.error.code).toBe('unauthorized')
+  })
+
+  it('saves a valid avatar and returns it', async () => {
+    const { request, client } = await seedTwoUsers()
+    const res = await request('/api/account/avatar', jsonRequest('PATCH', { icon: 'cat', color: 'blue' }))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ avatarIcon: 'cat', avatarColor: 'blue' })
+    expect(await avatarOf(client, 'ada-id')).toEqual(['cat', 'blue'])
+  })
+
+  it('saves only the signed-in user and leaves another user null', async () => {
+    const { request, client } = await seedTwoUsers()
+    const res = await request('/api/account/avatar', jsonRequest('PATCH', { icon: 'cat', color: 'blue' }))
+    expect(res.status).toBe(200)
+    expect(await avatarOf(client, 'ada-id')).toEqual(['cat', 'blue'])
+    expect(await avatarOf(client, 'bea-id')).toEqual([null, null])
+  })
+
+  it('resets a saved avatar with null values', async () => {
+    const { request, client } = await seedTwoUsers()
+    await request('/api/account/avatar', jsonRequest('PATCH', { icon: 'cat', color: 'blue' }))
+    const res = await request('/api/account/avatar', jsonRequest('PATCH', { icon: null, color: null }))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ avatarIcon: null, avatarColor: null })
+    expect(await avatarOf(client, 'ada-id')).toEqual([null, null])
+  })
+
+  const invalidBodies: [string, unknown][] = [
+    ['icon only', { icon: 'cat' }],
+    ['icon with null color', { icon: 'cat', color: null }],
+    ['unknown icon', { icon: 'nope', color: 'blue' }],
+    ['non-string icon', { icon: 5, color: 'blue' }],
+    ['empty object', {}],
+    ['extra field', { icon: 'cat', color: 'blue', id: 'bea-id' }],
+  ]
+  for (const [label, body] of invalidBodies) {
+    it(`rejects ${label} and changes no row`, async () => {
+      const { request, client } = await seedTwoUsers()
+      const res = await request('/api/account/avatar', jsonRequest('PATCH', body))
+      expect(res.status).toBe(400)
+      const json = await res.json() as { error: { code: string } }
+      expect(json.error.code).toBe('invalid_avatar')
+      expect(await avatarOf(client, 'ada-id')).toEqual([null, null])
+      expect(await avatarOf(client, 'bea-id')).toEqual([null, null])
+    })
+  }
+
+  it('rejects a non-JSON body and leaves a saved avatar unchanged', async () => {
+    const { request, client } = await seedTwoUsers()
+    await request('/api/account/avatar', jsonRequest('PATCH', { icon: 'cat', color: 'blue' }))
+    const res = await request('/api/account/avatar', {
+      method: 'PATCH',
+      headers: { Cookie: cookieHeader(), Origin: ORIGIN, 'Content-Type': 'application/json' },
+      body: 'not json',
+    })
+    expect(res.status).toBe(400)
+    const json = await res.json() as { error: { code: string } }
+    expect(json.error.code).toBe('invalid_avatar')
+    expect(await avatarOf(client, 'ada-id')).toEqual(['cat', 'blue'])
+  })
+})

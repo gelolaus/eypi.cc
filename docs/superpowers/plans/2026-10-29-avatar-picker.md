@@ -64,13 +64,13 @@
 - Consumes: `parseAvatar` from `shared/avatars.ts` (import with the relative path style used in `backend/src/lib/auth/identity.ts`, `../../../shared/avatars`).
 - Produces: `PATCH /api/account/avatar` (`requireAuth`) returning `200 { avatarIcon: string | null, avatarColor: string | null }`; `GET /api/me` `user` object gains `avatarIcon` and `avatarColor` (each `string | null`).
 
-- [ ] **Step 1: Write the failing tests** following the existing seeding and `jsonRequest` helpers in each file:
+- [x] **Step 1: Write the failing tests** following the existing seeding and `jsonRequest` helpers in each file:
   - account: valid `{icon:'cat',color:'blue'}` returns 200 with the values and the row stores them; `{icon:null,color:null}` resets a saved avatar to null; each of `{icon:'cat'}`, `{icon:'cat',color:null}`, `{icon:'nope',color:'blue'}`, `{icon:5,color:'blue'}`, `{}` and a non-JSON body returns 400 with `error.code === 'invalid_avatar'` and leaves the row unchanged; an extra field (`{icon:'cat',color:'blue',id:'other-id'}`) saves only the signed-in user and leaves the other seeded user's row null; no session returns 401 (the existing `UNAUTHORIZED` shape).
   - me: a user with a saved avatar gets both fields; a user without gets `null` for both.
-- [ ] **Step 2: Run to verify they fail.**
-- [ ] **Step 3: Implement** the route (`UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?` with the session user id, then return the saved values) and add one more query to the `Promise.all` in `/api/me`: `SELECT avatar_icon, avatar_color FROM users WHERE id = ?`.
-- [ ] **Step 4: Run to verify they pass**; run the whole backend suite (`npx vitest run backend`).
-- [ ] **Step 5: Commit** `feat(avatar): add the avatar route and return it from me`.
+- [x] **Step 2: Run to verify they fail.**
+- [x] **Step 3: Implement** the route (`UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?` with the session user id, then return the saved values) and add one more query to the `Promise.all` in `/api/me`: `SELECT avatar_icon, avatar_color FROM users WHERE id = ?`.
+- [x] **Step 4: Run to verify they pass**; run the whole backend suite (`npx vitest run backend`).
+- [x] **Step 5: Commit** `feat(avatar): add the avatar route and return it from me`.
 
 ---
 

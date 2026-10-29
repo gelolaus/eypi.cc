@@ -8,6 +8,7 @@ import {
   organizationsOwnedBy,
   OWNS_ORG_MESSAGE,
 } from '../lib/accountDeletion'
+import { parseAvatar } from '../../../shared/avatars'
 import { db, type Bindings } from '../lib/db'
 import { deleteObject } from '../lib/media'
 import { reportError } from '../lib/reportError'
@@ -101,6 +102,28 @@ async function confirmEmail(c: { req: { json(): Promise<unknown> } }): Promise<s
   const value = (body as { confirmEmail: unknown }).confirmEmail
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
 }
+
+app.patch('/api/account/avatar', requireAuth, async (c) => {
+  const userId = c.var.userId
+  if (!userId) return c.json(UNAUTHORIZED, 401)
+  let body: unknown
+  try {
+    body = await c.req.json()
+  } catch {
+    body = undefined
+  }
+  const avatar = parseAvatar(body)
+  if (!avatar) {
+    return c.json({
+      error: { code: 'invalid_avatar', message: 'Pick an icon and a colour from the lists.' },
+    }, 400)
+  }
+  await db(c).execute({
+    sql: 'UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?',
+    args: [avatar.icon, avatar.color, userId],
+  })
+  return c.json({ avatarIcon: avatar.icon, avatarColor: avatar.color })
+})
 
 app.get('/api/account/export.json', requireAuth, async (c) => {
   const userId = c.var.userId

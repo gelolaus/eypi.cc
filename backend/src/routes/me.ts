@@ -28,7 +28,7 @@ app.get('/api/me', requireAuth, async (c) => {
 
   const client = db(c)
   const email = sessionUser?.email ?? c.var.userEmail ?? ''
-  const [invites, orgs, needsConsent, updates] = await Promise.all([
+  const [invites, orgs, needsConsent, updates, avatar] = await Promise.all([
     client.execute({
       sql: `SELECT COUNT(*) AS n
             FROM org_members
@@ -57,6 +57,10 @@ app.get('/api/me', requireAuth, async (c) => {
               AND decided_at > COALESCE((SELECT tickets_seen_at FROM users WHERE id = ?), '')`,
       args: [userId, userId],
     }),
+    client.execute({
+      sql: 'SELECT avatar_icon, avatar_color FROM users WHERE id = ?',
+      args: [userId],
+    }),
   ])
 
   return c.json({
@@ -65,6 +69,8 @@ app.get('/api/me', requireAuth, async (c) => {
       email,
       name: sessionUser?.name ?? '',
       role: sessionUser?.role === 'admin' ? 'admin' : 'user',
+      avatarIcon: avatar.rows[0]?.avatar_icon == null ? null : String(avatar.rows[0].avatar_icon),
+      avatarColor: avatar.rows[0]?.avatar_color == null ? null : String(avatar.rows[0].avatar_color),
     },
     pendingInviteCount: Number(invites.rows[0]?.n ?? 0),
     needsConsent,
