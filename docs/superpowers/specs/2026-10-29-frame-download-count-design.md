@@ -74,7 +74,8 @@ Checks (2026-10-29): typecheck clean; 2200 tests in 257 files pass; lint has 0 e
 Limits:
 
 - Old frames keep their old totals. The earlier once-per-day rule swallowed repeat saves and that history cannot be recovered; nothing was backfilled.
-- The visible number can lag by up to 30 s because the public payload is edge-cached.
-- The count is client-reported: a script can still add up to 30 per hour per connection.
+- The visible number can lag by up to about 5.5 minutes in a browser, because the public payload is sent with `max-age=30, stale-while-revalidate=300` (see `backend/src/lib/edgeCache.ts`). The edge cache itself holds it for 30 s.
+- The count is client-reported. The guard limits one connection to 30 per hour, but someone rotating IP addresses (easy over IPv6) can still inflate it, so treat the number as a popularity signal, not an audit figure.
+- Rate-limit KV keys use the raw IP as before (retention is now 1 hour instead of 24 hours); hashing it like the rum/guests limiters is an optional follow-up.
 - The KV guard is not atomic, so concurrent requests can slip a few extra counts past the limit.
 - Nothing was viewed in a browser: the public count and the org screens have had no visual check.
