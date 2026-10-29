@@ -9,7 +9,7 @@ describe('renderOrgInviteEmail', () => {
       inviteUrl: 'https://eypi.cc/invites',
     })
 
-    expect(rendered.subject).toBe("You're invited to join Alpha Org on Eypi")
+    expect(rendered.subject).toBe("Eypi | You're invited to join Alpha Org")
     expect(rendered.html).toContain('href="https://eypi.cc/invites"')
     expect(rendered.text).toContain('https://eypi.cc/invites')
     expect(rendered.text).toContain('Ada Owner')
@@ -43,7 +43,6 @@ describe('renderOrgInviteEmail', () => {
     expect(rendered.html).toContain('>Eypi</')
     expect(rendered.html).toContain('#f7ead2')
     expect(rendered.html).toContain('#deac4b')
-    expect(rendered.html).toContain('overflow:hidden;">')
     expect(rendered.html).not.toContain('>eypi.cc<')
     expect(rendered.html).not.toMatch(/on eypi\.cc/)
     expect(rendered.text).not.toMatch(/on eypi\.cc/)
@@ -78,6 +77,6 @@ describe('renderOrgInviteEmail', () => {
     expect(rendered.html).not.toContain('<b>')
     expect(rendered.html).toContain('&lt;script&gt;')
     expect(rendered.html).toContain('&lt;b&gt;')
-    expect(rendered.subject).toBe("You're invited to join <script>alert(1)</script> on Eypi")
+    expect(rendered.subject).toBe("Eypi | You're invited to join <script>alert(1)</script>")
   })
 })

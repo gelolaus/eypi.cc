@@ -51,7 +51,7 @@ export function renderOrgInviteEmail(input: {
   inviterName: string
   inviteUrl: string
 }): OrgInviteEmail {
-  const subject = `You're invited to join ${input.orgName} on Eypi`
+  const subject = `Eypi | You're invited to join ${input.orgName}`
   const inviter = escapeHtml(input.inviterName)
   const org = escapeHtml(input.orgName)
   const url = escapeHtml(input.inviteUrl)

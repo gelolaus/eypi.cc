@@ -58,7 +58,7 @@ export function emailFootnote(html: string): string {
   return `<p style="margin:0;font-family:${emailFont.sans};font-size:13px;line-height:1.5;color:${color.muted};">${html}</p>`
 }
 
-/** Eypi-branded shell: mascot + name header, blue and gold bars clipped to the rounded card, on the page grey. */
+/** Eypi-branded shell: mascot + name header, blue and gold bars, white card on the page grey. */
 export function renderEmailShell(input: {
   title: string
   preheader: string
@@ -78,8 +78,8 @@ export function renderEmailShell(input: {
     `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${input.preheader}</div>`,
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${color.background};">`,
     '<tr><td align="center" style="padding:32px 16px;">',
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border:1px solid ${color.border};border-radius:24px;border-collapse:separate;overflow:hidden;">`,
-    `<tr><td style="height:6px;background:${color.primary};font-size:0;line-height:0;">&nbsp;</td></tr>`,
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border:1px solid ${color.border};border-radius:24px;">`,
+    `<tr><td style="height:6px;background:${color.primary};border-radius:24px 24px 0 0;font-size:0;line-height:0;">&nbsp;</td></tr>`,
     `<tr><td style="height:3px;background:${color.gold};font-size:0;line-height:0;">&nbsp;</td></tr>`,
     '<tr><td style="padding:28px 32px 0;">',
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
