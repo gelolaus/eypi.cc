@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import DialogHost from './DialogHost.vue'
 import ToastContainer from './ToastContainer.vue'
 import { useDialog } from '@/composables/useDialog'
+import { useTheme } from '@/composables/useTheme'
 import { useToast } from '@/composables/useToast'
 
 vi.mock('@/router', () => ({
@@ -120,6 +121,23 @@ describe('ToastContainer on vue-sonner', () => {
     await nextTick()
     await nextTick()
     expect(document.querySelector('[data-sonner-toast]')!.getAttribute('data-rich-colors')).toBe('true')
+  })
+
+  it('follows the resolved theme so status toasts are not light in dark mode', async () => {
+    const { setMode } = useTheme()
+    try {
+      track(mount(ToastContainer, { attachTo: document.body }))
+      await nextTick()
+      const list = document.querySelector('[data-sonner-toaster]') as HTMLElement
+      setMode('dark')
+      await nextTick()
+      expect(list.getAttribute('data-sonner-theme')).toBe('dark')
+      setMode('light')
+      await nextTick()
+      expect(list.getAttribute('data-sonner-theme')).toBe('light')
+    } finally {
+      setMode('system')
+    }
   })
 
   it('pauses and resumes the store timer on hover, focus and touch', async () => {

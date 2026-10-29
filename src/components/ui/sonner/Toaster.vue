@@ -2,11 +2,14 @@
 import { CircleCheck, Info, Loader2, OctagonX, TriangleAlert } from 'lucide-vue-next'
 import { Toaster as Sonner } from 'vue-sonner'
 import 'vue-sonner/style.css'
+import { useTheme } from '@/composables/useTheme'
+
+const { resolved } = useTheme()
 </script>
 
 <template>
   <Sonner
-    theme="light"
+    :theme="resolved.theme"
     class="toaster group"
     :style="{
       '--normal-bg': 'var(--popover)',
