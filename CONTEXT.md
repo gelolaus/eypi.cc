@@ -90,7 +90,7 @@ Use these terms. Prefer them over invented synonyms.
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |
 | **Runbooks** | `docs/RELEASE.md`, `docs/operations.md` | Deploys, cutover, restore, rotation, incidents, accepted risks |
 
-Removed in the wantap port: the theme toggle, the glass-card (mica) surfaces and the Geist fonts. The app is light only; the APC blue and gold brand colors came back in the light theme (`docs/superpowers/specs/2026-10-27-apc-light-theme-design.md`). Do not reintroduce a dark theme, the toggle, `dark:` utilities, mica or Geist.
+Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. The app has three themes, Light, Dark and True black (System by default), applied through tokens only; the APC blue and gold brand colors are in all of them (`DESIGN_SYSTEM.md`, `docs/superpowers/specs/2026-10-29-dark-mode-design.md`). Do not reintroduce `dark:` utilities, mica or Geist.
 
 ### Backend route ownership
 
