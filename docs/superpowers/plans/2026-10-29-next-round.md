@@ -36,8 +36,8 @@ Items 5 (signed-in checks) and 6 need the owner. The agent prepares and records 
 **Files:** whatever `npm run lint` names.
 
 - [x] **Step 1:** List the 12 warnings. Fix the 6 auto-fixable ones with `npx eslint . --fix` and read the diff before committing; revert any change that alters behaviour.
-- [ ] **Step 2:** The `vue/no-v-html` warning on `src/views/orgs/OrgProfileView.vue:126` is a known DOMPurify-sanitised use. Add a one-line `eslint-disable-next-line` with the reason, only if the content really is sanitised on that path (verify; if not, that is a security bug, stop and report).
-- [ ] **Step 3:** Leave anything else that needs a judgment call and list it in the commit body. `npm run lint` ends with 0 errors; `npm test` passes. Commit `chore(lint): clear the auto-fixable warnings`.
+- [x] **Step 2:** The `vue/no-v-html` warning on `src/views/orgs/OrgProfileView.vue:126` is a known DOMPurify-sanitised use. Add a one-line `eslint-disable-next-line` with the reason, only if the content really is sanitised on that path (verify; if not, that is a security bug, stop and report).
+- [x] **Step 3:** Leave anything else that needs a judgment call and list it in the commit body. `npm run lint` ends with 0 errors; `npm test` passes. Commit `chore(lint): clear the auto-fixable warnings`.
 
 ## Task 3: Retire stale plans
 

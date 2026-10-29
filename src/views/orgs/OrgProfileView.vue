@@ -123,8 +123,10 @@
         <div
           v-if="aboutHtml"
           class="max-w-none text-base leading-relaxed [&_a]:text-primary [&_a]:underline [&_h1]:mb-2 [&_h1]:mt-5 [&_h1]:font-heading [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:font-heading [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-heading [&_h3]:font-semibold [&_ol]:mb-3 [&_ol]:ml-5 [&_p]:mb-3 [&_ul]:mb-3 [&_ul]:ml-5"
-          v-html="aboutHtml"
-        />
+        >
+          <!-- eslint-disable-next-line vue/no-v-html -- sanitized by DOMPurify in renderMarkdown -->
+          <div v-html="aboutHtml" />
+        </div>
         <p
           v-else
           class="text-sm leading-relaxed text-muted-foreground"
