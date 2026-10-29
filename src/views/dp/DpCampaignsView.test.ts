@@ -24,6 +24,21 @@ describe('DpCampaignsView', () => {
     expect(wrapper.text()).toContain('Launch')
   })
 
+  it('shows the lifetime count including zero', async () => {
+    const counts = [0, 1, 2]
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      status: 'ok',
+      campaigns: counts.map((n) => ({ id: `c${n}`, slug: `s${n}`, title: `T${n}`, description: null, downloadCount: n, frameCount: 1 })),
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(DpCampaignsView, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('0downloads')
+    expect(text).toMatch(/1download(?!s)/)
+    expect(text).toContain('2downloads')
+    wrapper.unmount()
+  })
+
   it('shows one create action in the empty campaign list', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       status: 'ok',
