@@ -35,6 +35,8 @@ FRONTEND_ORIGIN=http://localhost:5173
 ENVIRONMENT=development
 
 RESEND_API_KEY=your-resend-api-key
+# Optional. Reply-To for invite emails. Empty sends none.
+ORG_INVITE_REPLY_TO=
 
 # Optional. When set, link create and edit check Google Safe Browsing v4.
 # An empty value skips the lookup. It does not make /api/health return 503.

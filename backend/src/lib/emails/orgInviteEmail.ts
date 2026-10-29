@@ -4,8 +4,8 @@ import {
   emailFallbackLink,
   emailFootnote,
   emailHeading,
+  emailInfoCard,
   emailParagraph,
-  emailPill,
   emailStrong,
   escapeHtml,
   renderEmailShell,
@@ -25,17 +25,20 @@ export async function deliverOrgInviteEmail(input: {
   to: string
   orgName: string
   inviterName: string
+  replyTo?: string
 }): Promise<boolean> {
   const rendered = renderOrgInviteEmail({
     orgName: input.orgName,
     inviterName: input.inviterName,
     inviteUrl: ORG_INVITE_URL,
   })
+  const replyTo = input.replyTo?.trim()
   try {
     const resend = new Resend(input.apiKey)
     const result = await resend.emails.send({
       from: ORG_INVITE_FROM,
       to: input.to,
+      ...(replyTo ? { replyTo } : {}),
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
@@ -51,19 +54,26 @@ export function renderOrgInviteEmail(input: {
   inviterName: string
   inviteUrl: string
 }): OrgInviteEmail {
-  const subject = `Eypi | You're invited to join ${input.orgName}`
+  const subject = `You're invited to join ${input.orgName} on Eypi`
   const inviter = escapeHtml(input.inviterName)
   const org = escapeHtml(input.orgName)
   const url = escapeHtml(input.inviteUrl)
+  const initial = escapeHtml(([...input.orgName.trim()][0] ?? 'E').toUpperCase())
   const html = renderEmailShell({
     title: subject,
     preheader: `${inviter} invited you to join ${org}.`,
     body: [
       emailHeading(`You're invited to join ${org}`),
-      emailParagraph(`${emailStrong(inviter)} invited you to join ${emailPill(org)} on Eypi.`),
+      emailParagraph('Accept or decline it from your invites.'),
+      `<div style="padding:24px 0 0;">${emailInfoCard({
+        initial,
+        title: org,
+        subtitleHtml: `Invited by ${emailStrong(inviter)}`,
+      })}</div>`,
       `<div style="padding:24px 0 16px;">${emailButton('Review invites', url)}</div>`,
     ].join(''),
     footer: [
+      emailFootnote(`You received this because ${inviter} invited you on Eypi.`),
       emailFootnote("If you weren't expecting this, you can ignore this email."),
       emailFallbackLink(url),
     ].join(''),

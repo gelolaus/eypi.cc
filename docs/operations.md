@@ -110,7 +110,7 @@ Never paste the secret into a file, ticket or chat.
 
 ## Resend domain and sender
 
-Invites are sent through Resend from `eypi.cc <invites@eypi.cc>`. In Resend, add and verify the `eypi.cc` domain (the SPF and DKIM DNS records Resend lists), create an API key, then run `wrangler secret put RESEND_API_KEY` from `backend/`. If the key is unset, no invite email is sent. Check delivery in the Resend dashboard if invitees say nothing arrived.
+Invites are sent through Resend from `eypi.cc <invites@eypi.cc>`. In Resend, add and verify the `eypi.cc` domain (the SPF and DKIM DNS records Resend lists), create an API key, then run `wrangler secret put RESEND_API_KEY` from `backend/`. If the key is unset, no invite email is sent. To have replies reach a real inbox, set the optional `ORG_INVITE_REPLY_TO` to that address (`wrangler secret put ORG_INVITE_REPLY_TO` from `backend/`); the From stays `invites@eypi.cc`, so SPF, DKIM and DMARC still pass. Check delivery in the Resend dashboard if invitees say nothing arrived.
 
 ## Scheduled retention (cron)
 

@@ -1304,6 +1304,7 @@ app.post('/:org_id/members', async (c) => {
     to: targetEmail,
     orgName: String(ownerRows[0].name),
     inviterName: user.name,
+    replyTo: c.env.ORG_INVITE_REPLY_TO,
   })
   return c.json({ emailSent }, 201)
 })
@@ -1351,6 +1352,7 @@ app.post('/:org_id/members/:email/resend', async (c) => {
     to: targetEmail,
     orgName: String(ownerRows[0].name),
     inviterName: user.name,
+    replyTo: c.env.ORG_INVITE_REPLY_TO,
   })
   return c.json({ emailSent }, 200)
 })

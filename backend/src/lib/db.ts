@@ -57,6 +57,8 @@ export type Bindings = {
   TURSO_AUTH_TOKEN: string
   PASS_TOKEN_SECRET: string
   RESEND_API_KEY: string
+  /** Optional Reply-To for invite emails. Unset sends none; the From stays invites@eypi.cc. */
+  ORG_INVITE_REPLY_TO?: string
   RATE_LIMIT_KV: KVNamespace
   LINKS_KV: KVNamespace
   /** HMAC key for IP hashing. Reports store the hash, never the raw IP. */

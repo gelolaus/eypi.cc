@@ -6,7 +6,6 @@ const color = {
   muted: '#5c5c5c',
   border: '#e2e2e2',
   primary: '#35438c',
-  gold: '#deac4b',
   goldWash: '#f7ead2',
 }
 
@@ -26,7 +25,7 @@ export function escapeHtml(value: string): string {
 }
 
 export function emailHeading(html: string): string {
-  return `<h1 style="margin:0 0 12px;font-family:${emailFont.heading};font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.01em;color:${color.foreground};">${html}</h1>`
+  return `<h1 style="margin:0 0 12px;font-family:${emailFont.heading};font-size:26px;line-height:1.25;font-weight:600;letter-spacing:-0.01em;color:${color.foreground};">${html}</h1>`
 }
 
 export function emailParagraph(html: string): string {
@@ -37,15 +36,26 @@ export function emailStrong(html: string): string {
   return `<strong style="color:${color.foreground};font-weight:600;">${html}</strong>`
 }
 
-export function emailPill(html: string): string {
-  return `<span style="display:inline-block;padding:4px 12px;background:${color.goldWash};border-radius:999px;font-family:${emailFont.sans};font-size:14px;font-weight:600;color:${color.foreground};">${html}</span>`
+/** Bordered mini card with a gold-wash initial tile, a title and a subtitle (the site's card look). */
+export function emailInfoCard(input: { initial: string; title: string; subtitleHtml: string }): string {
+  return [
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${color.border};border-radius:16px;">`,
+    '<tr><td style="padding:16px;">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
+    `<td width="48" height="48" align="center" valign="middle" style="width:48px;height:48px;background:${color.goldWash};border-radius:12px;font-family:${emailFont.heading};font-size:22px;line-height:48px;font-weight:600;color:${color.primary};">${input.initial}</td>`,
+    '<td style="padding-left:14px;">',
+    `<p style="margin:0;font-family:${emailFont.sans};font-size:17px;line-height:1.3;font-weight:600;color:${color.foreground};">${input.title}</p>`,
+    `<p style="margin:4px 0 0;font-family:${emailFont.sans};font-size:14px;line-height:1.4;color:${color.muted};">${input.subtitleHtml}</p>`,
+    '</td></tr></table>',
+    '</td></tr></table>',
+  ].join('')
 }
 
 export function emailButton(label: string, href: string): string {
   return [
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
     `<td style="background:${color.primary};border-radius:12px;">`,
-    `<a href="${href}" style="display:inline-block;padding:14px 28px;font-family:${emailFont.sans};font-size:16px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;">${label}</a>`,
+    `<a href="${href}" style="display:inline-block;padding:15px 32px;font-family:${emailFont.sans};font-size:16px;line-height:20px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;">${label}</a>`,
     '</td></tr></table>',
   ].join('')
 }
@@ -55,10 +65,10 @@ export function emailFallbackLink(href: string): string {
 }
 
 export function emailFootnote(html: string): string {
-  return `<p style="margin:0;font-family:${emailFont.sans};font-size:13px;line-height:1.5;color:${color.muted};">${html}</p>`
+  return `<p style="margin:0 0 8px;font-family:${emailFont.sans};font-size:13px;line-height:1.5;color:${color.muted};">${html}</p>`
 }
 
-/** Eypi-branded shell: mascot + name header, blue and gold bars, white card on the page grey. */
+/** Eypi-branded shell: mascot + name header in a white card on the page grey. */
 export function renderEmailShell(input: {
   title: string
   preheader: string
@@ -79,12 +89,10 @@ export function renderEmailShell(input: {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${color.background};">`,
     '<tr><td align="center" style="padding:32px 16px;">',
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border:1px solid ${color.border};border-radius:24px;">`,
-    `<tr><td style="height:6px;background:${color.primary};border-radius:24px 24px 0 0;font-size:0;line-height:0;">&nbsp;</td></tr>`,
-    `<tr><td style="height:3px;background:${color.gold};font-size:0;line-height:0;">&nbsp;</td></tr>`,
-    '<tr><td style="padding:28px 32px 0;">',
+    '<tr><td style="padding:32px 32px 0;">',
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
-    `<td style="padding-right:12px;"><img src="${EMAIL_LOGO_URL}" width="40" height="40" alt="Eypi" style="display:block;width:40px;height:40px;border:0;border-radius:10px;"></td>`,
-    `<td style="font-family:${emailFont.sans};font-size:22px;line-height:40px;font-weight:600;letter-spacing:-0.01em;color:${color.foreground};">Eypi</td>`,
+    `<td style="padding-right:12px;"><img src="${EMAIL_LOGO_URL}" width="48" height="48" alt="Eypi" style="display:block;width:48px;height:48px;border:0;border-radius:12px;"></td>`,
+    `<td style="font-family:${emailFont.sans};font-size:24px;line-height:48px;font-weight:600;letter-spacing:-0.01em;color:${color.foreground};">Eypi</td>`,
     '</tr></table>',
     '</td></tr>',
     `<tr><td style="padding:28px 32px 8px;">${input.body}</td></tr>`,
