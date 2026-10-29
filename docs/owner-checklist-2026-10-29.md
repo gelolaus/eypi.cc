@@ -241,11 +241,3 @@ Look only. For every route below, look on a phone and on a desktop, in **Light**
 
 Send back: "signed-in pass ok", or the route, the theme, phone or desktop, and what looked wrong. If a route will not open, send "unseen" and the route.
 
----
-
-## 5. Google Wallet issuer
-
-- [ ] **Is the Google Wallet issuer approved?**
-  Until the answer is yes, the save token keeps `reviewStatus: UNDER_REVIEW`. Leave that code as it is.
-
-  Send back: "yes" or "no".

@@ -57,7 +57,7 @@ Read the full rows in `docs/operations.md:168-185`. Do only the ones below; the 
 - [x] **4b. Consent writes.** Insert all consent rows in one `batch` so a failure leaves no partial record. Failing test first with a mocked second-row failure. Commit `fix(consent): write consent rows in one batch`.
 - [x] **4c. Media cleanup.** Deleting a link deletes its R2 object (best effort, log the key not the user); a PATCH with an oversized data URL returns 4xx and leaves the stored logo unchanged. Commit `fix(links): remove the logo object on delete and keep it on a rejected patch`.
 - [x] **4d. Privacy copy.** The privacy page says the session cookie is the only cookie; sign-in also sets the short-lived `eypi_oauth` cookie. Fix the copy (see `DESIGN_SYSTEM.md` for copy rules) and its test if present. Commit `docs(privacy): mention the short-lived sign-in cookie`.
-- [ ] **4e. F-TIX-14 residual.** Remove or make configurable the `reviewStatus: UNDER_REVIEW` in the Google Wallet save token **only if** the owner's Google Wallet issuer is approved. Ask the owner first; if unanswered, leave it.
+- [x] **4e. F-TIX-14 residual.** The owner confirmed the issuer is approved. The save token no longer carries `reviewStatus`; only a first insert sets `UNDER_REVIEW`.
 - [x] **Step Z:** Update the status column in `docs/operations.md` for each item closed (`fixed in <hash>`). Items not touched stay "pending owner sign-off". Commit `docs(ops): record the closed accepted risks`.
 
 Not in this task (need an owner decision or infrastructure): F-SEC-7 atomic rate limiter, `IP_HASH_SECRET`, F-TIX-2 residual lock recovery, F-TIX-12 residual CSV parsing, account deletion scope, Safe Browsing fail-open, F-SEO-1 residual.

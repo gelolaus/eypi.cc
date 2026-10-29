@@ -175,7 +175,7 @@ Findings or review notes that are deferred or unfixed. A status of **pending own
 | Rate-limit key without `IP_HASH_SECRET` | MED | If `IP_HASH_SECRET` is unset, the rate-limit KV key can contain the raw IP. The secret must be set on the backend and on the frontend Worker. | pending owner sign-off |
 | F-TIX-2 (residual) | HIGH | A caught finalize failure unlocks the event, but a crash between the lock update and the write can leave it locked. Manual fix: set `selection_locked = 0` for that event. | pending owner sign-off |
 | F-TIX-12 (residual) | MED | CSV import ignores parser errors (an unclosed quote can import surviving rows), a missing `lastName` can still return 500 after the event insert, and `POST /api/events` attendees are not capped at 5,000. | pending owner sign-off |
-| F-TIX-14 (residual) | MED | The Google Wallet save token still embeds `reviewStatus: UNDER_REVIEW`. | pending owner sign-off |
+| F-TIX-14 (residual) | MED | The Google Wallet save token no longer embeds `reviewStatus`; a new class is still inserted as `UNDER_REVIEW`. | fixed in 765e6af |
 | Last-admin guard | MED | The check that blocks removing the last admin is check-then-update, not atomic. | fixed in d1b7bd2 |
 | Account deletion scope | MED | Deleting an account also deletes org-less events and campaigns with their attendees, check-ins and CSV rows. This is beyond the original brief. | pending owner sign-off |
 | Consent writes | MED | Consent is inserted per document; a failure mid-loop can leave a partial record. | fixed in 6f6e39a |
