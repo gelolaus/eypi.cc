@@ -6,7 +6,6 @@ const color = {
   muted: '#5c5c5c',
   border: '#e2e2e2',
   primary: '#35438c',
-  gold: '#deac4b',
   goldWash: '#f7ead2',
 }
 
@@ -58,7 +57,7 @@ export function emailFootnote(html: string): string {
   return `<p style="margin:0;font-family:${emailFont.sans};font-size:13px;line-height:1.5;color:${color.muted};">${html}</p>`
 }
 
-/** Eypi-branded shell: mascot + name header, blue and gold bars, white card on the page grey. */
+/** Eypi-branded shell: mascot + name header in a white card on the page grey. */
 export function renderEmailShell(input: {
   title: string
   preheader: string
@@ -79,9 +78,7 @@ export function renderEmailShell(input: {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${color.background};">`,
     '<tr><td align="center" style="padding:32px 16px;">',
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border:1px solid ${color.border};border-radius:24px;">`,
-    `<tr><td style="height:6px;background:${color.primary};border-radius:24px 24px 0 0;font-size:0;line-height:0;">&nbsp;</td></tr>`,
-    `<tr><td style="height:3px;background:${color.gold};font-size:0;line-height:0;">&nbsp;</td></tr>`,
-    '<tr><td style="padding:28px 32px 0;">',
+    '<tr><td style="padding:32px 32px 0;">',
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>',
     `<td style="padding-right:12px;"><img src="${EMAIL_LOGO_URL}" width="40" height="40" alt="Eypi" style="display:block;width:40px;height:40px;border:0;border-radius:10px;"></td>`,
     `<td style="font-family:${emailFont.sans};font-size:22px;line-height:40px;font-weight:600;letter-spacing:-0.01em;color:${color.foreground};">Eypi</td>`,
