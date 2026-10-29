@@ -32,6 +32,26 @@ describe('orgs public route allowlist', () => {
     expect(res.status).toBe(401)
   })
 
+  it('never exposes avatar fields in the public catalog or profile', async () => {
+    const { request } = await createTestApp({
+      seed: async (client) => {
+        await client.executeMultiple(`
+          INSERT INTO users (id, email, name, avatar_icon, avatar_color) VALUES ('own', 'own@apc.edu.ph', 'Own', 'cat', 'blue');
+          INSERT INTO organizations (id, name, owner_id, is_public_catalog) VALUES ('org-pub', 'Pub', 'own', 1);
+        `)
+      },
+    })
+    const catalog = await request('/api/orgs/public')
+    expect(catalog.status).toBe(200)
+    const catalogText = JSON.stringify(await catalog.json())
+    expect(catalogText).toContain('org-pub')
+    expect(catalogText).not.toMatch(/avatar/i)
+
+    const profile = await request('/api/orgs/public/org-pub')
+    expect(profile.status).toBe(200)
+    expect(JSON.stringify(await profile.json())).not.toMatch(/avatar/i)
+  })
+
   it('lists only published public events on the org profile', async () => {
     const { request } = await createTestApp({
       seed: async (client) => {

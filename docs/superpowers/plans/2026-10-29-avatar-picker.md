@@ -83,11 +83,11 @@
 **Interfaces:**
 - Produces: each row of the owner's `GET /api/orgs/:org_id/members` response gains `avatar_icon` and `avatar_color` (null when unset or when the member has no account yet); each admin user (`items[]` and the PATCH response `item`) gains `avatarIcon` and `avatarColor`.
 
-- [ ] **Step 1: Write the failing tests:** the member list returns both fields for a member with a saved avatar and nulls for one without an account; the admin list and the PATCH response return `avatarIcon`/`avatarColor`; the public org catalog and public org profile responses contain no key matching `/avatar/i` anywhere in the JSON (stringify and assert).
-- [ ] **Step 2: Run to verify they fail.**
-- [ ] **Step 3: Implement:** select `u.avatar_icon, u.avatar_color` in the member query; add `avatar_icon, avatar_color` to both admin `SELECT`s and map them in `toUser` (null when empty). Selecting a stored key not in the lists passes it through unchanged; clients validate on read (Task 4/5).
-- [ ] **Step 4: Run to verify they pass**; run `npx vitest run backend` and `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(avatar): return avatars in the member and admin lists`.
+- [x] **Step 1: Write the failing tests:** the member list returns both fields for a member with a saved avatar and nulls for one without an account; the admin list and the PATCH response return `avatarIcon`/`avatarColor`; the public org catalog and public org profile responses contain no key matching `/avatar/i` anywhere in the JSON (stringify and assert).
+- [x] **Step 2: Run to verify they fail.**
+- [x] **Step 3: Implement:** select `u.avatar_icon, u.avatar_color` in the member query; add `avatar_icon, avatar_color` to both admin `SELECT`s and map them in `toUser` (null when empty). Selecting a stored key not in the lists passes it through unchanged; clients validate on read (Task 4/5).
+- [x] **Step 4: Run to verify they pass**; run `npx vitest run backend` and `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(avatar): return avatars in the member and admin lists`.
 
 ---
 

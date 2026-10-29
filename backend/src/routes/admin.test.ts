@@ -196,6 +196,27 @@ describe('admin routes', () => {
     ])
   })
 
+  it('returns avatarIcon and avatarColor in the list and the patch response', async () => {
+    const { request } = await createTestApp({
+      user: admin,
+      seed: async (client) => {
+        await insertUser(client, member)
+        await client.execute({
+          sql: 'UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?',
+          args: ['cat', 'blue', member.id],
+        })
+      },
+    })
+
+    const list = await request('/api/admin/users')
+    const body = await list.json() as { items: { id: string; avatarIcon: string | null; avatarColor: string | null }[] }
+    expect(body.items.find((i) => i.id === 'user-1')).toMatchObject({ avatarIcon: 'cat', avatarColor: 'blue' })
+    expect(body.items.find((i) => i.id === 'admin-1')).toMatchObject({ avatarIcon: null, avatarColor: null })
+
+    const patched = await request('/api/admin/users/user-1', json('PATCH', { disabled: false }))
+    expect(await patched.json()).toMatchObject({ item: { id: 'user-1', avatarIcon: 'cat', avatarColor: 'blue' } })
+  })
+
   it('refuses to demote the last admin and to demote yourself', async () => {
     const solo = await createTestApp({ user: admin })
     const demoteSelf = await solo.request('/api/admin/users/admin-1', json('PATCH', { role: 'user' }))

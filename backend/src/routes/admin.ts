@@ -130,6 +130,8 @@ function toUser(row: Row) {
     role: text(row.role) === 'admin' ? 'admin' : 'user',
     disabled: text(row.disabled_at).length > 0,
     createdAt: text(row.created_at),
+    avatarIcon: text(row.avatar_icon) || null,
+    avatarColor: text(row.avatar_color) || null,
   }
 }
 
@@ -192,7 +194,7 @@ function toAudit(row: Row) {
 
 async function loadUser(client: ReturnType<typeof db>, id: string): Promise<Row | null> {
   const result = await client.execute({
-    sql: 'SELECT id, email, name, role, created_at, disabled_at FROM users WHERE id = ?',
+    sql: 'SELECT id, email, name, role, created_at, disabled_at, avatar_icon, avatar_color FROM users WHERE id = ?',
     args: [id],
   })
   return (result.rows[0] as Row | undefined) ?? null
@@ -225,7 +227,7 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (c) => {
   }
   const where = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : ''
   const result = await db(c).execute({
-    sql: `SELECT id, email, name, role, created_at, disabled_at
+    sql: `SELECT id, email, name, role, created_at, disabled_at, avatar_icon, avatar_color
           FROM users
           ${where}
           ORDER BY COALESCE(created_at, '') DESC, id DESC

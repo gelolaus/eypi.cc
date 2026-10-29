@@ -1216,7 +1216,8 @@ app.get('/:org_id/members', async (c) => {
 
     const { rows } = await database.execute({
       sql: `
-        SELECT m.email, m.user_id, m.invited_at, m.activated_at, m.declined_at, u.name AS name
+        SELECT m.email, m.user_id, m.invited_at, m.activated_at, m.declined_at, u.name AS name,
+               u.avatar_icon AS avatar_icon, u.avatar_color AS avatar_color
         FROM org_members m
         LEFT JOIN users u ON lower(u.email) = lower(m.email)
         WHERE m.org_id = ?

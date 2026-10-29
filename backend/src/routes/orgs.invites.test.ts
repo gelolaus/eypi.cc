@@ -414,6 +414,30 @@ describe('POST /api/orgs/:id/members', () => {
   })
 })
 
+describe('GET /api/orgs/:id/members', () => {
+  it('returns avatar fields for members with an account and null for those without', async () => {
+    const { request } = await asUser(owner, async (client) => {
+      await insertOrg(client, { id: 'org-alpha', name: 'Alpha' })
+      await client.execute({
+        sql: 'UPDATE users SET avatar_icon = ?, avatar_color = ? WHERE id = ?',
+        args: ['cat', 'blue', invitee.id],
+      })
+      await insertMember(client, { orgId: 'org-alpha', email: invitee.email, userId: invitee.id })
+      await insertMember(client, { orgId: 'org-alpha', email: 'ghost@apc.edu.ph' })
+    })
+
+    const res = await request('/api/orgs/org-alpha/members')
+
+    expect(res.status).toBe(200)
+    const body = await res.json() as {
+      members: { email: string; avatar_icon: string | null; avatar_color: string | null }[]
+    }
+    const byEmail = new Map(body.members.map((m) => [m.email, m]))
+    expect(byEmail.get(invitee.email)).toMatchObject({ avatar_icon: 'cat', avatar_color: 'blue' })
+    expect(byEmail.get('ghost@apc.edu.ph')).toMatchObject({ avatar_icon: null, avatar_color: null })
+  })
+})
+
 describe('POST /api/orgs/:id/members/:email/resend', () => {
   it('returns 429 when the invite was sent less than 24 hours ago', async () => {
     const { request } = await asUser(owner, async (client) => {
