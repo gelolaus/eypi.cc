@@ -1,5 +1,6 @@
 {
   "name": "backend",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc --port 8787 --ip 127.0.0.1",

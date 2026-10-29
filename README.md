@@ -73,3 +73,9 @@ Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run
 
 - `public/_headers` sets `connect-src 'self' https://api.eypi.cc`. That header is served by the Worker, not by Vite. If a local API call is blocked in the browser console under `wrangler` preview, do not change `_headers` without a follow-up; use `npm run dev:local` (Vite) for day-to-day work.
 - Short-link redirects for existing slugs may 404 locally. `LINKS_KV` in `wrangler dev` is a local namespace and is often empty until backfilled.
+
+## License
+
+The code is licensed under the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`). If you run a modified version as a network service, you must offer its complete source to the people who use it, under the same license.
+
+The license covers the source code only. Organization logos and banners, the privacy policy, terms and acceptable use text, and the eypi.cc name and brand are not licensed for reuse.
