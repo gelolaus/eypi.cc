@@ -26,10 +26,10 @@ Items 5 (signed-in checks) and 6 need the owner. The agent prepares and records 
 
 **Files:** modify `public/theme-init.js`.
 
-- [ ] **Step 1:** Run `npm run lint`; confirm exactly the three errors above.
-- [ ] **Step 2:** Change the three `catch (e) {` to optional catch binding `catch {`. This file is plain JS served before the bundle, so confirm the target browsers support it (all current evergreen browsers do). If a theme test asserts the file's text, run it.
-- [ ] **Step 3:** `npm run lint` shows 0 errors. Do not "fix" the 12 warnings in this task.
-- [ ] **Step 4:** `npm test` and `npm run typecheck` pass. Commit `fix(theme): drop the unused catch bindings in the init script`.
+- [x] **Step 1:** Run `npm run lint`; confirm exactly the three errors above.
+- [x] **Step 2:** Change the three `catch (e) {` to optional catch binding `catch {`. This file is plain JS served before the bundle, so confirm the target browsers support it (all current evergreen browsers do). If a theme test asserts the file's text, run it.
+- [x] **Step 3:** `npm run lint` shows 0 errors. Do not "fix" the 12 warnings in this task.
+- [x] **Step 4:** `npm test` and `npm run typecheck` pass. Commit `fix(theme): drop the unused catch bindings in the init script`.
 
 ## Task 2: Lint warnings triage
 

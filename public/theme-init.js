@@ -22,13 +22,13 @@
         mode = value.mode
         black = value.black
       }
-    } catch (e) {
+    } catch {
       // keep the default preference
     }
     var systemDark = false
     try {
       systemDark = !!matchMedia('(prefers-color-scheme: dark)').matches
-    } catch (e) {
+    } catch {
       // keep light
     }
     var dark = mode === 'dark' || (mode === 'system' && systemDark)
@@ -38,7 +38,7 @@
     root.classList.toggle('black', pure)
     var meta = document.querySelector('meta[name="theme-color"]')
     if (meta) meta.setAttribute('content', pure ? '#000000' : dark ? '#0a0a0a' : '#f5f5f5')
-  } catch (e) {
+  } catch {
     // leave the page light
   }
 })()
