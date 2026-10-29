@@ -167,7 +167,7 @@ First: `curl -s https://api.eypi.cc/api/health`. A 503 with `{"ok":false,"db":fa
 
 ## Accepted risks
 
-Findings or review notes that are deferred or unfixed. Each is **pending owner sign-off**. IDs refer to `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md`; the rest come from the overhaul review log.
+Findings or review notes that are deferred or unfixed. A status of **pending owner sign-off** means the owner has not accepted that row. IDs refer to `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md`; the rest come from the overhaul review log.
 
 | Item | Severity | Risk | Status |
 |---|---|---|---|
@@ -176,12 +176,12 @@ Findings or review notes that are deferred or unfixed. Each is **pending owner s
 | F-TIX-2 (residual) | HIGH | A caught finalize failure unlocks the event, but a crash between the lock update and the write can leave it locked. Manual fix: set `selection_locked = 0` for that event. | pending owner sign-off |
 | F-TIX-12 (residual) | MED | CSV import ignores parser errors (an unclosed quote can import surviving rows), a missing `lastName` can still return 500 after the event insert, and `POST /api/events` attendees are not capped at 5,000. | pending owner sign-off |
 | F-TIX-14 (residual) | MED | The Google Wallet save token still embeds `reviewStatus: UNDER_REVIEW`. | pending owner sign-off |
-| Last-admin guard | MED | The check that blocks removing the last admin is check-then-update, not atomic. | pending owner sign-off |
+| Last-admin guard | MED | The check that blocks removing the last admin is check-then-update, not atomic. | fixed in d1b7bd2 |
 | Account deletion scope | MED | Deleting an account also deletes org-less events and campaigns with their attendees, check-ins and CSV rows. This is beyond the original brief. | pending owner sign-off |
-| Consent writes | MED | Consent is inserted per document; a failure mid-loop can leave a partial record. | pending owner sign-off |
-| Media cleanup | MED | Deleting a link does not remove its R2 object; an oversized data URL on PATCH can clear a stored logo. | pending owner sign-off |
+| Consent writes | MED | Consent is inserted per document; a failure mid-loop can leave a partial record. | fixed in 6f6e39a |
+| Media cleanup | MED | Deleting a link does not remove its R2 object; an oversized data URL on PATCH can clear a stored logo. | fixed in 3a8b97d |
 | Safe Browsing | MED | The malware check fails open on timeout or an unexpected response shape. | pending owner sign-off |
 | F-SEO-1 (residual) | MED | `HEAD` requests skip meta rewriting; frames still stored as `data:` URLs get the generic page shell until migrated. | pending owner sign-off |
-| Privacy copy | LOW | The privacy page says the session cookie is the only cookie; sign-in also sets the short-lived `eypi_oauth` cookie. | pending owner sign-off |
+| Privacy copy | LOW | The privacy page says the session cookie is the only cookie; sign-in also sets the short-lived `eypi_oauth` cookie. | fixed in c665e7a |
 
 Removed or replaced media (`/media/*`) can stay cached at the Cloudflare edge for up to 24 hours; purge it by URL in Cloudflare to take it down sooner. Browsers may keep their copy for a year (immutable), so reuse no media keys for new content.
