@@ -64,11 +64,11 @@
 - Modify: `src/components/insights/FramesInsights.vue:54-56,155`, `src/views/orgs/OrgInsightsView.vue:180` (label already "Downloads and shares"; keep), `src/views/dp/DpCampaignsView.vue:78-79` (no change expected)
 - Test: `src/components/insights/` test for FramesInsights if present (else a new `FramesInsights.test.ts`), `src/views/dp/DpCampaignsView.test.ts`
 
-- [ ] **Step 1: Failing tests.** FramesInsights: `labels the trend and per-frame figures as downloads and shares` (the series label and the two headings use "Downloads and shares", not bare "Downloads"). DpCampaignsView: `shows the lifetime count including zero` (0 renders `0 downloads`, 1 renders `1 download`).
-- [ ] **Step 2:** Run both; expect the FramesInsights test FAIL.
-- [ ] **Step 3: Implement** the label changes: series `Downloads and shares`, heading `Downloads and shares per day (Manila time)`, heading `Downloads and shares per frame`. Do not change calculations.
-- [ ] **Step 4:** Run both files; expect PASS.
-- [ ] **Step 5: Commit** `fix(insights): label the windowed figures as downloads and shares`.
+- [x] **Step 1: Failing tests.** FramesInsights: `labels the trend and per-frame figures as downloads and shares` (the series label and the two headings use "Downloads and shares", not bare "Downloads"). DpCampaignsView: `shows the lifetime count including zero` (0 renders `0 downloads`, 1 renders `1 download`).
+- [x] **Step 2:** Run both; expect the FramesInsights test FAIL.
+- [x] **Step 3: Implement** the label changes: series `Downloads and shares`, heading `Downloads and shares per day (Manila time)`, heading `Downloads and shares per frame`. Do not change calculations.
+- [x] **Step 4:** Run both files; expect PASS.
+- [x] **Step 5: Commit** `fix(insights): label the windowed figures as downloads and shares`.
 
 ### Task 4: Docs
 
