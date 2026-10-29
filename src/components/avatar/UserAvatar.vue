@@ -31,9 +31,18 @@ const chosen = computed(() =>
       backgroundColor: `color-mix(in srgb, var(--avatar-${chosen.color}) 15%, transparent)`,
     }"
   >
-    <component :is="chosen.icon" class="size-[55%]" aria-hidden="true" />
+    <component
+      :is="chosen.icon"
+      class="size-[55%]"
+      aria-hidden="true"
+    />
   </span>
-  <Avatar v-else :class="props.class">
-    <AvatarFallback class="text-sm font-medium">{{ initials }}</AvatarFallback>
+  <Avatar
+    v-else
+    :class="props.class"
+  >
+    <AvatarFallback class="text-sm font-medium">
+      {{ initials }}
+    </AvatarFallback>
   </Avatar>
 </template>

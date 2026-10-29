@@ -8,7 +8,12 @@
   <AppTransition ref="appTransitionRef" />
 
   <!-- Until the first navigation settles there is no layout yet and the lazy route chunk is still loading. -->
-  <div v-if="!routerReady" role="status" aria-busy="true" data-boot-skeleton>
+  <div
+    v-if="!routerReady"
+    role="status"
+    aria-busy="true"
+    data-boot-skeleton
+  >
     <div class="h-14 border-b border-border" />
     <div class="mx-auto max-w-5xl space-y-4 p-4">
       <div class="h-28 rounded-3xl bg-muted motion-safe:animate-pulse" />
@@ -16,7 +21,10 @@
     </div>
     <span class="sr-only">Loading</span>
   </div>
-  <component :is="Shell" v-else>
+  <component
+    :is="Shell"
+    v-else
+  >
     <router-view v-slot="{ Component }">
       <component :is="Component" />
     </router-view>
