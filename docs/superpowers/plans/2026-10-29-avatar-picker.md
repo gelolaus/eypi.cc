@@ -46,11 +46,11 @@
   - `export function isAvatarIcon(value: unknown): value is AvatarIcon`, `export function isAvatarColor(value: unknown): value is AvatarColor`.
   - `export function parseAvatar(input: unknown): { icon: AvatarIcon; color: AvatarColor } | { icon: null; color: null } | null`: takes the request body, returns the pair, the reset pair for `{icon:null,color:null}`, or `null` when invalid (one key missing, wrong type, unknown key, not an object).
 
-- [ ] **Step 1: Write the failing tests** in `shared/avatars.test.ts`: both lists have no duplicates and the stated lengths (36, 12); every icon key matches `/^[a-z0-9]+(-[a-z0-9]+)*$/`; `isAvatarIcon('cat')` true, `isAvatarIcon('Cat')`, `''`, `5`, `null` false; same for colours; `parseAvatar({icon:'cat',color:'blue'})` returns the pair; `{icon:null,color:null}` returns the reset pair; `null` is returned for `{icon:'cat'}`, `{color:'blue'}`, `{icon:'cat',color:null}`, `{icon:'nope',color:'blue'}`, `{icon:5,color:'blue'}`, `[]`, `'x'`, `undefined`. Migration test: after `createTestApp` runs all migrations, `PRAGMA table_info(users)` contains `avatar_icon` and `avatar_color` with `notnull = 0` and `dflt_value` null, and an existing seeded user reads both as null.
-- [ ] **Step 2: Run to verify it fails** (`npx vitest run shared/avatars.test.ts backend/src/migrations.avatar.test.ts`): module not found / columns missing.
-- [ ] **Step 3: Implement** `shared/avatars.ts` per the interface (use `Set` lookups for the guards), and the migration containing exactly `ALTER TABLE users ADD COLUMN avatar_icon TEXT;` and `ALTER TABLE users ADD COLUMN avatar_color TEXT;` plus a header comment ("Additive only. users is never rebuilt").
-- [ ] **Step 4: Run to verify it passes**, then `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(avatar): add the shared avatar lists and the user avatar migration`.
+- [x] **Step 1: Write the failing tests** in `shared/avatars.test.ts`: both lists have no duplicates and the stated lengths (36, 12); every icon key matches `/^[a-z0-9]+(-[a-z0-9]+)*$/`; `isAvatarIcon('cat')` true, `isAvatarIcon('Cat')`, `''`, `5`, `null` false; same for colours; `parseAvatar({icon:'cat',color:'blue'})` returns the pair; `{icon:null,color:null}` returns the reset pair; `null` is returned for `{icon:'cat'}`, `{color:'blue'}`, `{icon:'cat',color:null}`, `{icon:'nope',color:'blue'}`, `{icon:5,color:'blue'}`, `[]`, `'x'`, `undefined`. Migration test: after `createTestApp` runs all migrations, `PRAGMA table_info(users)` contains `avatar_icon` and `avatar_color` with `notnull = 0` and `dflt_value` null, and an existing seeded user reads both as null.
+- [x] **Step 2: Run to verify it fails** (`npx vitest run shared/avatars.test.ts backend/src/migrations.avatar.test.ts`): module not found / columns missing.
+- [x] **Step 3: Implement** `shared/avatars.ts` per the interface (use `Set` lookups for the guards), and the migration containing exactly `ALTER TABLE users ADD COLUMN avatar_icon TEXT;` and `ALTER TABLE users ADD COLUMN avatar_color TEXT;` plus a header comment ("Additive only. users is never rebuilt").
+- [x] **Step 4: Run to verify it passes**, then `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(avatar): add the shared avatar lists and the user avatar migration`.
 
 ---
 
