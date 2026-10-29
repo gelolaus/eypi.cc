@@ -17,7 +17,7 @@ vi.mock('vue-router', () => ({
 
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
 
-function campaignResponse() {
+function campaignResponse(downloadCount?: number) {
   return new Response(JSON.stringify({
     status: 'ok',
     campaign: {
@@ -26,6 +26,7 @@ function campaignResponse() {
       slug: 'launch',
       description: null,
       captionTemplate: null,
+      ...(downloadCount === undefined ? {} : { downloadCount }),
       frames: [{
         id: 'frame-1',
         imageUrl: '/media/frames/camp-1/frame.png',
@@ -302,5 +303,37 @@ describe('DpPublicView canvas keyboard', () => {
     const event = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true, bubbles: true })
     wrapper.get('canvas').element.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(false)
+  })
+})
+
+describe('DpPublicView download count', () => {
+  async function mountWithCount(count: number) {
+    vi.stubGlobal('fetch', vi.fn(async () => campaignResponse(count)))
+    return mountReady()
+  }
+
+  it('shows N downloads when the count is at least 1', async () => {
+    const wrapper = await mountWithCount(2)
+    expect(wrapper.get('[data-download-count]').text()).toBe('2 downloads')
+  })
+
+  it('says 1 download for one', async () => {
+    const wrapper = await mountWithCount(1)
+    expect(wrapper.get('[data-download-count]').text()).toBe('1 download')
+  })
+
+  it('formats thousands', async () => {
+    const wrapper = await mountWithCount(1234)
+    expect(wrapper.get('[data-download-count]').text()).toBe('1,234 downloads')
+  })
+
+  it('hides the count at 0', async () => {
+    const wrapper = await mountWithCount(0)
+    expect(wrapper.find('[data-download-count]').exists()).toBe(false)
+  })
+
+  it('hides the count when the payload has none', async () => {
+    const wrapper = await mountReady()
+    expect(wrapper.find('[data-download-count]').exists()).toBe(false)
   })
 })

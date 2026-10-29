@@ -36,6 +36,13 @@
       :description="campaign.description ?? undefined"
     >
       <div class="mx-auto w-full max-w-3xl">
+        <p
+          v-if="campaign.downloadCount >= 1"
+          class="mb-4 text-center font-mono text-sm text-muted-foreground"
+          data-download-count
+        >
+          {{ campaign.downloadCount.toLocaleString('en-US') }} {{ campaign.downloadCount === 1 ? 'download' : 'downloads' }}
+        </p>
         <!-- Canvas card -->
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
@@ -233,13 +240,14 @@ interface Campaign {
   slug: string
   description: string | null
   captionTemplate: string | null
+  downloadCount: number
   frames: DpFrame[]
 }
 
 const loading = ref(true)
 const error = ref('')
 const exporting = ref(false)
-const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, frames: [] })
+const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, downloadCount: 0, frames: [] })
 
 const MAX_PHOTO_EDGE = 2160
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
