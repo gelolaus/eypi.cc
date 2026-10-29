@@ -259,7 +259,7 @@ All primitives live in `src/components/ui/<name>/` and are imported from the fol
 | `Tabs` | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `TabsList` `variant`: `default` (`bg-muted`) or `line` (transparent, underline on the active trigger). `h-11`, horizontal or vertical. |
 | `Tooltip` | `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent` | Inverted: `bg-foreground text-background text-xs rounded-md`, `max-w-xs`. |
 | `Avatar` | `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarGroupCount` | `size`: `sm` `size-6`, `default` `size-8`, `lg` `size-10`. |
-| `Toaster` | `Toaster` (vue-sonner wrapper) | Sonner `theme="light"` with its base colors mapped to the popover tokens. See section 12. |
+| `Toaster` | `Toaster` (vue-sonner wrapper) | Sonner `theme` follows the resolved theme (light or dark), with its base colors mapped to the popover tokens. See section 12. |
 
 Focus on every interactive primitive: `focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50` (badges, tabs and the slider thumb use the same ring at `3px`).
 
@@ -362,7 +362,7 @@ QR codes must stay dark on a light background to scan. The QR preview in `QrDesi
 
 ## 12. Toasts
 
-`ToastContainer` mounts the `Toaster` wrapper (`src/components/ui/sonner`) with `rich-colors` and `position="top-center"`. The wrapper uses `theme="light"` and maps the sonner background, text, border and radius variables to `--popover`, `--popover-foreground`, `--border` and `--radius`. Status icons are lucide icons at `size-4`.
+`ToastContainer` mounts the `Toaster` wrapper (`src/components/ui/sonner`) with `rich-colors` and `position="top-center"`. The wrapper sets `theme` from the resolved theme (light or dark) and maps the sonner background, text, border and radius variables to `--popover`, `--popover-foreground`, `--border` and `--radius`. Status icons are lucide icons at `size-4`.
 
 The `useToast()` store (`success`, `error`, `info`) remains the source of truth for dedupe, cap and timers; vue-sonner only renders (`duration: Infinity`, the store dismisses). Call `useToast()`, never `toast` from vue-sonner directly.
 

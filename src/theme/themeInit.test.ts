@@ -105,10 +105,20 @@ describe('theme-init.js', () => {
   it('stays light when getItem throws', () => {
     expect(run({ throwingStorage: true, systemDark: false })).toEqual(light)
   })
+  it('falls back to the system theme when getItem throws', () => {
+    expect(run({ throwingStorage: true, systemDark: true })).toEqual({
+      classes: ['dark'],
+      themeColor: PAGE_BACKGROUND.dark,
+    })
+  })
   it.each(['{', 'dark', '[]', 'null', '{"mode":"neon","black":false}', '{"mode":"dark"}', '{"mode":"dark","black":"yes"}'])(
     'ignores the corrupted value %s',
     (raw) => {
       expect(run({ stored: raw, systemDark: false })).toEqual(light)
+      expect(run({ stored: raw, systemDark: true })).toEqual({
+        classes: ['dark'],
+        themeColor: PAGE_BACKGROUND.dark,
+      })
     },
   )
   it('does not throw when the theme-color meta is missing', () => {

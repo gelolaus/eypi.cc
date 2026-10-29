@@ -61,6 +61,7 @@ const buttons: Array<HTMLButtonElement | null> = []
 const STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
 
 function onKeydown(event: KeyboardEvent, index: number) {
+  if (event.altKey || event.ctrlKey || event.metaKey) return
   const step = STEP[event.key]
   if (!step) return
   event.preventDefault()

@@ -57,6 +57,16 @@ describe('ThemeToggle', () => {
     expect(theme.preference.value.black).toBe(true)
   })
 
+  it.each(['altKey', 'ctrlKey', 'metaKey'])('leaves arrow keys with %s to the browser', async (modifier) => {
+    const theme = await setup()
+    const before = theme.preference.value.mode
+    const event = new KeyboardEvent('keydown', { key: 'ArrowLeft', [modifier]: true, cancelable: true, bubbles: true })
+    radios()[0].element.dispatchEvent(event)
+    await nextTick()
+    expect(event.defaultPrevented).toBe(false)
+    expect(theme.preference.value.mode).toBe(before)
+  })
+
   it('moves selection and focus with the arrow keys and uses a roving tabindex', async () => {
     const theme = await setup()
     expect(radios().map((r) => r.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
