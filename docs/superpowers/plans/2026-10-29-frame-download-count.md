@@ -75,5 +75,5 @@
 **Files:**
 - Modify: `docs/superpowers/specs/2026-10-27-ux-audit.md` is not touched; instead add a short note to `docs/superpowers/specs/2026-10-29-frame-download-count-design.md` under a new `## Outcome` heading (commit subjects, test counts, and that old frame totals were not backfilled and the visible number can lag by 30 s). Tick this plan's boxes.
 
-- [ ] **Step 1:** Run `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`, `npm run release:check -- --allow-dirty`; record test count and entry JS/CSS gzip bytes in the Outcome section.
-- [ ] **Step 2: Commit** `docs(frames): record the download count outcome`.
+- [x] **Step 1:** Run `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`, `npm run release:check -- --allow-dirty`; record test count and entry JS/CSS gzip bytes in the Outcome section.
+- [x] **Step 2: Commit** `docs(frames): record the download count outcome`.

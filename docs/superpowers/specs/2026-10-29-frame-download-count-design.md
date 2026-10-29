@@ -46,3 +46,35 @@ Visitors and org members should see how many times a frame was downloaded. Today
 ## Left to the builder
 
 Exact placement and markup of the public count, test layout, the 429 message wording, and the insights label text.
+
+## Outcome
+
+Commits of this feature:
+
+- docs(frames): add design for the public download count
+- docs(frames): add the download count implementation plan
+- feat(frames): count every save with an hourly guard
+- feat(frames): return the download count in the public payload
+- feat(frames): show the download count on the public page
+- fix(frames): drop the unused count from the editor payload
+- fix(insights): label the windowed figures as downloads and shares
+- test(frames): cover the lifetime count on the org list
+- fix(insights): keep views in the daily chart heading
+- plus the docs commits that ticked the plan tasks
+
+What changed:
+
+- Every save now counts, with a guard of 30 per hour per connection per frame (the old once-per-day rule is gone).
+- The public frame page shows "N downloads" from 1 upward (singular for 1, hidden at 0).
+- The org list is unchanged; it already showed the lifetime count.
+- Analytics figures are relabelled "Downloads and shares", and the daily chart heading reads "Views, downloads and shares per day (Manila time)".
+
+Checks (2026-10-29): typecheck clean; 2200 tests in 257 files pass; lint has 0 errors and 7 warnings (all in untouched files); build and `release:check -- --allow-dirty` pass. Entry JS is 68,034 B gzip (budget 70,000) and entry CSS is 18,698 B gzip (budget 22,000), measured with Node's default gzip as the release check does.
+
+Limits:
+
+- Old frames keep their old totals. The earlier once-per-day rule swallowed repeat saves and that history cannot be recovered; nothing was backfilled.
+- The visible number can lag by up to 30 s because the public payload is edge-cached.
+- The count is client-reported: a script can still add up to 30 per hour per connection.
+- The KV guard is not atomic, so concurrent requests can slip a few extra counts past the limit.
+- Nothing was viewed in a browser: the public count and the org screens have had no visual check.
