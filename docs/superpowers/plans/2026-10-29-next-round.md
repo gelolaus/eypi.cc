@@ -72,9 +72,9 @@ Not in this task (need an owner decision or infrastructure): F-SEC-7 atomic rate
 
 **Files:** create `docs/owner-checklist-2026-10-29.md`.
 
-- [ ] **Step 1:** Collect every still-open owner step into one short list, in order, each with a check and what to send back: avatar guide parts 1 to 3 (`docs/owner-guide-avatar-picker.md`; the migration must be applied **before** the backend deploy), the unticked parts of `docs/owner-guide-speed-tix-analytics.md`, and `docs/RELEASE.md:257-267` (DMARC/SPF, WAF/HSTS, CAA, domain auto-renew 2027-02-28, passkeys, secrets, `security.txt` expiry 2027-10-27).
-- [ ] **Step 2:** Add the signed-in browser pass from finding 5 as a short list of routes (`/admin/speed` with the 7 and 28 day buttons, `/links`, `/manage/tix`, an event's attendees, `/forms/visitors-pass`, `/forms/letter-of-intent`, an org's members, `/admin/users`, `/admin/links`) to look at in light, dark and true black on a phone and a desktop, **without clicking anything that writes**.
-- [ ] **Step 3:** Do not run any owner step. Commit `docs(owner): add the open owner checklist`.
+- [x] **Step 1:** Collect every still-open owner step into one short list, in order, each with a check and what to send back: avatar guide parts 1 to 3 (`docs/owner-guide-avatar-picker.md`; the migration must be applied **before** the backend deploy), the unticked parts of `docs/owner-guide-speed-tix-analytics.md`, and `docs/RELEASE.md:257-267` (DMARC/SPF, WAF/HSTS, CAA, domain auto-renew 2027-02-28, passkeys, secrets, `security.txt` expiry 2027-10-27).
+- [x] **Step 2:** Add the signed-in browser pass from finding 5 as a short list of routes (`/admin/speed` with the 7 and 28 day buttons, `/links`, `/manage/tix`, an event's attendees, `/forms/visitors-pass`, `/forms/letter-of-intent`, an org's members, `/admin/users`, `/admin/links`) to look at in light, dark and true black on a phone and a desktop, **without clicking anything that writes**.
+- [x] **Step 3:** Do not run any owner step. Commit `docs(owner): add the open owner checklist`.
 
 ## Task 7 (optional, only if the owner says go): UX audit "later" items
 
