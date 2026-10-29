@@ -66,6 +66,9 @@
         "vue-tsc": "^2.1.10",
         "wrangler": "^4.152.0"
     },
+    "overrides": {
+        "uuid": "11.1.1"
+    },
     "allowScripts": {
         "esbuild@0.25.12": true,
         "esbuild@0.28.2": true,

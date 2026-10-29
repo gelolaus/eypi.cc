@@ -266,4 +266,4 @@ Items from the October 2026 report that code cannot change. Do these in the dash
 - [ ] **Local Node.** Update dev machines to Node 22.23.4, 24.22.1 or 26.12.1 or later.
 - [ ] **security.txt.** `public/.well-known/security.txt` expires 2027-10-27. Renew it before then.
 
-Known and accepted: `style-src 'unsafe-inline'` stays in `public/_headers`. The app uses inline `style` attributes and `vue-sonner` injects a `<style>` tag at runtime, so removing it breaks toasts and layout. `script-src 'self'` is strict, which is what blocks injected scripts. `exceljs` pulls `uuid` below 11.1.1 (moderate, only unsafe when a caller passes a buffer, which exceljs does not).
+Known and accepted: `style-src 'unsafe-inline'` stays in `public/_headers`. The app uses inline `style` attributes and `vue-sonner` injects a `<style>` tag at runtime, so removing it breaks toasts and layout. `script-src 'self'` is strict, which is what blocks injected scripts. The installed `uuid` dependency is overridden to 11.1.1. `exceljs` 4.4.0's prebuilt browser file still vendors its own `v4()` helper and does not call `v3`, `v5`, or `v6`.

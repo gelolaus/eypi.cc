@@ -64,9 +64,9 @@ Not in this task (need an owner decision or infrastructure): F-SEC-7 atomic rate
 
 ## Task 5: Frontend dependency audit
 
-- [ ] **Step 1:** `npm audit --omit=dev` and `npm ls uuid`. The moderate advisory is `uuid < 11.1.1` pulled in by `exceljs`.
-- [ ] **Step 2:** If an `exceljs` release or an `overrides` entry fixes it without a breaking change to Tix upload, apply it, run the Tix import tests and `npm run build`, and compare bundle sizes with `npm run release:check` output. If the only fix is `npm audit fix --force`, do not run it; record the finding in Accepted risks with the reason.
-- [ ] **Step 3:** Commit `chore(deps): patch the uuid advisory` or `docs(ops): accept the uuid advisory`.
+- [x] **Step 1:** `npm audit --omit=dev` and `npm ls uuid`. The moderate advisory is `uuid < 11.1.1` pulled in by `exceljs`.
+- [x] **Step 2:** If an `exceljs` release or an `overrides` entry fixes it without a breaking change to Tix upload, apply it, run the Tix import tests and `npm run build`, and compare bundle sizes with `npm run release:check` output. If the only fix is `npm audit fix --force`, do not run it; record the finding in Accepted risks with the reason.
+- [x] **Step 3:** Commit `chore(deps): patch the uuid advisory` or `docs(ops): accept the uuid advisory`.
 
 ## Task 6: Owner checklist handoff (no code)
 
