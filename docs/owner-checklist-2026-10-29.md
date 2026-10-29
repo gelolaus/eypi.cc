@@ -18,7 +18,7 @@ Source: `docs/owner-guide-avatar-picker.md`. Part 1, then part 2, then part 3.
 
 ### Part 1 — Migration (do this first)
 
-- [ ] **1.1 Apply `backend/migrations/0013_user_avatar.sql` on the production Turso database.**
+- [x] **1.1 Apply `backend/migrations/0013_user_avatar.sql` on the production Turso database.**
   The file only adds `avatar_icon` and `avatar_color` on `users`. Nothing is dropped, rebuilt, or rewritten. Existing users keep their initials until they pick an avatar. Run it once. A second run fails because the columns already exist. Rehearse on a copy first if you want to; the runbook is in `docs/RELEASE.md`.
 
   ```bash

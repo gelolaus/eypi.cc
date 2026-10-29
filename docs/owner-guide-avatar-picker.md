@@ -12,7 +12,7 @@ Everything in this change that only you (the owner) can do. The design is in `do
 
 ## Step 1: Apply the migration to production (do this first)
 
-- [ ] **1.1 Apply `backend/migrations/0013_user_avatar.sql` to the production Turso database.**
+- [x] **1.1 Apply `backend/migrations/0013_user_avatar.sql` to the production Turso database.**
   The file has two additive statements:
   ```sql
   ALTER TABLE users ADD COLUMN avatar_icon TEXT;
