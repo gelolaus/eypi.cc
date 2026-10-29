@@ -11,11 +11,12 @@
         collapsed && !header ? 'justify-center' : '',
       )"
     >
-      <Avatar :class="header ? 'size-8' : collapsed ? 'size-9' : 'size-11'">
-        <AvatarFallback class="text-sm font-medium">
-          {{ initials }}
-        </AvatarFallback>
-      </Avatar>
+      <UserAvatar
+        :name="displayName"
+        :icon="session.user.value?.avatarIcon"
+        :color="session.user.value?.avatarColor"
+        :class="header ? 'size-8' : collapsed ? 'size-9' : 'size-11'"
+      />
       <span
         v-if="!header && !collapsed"
         class="min-w-0 flex-1"
@@ -40,11 +41,12 @@
       class="w-72 min-w-72 p-2"
     >
       <div class="flex items-center gap-3 px-2 py-3">
-        <Avatar class="size-12 shrink-0">
-          <AvatarFallback class="text-base font-medium">
-            {{ initials }}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          :name="displayName"
+          :icon="session.user.value?.avatarIcon"
+          :color="session.user.value?.avatarColor"
+          class="size-12 shrink-0"
+        />
         <div class="min-w-0">
           <p class="truncate text-base font-semibold tracking-tight">
             {{ displayName }}
@@ -140,7 +142,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronDown, Download, LogOut } from 'lucide-vue-next'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import UserAvatar from '@/components/avatar/UserAvatar.vue'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -192,7 +194,6 @@ const displayName = computed(() => {
   if (name && name.toLowerCase() !== prefix.toLowerCase()) return name
   return prefix ? prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase() : 'Student'
 })
-const initials = computed(() => displayName.value.slice(0, 2).toUpperCase())
 
 const triggerLabel = computed(() =>
   inviteCount.value > 0

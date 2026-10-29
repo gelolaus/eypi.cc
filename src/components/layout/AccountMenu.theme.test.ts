@@ -14,7 +14,7 @@ const router = createRouter({
 beforeEach(() => {
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }))
   const session = useSession()
-  session.user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user' }
+  session.user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user', avatarIcon: null, avatarColor: null }
   session.status.value = 'ready'
 })
 

@@ -66,7 +66,7 @@ describe('PublicShell', () => {
     const session = useSession()
     session.status.value = 'loading'
     const wrapper = await mountShell()
-    session.user.value = { id: 'u1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user' }
+    session.user.value = { id: 'u1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user', avatarIcon: null, avatarColor: null }
     session.status.value = 'ready'
     await flushPromises()
     expect(wrapper.find('[data-header-account-placeholder]').exists()).toBe(false)

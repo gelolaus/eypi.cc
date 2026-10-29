@@ -361,7 +361,15 @@
                   role="cell"
                   class="block break-words font-semibold md:table-cell md:px-4 md:py-3 md:font-normal"
                 >
-                  {{ member.name?.trim() || 'No account yet' }}
+                  <span class="flex items-center gap-3">
+                    <UserAvatar
+                      :name="member.name?.trim() || member.email"
+                      :icon="member.avatar_icon"
+                      :color="member.avatar_color"
+                      class="size-8"
+                    />
+                    <span class="min-w-0">{{ member.name?.trim() || 'No account yet' }}</span>
+                  </span>
                 </td>
                 <td
                   role="cell"
@@ -555,6 +563,7 @@ import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composab
 import { useDialog } from '@/composables/useDialog'
 import { readImageAsDataUrl } from '@/composables/useImageUpload'
 import OrgLogo from '@/components/OrgLogo.vue'
+import UserAvatar from '@/components/avatar/UserAvatar.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import AppSection from '@/components/layout/AppSection.vue'
 import OrgLockout from '@/components/OrgLockout.vue'
@@ -579,6 +588,8 @@ interface OrgMember {
   activated_at: string | null
   declined_at?: string | null
   name?: string | null
+  avatar_icon?: string | null
+  avatar_color?: string | null
 }
 
 interface ProfileFormState {

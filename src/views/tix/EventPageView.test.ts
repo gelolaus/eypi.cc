@@ -99,7 +99,7 @@ describe('EventPageView', () => {
   })
 
   it('opens the register sheet for signed-in visitors', async () => {
-    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user' }
+    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user', avatarIcon: null, avatarColor: null }
     vi.stubGlobal('fetch', vi.fn(async () => json(payload())))
     const w = mountPage()
     await flushPromises()
@@ -110,7 +110,7 @@ describe('EventPageView', () => {
   })
 
   it('shows the ticket state and links to tickets once registered', async () => {
-    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user' }
+    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user', avatarIcon: null, avatarColor: null }
     const ticket = { id: 't', status: 'confirmed', qrToken: 'q', waitlistPosition: null, answers: {}, event: {} }
     vi.stubGlobal('fetch', vi.fn(async () => json(payload({}, ticket))))
     const w = mountPage()
@@ -138,7 +138,7 @@ describe('EventPageView', () => {
   })
 
   it('explains a cancelled viewer ticket', async () => {
-    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user' }
+    session.user.value = { id: 'u', email: 'a@x.test', name: 'A', role: 'user', avatarIcon: null, avatarColor: null }
     const ticket = { id: 't', status: 'cancelled', qrToken: null, waitlistPosition: null, answers: {}, event: {} }
     vi.stubGlobal('fetch', vi.fn(async () => json(payload({}, ticket))))
     const w = mountPage()

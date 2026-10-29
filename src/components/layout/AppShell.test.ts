@@ -42,7 +42,7 @@ function media(matches: boolean) {
 
 function signIn(invites = 1, role: 'user' | 'admin' = 'user') {
   const session = useSession()
-  session.user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role }
+  session.user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role, avatarIcon: null, avatarColor: null }
   session.status.value = 'ready'
   session.pendingInviteCount.value = invites
 }

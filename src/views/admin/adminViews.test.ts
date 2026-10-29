@@ -286,9 +286,32 @@ describe('admin users icon actions', () => {
   })
 })
 
+describe('admin users avatar', () => {
+  it('shows an avatar before the name: icon when set, initials otherwise', async () => {
+    stubFetch((url) => {
+      if (url.includes('/api/admin/users')) {
+        return json(200, {
+          items: [
+            { id: 'u1', email: 'ana@apc.edu.ph', name: 'Ana', role: 'user', disabled: false, createdAt: '2026-06-30 17:30:00', avatarIcon: 'cat', avatarColor: 'blue' },
+            { id: 'u2', email: 'ben@apc.edu.ph', name: 'Ben', role: 'user', disabled: false, createdAt: '2026-06-30 17:30:00', avatarIcon: null, avatarColor: null },
+          ],
+          nextCursor: null,
+        })
+      }
+    })
+    const wrapper = mount(AdminUsersView)
+    await flushPromises()
+    const rows = wrapper.findAll('[data-admin-row]')
+    expect(rows[0].findAll('svg').some((svg) => svg.classes().includes('size-[55%]'))).toBe(true)
+    expect(rows[0].text()).toContain('Ana')
+    expect(rows[1].find('[data-slot="avatar"]').text()).toBe('BE')
+    vi.unstubAllGlobals()
+  })
+})
+
 describe('admin users self actions', () => {
   it('does not offer Disable on the signed-in admin own row, only on others', async () => {
-    useSession().user.value = { id: 'me', email: 'me@apc.edu.ph', name: 'Me', role: 'admin' }
+    useSession().user.value = { id: 'me', email: 'me@apc.edu.ph', name: 'Me', role: 'admin', avatarIcon: null, avatarColor: null }
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       items: [
         { id: 'me', email: 'me@apc.edu.ph', name: 'Me', role: 'admin', disabled: false, createdAt: '2026-06-30 17:30:00' },

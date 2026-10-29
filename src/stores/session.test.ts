@@ -20,6 +20,8 @@ const ada = {
   email: 'ada@apc.edu.ph',
   name: 'Ada',
   role: 'user' as const,
+  avatarIcon: null,
+  avatarColor: null,
 }
 
 function meBody(pendingInviteCount: number) {
@@ -116,6 +118,8 @@ describe('useSession', () => {
       email: 'ada@apc.edu.ph',
       name: 'Ada',
       role: 'admin',
+      avatarIcon: null,
+      avatarColor: null,
     })
     expect(session.pendingInviteCount.value).toBe(0)
     expect(session.needsConsent.value).toEqual([])
@@ -283,6 +287,8 @@ describe('useSession', () => {
       email: 'ada@apc.edu.ph',
       name: 'Ada',
       role: 'user',
+      avatarIcon: null,
+      avatarColor: null,
     }
     session.status.value = 'ready'
 
@@ -324,6 +330,8 @@ describe('useSession', () => {
       email: 'user@student.apc.edu.ph',
       name: 'User',
       role: 'user',
+      avatarIcon: null,
+      avatarColor: null,
     }
     session.status.value = 'ready'
 
@@ -582,5 +590,47 @@ describe('useSession', () => {
       await session.load()
       expect(cb).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+describe('useSession avatar', () => {
+  it('fills the avatar from /api/me when both keys are valid', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { user: { ...ada, avatarIcon: 'cat', avatarColor: 'blue' } }))
+    const session = useSession()
+    await session.load()
+    expect(session.user.value?.avatarIcon).toBe('cat')
+    expect(session.user.value?.avatarColor).toBe('blue')
+  })
+
+  it('nulls both when the icon is unknown', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { user: { ...ada, avatarIcon: 'nope', avatarColor: 'blue' } }))
+    const session = useSession()
+    await session.load()
+    expect(session.user.value?.avatarIcon).toBeNull()
+    expect(session.user.value?.avatarColor).toBeNull()
+  })
+
+  it('nulls both when only one field is present', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { user: { ...ada, avatarIcon: 'cat' } }))
+    const session = useSession()
+    await session.load()
+    expect(session.user.value?.avatarIcon).toBeNull()
+    expect(session.user.value?.avatarColor).toBeNull()
+  })
+
+  it('setAvatar updates the user in place and null clears it', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, meBody(0)))
+    const session = useSession()
+    await session.load()
+    session.setAvatar('cat', 'blue')
+    expect(session.user.value).toMatchObject({ id: 'user-1', avatarIcon: 'cat', avatarColor: 'blue' })
+    session.setAvatar(null, null)
+    expect(session.user.value).toMatchObject({ id: 'user-1', avatarIcon: null, avatarColor: null })
+  })
+
+  it('setAvatar does nothing when nobody is signed in', () => {
+    const session = useSession()
+    session.setAvatar('cat', 'blue')
+    expect(session.user.value).toBeNull()
   })
 })

@@ -125,11 +125,11 @@
 - Consumes: `UserAvatar` (Task 4), `isAvatarIcon`/`isAvatarColor` from `@shared/avatars`.
 - Produces: `SessionUser` gains `avatarIcon: AvatarIcon | null` and `avatarColor: AvatarColor | null`; `asUser` sets both only when **both** are valid keys, otherwise both null; the store exposes `setAvatar(icon: AvatarIcon | null, color: AvatarColor | null): void` that updates the current user in place. `OrgMember` gains `avatar_icon?: string | null`, `avatar_color?: string | null`; `AdminUser` gains `avatarIcon`, `avatarColor` (both `string | null`).
 
-- [ ] **Step 1: Write the failing tests:** `/api/me` with valid keys populates the session user; with an unknown icon (`'nope'`) or only one field populates both as null; `setAvatar` updates the user and `setAvatar(null, null)` clears it; `AccountMenu` renders the chosen icon in the trigger and in the menu header (the same `UserAvatar`) and falls back to initials otherwise; the member row and the admin user row render a `UserAvatar` before the name (an icon when set, initials otherwise) without changing the row text content the existing tests assert.
-- [ ] **Step 2: Run to verify they fail.**
-- [ ] **Step 3: Implement:** replace both `Avatar`/`AvatarFallback` blocks in `AccountMenu.vue` with `UserAvatar` passing `displayName`, keeping the size classes; add `UserAvatar` (`class="size-8"`) to the member name cell and the admin name cell with the person's name; remove the now-unused `initials` computed and imports in `AccountMenu.vue`.
-- [ ] **Step 4: Run to verify they pass**; run `npx vitest run src` and `npm run typecheck`.
-- [ ] **Step 5: Commit** `feat(avatar): show the chosen avatar in the menu, member list and admin users`.
+- [x] **Step 1: Write the failing tests:** `/api/me` with valid keys populates the session user; with an unknown icon (`'nope'`) or only one field populates both as null; `setAvatar` updates the user and `setAvatar(null, null)` clears it; `AccountMenu` renders the chosen icon in the trigger and in the menu header (the same `UserAvatar`) and falls back to initials otherwise; the member row and the admin user row render a `UserAvatar` before the name (an icon when set, initials otherwise) without changing the row text content the existing tests assert.
+- [x] **Step 2: Run to verify they fail.**
+- [x] **Step 3: Implement:** replace both `Avatar`/`AvatarFallback` blocks in `AccountMenu.vue` with `UserAvatar` passing `displayName`, keeping the size classes; add `UserAvatar` (`class="size-8"`) to the member name cell and the admin name cell with the person's name; remove the now-unused `initials` computed and imports in `AccountMenu.vue`.
+- [x] **Step 4: Run to verify they pass**; run `npx vitest run src` and `npm run typecheck`.
+- [x] **Step 5: Commit** `feat(avatar): show the chosen avatar in the menu, member list and admin users`.
 
 ---
 

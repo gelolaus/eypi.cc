@@ -30,6 +30,8 @@ function signIn(count: number) {
     email: 'ada@apc.edu.ph',
     name: 'Ada',
     role: 'user',
+    avatarIcon: null,
+    avatarColor: null,
   }
   session.status.value = 'ready'
   session.pendingInviteCount.value = count

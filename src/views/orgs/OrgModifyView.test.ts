@@ -204,6 +204,26 @@ describe('OrgModifyView members', () => {
     wrapper.unmount()
   })
 
+  it('shows an avatar before the member name: icon when set, initials otherwise', async () => {
+    installFetch({
+      asOwner: true,
+      members: [
+        { email: 'ana@student.apc.edu.ph', user_id: 'u1', name: 'Ana', activated_at: '2026-01-01T00:00:00.000Z', declined_at: null, avatar_icon: 'cat', avatar_color: 'blue' },
+        { email: 'ben@student.apc.edu.ph', user_id: 'u2', name: 'Ben', activated_at: '2026-01-01T00:00:00.000Z', declined_at: null },
+      ],
+    })
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    const rows = wrapper.findAll('tbody tr')
+    const ana = rows.find((tr) => tr.text().includes('ana@student.apc.edu.ph'))!
+    const ben = rows.find((tr) => tr.text().includes('ben@student.apc.edu.ph'))!
+    expect(ana.findAll('svg').some((svg) => svg.classes().includes('size-[55%]'))).toBe(true)
+    expect(ana.text()).toContain('Ana')
+    expect(ben.find('[data-slot="avatar"]').text()).toBe('BE')
+    wrapper.unmount()
+  })
+
   it('does not label a declined row as pending or offer resend', async () => {
     installFetch({
       asOwner: true,

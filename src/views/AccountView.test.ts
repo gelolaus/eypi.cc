@@ -245,7 +245,7 @@ describe('AccountView', () => {
 
 describe('account navigation', () => {
   it('points the sidebar at Account', async () => {
-    useSession().user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user' }
+    useSession().user.value = { id: 'user-1', email: 'ada@apc.edu.ph', name: 'Ada', role: 'user', avatarIcon: null, avatarColor: null }
     const wrapper = mount(SiteNavSheet, {
       attachTo: document.body,
       global: { plugins: [router] },

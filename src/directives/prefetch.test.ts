@@ -46,7 +46,7 @@ afterEach(() => {
 
 describe('v-prefetch', () => {
   it('pointerenter loads the route component once', async () => {
-    useSession().user.value = { id: 'u', email: 'a@b.c', name: 'A', role: 'user' }
+    useSession().user.value = { id: 'u', email: 'a@b.c', name: 'A', role: 'user', avatarIcon: null, avatarColor: null }
     const w = mountLink('/links')
     await w.trigger('pointerenter')
     await w.trigger('focus')

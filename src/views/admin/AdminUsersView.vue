@@ -73,17 +73,25 @@
             data-admin-row
             class="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:grid md:grid-cols-12 md:items-center md:gap-0 md:py-2 md:rounded-none md:border-0 md:border-b md:bg-transparent md:last:border-0 md:hover:bg-muted/40"
           >
-            <div class="min-w-0 md:col-span-4">
-              <p class="truncate text-sm font-semibold text-foreground">
-                {{ user.name || '(no name)' }}
-                <span
-                  v-if="isSelf(user)"
-                  class="text-xs font-normal text-muted-foreground"
-                >(you)</span>
-              </p>
-              <p class="font-mono truncate text-xs text-muted-foreground">
-                {{ user.email }}
-              </p>
+            <div class="flex min-w-0 items-center gap-3 md:col-span-4">
+              <UserAvatar
+                :name="user.name || user.email"
+                :icon="user.avatarIcon"
+                :color="user.avatarColor"
+                class="size-8"
+              />
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-foreground">
+                  {{ user.name || '(no name)' }}
+                  <span
+                    v-if="isSelf(user)"
+                    class="text-xs font-normal text-muted-foreground"
+                  >(you)</span>
+                </p>
+                <p class="font-mono truncate text-xs text-muted-foreground">
+                  {{ user.email }}
+                </p>
+              </div>
             </div>
             <div class="text-sm md:col-span-2">
               <span class="text-muted-foreground md:hidden">Role: </span>{{ user.role === 'admin' ? 'Admin' : 'User' }}
@@ -144,6 +152,7 @@
 
 <script setup lang="ts">
 import ListSkeleton from '@/components/skeletons/ListSkeleton.vue'
+import UserAvatar from '@/components/avatar/UserAvatar.vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -165,6 +174,8 @@ interface AdminUser {
   role: Role
   disabled: boolean
   createdAt: string
+  avatarIcon: string | null
+  avatarColor: string | null
 }
 
 interface UsersPage {

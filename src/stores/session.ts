@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import { isAvatarColor, isAvatarIcon, type AvatarColor, type AvatarIcon } from '@shared/avatars'
 import { ApiError, api } from '@/lib/api'
 import { clearQueryCache } from '@/lib/queryCache'
 import { clearTicketsCache, noteSignedInUser } from '@/lib/registerSw'
@@ -9,6 +10,8 @@ export type SessionUser = {
   email: string
   name: string
   role: 'user' | 'admin'
+  avatarIcon: AvatarIcon | null
+  avatarColor: AvatarColor | null
 }
 
 export type ConsentRequirement = {
@@ -22,6 +25,8 @@ type MeResponse = {
     email?: unknown
     name?: unknown
     role?: unknown
+    avatarIcon?: unknown
+    avatarColor?: unknown
   }
   pendingInviteCount?: unknown
   ticketUpdates?: unknown
@@ -63,12 +68,22 @@ function asConsentList(value: unknown): ConsentRequirement[] {
 
 function asUser(raw: MeResponse['user']): SessionUser | null {
   if (!raw || typeof raw.id !== 'string' || typeof raw.email !== 'string') return null
+  // The pair counts only when both halves are known keys; otherwise initials show.
+  const picked = isAvatarIcon(raw.avatarIcon) && isAvatarColor(raw.avatarColor)
   return {
     id: raw.id,
     email: raw.email,
     name: typeof raw.name === 'string' ? raw.name : '',
     role: raw.role === 'admin' ? 'admin' : 'user',
+    avatarIcon: picked ? (raw.avatarIcon as AvatarIcon) : null,
+    avatarColor: picked ? (raw.avatarColor as AvatarColor) : null,
   }
+}
+
+/** Updates the signed-in user's avatar in place, so the menu changes without a reload. */
+function setAvatar(icon: AvatarIcon | null, color: AvatarColor | null): void {
+  if (!user.value) return
+  user.value = { ...user.value, avatarIcon: icon, avatarColor: color }
 }
 
 function reset(): void {
@@ -197,8 +212,9 @@ const session: {
   offReady: (cb: () => void) => void
   reload: () => Promise<void>
   reset: () => void
+  setAvatar: (icon: AvatarIcon | null, color: AvatarColor | null) => void
   logout: () => Promise<void>
-} = { user, status, settled, pendingInviteCount, ticketUpdates, needsConsent, load, onReady, offReady, reload, reset, logout }
+} = { user, status, settled, pendingInviteCount, ticketUpdates, needsConsent, load, onReady, offReady, reload, reset, setAvatar, logout }
 
 export function useSession() {
   return session

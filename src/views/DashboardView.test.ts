@@ -48,6 +48,8 @@ function mountDashboard(count: number) {
     email: 'ada@apc.edu.ph',
     name: 'Ada',
     role: 'user',
+    avatarIcon: null,
+    avatarColor: null,
   }
   session.pendingInviteCount.value = count
   return mount(DashboardView, {
