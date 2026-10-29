@@ -809,7 +809,7 @@ The final-verification boxes above stay open. They ask for a production curl, a 
 | F-DB-5 | **unresolved** |
 | F-DB-6 | fixed in 7a8e08a |
 | F-DB-10 | fixed in 5db0e88 |
-| F-DB-11 | fixed in 353acea |
+| F-DB-11 | **unresolved**. Runner guard shipped in `353acea` (prints the host, dry run unless `--yes`, destructive statements need `--allow-destructive`). The read-only token default did not. |
 | F-DB-12 | fixed in c9e1fd8 |
 | F-PLAT-1 | fixed in 5db0e88 |
 | F-PLAT-2 | fixed in 8f69635 |
@@ -831,7 +831,7 @@ The final-verification boxes above stay open. They ask for a production curl, a 
 | F-SEO-2 | fixed in 125300d |
 | F-DEP-1 | fixed in 4899792 |
 | F-DEP-2 | fixed in 69551b1 |
-| F-OPS-1 | fixed in fd08730 |
+| F-OPS-1 | **unresolved**. CI ships Node 22, lint, typecheck, test, `npm run build`, and Wrangler dry-runs for both workers, plus a non-blocking audit job. No Playwright or other e2e step. |
 | F-OPS-3 | fixed in 85ef24d |
 | F-LEGAL-1 | fixed in 1f1af08 |
 | F-LEGAL-2 | fixed in 2d9ed34 |
