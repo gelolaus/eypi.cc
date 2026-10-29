@@ -53,7 +53,7 @@ Items 5 (signed-in checks) and 6 need the owner. The agent prepares and records 
 
 Read the full rows in `docs/operations.md:168-185`. Do only the ones below; the rest stay accepted.
 
-- [ ] **4a. Last-admin guard (atomic).** Make the "cannot remove the last admin" check a single guarded statement (`UPDATE ... WHERE (SELECT COUNT(*) ...) > 1`) or a batch with a rollback condition. Test: two concurrent demotions of the only two admins leave one admin. Commit `fix(admin): make the last-admin guard atomic`.
+- [x] **4a. Last-admin guard (atomic).** Make the "cannot remove the last admin" check a single guarded statement (`UPDATE ... WHERE (SELECT COUNT(*) ...) > 1`) or a batch with a rollback condition. Test: two concurrent demotions of the only two admins leave one admin. Commit `fix(admin): make the last-admin guard atomic`.
 - [ ] **4b. Consent writes.** Insert all consent rows in one `batch` so a failure leaves no partial record. Failing test first with a mocked second-row failure. Commit `fix(consent): write consent rows in one batch`.
 - [ ] **4c. Media cleanup.** Deleting a link deletes its R2 object (best effort, log the key not the user); a PATCH with an oversized data URL returns 4xx and leaves the stored logo unchanged. Commit `fix(links): remove the logo object on delete and keep it on a rejected patch`.
 - [ ] **4d. Privacy copy.** The privacy page says the session cookie is the only cookie; sign-in also sets the short-lived `eypi_oauth` cookie. Fix the copy (see `DESIGN_SYSTEM.md` for copy rules) and its test if present. Commit `docs(privacy): mention the short-lived sign-in cookie`.

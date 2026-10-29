@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { recordAudit } from '../lib/audit'
 import {
+  assertRemainingAdmin,
   deleteAccount,
+  LastAdminDeletionError,
   organizationsOwnedBy,
   OWNS_ORG_MESSAGE,
 } from '../lib/accountDeletion'
@@ -200,16 +202,12 @@ async function loadUser(client: ReturnType<typeof db>, id: string): Promise<Row 
   return (result.rows[0] as Row | undefined) ?? null
 }
 
-/** Admins who can still sign in. A disabled admin does not count. */
-async function activeAdminCount(client: ReturnType<typeof db>, excludeId?: string): Promise<number> {
-  const result = await client.execute({
-    sql: `SELECT COUNT(*) AS n FROM users
-          WHERE role = 'admin' AND COALESCE(disabled_at, '') = ''
-          ${excludeId ? 'AND id != ?' : ''}`,
-    args: excludeId ? [excludeId] : [],
-  })
-  return Number(result.rows[0]?.n ?? 0)
-}
+const OTHER_ACTIVE_ADMIN = `EXISTS (
+  SELECT 1 FROM users AS other
+  WHERE other.role = 'admin'
+    AND COALESCE(other.disabled_at, '') = ''
+    AND other.id != ?
+)`
 
 app.get('/api/admin/users', requireAuth, requireAdmin, async (c) => {
   const filters: string[] = []
@@ -272,17 +270,28 @@ app.patch('/api/admin/users/:id', requireAuth, requireAdmin, async (c) => {
   const currentRole = text(target.role) === 'admin' ? 'admin' : 'user'
   const currentlyDisabled = text(target.disabled_at).length > 0
 
-  if (role === 'user' && currentRole === 'admin') {
-    // Demoting yourself is always refused, even when another admin exists.
-    if (id === actorId) return c.json(lastAdminBody(), 409)
-    if (await activeAdminCount(client, id) === 0) return c.json(lastAdminBody(), 409)
-  }
-  if (disabled === true && !currentlyDisabled && currentRole === 'admin') {
-    if (await activeAdminCount(client, id) === 0) return c.json(lastAdminBody(), 409)
+  // Demoting yourself is always refused, even when another admin exists.
+  if (role === 'user' && currentRole === 'admin' && id === actorId) {
+    return c.json(lastAdminBody(), 409)
   }
 
   const now = sqlNow()
-  if (role !== undefined && role !== currentRole) {
+  if (role === 'user' && currentRole === 'admin') {
+    // The other-admin check is inside the write, so two demotions cannot both succeed.
+    const demoted = await client.execute({
+      sql: `UPDATE users SET role = 'user'
+            WHERE id = ? AND role = 'admin' AND ${OTHER_ACTIVE_ADMIN}`,
+      args: [id, id],
+    })
+    if (Number(demoted.rowsAffected) !== 1) return c.json(lastAdminBody(), 409)
+    await recordAudit(client, {
+      actorUserId: actorId,
+      action: 'user.role',
+      targetType: 'user',
+      targetId: id,
+      meta: { from: currentRole, to: role },
+    })
+  } else if (role !== undefined && role !== currentRole) {
     await client.execute({
       sql: 'UPDATE users SET role = ? WHERE id = ?',
       args: [role, id],
@@ -295,12 +304,23 @@ app.patch('/api/admin/users/:id', requireAuth, requireAdmin, async (c) => {
       meta: { from: currentRole, to: role },
     })
   }
+  const stillAdmin = role === undefined ? currentRole === 'admin' : role === 'admin'
   if (disabled !== undefined && disabled !== currentlyDisabled) {
     if (disabled) {
-      await client.execute({
-        sql: 'UPDATE users SET disabled_at = ? WHERE id = ?',
-        args: [now, id],
-      })
+      if (stillAdmin && currentRole === 'admin' && !currentlyDisabled) {
+        const disabledAdmin = await client.execute({
+          sql: `UPDATE users SET disabled_at = ?
+                WHERE id = ? AND role = 'admin' AND COALESCE(disabled_at, '') = ''
+                  AND ${OTHER_ACTIVE_ADMIN}`,
+          args: [now, id, id],
+        })
+        if (Number(disabledAdmin.rowsAffected) !== 1) return c.json(lastAdminBody(), 409)
+      } else {
+        await client.execute({
+          sql: 'UPDATE users SET disabled_at = ? WHERE id = ?',
+          args: [now, id],
+        })
+      }
       await client.execute({
         sql: 'DELETE FROM sessions WHERE user_id = ?',
         args: [id],
@@ -357,9 +377,11 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (c) => {
   const target = await loadUser(client, id)
   if (!target) return c.json(notFoundBody(), 404)
 
-  const isActiveAdmin = text(target.role) === 'admin' && text(target.disabled_at).length === 0
-  if (isActiveAdmin && await activeAdminCount(client, id) === 0) {
-    return c.json(lastAdminBody(), 409)
+  try {
+    await assertRemainingAdmin(client, id)
+  } catch (err) {
+    if (err instanceof LastAdminDeletionError) return c.json(lastAdminBody(), 409)
+    throw err
   }
 
   const owned = await organizationsOwnedBy(client, id)
@@ -371,7 +393,13 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (c) => {
   }
 
   const email = text(target.email)
-  const logoKeys = await deleteAccount(client, c.env, id, email)
+  let logoKeys: string[]
+  try {
+    logoKeys = await deleteAccount(client, c.env, id, email, { guardLastAdmin: true })
+  } catch (err) {
+    if (err instanceof LastAdminDeletionError) return c.json(lastAdminBody(), 409)
+    throw err
+  }
   for (const key of logoKeys) {
     try {
       await deleteObject(c.env, key)

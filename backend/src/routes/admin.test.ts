@@ -238,6 +238,51 @@ describe('admin routes', () => {
     expect(promote.status).toBe(404)
   })
 
+  it('leaves one admin when the only two admins demote each other together', async () => {
+    const { request, client, env } = await createTestApp({
+      user: admin,
+      seed: async (db) => {
+        await insertUser(db, secondAdmin)
+      },
+    })
+    // Warm the actor session before the pair of writes, so both requests start from two admins.
+    expect((await request('/api/admin/users')).status).toBe(200)
+    const secondCookie = await cookieFor(client, env, secondAdmin.id)
+
+    const originalExecute = client.execute.bind(client)
+    client.execute = (async (stmt: { sql?: string } | string) => {
+      const sql = typeof stmt === 'string' ? stmt : String(stmt.sql ?? '')
+      if (sql.includes('UPDATE users SET role')) {
+        // The admin check has already run. Yield so the other demotion can pass it
+        // before either role write lands.
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+      return originalExecute(stmt as never)
+    }) as typeof client.execute
+
+    const [demoteSecond, demoteFirst] = await Promise.all([
+      request('/api/admin/users/admin-2', json('PATCH', { role: 'user' })),
+      request('/api/admin/users/admin-1', {
+        method: 'PATCH',
+        headers: {
+          Origin: ORIGIN,
+          'Content-Type': 'application/json',
+          Cookie: secondCookie,
+        },
+        body: JSON.stringify({ role: 'user' }),
+      }),
+    ])
+
+    const responses = [demoteSecond, demoteFirst]
+    expect(responses.map((res) => res.status).sort()).toEqual([200, 409])
+    const refused = responses.find((res) => res.status === 409)
+    expect(await refused?.json()).toMatchObject({ error: { code: 'last_admin' } })
+    const remaining = await client.execute(
+      "SELECT id FROM users WHERE role = 'admin' AND COALESCE(disabled_at, '') = ''",
+    )
+    expect(remaining.rows).toHaveLength(1)
+  })
+
   it('promotes and demotes another user and writes an audit row', async () => {
     const { request, client } = await createTestApp({
       user: admin,

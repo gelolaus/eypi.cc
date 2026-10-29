@@ -1,13 +1,47 @@
-import type { Client } from '@libsql/client/web'
+import { LibsqlBatchError, type Client } from '@libsql/client/web'
 import type { Bindings } from './db'
 import { manilaDay } from './manilaTime'
 import { promoteWaitlistStatement } from './tix/registration'
 
 export const OWNS_ORG_MESSAGE = 'Transfer ownership before deleting your account.'
 
-export type OwnedOrg = { id: string; name: string }
+export class LastAdminDeletionError extends Error {
+  constructor() {
+    super('Keep at least one active admin.')
+    this.name = 'LastAdminDeletionError'
+  }
+}
+
+const LAST_ADMIN_GUARD_SQL = `INSERT INTO users (id, email, name, role)
+  SELECT target.id, target.email, target.name, target.role
+  FROM users AS target
+  WHERE target.id = ?
+    AND target.role = 'admin'
+    AND COALESCE(target.disabled_at, '') = ''
+    AND NOT EXISTS (
+      SELECT 1 FROM users AS other
+      WHERE other.role = 'admin'
+        AND COALESCE(other.disabled_at, '') = ''
+        AND other.id != target.id
+    )`
+
+function lastAdminGuard(userId: string): Statement {
+  return { sql: LAST_ADMIN_GUARD_SQL, args: [userId] }
+}
+
+/** Aborts when `userId` is the last active admin. A no-op for everyone else. */
+export async function assertRemainingAdmin(client: Client, userId: string): Promise<void> {
+  try {
+    await client.batch([lastAdminGuard(userId)], 'write')
+  } catch (err) {
+    if (isLastAdminGuardFailure(err)) throw new LastAdminDeletionError()
+    throw err
+  }
+}
 
 type Statement = { sql: string; args: (string | null)[] }
+
+export type OwnedOrg = { id: string; name: string }
 
 function text(value: unknown): string {
   return value == null ? '' : String(value)
@@ -65,6 +99,7 @@ export async function deleteAccount(
   env: Pick<Bindings, 'LINKS_KV'>,
   userId: string,
   email: string,
+  options?: { guardLastAdmin?: boolean },
 ): Promise<string[]> {
   const today = manilaDay(new Date())
   const [logos, audits, freedSeats] = await Promise.all([
@@ -169,9 +204,20 @@ export async function deleteAccount(
     if (next !== meta) statements.push({ sql: 'UPDATE audit_events SET meta = ? WHERE id = ?', args: [next, text(row.id)] })
   }
   statements.push({ sql: 'DELETE FROM users WHERE id = ?', args: [userId] })
-  await client.batch(statements, 'write')
+  if (options?.guardLastAdmin) statements.unshift(lastAdminGuard(userId))
+  try {
+    await client.batch(statements, 'write')
+  } catch (err) {
+    if (options?.guardLastAdmin && isLastAdminGuardFailure(err)) throw new LastAdminDeletionError()
+    throw err
+  }
   await deleteEdgeKeys(env.LINKS_KV, slugs)
   return logoKeys
+}
+
+function isLastAdminGuardFailure(err: unknown): boolean {
+  if (!(err instanceof LibsqlBatchError) || err.statementIndex !== 0) return false
+  return err.code.includes('CONSTRAINT') || err.message.includes('UNIQUE')
 }
 
 /** Best-effort: a KV failure is logged without identifiers and never aborts deletion. */
