@@ -18,7 +18,7 @@ eypi.cc is a free toolkit for the Asia Pacific College (APC) student community. 
 
 ## Your privacy
 
-eypi.cc keeps what it needs to work and nothing more. Click statistics are counted without storing your name, and IP addresses are stored only in scrambled form. The details are in the privacy policy and terms inside the app.
+eypi.cc aims to keep only what it needs to work. Link click statistics are counted without storing your name or your browser's user agent text. The full details are in the privacy policy and terms inside the app.
 
 ## Contributing
 
