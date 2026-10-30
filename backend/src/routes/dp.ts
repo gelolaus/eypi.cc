@@ -565,6 +565,71 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
   return c.json({ status: 'ok', slug: after.rows[0]?.slug })
 })
 
+// ── POST /api/dp/:id/duplicate ────────────────────────────────────────────────
+// Owner-only copy of a campaign's details and frames. Each frame file is copied to
+// a new key: deleting a frame or campaign removes its files, so sharing keys would
+// let the original's deletion break the copy. Views and downloads start at zero.
+const COPY_SUFFIX = ' (copy)'
+
+app.post('/api/dp/:id/duplicate', isOrgFeature, async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const id = c.req.param('id')!
+  const client = db(c)
+  const orgId = c.var.orgId
+  const owner = await requireOwner(client, id, orgId)
+  if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
+
+  const source = (await client.execute({
+    sql: 'SELECT title, description, caption_template FROM dp_campaigns WHERE id = ?',
+    args: [id],
+  })).rows[0]
+  const sourceFrames = (await client.execute({
+    sql: 'SELECT image_url, label FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    args: [id],
+  })).rows
+
+  const copyId = crypto.randomUUID()
+  const title = `${String(source?.title ?? '').slice(0, TITLE_MAX - COPY_SUFFIX.length)}${COPY_SUFFIX}`
+  const slug = await uniqueSlug(client, slugify(title))
+
+  const stored: { id: string; image: string; label: string | null }[] = []
+  const ownedKeys: string[] = []
+  try {
+    for (const frame of sourceFrames) {
+      const reference = String(frame.image_url ?? '')
+      const label = frame.label == null ? null : String(frame.label)
+      if (!isFrameKey(reference)) {
+        // Legacy frames that are not R2 files are never deleted with the campaign, so they can be shared.
+        stored.push({ id: crypto.randomUUID(), image: reference, label })
+        continue
+      }
+      const object = await c.env.MEDIA.get(reference)
+      if (!object) throw new Error(`Missing frame file ${reference}`)
+      const copy = await storeFrame(c.env, copyId, new Uint8Array(await object.arrayBuffer()), label)
+      ownedKeys.push(copy.key)
+      stored.push({ id: copy.id, image: copy.key, label })
+    }
+    await client.batch([
+      {
+        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [copyId, user.id, orgId!, title, slug, source?.description == null ? null : String(source.description), '', source?.caption_template == null ? null : String(source.caption_template)],
+      },
+      ...stored.map((frame, index) => ({
+        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
+        args: [frame.id, copyId, frame.image, frame.label, index],
+      })),
+    ], 'write')
+  } catch (err) {
+    await discardKeys(c.env, ownedKeys)
+    reportError(c, err)
+    return c.json({ status: 'error', message: 'Could not duplicate the campaign.' }, 500)
+  }
+
+  return c.json({ status: 'ok', campaign: { id: copyId, title, slug } }, 201)
+})
+
 // ── DELETE /api/dp/:id ────────────────────────────────────────────────────────
 app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   const user = c.var.user

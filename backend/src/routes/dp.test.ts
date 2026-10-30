@@ -223,6 +223,111 @@ describe('frame campaigns', () => {
     })
   })
 
+  describe('duplicate', () => {
+    type Created = { campaign: { id: string; title: string; slug: string } }
+
+    async function setup(extra: { title?: string } = {}) {
+      const app = await createTestApp({ user: member, seed: seedOrg })
+      const created = await app.request('/api/dp', json('POST', {
+        title: extra.title ?? 'Launch',
+        slug: 'launch',
+        description: 'About it',
+        captionTemplate: 'Hi, I am {{Name}}',
+        frames: [{ imageData: frameDataUrl(), label: 'First' }, { imageData: frameDataUrl(1200), label: 'Second' }],
+      }))
+      const original = ((await created.json()) as Created).campaign
+      const duplicate = async () => app.request(`/api/dp/${original.id}/duplicate`, json('POST', {}))
+      const frames = async (campaignId: string) => (await app.client.execute({
+        sql: 'SELECT image_url, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position',
+        args: [campaignId],
+      })).rows
+      return { ...app, original, duplicate, frames }
+    }
+
+    it('copies the details and frames into a new campaign', async () => {
+      const { client, duplicate, original, frames } = await setup()
+      const response = await duplicate()
+      expect(response.status).toBe(201)
+      const { campaign } = (await response.json()) as Created
+      expect(campaign.id).not.toBe(original.id)
+      expect(campaign.title).toBe('Launch (copy)')
+      expect(campaign.slug).toBe('launch-copy')
+
+      const row = (await client.execute({ sql: 'SELECT org_id, description, caption_template FROM dp_campaigns WHERE id = ?', args: [campaign.id] })).rows[0]
+      expect(row).toMatchObject({ org_id: 'org-1', description: 'About it', caption_template: 'Hi, I am {{Name}}' })
+
+      const [first, second] = await frames(campaign.id)
+      const originals = await frames(original.id)
+      expect([first?.label, second?.label]).toEqual(['First', 'Second'])
+      expect([first?.position, second?.position]).toEqual([0, 1])
+      expect(String(first?.image_url)).toMatch(/^frames\/[^/]+\/[^/]+\.png$/)
+      expect(String(first?.image_url)).toContain(`frames/${campaign.id}/`)
+      expect(originals.map((r) => r.image_url)).not.toContain(first?.image_url)
+    })
+
+    it('gives the copy its own files, so deleting the original leaves it intact', async () => {
+      const { request, env, duplicate, original, frames } = await setup()
+      const { campaign } = (await (await duplicate()).json()) as Created
+      const copyKeys = (await frames(campaign.id)).map((r) => String(r.image_url))
+      const originalKeys = (await frames(original.id)).map((r) => String(r.image_url))
+
+      expect((await request(`/api/dp/${original.id}`, json('DELETE', {}))).status).toBe(200)
+
+      for (const key of originalKeys) expect(await env.MEDIA.get(key)).toBeNull()
+      for (const key of copyKeys) expect(await env.MEDIA.get(key)).not.toBeNull()
+      expect((await frames(campaign.id))).toHaveLength(2)
+    })
+
+    it('numbers the link when copies pile up', async () => {
+      const { duplicate } = await setup()
+      const slugs = [(await (await duplicate()).json()) as Created, (await (await duplicate()).json()) as Created].map((r) => r.campaign.slug)
+      expect(slugs).toEqual(['launch-copy', 'launch-copy-2'])
+    })
+
+    it('keeps the copy title within the 200 character limit', async () => {
+      const { duplicate } = await setup({ title: 'x'.repeat(200) })
+      const { campaign } = (await (await duplicate()).json()) as Created
+      expect(campaign.title).toHaveLength(200)
+      expect(campaign.title.endsWith(' (copy)')).toBe(true)
+    })
+
+    it('starts the copy with no views, downloads or copies', async () => {
+      const { request, client, original, duplicate } = await setup()
+      await client.execute({
+        sql: "INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('org-1', 'frames', ?, 'download', 'v', '2026-10-28')",
+        args: [`${original.id}:f1`],
+      })
+      await duplicate()
+      const list = (await (await request('/api/dp', { headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'org-1' } })).json()) as { campaigns: { slug: string; downloadCount: number; frameCount: number }[] }
+      expect(list.campaigns.find((c) => c.slug === 'launch')?.downloadCount).toBe(1)
+      expect(list.campaigns.find((c) => c.slug === 'launch-copy')).toMatchObject({ downloadCount: 0, frameCount: 2 })
+    })
+
+    it('refuses another organization’s campaign and an unknown one', async () => {
+      const { request, client } = await setup()
+      await client.execute({ sql: 'INSERT INTO users (id, email, name, role) VALUES (?, ?, ?, ?)', args: ['u2', 'other@student.apc.edu.ph', 'Other', 'user'] })
+      await client.execute({ sql: 'INSERT INTO organizations (id, name, owner_id) VALUES (?, ?, ?)', args: ['org-2', 'Beta', 'u2'] })
+      await client.execute({ sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES ('camp-b', 'u2', 'org-2', 'Theirs', 'theirs', '')" })
+      expect((await request('/api/dp/camp-b/duplicate', json('POST', {}))).status).toBe(403)
+      expect((await request('/api/dp/nope/duplicate', json('POST', {}))).status).toBe(404)
+    })
+
+    it('leaves nothing behind when saving the copy fails', async () => {
+      const { client, env, duplicate, original, frames } = await setup()
+      const before = [...(await (env.MEDIA as unknown as { list(): Promise<{ objects: { key: string }[] }> }).list()).objects]
+      await client.execute(`
+        CREATE TRIGGER dp_frames_fail_copy BEFORE INSERT ON dp_frames
+        BEGIN SELECT RAISE(ABORT, 'frame insert failed'); END
+      `)
+      const response = await duplicate()
+      expect(response.status).toBe(500)
+      expect((await client.execute('SELECT id FROM dp_campaigns')).rows).toHaveLength(1)
+      const after = (await (env.MEDIA as unknown as { list(): Promise<{ objects: { key: string }[] }> }).list()).objects
+      expect(after).toHaveLength(before.length)
+      expect(await frames(original.id)).toHaveLength(2)
+    })
+  })
+
   it('resolves an old slug through dp_slug_history', async () => {
     const { request, client } = await createTestApp({
       user: member,
