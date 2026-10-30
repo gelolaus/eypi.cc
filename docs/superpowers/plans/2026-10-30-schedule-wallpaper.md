@@ -514,14 +514,14 @@ export function useWallpaper(): {
 
 **Behaviour:** A "Download PNG" button (disabled until `hasSchedule`) calls `renderToBlob` with the current options at full `size`, then `saveAs(blob, wallpaperFilename(...))` and toasts `Downloaded. Set it as your lock screen.`. Where `navigator.canShare({ files })` is true (detected once, as in `DpPublicView.vue`), a "Share" button calls `navigator.share({ files })`; an `AbortError` is ignored; other failures toast `Could not share. Try Download instead.`. A failed render toasts `Could not render the image. Try again.`. While exporting, both buttons are disabled.
 
-- [ ] **Step 1: Failing tests** (stub `renderToBlob`, `file-saver`, `useToast`)
+- [x] **Step 1: Failing tests** (stub `renderToBlob`, `file-saver`, `useToast`)
   - Download is disabled with no schedule; with one it calls `saveAs` with the blob and `eypi-schedule-2026-2027-term-2.png`.
   - Share is hidden when `canShare` is missing; when present it calls `navigator.share` with a `File` named like the download; an `AbortError` shows no toast.
   - A rejected `renderToBlob` shows the render error toast and re-enables the buttons.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add download and share for the wallpaper`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add download and share for the wallpaper`
 
 ---
 

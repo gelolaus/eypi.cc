@@ -1,7 +1,16 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SAMPLE_TERM2 } from '@shared/schedule/fixtures'
+import { SAMPLE_TERM2, wholePage } from '@shared/schedule/fixtures'
+import { saveAs } from 'file-saver'
+import { renderToBlob } from '@/lib/wallpaper/render'
+import { useToast } from '@/composables/useToast'
+vi.mock('file-saver', () => ({ saveAs: vi.fn() }))
+vi.mock('@/lib/wallpaper/render', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/wallpaper/render')>()),
+  renderToBlob: vi.fn(),
+}))
+
 import WallpaperView from './WallpaperView.vue'
 
 const PreviewStub = {
@@ -79,5 +88,85 @@ describe('WallpaperView', () => {
     vi.advanceTimersByTime(150)
     await flushPromises()
     expect(wrapper.get('[data-test="preview"]').text()).toBe('5')
+  })
+})
+
+describe('WallpaperView download and share', () => {
+  const FILENAME = 'eypi-schedule-2026-2027-term-2.png'
+  const PNG = new Blob(['x'], { type: 'image/png' })
+  const page = () => wholePage(SAMPLE_TERM2, '2026 -2027, Term 2')
+  const button = (wrapper: ReturnType<typeof mountView>, label: string) => wrapper.findAll('button').find((b) => b.text() === label)
+  const messages = () => useToast().toasts.value.map((toast) => toast.message)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.mocked(saveAs).mockReset()
+    vi.mocked(renderToBlob).mockReset().mockResolvedValue(PNG)
+    const toast = useToast()
+    while (toast.toasts.value.length > 0) toast.dismiss(toast.toasts.value[0].id)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('disables Download until there is a schedule', async () => {
+    const wrapper = mountView()
+    expect(button(wrapper, 'Download PNG')!.attributes('disabled')).toBeDefined()
+    await paste(wrapper, page())
+    expect(button(wrapper, 'Download PNG')!.attributes('disabled')).toBeUndefined()
+  })
+
+  it('renders at the full size, saves the png and says so', async () => {
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    await button(wrapper, 'Download PNG')!.trigger('click')
+    await flushPromises()
+    expect(renderToBlob).toHaveBeenCalledWith(expect.objectContaining({ width: 1170, height: 2532, layout: 'agenda', theme: 'dark' }))
+    expect(saveAs).toHaveBeenCalledWith(PNG, FILENAME)
+    expect(messages()).toContain('Downloaded. Set it as your lock screen.')
+  })
+
+  it('hides Share where files cannot be shared', async () => {
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    expect(button(wrapper, 'Share')).toBeUndefined()
+  })
+
+  it('shares the png as a file named like the download', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    await button(wrapper, 'Share')!.trigger('click')
+    await flushPromises()
+    const files = share.mock.calls[0][0].files as File[]
+    expect(files[0]).toBeInstanceOf(File)
+    expect(files[0].name).toBe(FILENAME)
+    expect(messages()).toEqual([])
+  })
+
+  it('ignores a closed share sheet but reports other share failures', async () => {
+    const share = vi.fn().mockRejectedValueOnce(new DOMException('closed', 'AbortError')).mockRejectedValueOnce(new Error('no'))
+    vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    await button(wrapper, 'Share')!.trigger('click')
+    await flushPromises()
+    expect(messages()).toEqual([])
+    await button(wrapper, 'Share')!.trigger('click')
+    await flushPromises()
+    expect(messages()).toEqual(['Could not share. Try Download instead.'])
+  })
+
+  it('shows the render error and re-enables the buttons when rendering fails', async () => {
+    vi.mocked(renderToBlob).mockRejectedValueOnce(new Error('boom'))
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    await button(wrapper, 'Download PNG')!.trigger('click')
+    await flushPromises()
+    expect(messages()).toEqual(['Could not render the image. Try again.'])
+    expect(saveAs).not.toHaveBeenCalled()
+    expect(button(wrapper, 'Download PNG')!.attributes('disabled')).toBeUndefined()
   })
 })

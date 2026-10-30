@@ -89,13 +89,32 @@
           @photo="onPhoto"
           @clear-photo="onClearPhoto"
         />
+        <div class="mt-6 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            :disabled="!hasSchedule || exporting"
+            @click="download"
+          >
+            Download PNG
+          </Button>
+          <Button
+            v-if="canShareFiles"
+            type="button"
+            variant="outline"
+            :disabled="!hasSchedule || exporting"
+            @click="share"
+          >
+            Share
+          </Button>
+        </div>
       </section>
     </div>
   </AppPage>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { saveAs } from 'file-saver'
+import { computed, onMounted, ref } from 'vue'
 import { MAX_PASTE_LENGTH } from '@shared/schedule/parseRams'
 import WallpaperControls from '@/components/wallpaper/WallpaperControls.vue'
 import WallpaperPreview from '@/components/wallpaper/WallpaperPreview.vue'
@@ -105,6 +124,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/composables/useToast'
 import { useWallpaper } from '@/composables/useWallpaper'
+import { renderToBlob, wallpaperFilename } from '@/lib/wallpaper/render'
 import type { RenderInput } from '@/lib/wallpaper/types'
 
 const toast = useToast()
@@ -136,6 +156,57 @@ async function pasteFromClipboard() {
 async function onPhoto(file: File) {
   await setPhoto(file)
   if (!photoError.value) photoName.value = file.name
+}
+
+const exporting = ref(false)
+
+async function makePng(): Promise<{ blob: Blob; filename: string } | null> {
+  try {
+    const blob = await renderToBlob(renderInput.value)
+    return { blob, filename: wallpaperFilename(parsed.value, layout.value) }
+  } catch {
+    toast.error('Could not render the image. Try again.')
+    return null
+  }
+}
+
+async function download() {
+  exporting.value = true
+  try {
+    const png = await makePng()
+    if (!png) return
+    saveAs(png.blob, png.filename)
+    toast.success('Downloaded. Set it as your lock screen.')
+  } finally {
+    exporting.value = false
+  }
+}
+
+// Offered only where the browser can share a png file (mostly phones); decided once on load.
+const canShareFiles = ref(false)
+
+onMounted(() => {
+  try {
+    const probe = new File([], 'schedule.png', { type: 'image/png' })
+    canShareFiles.value = typeof navigator.share === 'function' && navigator.canShare?.({ files: [probe] }) === true
+  } catch {
+    canShareFiles.value = false
+  }
+})
+
+async function share() {
+  exporting.value = true
+  try {
+    const png = await makePng()
+    if (!png) return
+    await navigator.share({ files: [new File([png.blob], png.filename, { type: 'image/png' })] })
+  } catch (err: unknown) {
+    // Closing the share sheet is a choice, not an error.
+    if (err instanceof DOMException && err.name === 'AbortError') return
+    toast.error('Could not share. Try Download instead.')
+  } finally {
+    exporting.value = false
+  }
 }
 
 function onClearPhoto() {
