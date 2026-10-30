@@ -3,7 +3,7 @@ import type { Entry } from '@shared/schedule/layout'
 import type { Day } from '@shared/schedule/types'
 import { drawBackground } from './background'
 import { formatClockShort, instructorsByCode } from './format'
-import { contentBottom, contentTop } from './safeZone'
+import { contentBottom, contentTop, sizingUnit } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
@@ -40,17 +40,18 @@ function assignLanes(entries: Entry[]): { entry: Entry; lane: number; lanes: num
 /** Layout A: a weekly grid with one column per day that has classes and blocks placed by time. */
 export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): void {
   const { schedule, width, height } = input
+  const unit = sizingUnit(width, height)
   const theme = THEMES[input.theme]
   drawBackground(ctx, width, height, theme, input.photo, input.dim)
 
   const marginX = width * 0.06
-  const titleSize = width * 0.052
-  const smallSize = width * 0.026
+  const titleSize = unit * 0.052
+  const smallSize = unit * 0.026
   const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 
-  let y = contentTop(height)
+  let y = contentTop(height, width)
   ctx.font = fontString(700, titleSize, FAMILY)
   ctx.fillStyle = theme.text
   ctx.fillText(schedule.term ?? 'Class schedule', marginX, y)
@@ -74,7 +75,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
     if (asyncEntries.length > 0) {
       drawAsync(y)
     } else {
-      ctx.font = fontString(500, width * 0.044, FAMILY)
+      ctx.font = fontString(500, unit * 0.044, FAMILY)
       ctx.fillStyle = theme.muted
       ctx.fillText('No classes to show.', marginX, y)
     }
@@ -83,13 +84,13 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
 
   const { startHour, endHour } = timelineRange(schedule)
   const hours = endHour - startHour
-  const gridLeft = marginX + width * 0.11
+  const gridLeft = marginX + unit * 0.11
   const gridRight = width - marginX
   const colW = (gridRight - gridLeft) / days.length
-  const headerH = width * 0.06
+  const headerH = unit * 0.06
   const hoursTop = y + headerH
   const asyncH = asyncEntries.length > 0 ? smallSize * 3 : 0
-  const hourH = Math.min((limit - asyncH - hoursTop) / hours, width * 0.2)
+  const hourH = Math.min((limit - asyncH - hoursTop) / hours, unit * 0.2)
   const gridBottom = hoursTop + hours * hourH
 
   ctx.font = fontString(700, smallSize, FAMILY)
@@ -101,7 +102,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
   const drawLine = (lineY: number) => {
     ctx.fillStyle = theme.muted
     ctx.globalAlpha = 0.35
-    ctx.fillRect(gridLeft, lineY, gridRight - gridLeft, Math.max(1, width * 0.0012))
+    ctx.fillRect(gridLeft, lineY, gridRight - gridLeft, Math.max(1, unit * 0.0012))
     ctx.globalAlpha = 1
   }
   // The borders sit on the whole hours; the lines and labels sit on the class times.
@@ -118,8 +119,8 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
 
   const codes = [...new Set(schedule.subjects.map((subject) => subject.code))]
   const instructors = instructorsByCode(schedule.subjects)
-  const gap = width * 0.004
-  const radius = width * 0.014
+  const gap = unit * 0.004
+  const radius = unit * 0.014
   days.forEach((day, i) => {
     const timed = byDay[day]!.filter((entry) => !entry.async)
     for (const { entry, lane, lanes } of assignLanes(timed)) {
@@ -136,7 +137,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
 
       const padding = w * 0.08
       const textColor = readableOn(color)
-      const codeSize = Math.min(width * 0.03, h * 0.4)
+      const codeSize = Math.min(unit * 0.03, h * 0.4)
       const label = fitText(ctx, entry.code, w - padding * 2, { size: codeSize, min: codeSize * 0.6, weight: 700, family: FAMILY })
       ctx.textAlign = 'left'
       ctx.font = fontString(700, label.size, FAMILY)

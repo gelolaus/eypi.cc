@@ -1,7 +1,7 @@
 import type { Subject } from '@shared/schedule/types'
 import { drawBackground } from './background'
 import { formatRange, instructorLabel } from './format'
-import { contentBottom, contentTop } from './safeZone'
+import { contentBottom, contentTop, sizingUnit } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
@@ -25,20 +25,21 @@ function meetingLines(subject: Subject): string[] {
 /** Layout C: one rounded card per subject, in the order pasted. */
 export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): void {
   const { schedule, width, height } = input
+  const unit = sizingUnit(width, height)
   const theme = THEMES[input.theme]
   drawBackground(ctx, width, height, theme, input.photo, input.dim)
 
   const marginX = width * 0.07
-  const titleSize = width * 0.052
-  const padding = width * 0.024
-  const codeSize = width * 0.038
-  const lineSize = width * 0.028
-  const gap = width * 0.018
+  const titleSize = unit * 0.052
+  const padding = unit * 0.024
+  const codeSize = unit * 0.038
+  const lineSize = unit * 0.028
+  const gap = unit * 0.018
   const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 
-  let y = contentTop(height)
+  let y = contentTop(height, width)
   ctx.font = fontString(700, titleSize, FAMILY)
   ctx.fillStyle = theme.text
   ctx.fillText(schedule.term ?? 'Class schedule', marginX, y)
@@ -46,7 +47,7 @@ export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): 
 
   const subjects = schedule.subjects
   if (subjects.length === 0) {
-    ctx.font = fontString(500, width * 0.044, FAMILY)
+    ctx.font = fontString(500, unit * 0.044, FAMILY)
     ctx.fillStyle = theme.muted
     ctx.fillText('No classes to show.', marginX, y)
     return
@@ -67,7 +68,7 @@ export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): 
     const textColor = readableOn(color)
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.roundRect(marginX, y, cardW, cardH, width * 0.026)
+    ctx.roundRect(marginX, y, cardW, cardH, unit * 0.026)
     ctx.fill()
 
     const textW = cardW - padding * 2

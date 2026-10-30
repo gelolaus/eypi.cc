@@ -2,7 +2,7 @@ import { findConflicts, groupDays } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import { drawBackground } from './background'
 import { formatClock, instructorsByCode } from './format'
-import { contentBottom, contentTop } from './safeZone'
+import { contentBottom, contentTop, sizingUnit } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES } from './themes'
 import type { RenderInput } from './types'
@@ -14,18 +14,19 @@ type Line =
 /** Layout B: classes listed by day, with days that share the same classes merged into one heading. */
 export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput): void {
   const { schedule, width, height } = input
+  const unit = sizingUnit(width, height)
   const theme = THEMES[input.theme]
   drawBackground(ctx, width, height, theme, input.photo, input.dim)
 
   const marginX = width * 0.09
-  const titleSize = width * 0.052
-  const dayRowSize = width * 0.034
-  const rowSize = width * 0.044
+  const titleSize = unit * 0.052
+  const dayRowSize = unit * 0.034
+  const rowSize = unit * 0.044
   const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 
-  let y = contentTop(height)
+  let y = contentTop(height, width)
   ctx.font = fontString(700, titleSize, FAMILY)
   ctx.fillStyle = theme.text
   ctx.fillText(schedule.term ?? 'Class schedule', marginX, y)
@@ -64,7 +65,7 @@ export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput):
     while (shown > 0 && lines[shown - 1].kind === 'day') shown--
   }
 
-  const timeColumn = marginX + width * 0.3
+  const timeColumn = marginX + unit * 0.3
   for (const line of lines.slice(0, shown)) {
     if (line.kind === 'day') {
       ctx.font = fontString(700, dayRowSize, FAMILY)
