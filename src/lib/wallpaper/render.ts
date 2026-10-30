@@ -3,7 +3,9 @@ import { renderAgenda } from './renderAgenda'
 import { renderCards } from './renderCards'
 import { renderGrid } from './renderGrid'
 import { ensureFonts } from './text'
+import { THEMES } from './themes'
 import type { LayoutId, RenderInput } from './types'
+import { drawWatermark, loadLogo } from './watermark'
 
 const RENDERERS: Record<LayoutId, (ctx: CanvasRenderingContext2D, input: RenderInput) => void> = {
   grid: renderGrid,
@@ -19,6 +21,7 @@ export async function render(canvas: HTMLCanvasElement, input: RenderInput): Pro
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Could not render the image. Try again.')
   RENDERERS[input.layout](ctx, input)
+  drawWatermark(ctx, input.width, input.height, THEMES[input.theme], await loadLogo())
 }
 
 /** Draws at full size on a new canvas and returns the PNG. */

@@ -8,6 +8,9 @@ vi.mock('./renderGrid', () => ({ renderGrid: drawn.grid }))
 vi.mock('./renderAgenda', () => ({ renderAgenda: drawn.agenda }))
 vi.mock('./renderCards', () => ({ renderCards: drawn.cards }))
 
+const watermark = vi.hoisted(() => ({ drawWatermark: vi.fn(), loadLogo: vi.fn().mockResolvedValue('logo') }))
+vi.mock('./watermark', () => watermark)
+
 import { render, renderToBlob, wallpaperFilename } from './render'
 
 const schedule: ParsedSchedule = { term: '2026-2027 · Term 2', subjects: [], warnings: [] }
@@ -26,6 +29,13 @@ describe('render', () => {
       expect(drawn[name]).toHaveBeenCalledTimes(name === key ? 1 : 0)
     }
     expect(drawn[key]).toHaveBeenCalledWith(ctx, input(layout))
+  })
+
+  it('signs the wallpaper with the Eypi mark after the layout', async () => {
+    const ctx = {}
+    const canvas = { width: 0, height: 0, getContext: () => ctx } as unknown as HTMLCanvasElement
+    await render(canvas, input('agenda'))
+    expect(watermark.drawWatermark).toHaveBeenCalledWith(ctx, 1170, 2532, expect.objectContaining({ bg: '#0a0a0a' }), 'logo')
   })
 })
 
