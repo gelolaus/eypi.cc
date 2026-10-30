@@ -326,6 +326,22 @@ describe('frame campaigns', () => {
       expect((await get('camp-b')).campaign.downloadCount).toBe(1)
     })
 
+    it('campaign list counts downloads and shares the way insights does', async () => {
+      const { client, request } = await setup()
+      const event = (subject: string, action: string) => client.execute({
+        sql: "INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('org-1', 'frames', ?, ?, 'v', '2026-10-28')",
+        args: [subject, action],
+      })
+      await event('camp-a:f1', 'download')
+      await event('camp-a:f2', 'share')
+      await event('camp-a', 'view')
+      await event('camp-a-other:f1', 'download')
+      const res = await request('/api/dp', { headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'org-1' } })
+      const { campaigns } = (await res.json()) as { campaigns: { id: string; downloadCount: number }[] }
+      expect(campaigns.find((c) => c.id === 'camp-a')?.downloadCount).toBe(2)
+      expect(campaigns.find((c) => c.id === 'camp-b')?.downloadCount).toBe(0)
+    })
+
     it('keeps the count out of the editor payload', async () => {
       const { request } = await setup()
       const res = await request('/api/dp/camp-a/edit', { headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'org-1' } })

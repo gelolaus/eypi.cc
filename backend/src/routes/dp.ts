@@ -321,8 +321,12 @@ app.get('/api/dp', isOrgFeature, async (c) => {
   if (!orgId) return c.json(noOrgBody(), 403)
 
   const result = await client.execute({
-    sql: `SELECT c.id, c.title, c.slug, c.description, c.download_count, c.created_at,
-                 (SELECT COUNT(*) FROM dp_frames f WHERE f.campaign_id = c.id) AS frame_count
+    // Downloads plus shares from module_events, so this agrees with Insights and the public page.
+    sql: `SELECT c.id, c.title, c.slug, c.description, c.created_at,
+                 (SELECT COUNT(*) FROM dp_frames f WHERE f.campaign_id = c.id) AS frame_count,
+                 (SELECT COUNT(*) FROM module_events e
+                   WHERE e.module = 'frames' AND e.action IN ('download', 'share')
+                     AND (e.subject_id = c.id OR (e.subject_id >= c.id || ':' AND e.subject_id < c.id || ';'))) AS saved_count
           FROM dp_campaigns c WHERE c.org_id = ? ORDER BY c.created_at DESC`,
     args: [orgId],
   })
@@ -335,7 +339,7 @@ app.get('/api/dp', isOrgFeature, async (c) => {
       slug: r.slug,
       description: r.description,
       frameCount: Number(r.frame_count ?? 0),
-      downloadCount: Number(r.download_count ?? 0),
+      downloadCount: Number(r.saved_count ?? 0),
       createdAt: r.created_at,
     })),
   })
