@@ -41,3 +41,8 @@ export function splitRows(normalized: string): RawRow[] {
   }
   return rows
 }
+
+/** Minutes since midnight for a 12-hour clock time. 12 AM is 0 and 12 PM is 720. */
+export function toMinutes(h: number, m: number, meridiem: 'AM' | 'PM'): number {
+  return ((h % 12) + (meridiem === 'PM' ? 12 : 0)) * 60 + m
+}

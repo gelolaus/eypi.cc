@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeText, parseTerm, splitRows } from './parseRams'
+import { normalizeText, parseTerm, splitRows, toMinutes } from './parseRams'
 import { SAMPLE_TERM1, SAMPLE_TERM2, SAMPLE_TERM3, wholePage } from './fixtures'
 
 describe('normalizeText', () => {
@@ -52,5 +52,17 @@ describe('splitRows', () => {
     expect(codes(page)).toHaveLength(6)
     const last = splitRows(normalizeText(page)).at(-1)!
     expect(last.lines.join(' ')).not.toContain('Total Units')
+  })
+})
+
+describe('toMinutes', () => {
+  it('converts clock times to minutes since midnight', () => {
+    expect(toMinutes(9, 30, 'AM')).toBe(570)
+    expect(toMinutes(5, 30, 'PM')).toBe(1050)
+  })
+
+  it('treats 12 PM as noon and 12 AM as midnight', () => {
+    expect(toMinutes(12, 50, 'PM')).toBe(770)
+    expect(toMinutes(12, 0, 'AM')).toBe(0)
   })
 })
