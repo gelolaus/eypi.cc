@@ -74,10 +74,39 @@ describe('WallpaperView', () => {
   it('pins the preview while the options are scrolled, on phones and on desktop', async () => {
     const wrapper = mountView()
     await paste(wrapper, SAMPLE_TERM2)
-    const pinned = wrapper.get('[data-test="preview"]').element.parentElement!
+    const pinned = wrapper.get('[data-test="pinned-preview"]').element
     expect(pinned.className).toContain('sticky')
     expect(pinned.className).toContain('lg:top-6')
     expect(pinned.className).toContain('--preview-max-h')
+  })
+
+  describe('the phone preview toggle', () => {
+    const toggle = (wrapper: ReturnType<typeof mountView>) => wrapper.get('[data-test="toggle-preview"]')
+
+    it('is not offered until there is a schedule', () => {
+      expect(mountView().find('[data-test="toggle-preview"]').exists()).toBe(false)
+    })
+
+    it('hides and shows the pinned preview on phones and says which state it is in', async () => {
+      const wrapper = mountView()
+      await paste(wrapper, SAMPLE_TERM2)
+      const body = () => wrapper.get('[data-test="preview"]').element.parentElement!
+      expect(toggle(wrapper).text()).toBe('Hide preview')
+      expect(toggle(wrapper).attributes('aria-expanded')).toBe('true')
+      expect(body().className).not.toContain('max-lg:hidden')
+      await toggle(wrapper).trigger('click')
+      expect(toggle(wrapper).text()).toBe('Show preview')
+      expect(toggle(wrapper).attributes('aria-expanded')).toBe('false')
+      expect(body().className).toContain('max-lg:hidden')
+      await toggle(wrapper).trigger('click')
+      expect(body().className).not.toContain('max-lg:hidden')
+    })
+
+    it('is only shown on phones', async () => {
+      const wrapper = mountView()
+      await paste(wrapper, SAMPLE_TERM2)
+      expect(toggle(wrapper).classes()).toContain('lg:hidden')
+    })
   })
 
   it('limits the paste box to the parser cap', () => {

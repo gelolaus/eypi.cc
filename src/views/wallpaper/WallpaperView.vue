@@ -61,9 +61,27 @@
         </div>
         <div
           v-if="hasSchedule"
+          data-test="pinned-preview"
           class="sticky top-0 z-30 -mx-4 bg-background/90 px-4 py-2 backdrop-blur-md [--preview-max-h:30svh] sm:-mx-6 sm:px-6 lg:top-6 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:[--preview-max-h:calc(100svh-9rem)]"
         >
-          <WallpaperPreview :input="renderInput" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-test="toggle-preview"
+            class="mb-1 w-full lg:hidden"
+            aria-controls="wallpaper-preview"
+            :aria-expanded="previewOpen"
+            @click="previewOpen = !previewOpen"
+          >
+            {{ previewOpen ? 'Hide preview' : 'Show preview' }}
+          </Button>
+          <div
+            id="wallpaper-preview"
+            :class="!previewOpen && 'max-lg:hidden'"
+          >
+            <WallpaperPreview :input="renderInput" />
+          </div>
         </div>
         <p
           v-else-if="!text.trim()"
@@ -133,6 +151,8 @@ const toast = useToast()
 const { text, parsed, layout, theme, size, photo, dim, photoNotice, photoError, hasSchedule, pending, setPhoto, clearPhoto } = useWallpaper()
 
 const photoName = ref<string | null>(null)
+/** Phones can fold the pinned preview away to see more of the options. */
+const previewOpen = ref(true)
 
 const renderInput = computed<RenderInput>(() => ({
   schedule: parsed.value,
