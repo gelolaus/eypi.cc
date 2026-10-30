@@ -91,6 +91,13 @@
               Copy link
             </Button>
             <Button
+              type="button"
+              variant="outline"
+              @click="showQr(c)"
+            >
+              QR code
+            </Button>
+            <Button
               as-child
               variant="outline"
             >
@@ -117,14 +124,22 @@
           </div>
         </Card>
       </div>
+      <!-- Mounted on first use so the QR library only loads for owners who ask for a code -->
+      <CampaignQrDialog
+        v-if="qrCampaign"
+        v-model:open="qrOpen"
+        :title="qrCampaign.title"
+        :slug="qrCampaign.slug"
+      />
     </AppPage>
   </div>
 </template>
 
 <script setup lang="ts">
 import { api } from '@/lib/api'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
+import { frameUrl } from '@/lib/frameUrl'
 import { invalidate, useQuery } from '@/lib/queryCache'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -132,6 +147,7 @@ import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
+const CampaignQrDialog = defineAsyncComponent(() => import('@/components/dp/CampaignQrDialog.vue'))
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { Button } from '@/components/ui/button'
@@ -161,6 +177,13 @@ const isLocked = computed(() => query.data.value?.locked === true)
 watch(query.data, (d) => { campaigns.value = d?.campaigns ?? [] }, { immediate: true })
 watch(error, (message) => { if (message) toast.error(message) })
 const router = useRouter()
+const qrCampaign = ref<{ title: string; slug: string } | null>(null)
+const qrOpen = ref(false)
+
+function showQr(campaign: { title: string; slug: string }) {
+  qrCampaign.value = { title: campaign.title, slug: campaign.slug }
+  qrOpen.value = true
+}
 const deletingId = ref<string | null>(null)
 const duplicatingId = ref<string | null>(null)
 const searchQuery = ref('')
@@ -177,7 +200,7 @@ const filteredCampaigns = computed(() => {
 
 async function copyLink(slug: string) {
   try {
-    await navigator.clipboard.writeText(`https://eypi.cc/frames/${slug}`)
+    await navigator.clipboard.writeText(frameUrl(slug))
     toast.success('Link copied to clipboard!')
   } catch {
     toast.error('Could not copy the link.')

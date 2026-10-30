@@ -5,6 +5,10 @@ import DpCampaignsView from './DpCampaignsView.vue'
 import { clearQueryCache } from '@/lib/queryCache'
 import { useToast } from '@/composables/useToast'
 
+vi.mock('@/utils/renderLinkQr', () => ({
+  renderLinkQrCanvas: vi.fn(async () => ({ toDataURL: () => 'data:image/png;base64,QR' })),
+  downloadLinkQrPng: vi.fn(),
+}))
 const push = vi.hoisted(() => vi.fn())
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
 
@@ -44,6 +48,23 @@ describe('DpCampaignsView', () => {
     expect(text).toMatch(/1 download(?!s)/)
     expect(text).toContain('2 downloads')
     wrapper.unmount()
+  })
+
+  it('opens the QR dialog for the campaign link and keeps Copy link on the same url', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    const wrapper = mount(DpCampaignsView, { attachTo: document.body, global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+    await flushPromises()
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+
+    const buttons = wrapper.findAll('button')
+    await buttons.find((b) => b.text() === 'Copy link')!.trigger('click')
+    expect(writeText).toHaveBeenCalledWith('https://eypi.cc/frames/launch')
+
+    await buttons.find((b) => b.text() === 'QR code')!.trigger('click')
+    await vi.waitFor(() => expect(document.body.querySelector('[role="dialog"]')?.textContent).toContain('https://eypi.cc/frames/launch'))
+    wrapper.unmount()
+    document.body.innerHTML = ''
   })
 
   describe('duplicate', () => {
