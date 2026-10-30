@@ -185,6 +185,17 @@
             >
               {{ exporting ? 'Rendering…' : 'Download' }}
             </Button>
+            <Button
+              v-if="canShareFiles"
+              type="button"
+              variant="outline"
+              size="lg"
+              :disabled="exporting"
+              class="w-full font-semibold"
+              @click="share"
+            >
+              Share
+            </Button>
           </div>
         </Card>
 
@@ -380,24 +391,66 @@ async function onHeadshotPicked(e: Event) {
 }
 
 // ── Export ───────────────────────────────────────────────────────────────────
-async function download() {
+/** Renders the canvas to a png named after the campaign, or tells the visitor what is missing. */
+async function renderPng(): Promise<{ blob: Blob; filename: string } | null> {
   const canvas = canvasRef.value
-  if (!headshot.value) { toast.error('Upload a photo first.'); return }
-  if (!canvas) return
+  if (!headshot.value) { toast.error('Upload a photo first.'); return null }
+  if (!canvas) return null
+  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+  if (!blob) { toast.error('Could not render the image. Try again.'); return null }
+  const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
+  const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
+  return { blob, filename: `eypi-dp-${safe}${suffix}.png` }
+}
+
+function sendDownloadBeacon() {
+  const frameId = campaign.frames[selectedIndex.value]?.id
+  sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
+}
+
+async function download() {
   exporting.value = true
   try {
-    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
-    if (!blob) { toast.error('Could not render the image. Try again.'); return }
-    const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
-    const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
-    const filename = `eypi-dp-${safe}${suffix}.png`
-    saveAs(blob, filename)
+    const png = await renderPng()
+    if (!png) return
+    saveAs(png.blob, png.filename)
     toast.success('Downloaded. Share your new profile picture.')
-    const frameId = campaign.frames[selectedIndex.value]?.id
-    sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
+    sendDownloadBeacon()
     promptForDetails()
   } catch {
     toast.error('Export failed. Try again.')
+  } finally {
+    exporting.value = false
+  }
+}
+
+// Offered only where the browser can share a png file (mostly phones); decided once on load.
+const canShareFiles = ref(false)
+
+function detectFileSharing() {
+  try {
+    const probe = new File([], 'frame.png', { type: 'image/png' })
+    canShareFiles.value = typeof navigator.share === 'function' && navigator.canShare?.({ files: [probe] }) === true
+  } catch {
+    canShareFiles.value = false
+  }
+}
+
+async function share() {
+  exporting.value = true
+  try {
+    const png = await renderPng()
+    if (!png) return
+    const template = campaign.captionTemplate
+    await navigator.share({
+      files: [new File([png.blob], png.filename, { type: 'image/png' })],
+      ...(template ? { text: fillCaption(template, answers.value) } : {}),
+    })
+    sendDownloadBeacon()
+  } catch (err: unknown) {
+    // Closing the share sheet is a choice, not an error.
+    if (err instanceof DOMException && err.name === 'AbortError') return
+    toast.error('Could not share. Try Download instead.')
   } finally {
     exporting.value = false
   }
@@ -435,6 +488,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 // ── Load campaign ─────────────────────────────────────────────────────────────
 onMounted(async () => {
+  detectFileSharing()
   try {
     const res = await api.raw(`/api/dp/${slug}`)
     let data: { status?: string; message?: string; campaign?: Campaign } = {}

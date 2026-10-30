@@ -94,6 +94,9 @@ beforeEach(() => {
   while (toast.toasts.value.length > 0) toast.dismiss(toast.toasts.value[0].id)
   vi.mocked(saveAs).mockReset()
   vi.mocked(sendModuleBeacon).mockReset()
+  // Tests that opt in to sharing define these; start every test without them.
+  Reflect.deleteProperty(navigator, 'share')
+  Reflect.deleteProperty(navigator, 'canShare')
 })
 
 afterEach(() => {
@@ -155,6 +158,92 @@ describe('DpPublicView photos', () => {
     const [blob, filename] = vi.mocked(saveAs).mock.calls[0]
     expect((blob as Blob).type).toBe('image/png')
     expect(filename).toMatch(/^eypi-dp-.*\.png$/)
+  })
+})
+
+describe('DpPublicView share', () => {
+  const shareButton = (wrapper: Awaited<ReturnType<typeof mountReady>>) =>
+    wrapper.findAll('button').find((button) => button.text() === 'Share')
+
+  function supportSharing(share = vi.fn().mockResolvedValue(undefined)) {
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share })
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true })
+    return share
+  }
+
+  async function addPhoto(wrapper: Awaited<ReturnType<typeof mountReady>>) {
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close() {} })))
+    const input = wrapper.get('input[type="file"]').element as HTMLInputElement
+    chooseFile(input, new File([new Uint8Array([1])], 'photo.jpg', { type: 'image/jpeg' }))
+    await wrapper.get('input[type="file"]').trigger('change')
+    await flushPromises()
+  }
+
+  it('is hidden when the browser cannot share files', async () => {
+    expect(shareButton(await mountReady())).toBeUndefined()
+    Object.defineProperty(navigator, 'share', { configurable: true, value: vi.fn() })
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => false })
+    expect(shareButton(await mountReady())).toBeUndefined()
+  })
+
+  it('shares the rendered png as a file, counts a download and does not save it', async () => {
+    const share = supportSharing()
+    const wrapper = await mountReady()
+    await addPhoto(wrapper)
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+
+    expect(share).toHaveBeenCalledTimes(1)
+    const [data] = share.mock.calls[0] as [{ files: File[]; text?: string }]
+    expect(data.files).toHaveLength(1)
+    expect(data.files[0]!.type).toBe('image/png')
+    expect(data.files[0]!.name).toMatch(/^eypi-dp-.*\.png$/)
+    expect(saveAs).not.toHaveBeenCalled()
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toContainEqual(['frames', 'camp-1:frame-1', 'download'])
+  })
+
+  it('asks for a photo first', async () => {
+    const share = supportSharing()
+    const wrapper = await mountReady()
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(share).not.toHaveBeenCalled()
+    expect(useToast().toasts.value.map((toast) => toast.message)).toContain('Upload a photo first.')
+  })
+
+  it('stays quiet and counts nothing when the share sheet is dismissed', async () => {
+    supportSharing(vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError')))
+    const wrapper = await mountReady()
+    await addPhoto(wrapper)
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(useToast().toasts.value).toHaveLength(0)
+    expect(vi.mocked(sendModuleBeacon).mock.calls.some(([, , action]) => action === 'download')).toBe(false)
+  })
+
+  it('points to Download when sharing fails', async () => {
+    supportSharing(vi.fn().mockRejectedValue(new Error('no target')))
+    const wrapper = await mountReady()
+    await addPhoto(wrapper)
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(useToast().toasts.value.map((toast) => toast.message)).toContain('Could not share. Try Download instead.')
+    expect(vi.mocked(sendModuleBeacon).mock.calls.some(([, , action]) => action === 'download')).toBe(false)
+  })
+
+  it('sends the filled caption as the share text', async () => {
+    const share = supportSharing()
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const body = (await campaignResponse().json()) as { campaign: { captionTemplate: string | null } }
+      body.campaign.captionTemplate = 'Hi {{Name}}'
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    const wrapper = await mountReady()
+    await addPhoto(wrapper)
+    await wrapper.get('input[placeholder="Name"]').setValue('Ana')
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(share.mock.calls[0]![0]).toMatchObject({ text: 'Hi Ana' })
   })
 })
 
