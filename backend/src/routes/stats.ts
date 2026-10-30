@@ -21,7 +21,14 @@ app.get('/api/stats', (c) => withEdgeCache(c, 30, async () => {
     count('SELECT COUNT(*) AS c FROM attendees'),
     count("SELECT COUNT(*) AS c FROM check_ins WHERE action = 'checked_in'"),
     count('SELECT COUNT(*) AS c FROM dp_campaigns'),
-    count('SELECT COALESCE(SUM(download_count), 0) AS c FROM dp_campaigns'),
+    // Downloads plus shares across all campaigns, from the same events the frames pages and Insights read.
+    // Events of deleted campaigns stay out, so this equals the sum of the per-campaign counts.
+    count(`SELECT COUNT(*) AS c FROM module_events e
+           WHERE e.module = 'frames' AND e.action IN ('download', 'share')
+             AND EXISTS (SELECT 1 FROM dp_campaigns d
+                         WHERE d.id = CASE WHEN instr(e.subject_id, ':') > 0
+                                           THEN substr(e.subject_id, 1, instr(e.subject_id, ':') - 1)
+                                           ELSE e.subject_id END)`),
   ])
   return c.json({ users, orgs, members, links, clicks, events, tickets, checkIns, frames, frameDownloads })
 }))
