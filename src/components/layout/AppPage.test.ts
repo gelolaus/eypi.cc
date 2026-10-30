@@ -14,6 +14,14 @@ describe('AppPage', () => {
     expect(wrapper.find('#body').exists()).toBe(true)
   })
 
+  it('left-aligns the heading by default and centres it when asked', () => {
+    const props = { title: 'Links', description: 'Short links you own.' }
+    expect(mount(AppPage, { props }).get('header').classes()).not.toContain('text-center')
+    const centered = mount(AppPage, { props: { ...props, centered: true } })
+    expect(centered.get('header').classes()).toContain('text-center')
+    expect(centered.get('header p').classes()).toContain('mx-auto')
+  })
+
   it('shows an optional description from a prop or slot', () => {
     const fromProp = mount(AppPage, { props: { title: 'Links', description: 'Short links you own.' } })
     expect(fromProp.text()).toContain('Short links you own.')

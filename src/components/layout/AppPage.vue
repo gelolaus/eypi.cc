@@ -3,13 +3,17 @@
     data-app-page
     class="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8"
   >
-    <header class="space-y-1.5">
+    <header
+      class="space-y-1.5"
+      :class="centered && 'text-center'"
+    >
       <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">
         {{ title }}
       </h1>
       <p
         v-if="description || $slots.description"
         class="max-w-2xl text-base text-muted-foreground sm:text-lg"
+        :class="centered && 'mx-auto'"
       >
         <slot name="description">
           {{ description }}
@@ -24,5 +28,6 @@
 defineProps<{
   title: string
   description?: string
+  centered?: boolean
 }>()
 </script>
