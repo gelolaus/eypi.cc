@@ -41,6 +41,13 @@ describe('CaptionEditor', () => {
     expect(hint.get('code').classes()).toContain('bg-primary/20')
   })
 
+  it('tells owners that a trailing ? makes a field optional and that fields are required otherwise', () => {
+    const hint = editor('').get('[data-caption-hint]')
+    const chips = hint.findAll('code').map((c) => c.text())
+    expect(chips).toEqual(['{{Name}}', '{{Nickname?}}'])
+    expect(hint.text()).toContain('Fields are required unless they end with ?')
+  })
+
   it('turns the callout destructive when there are too many fields', () => {
     const eleven = Array.from({ length: 11 }, (_, i) => `{{f${i + 1}}}`).join(' ')
     const hint = editor(eleven).get('[data-caption-hint]')

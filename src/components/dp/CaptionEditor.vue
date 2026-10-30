@@ -57,7 +57,10 @@
         <span v-else>Use <code
           class="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-xs font-semibold"
           v-text="'{{Name}}'"
-        /> to ask visitors for their details. Up to {{ MAX_CAPTION_FIELDS }} fields.</span>
+        /> to ask visitors for their details. Fields are required unless they end with ?, like <code
+          class="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-xs font-semibold"
+          v-text="'{{Nickname?}}'"
+        />. Up to {{ MAX_CAPTION_FIELDS }} fields.</span>
       </p>
       <Button
         v-if="hasFields"
