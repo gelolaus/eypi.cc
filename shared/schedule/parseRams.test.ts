@@ -3,7 +3,12 @@ import { normalizeText, parseTerm } from './parseRams'
 
 describe('normalizeText', () => {
   it('turns browser whitespace into plain lines', () => {
-    expect(normalizeText('A B\r\n\tC  \r\n\r\nD')).toBe('A B\nC\nD')
+    expect(normalizeText('A B
+	C  
+
+D')).toBe('A B
+C
+D')
   })
 })
 
