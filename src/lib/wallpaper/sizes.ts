@@ -11,9 +11,8 @@ export const PRESETS: SizePreset[] = [
   { id: 'iphone-15', label: 'iPhone 15 and 16 (1179 × 2556)', width: 1179, height: 2556 },
   { id: 'iphone-13', label: 'iPhone 13 and 14 (1170 × 2532)', width: 1170, height: 2532 },
   { id: 'iphone-se', label: 'iPhone SE (750 × 1334)', width: 750, height: 1334 },
-  { id: 'pixel-8', label: 'Pixel 8 (1080 × 2400)', width: 1080, height: 2400 },
+  { id: 'pixel-8', label: 'Pixel 8 and most Android 20:9 (1080 × 2400)', width: 1080, height: 2400 },
   { id: 'galaxy-s24', label: 'Galaxy S24 (1080 × 2340)', width: 1080, height: 2340 },
-  { id: 'android-20-9', label: 'Android 20:9 (1080 × 2400)', width: 1080, height: 2400 },
   { id: 'android-16-9', label: 'Android 16:9 (1080 × 1920)', width: 1080, height: 1920 },
 ]
 

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { clampSize, DEFAULT_SIZE, detectSize, PRESETS } from './sizes'
 
+describe('PRESETS sizes', () => {
+  it('has one entry per pixel size so the size select can show the chosen one', () => {
+    const sizes = PRESETS.map((p) => `${p.width}x${p.height}`)
+    expect(new Set(sizes).size).toBe(sizes.length)
+    expect(new Set(PRESETS.map((p) => p.id)).size).toBe(PRESETS.length)
+  })
+})
+
 describe('DEFAULT_SIZE and PRESETS', () => {
   it('defaults to 1170 by 2532', () => {
     expect(DEFAULT_SIZE).toEqual({ width: 1170, height: 2532 })
