@@ -463,13 +463,13 @@ export function useWallpaper(): {
 
 **Interfaces:** Consumes `render`, `RenderInput`. Props: `input: RenderInput`. Draws a canvas scaled to fit the column (a phone-shaped frame, max 320 px wide) and redraws when `input` changes (debounced to the next animation frame). Alt text: an `aria-label` on the canvas reading `Wallpaper preview. ` plus the classes grouped by day (from `groupDays`), or `No classes to show.`.
 
-- [ ] **Step 1: Failing tests** (stub `render`)
+- [x] **Step 1: Failing tests** (stub `render`)
   - Mounting calls `render` once with the input; changing `layout` calls it again.
   - `aria-label` contains `Tue · Fri` and `MIKE1` for the Term 2 sample, and `No classes to show.` for an empty schedule.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the live wallpaper preview`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the live wallpaper preview`
 
 ---
 
