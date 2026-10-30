@@ -57,3 +57,19 @@ export function timelineRange(schedule: ParsedSchedule): { startHour: number; en
   const endHour = Math.max(Math.ceil(Math.max(...timed.map((e) => e.end)) / 60), startHour + MIN_SPAN_HOURS)
   return { startHour, endHour }
 }
+
+export type Conflict = { day: Day; a: Entry; b: Entry }
+
+/** Pairs of fixed-time classes that overlap on the same day. Classes that only touch (one ends as the next starts) do not. */
+export function findConflicts(schedule: ParsedSchedule): Conflict[] {
+  const conflicts: Conflict[] = []
+  for (const [day, entries] of Object.entries(entriesByDay(schedule)) as [Day, Entry[]][]) {
+    const timed = entries.filter((entry) => !entry.async)
+    for (let i = 0; i < timed.length; i++) {
+      for (let j = i + 1; j < timed.length; j++) {
+        if (timed[i].start < timed[j].end && timed[j].start < timed[i].end) conflicts.push({ day, a: timed[i], b: timed[j] })
+      }
+    }
+  }
+  return conflicts
+}

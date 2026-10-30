@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SAMPLE_TERM2, SAMPLE_TERM3 } from './fixtures'
-import { entriesByDay, groupDays, timelineRange } from './layout'
+import { entriesByDay, findConflicts, groupDays, timelineRange } from './layout'
 import { parseRams } from './parseRams'
 import type { Day, ParsedSchedule } from './types'
 
@@ -49,5 +49,32 @@ describe('timelineRange', () => {
   it('falls back to 8 to 17 when no meeting has a fixed time', () => {
     expect(timelineRange(one('Mon', 540, 600, { async: true }))).toEqual({ startHour: 8, endHour: 17 })
     expect(timelineRange({ term: null, subjects: [], warnings: [] })).toEqual({ startHour: 8, endHour: 17 })
+  })
+})
+
+describe('findConflicts', () => {
+  const two = (a: [number, number], b: [number, number]): ParsedSchedule => ({
+    term: null,
+    warnings: [],
+    subjects: [
+      { code: 'AAA', section: 'S', units: 3, instructor: '', meetings: [{ day: 'Mon', start: a[0], end: a[1], room: '1' }] },
+      { code: 'BBB', section: 'S', units: 3, instructor: '', meetings: [{ day: 'Mon', start: b[0], end: b[1], room: '2' }] },
+    ],
+  })
+
+  it('flags two classes that overlap on the same day', () => {
+    const conflicts = findConflicts(two([540, 660], [630, 720]))
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0]).toMatchObject({ day: 'Mon' })
+    expect([conflicts[0].a.code, conflicts[0].b.code]).toEqual(['AAA', 'BBB'])
+  })
+
+  it('does not flag classes that only touch', () => {
+    expect(findConflicts(two([540, 600], [600, 660]))).toEqual([])
+  })
+
+  it('does not flag the sample schedules, including the async slot before 1:30 PM', () => {
+    expect(findConflicts(parseRams(SAMPLE_TERM3))).toEqual([])
+    expect(findConflicts(parseRams(SAMPLE_TERM2))).toEqual([])
   })
 })

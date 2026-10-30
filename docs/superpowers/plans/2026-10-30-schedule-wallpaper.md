@@ -200,15 +200,15 @@ export type Conflict = { day: Day; a: Entry; b: Entry }
 export function findConflicts(s: ParsedSchedule): Conflict[]  // overlapping on the same day; touching ends (end === start) do not conflict
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Term 2 range is `{ startHour: 7, endHour: 18 }` (7:30 start, 5:30 PM end).
   - A schedule with one 9:00 to 10:00 class gives a 4-hour span; a schedule with no timed meetings (only async) gives `{ startHour: 8, endHour: 17 }`.
   - Two Monday classes 9:00 to 11:00 and 10:30 to 12:00 conflict; 9:00 to 10:00 and 10:00 to 11:00 do not.
   - Term 3 sample (ALPHA1 12:50 to 1:30 and 1:30 to 3:30 on Monday): no conflict.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): compute timeline range and detect conflicts`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): compute timeline range and detect conflicts`
 
 ---
 
