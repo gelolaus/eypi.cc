@@ -14,14 +14,30 @@ export const PRESETS: SizePreset[] = [
   { id: 'pixel-8', label: 'Pixel 8 and most Android 20:9 (1080 × 2400)', width: 1080, height: 2400 },
   { id: 'galaxy-s24', label: 'Galaxy S24 (1080 × 2340)', width: 1080, height: 2340 },
   { id: 'android-16-9', label: 'Android 16:9 (1080 × 1920)', width: 1080, height: 1920 },
+  { id: 'laptop-1366', label: 'Laptop (1366 × 768)', width: 1366, height: 768 },
+  { id: 'laptop-1440', label: 'Laptop (1440 × 900)', width: 1440, height: 900 },
+  { id: 'desktop-fhd', label: 'Full HD desktop (1920 × 1080)', width: 1920, height: 1080 },
+  { id: 'desktop-qhd', label: 'QHD desktop (2560 × 1440)', width: 2560, height: 1440 },
+  { id: 'laptop-retina', label: 'Retina laptop (2880 × 1800)', width: 2880, height: 1800 },
+  { id: 'desktop-4k', label: '4K desktop (3840 × 2160)', width: 3840, height: 2160 },
 ]
 
-/** The phone's own pixel size in portrait, or null on a desktop where the student should pick one. */
+/**
+ * The screen's own pixel size: portrait on a phone (a landscape reading is swapped back), and as the screen
+ * reports it on a desktop or laptop. Null when the browser does not report a screen size.
+ */
 export function detectSize(env: { screenWidth: number; screenHeight: number; pixelRatio: number; coarsePointer: boolean }): Size | null {
-  if (!env.coarsePointer) return null
-  const short = Math.min(env.screenWidth, env.screenHeight) * env.pixelRatio
-  const long = Math.max(env.screenWidth, env.screenHeight) * env.pixelRatio
-  return clampSize({ width: short, height: long })
+  if (!(env.screenWidth > 0 && env.screenHeight > 0)) return null
+  let width = env.screenWidth * env.pixelRatio
+  let height = env.screenHeight * env.pixelRatio
+  const longest = Math.max(width, height)
+  if (longest > MAX_SIDE) {
+    // A screen wider than the limit is scaled down as a whole so it keeps its shape.
+    width = (width * MAX_SIDE) / longest
+    height = (height * MAX_SIDE) / longest
+  }
+  if (!env.coarsePointer) return clampSize({ width, height })
+  return clampSize({ width: Math.min(width, height), height: Math.max(width, height) })
 }
 
 function side(value: number, fallback: number): number {

@@ -14,13 +14,17 @@ describe('DEFAULT_SIZE and PRESETS', () => {
     expect(DEFAULT_SIZE).toEqual({ width: 1170, height: 2532 })
   })
 
-  it('lists portrait presets that are all inside the allowed size', () => {
-    expect(PRESETS.length).toBeGreaterThanOrEqual(6)
-    for (const preset of PRESETS) {
-      expect(preset.height).toBeGreaterThan(preset.width)
-      expect(clampSize(preset)).toEqual({ width: preset.width, height: preset.height })
-    }
+  it('lists phone and desktop presets that are all inside the allowed size', () => {
+    const phones = PRESETS.filter((p) => p.height > p.width)
+    const desktops = PRESETS.filter((p) => p.width > p.height)
+    expect(phones.length).toBeGreaterThanOrEqual(6)
+    expect(desktops.length).toBeGreaterThanOrEqual(5)
+    expect(phones.length + desktops.length).toBe(PRESETS.length)
+    for (const preset of PRESETS) expect(clampSize(preset)).toEqual({ width: preset.width, height: preset.height })
     expect(PRESETS.some((p) => p.width === 1170 && p.height === 2532)).toBe(true)
+    for (const [width, height] of [[1920, 1080], [2560, 1440], [3840, 2160], [1366, 768]]) {
+      expect(PRESETS.some((p) => p.width === width && p.height === height)).toBe(true)
+    }
   })
 })
 
@@ -33,8 +37,18 @@ describe('detectSize', () => {
     expect(detectSize({ screenWidth: 844, screenHeight: 390, pixelRatio: 3, coarsePointer: true })).toEqual({ width: 1170, height: 2532 })
   })
 
-  it('returns null on a desktop', () => {
-    expect(detectSize({ screenWidth: 1920, screenHeight: 1080, pixelRatio: 1, coarsePointer: false })).toBeNull()
+  it('uses the screen as it is on a desktop or laptop', () => {
+    expect(detectSize({ screenWidth: 1920, screenHeight: 1080, pixelRatio: 1, coarsePointer: false })).toEqual({ width: 1920, height: 1080 })
+    expect(detectSize({ screenWidth: 1440, screenHeight: 900, pixelRatio: 2, coarsePointer: false })).toEqual({ width: 2880, height: 1800 })
+    expect(detectSize({ screenWidth: 1536, screenHeight: 864, pixelRatio: 1.25, coarsePointer: false })).toEqual({ width: 1920, height: 1080 })
+  })
+
+  it('keeps the shape of a big desktop screen when it is capped', () => {
+    expect(detectSize({ screenWidth: 5120, screenHeight: 2880, pixelRatio: 1, coarsePointer: false })).toEqual({ width: 4000, height: 2250 })
+  })
+
+  it('falls back to the default when the screen size is unknown', () => {
+    expect(detectSize({ screenWidth: 0, screenHeight: 0, pixelRatio: 1, coarsePointer: false })).toBeNull()
   })
 })
 

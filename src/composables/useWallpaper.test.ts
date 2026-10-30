@@ -39,8 +39,35 @@ describe('useWallpaper', () => {
     expect(w.layout.value).toBe('agenda')
     expect(w.theme.value).toBe('dark')
     expect(w.dim.value).toBe(0.45)
-    expect(w.size.value).toEqual({ width: 1170, height: 2532 })
     expect(w.photo.value).toBeNull()
+  })
+
+  describe('size', () => {
+    const screen = (width: number, height: number, ratio: number, coarse: boolean) => {
+      vi.spyOn(window.screen, 'width', 'get').mockReturnValue(width)
+      vi.spyOn(window.screen, 'height', 'get').mockReturnValue(height)
+      vi.stubGlobal('devicePixelRatio', ratio)
+      vi.stubGlobal('matchMedia', () => ({ matches: coarse }))
+    }
+    afterEach(() => {
+      vi.restoreAllMocks()
+      vi.unstubAllGlobals()
+    })
+
+    it('starts at the pixel size of a desktop or laptop screen', () => {
+      screen(1536, 864, 1.25, false)
+      expect(useWallpaper().size.value).toEqual({ width: 1920, height: 1080 })
+    })
+
+    it('starts at the pixel size of a phone in portrait', () => {
+      screen(390, 844, 3, true)
+      expect(useWallpaper().size.value).toEqual({ width: 1170, height: 2532 })
+    })
+
+    it('falls back to the default phone size when the screen size is not reported', () => {
+      screen(0, 0, 1, false)
+      expect(useWallpaper().size.value).toEqual({ width: 1170, height: 2532 })
+    })
   })
 
   it('clamps the size when it is set', () => {
