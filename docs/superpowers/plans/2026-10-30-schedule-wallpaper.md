@@ -90,13 +90,13 @@ export function normalizeText(raw: string): string  // CRLF to LF, NBSP and tabs
 export function parseTerm(text: string): string | null  // '2026-2027 · Term 2'
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `normalizeText` turns `'A B\r\n\tC  \r\n\r\nD'` into `'A B\nC\nD'`.
   - `parseTerm` returns `'2026-2027 · Term 2'` for `'Academic Year & Term: 2026\n -2027, Term 2'` and for the same text on one line with `2026 -2027`; returns `null` when absent.
-- [ ] **Step 2:** Run `npx vitest run shared/schedule/parseRams.test.ts`; expect FAIL (not defined).
-- [ ] **Step 3:** Implement both. The term pattern allows any whitespace around the dash and the comma.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): normalize pasted text and read the term line`
+- [x] **Step 2:** Run `npx vitest run shared/schedule/parseRams.test.ts`; expect FAIL (not defined).
+- [x] **Step 3:** Implement both. The term pattern allows any whitespace around the dash and the comma.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): normalize pasted text and read the term line`
 
 ---
 
