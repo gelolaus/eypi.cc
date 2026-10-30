@@ -529,9 +529,9 @@ export function useWallpaper(): {
 
 **Files:** Modify `CONTEXT.md`, `AGENTS.md` (add the plan beside the spec row).
 
-- [ ] **Step 1:** In `CONTEXT.md` add glossary terms **schedule wallpaper** and **safe zone**, a frontend route row (`Wallpaper | /wallpaper`), the module in the Product table and module map (`shared/schedule/`, `src/lib/wallpaper/`), and a seam row: RAMS text is parsed in the browser only; saved schedules, if added, store the parsed `ParsedSchedule` and not the raw paste.
-- [ ] **Step 2:** In `AGENTS.md` add `| Schedule wallpaper, task-by-task | docs/superpowers/plans/2026-10-30-schedule-wallpaper.md |` under the spec row.
-- [ ] **Step 3: Commit** `docs(wallpaper): document the wallpaper module in context`
+- [x] **Step 1:** In `CONTEXT.md` add glossary terms **schedule wallpaper** and **safe zone**, a frontend route row (`Wallpaper | /wallpaper`), the module in the Product table and module map (`shared/schedule/`, `src/lib/wallpaper/`), and a seam row: RAMS text is parsed in the browser only; saved schedules, if added, store the parsed `ParsedSchedule` and not the raw paste.
+- [x] **Step 2:** In `AGENTS.md` add `| Schedule wallpaper, task-by-task | docs/superpowers/plans/2026-10-30-schedule-wallpaper.md |` under the spec row.
+- [x] **Step 3: Commit** `docs(wallpaper): document the wallpaper module in context`
 
 ---
 

@@ -10,13 +10,13 @@ Product and architecture vocabulary for agents and humans. UI/visual rules live 
 
 | Audience | What they use |
 |---|---|
-| Signed-in APC users | **Links** (personal short links), account page, org invites |
+| Signed-in APC users | **Links** (personal short links), **Wallpaper** (schedule to phone wallpaper), account page, org invites |
 | Activated org members | **Forms**, **Frames**, **Tix**, org profile and members |
 | Platform admins (`users.role = 'admin'`) | Create and edit orgs; admin panel (users, links, reports, audit log) |
 
 Sign-in is Microsoft (Entra) for APC accounts only (`@apc.edu.ph`, `@student.apc.edu.ph`). Not a public SaaS.
 
-**Suite modules (product names):** Links · Forms · Frames · Tix · Orgs
+**Suite modules (product names):** Links · Forms · Wallpaper · Frames · Tix · Orgs
 
 ---
 
@@ -75,6 +75,8 @@ Use these terms. Prefer them over invented synonyms.
 | **public shell / app shell** | `PublicShell` renders public pages with no app chrome. `AppShell` (side rail, tab bar) is a lazy chunk loaded only for signed-in routes. |
 | **service worker** | `public/sw.js` caches the app shell, media and the ticket list for offline use. Kill switch: `public/sw-kill.js` (see `docs/operations.md`). |
 | **form** | Client-side document generator catalog item (DOCX fill). Not an HTML form builder. Templates are private objects in R2. |
+| **schedule wallpaper** | The `/wallpaper` page: a signed-in APC student pastes their RAMS class schedule and downloads a phone-sized PNG (layouts grid, agenda or cards; four themes; optional own photo). Parsed by `shared/schedule/`, drawn by `src/lib/wallpaper/`, all in the browser. |
+| **safe zone** | The top 30% of a wallpaper (`SAFE_ZONE_RATIO` in `src/lib/wallpaper/safeZone.ts`), kept empty for the lock screen clock and widgets. A test holds every layout to it. |
 
 ---
 
@@ -82,11 +84,11 @@ Use these terms. Prefer them over invented synonyms.
 
 | Module | Path | Owns |
 |---|---|---|
-| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display |
+| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display, wallpaper canvas renderers (`src/lib/wallpaper/`) |
 | **Frontend Worker** | `worker/index.ts` | Serves SPA assets at `eypi.cc`; **edge short-link redirects** via `LINKS_KV`; async click logging; per-route meta tags; media route |
 | **Backend API** | `backend/` | All `/api/*` on `api.eypi.cc` (Hono Worker): sign-in, sessions, links, orgs, events, DP, forms, admin, account, legal, stats, cron retention |
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |
-| **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list |
+| **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list, RAMS schedule parser and layout helpers (`shared/schedule/`) |
 | **Legacy redirects** | `redirects/` | Only `tix.eypi.cc` / `forms.eypi.cc` → unified `eypi.cc` — **not** general short links |
 | **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (wantap layout and components in the APC palette with Light, Dark and True black themes, APC blue and gold, Plus Jakarta Sans, Syne, JetBrains Mono) |
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |
@@ -125,6 +127,7 @@ Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. 
 | Sign-in, consent | `/login`, `/consent` |
 | Links | `/links` |
 | Forms | `/forms` (org-gated) |
+| Wallpaper | `/wallpaper` |
 | Frames admin | `/manage/frames` |
 | Frames public | `/frames/:slug` |
 | Tix admin | `/manage/tix`, `/manage/tix/new`, `/manage/tix/:id/edit` (builder), `/manage/tix/:id/select`, `/manage/tix/:id` (event detail), `/manage/tix/:slug/door` (door mode) |
@@ -162,6 +165,7 @@ Org gate: backend `isOrgFeature` + frontend `requiresOrg` / `useOrgMembership`.
 | Edge redirect ↔ DB | `LINKS_KV` write-through on link CRUD; Turso is source of truth | KV drift is repaired with `backfill-kv` (`docs/operations.md`) |
 | Edge miss ↔ SPA | Reserved slug or KV miss → SPA `/:slug` → `GET /api/links/:slug` | Two analytics paths (worker `Referer` vs SPA `X-Client-Referrer`) |
 | Forms | Backend serves template bytes from R2 (`templates/`); **generation is client-only** | No server-side document storage |
+| Wallpaper | RAMS text is parsed in the browser only; the pasted text and the photo are never sent, stored or logged. If saved schedules are added later, store the parsed `ParsedSchedule` and not the raw paste (it holds the student name and number) | No backend, schema or migration in v1 |
 | Media | Images in R2 `eypi-media`, served through a cached same-origin route | Old data URLs migrated by the admin media endpoint |
 | Public shell ↔ app shell | Public routes render in `PublicShell`; signed-in routes lazy-load `AppShell` (`loadAppShell.ts`). Keep app-only code out of the entry chunk | Gzip budgets (entry JS ≤ 70,000 B, CSS ≤ 22,000 B, decimal kB) fail `npm run release:check` |
 | Query cache ↔ writes | Every non-GET through `src/lib/api.ts` under `/api/links`, `/api/events`, `/api/dp` or `/api/orgs` invalidates the matching cached GETs (other paths, such as the media variants PUT, do not); `v-prefetch` warms a route's data on hover | A new write path that bypasses `api.ts` leaves stale reads |
@@ -183,6 +187,7 @@ Good deepening targets (seams that already exist): link resolve (KV vs API), org
 4. **Tix** — create event as `draft` (builder: mode, capacity, questions, dates) → publish → people register at `/tix/:slug` (or an organiser imports a CSV and finalizes, or adds guests) → status per admission mode (fcfs, lottery draw, approval inbox) → ticket on `/tickets` or a private `/t/:token` guest link, with QR and Google Wallet pass → check-in in door mode (offline-capable) → close or cancel.
 5. **Frames** — create campaign + frames (R2) → public `/frames/:slug` → canvas merge → download count.
 6. **Forms** — org-gated catalog → fetch template from R2 → client DOCX fill → download.
+   **Wallpaper** — paste the RAMS page → browser parses it → pick layout, theme, photo and size → canvas draw → download or share the PNG.
 7. **Abuse** — public report → admin reports view → disable link / resolve.
 
 ---

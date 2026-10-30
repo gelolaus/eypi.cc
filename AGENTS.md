@@ -20,6 +20,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Frame caption fields (`{{Field}}` placeholders) and the downloads pill, what and why | `docs/superpowers/specs/2026-10-30-frame-caption-fields-design.md` |
 | Frame caption fields, task-by-task | `docs/superpowers/plans/2026-10-30-frame-caption-fields.md` |
 | Schedule wallpaper (paste a RAMS schedule, get a phone wallpaper), what and why | `docs/superpowers/specs/2026-10-30-schedule-wallpaper-design.md` |
+| Schedule wallpaper, task-by-task | `docs/superpowers/plans/2026-10-30-schedule-wallpaper.md` |
 | Next round: loose ends after dark mode and avatar picker (lint, accepted risks, stale plans, owner checklist) | `docs/superpowers/plans/2026-10-29-next-round.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
 | Live database schema | `docs/db/schema-baseline.md` (2026-10-25 snapshot) and `backend/migrations/` |
