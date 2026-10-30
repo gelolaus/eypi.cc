@@ -245,6 +245,21 @@ describe('DpPublicView share', () => {
     await flushPromises()
     expect(share.mock.calls[0]![0]).toMatchObject({ text: 'Hi Ana' })
   })
+
+  it('shares only the picture while a required field is empty, so no [Label] is sent', async () => {
+    const share = supportSharing()
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const body = (await campaignResponse().json()) as { campaign: { captionTemplate: string | null } }
+      body.campaign.captionTemplate = 'Hi {{Name}}'
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    const wrapper = await mountReady()
+    await addPhoto(wrapper)
+    await shareButton(wrapper)!.trigger('click')
+    await flushPromises()
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(share.mock.calls[0]![0]).not.toHaveProperty('text')
+  })
 })
 
 describe('DpPublicView mobile controls', () => {
@@ -455,17 +470,32 @@ describe('DpPublicView caption fields', () => {
     expect(writeText).toHaveBeenCalledWith('Hi, I am Ana of Logistics')
   })
 
-  it('copies [Label] for an empty field', async () => {
+  it('opens the details form instead of copying while a required field is empty', async () => {
+    Element.prototype.scrollIntoView = vi.fn()
     const { wrapper, writeText } = await mountWithCaption(CAPTION)
     await wrapper.findAll('input[aria-label]')[0]!.setValue('Ana')
     await copy(wrapper)
-    expect(writeText).toHaveBeenCalledWith('Hi, I am Ana of [Committee Name]')
+    expect(writeText).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain('Add your details')
+    expect(vi.mocked(sendModuleBeacon).mock.calls.some(([, , action]) => action === 'share')).toBe(false)
+    wrapper.unmount()
+    document.body.innerHTML = ''
+  })
+
+  it('copies without an optional field that was left empty', async () => {
+    const { wrapper, writeText } = await mountWithCaption('Hi {{Name}} {{Nickname?}} from APC')
+    await wrapper.findAll('input[aria-label]')[0]!.setValue('Ana')
+    await copy(wrapper)
+    expect(writeText).toHaveBeenCalledWith('Hi Ana from APC')
   })
 
   it('never puts an answer in a beacon call', async () => {
     const { wrapper } = await mountWithCaption(CAPTION)
-    await wrapper.findAll('input[aria-label]')[0]!.setValue('SecretName')
+    const inputs = wrapper.findAll('input[aria-label]')
+    await inputs[0]!.setValue('SecretName')
+    await inputs[1]!.setValue('SecretGroup')
     await copy(wrapper)
+    expect(vi.mocked(sendModuleBeacon).mock.calls.some(([, , action]) => action === 'share')).toBe(true)
     expect(JSON.stringify(vi.mocked(sendModuleBeacon).mock.calls)).not.toContain('SecretName')
   })
 })
@@ -543,6 +573,15 @@ describe('DpPublicView details dialog', () => {
     await wrapper.get('input[aria-label="Name"]').setValue('Ana')
     await addPhoto(wrapper)
     await clickDownload(wrapper)
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('does not open after a download when only optional fields are empty', async () => {
+    const wrapper = await mountReadyWithCaption('Hi {{Nickname?}}')
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(saveAs).toHaveBeenCalled()
     expect(dialogText()).not.toContain('Add your details')
     wrapper.unmount()
   })

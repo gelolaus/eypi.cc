@@ -13,6 +13,18 @@ describe('CaptionFields', () => {
     expect(inputs.map((i) => i.attributes('aria-label'))).toEqual(['Name', 'Committee Name'])
   })
 
+  it('labels optional fields and requires the rest', () => {
+    const inputs = mountFields('{{Name}} aka {{Nickname?}}').findAll('input')
+    expect(inputs.map((i) => i.attributes('placeholder'))).toEqual(['Name', 'Nickname (optional)'])
+    expect(inputs.map((i) => i.attributes('aria-label'))).toEqual(['Name', 'Nickname (optional)'])
+    expect(inputs.map((i) => i.attributes('aria-required'))).toEqual(['true', undefined])
+  })
+
+  it('treats a label as required when any occurrence is required', () => {
+    const inputs = mountFields('{{Name?}} and {{Name}}').findAll('input')
+    expect(inputs.map((i) => i.attributes('placeholder'))).toEqual(['Name', 'Name'])
+  })
+
   it('shows plain text around the fields', () => {
     const wrapper = mountFields('Hi, I am {{Name}}!')
     expect(wrapper.text()).toContain('Hi, I am')

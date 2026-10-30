@@ -60,7 +60,7 @@ describe('CaptionFormDialog', () => {
   })
 
   it('Copy caption submits and closes', async () => {
-    await open({ name: 'Ana' })
+    await open({ name: 'Ana', 'committee name': 'APC' })
     buttonNamed('Copy caption')!.click()
     await flushPromises()
     expect(wrapper!.emitted('submit')).toHaveLength(1)
@@ -68,7 +68,7 @@ describe('CaptionFormDialog', () => {
   })
 
   it('pressing Enter in a field submits the form', async () => {
-    await open({ name: 'Ana' })
+    await open({ name: 'Ana', 'committee name': 'APC' })
     document.body.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     await flushPromises()
     expect(wrapper!.emitted('submit')).toHaveLength(1)
@@ -86,6 +86,72 @@ describe('CaptionFormDialog', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await flushPromises()
     expect(wrapper!.emitted('update:open')?.[0]).toEqual([false])
+  })
+
+  describe('required and optional fields', () => {
+    const TEMPLATE_MIXED = 'I am {{Name}} aka {{Nickname?}}'
+    async function openMixed(answers: Record<string, string> = {}, extra: Record<string, unknown> = {}) {
+      wrapper = mount(CaptionFormDialog, {
+        attachTo: document.body,
+        props: {
+          open: true,
+          template: TEMPLATE_MIXED,
+          answers,
+          'onUpdate:answers': (next: Record<string, string>) => wrapper!.setProps({ answers: next }),
+          ...extra,
+        },
+      })
+      await flushPromises()
+    }
+    const submit = async () => {
+      document.body.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      await flushPromises()
+    }
+
+    it('marks optional fields in their label and requires the others', async () => {
+      await openMixed()
+      const labels = [...document.body.querySelectorAll('label')].map((l) => l.textContent?.replace(/\s+/g, ' ').trim())
+      expect(labels).toEqual(['Name', 'Nickname (optional)'])
+      expect(inputs().map((i) => i.getAttribute('aria-required'))).toEqual(['true', null])
+    })
+
+    it('blocks copying while a required field is empty, flags it and focuses it', async () => {
+      await openMixed({ nickname: 'A' })
+      await submit()
+      expect(wrapper!.emitted('submit')).toBeUndefined()
+      expect(wrapper!.emitted('update:open')).toBeUndefined()
+      const [name, nickname] = inputs()
+      expect(name!.getAttribute('aria-invalid')).toBe('true')
+      expect(nickname!.getAttribute('aria-invalid')).toBeNull()
+      expect(document.body.querySelector('[role=alert]')?.textContent?.trim()).toBe('Name is required.')
+      expect(name!.getAttribute('aria-describedby')).toBe(document.body.querySelector('[role=alert]')!.id)
+      expect(document.activeElement).toBe(name)
+    })
+
+    it('submits with an optional field left empty', async () => {
+      await openMixed({ name: 'Ana' })
+      await submit()
+      expect(wrapper!.emitted('submit')).toHaveLength(1)
+      expect(wrapper!.emitted('update:open')?.[0]).toEqual([false])
+    })
+
+    it('clears the flag once the field is filled', async () => {
+      await openMixed()
+      await submit()
+      const [name] = inputs()
+      name!.value = 'Ana'
+      name!.dispatchEvent(new Event('input', { bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[role=alert]')).toBeNull()
+      expect(name!.getAttribute('aria-invalid')).toBeNull()
+    })
+
+    it('never blocks the owner preview', async () => {
+      await openMixed({}, { preview: true })
+      await submit()
+      expect(document.body.querySelector('[role=alert]')).toBeNull()
+      expect(wrapper!.emitted('update:open')?.[0]).toEqual([false])
+    })
   })
 
   describe('preview mode', () => {

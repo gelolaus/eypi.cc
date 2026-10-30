@@ -26,14 +26,30 @@
             :key="field.key"
             class="space-y-1.5"
           >
-            <Label :for="`caption-field-${i}`">{{ field.label }}</Label>
+            <Label :for="`caption-field-${i}`">
+              {{ field.label }}<span
+                v-if="field.optional"
+                class="font-normal text-muted-foreground"
+              > (optional)</span>
+            </Label>
             <Input
               :id="`caption-field-${i}`"
               :model-value="answerFor(answers, field.key)"
               :placeholder="field.label"
+              :aria-required="field.optional ? undefined : 'true'"
+              :aria-invalid="flagged.has(field.key) ? 'true' : undefined"
+              :aria-describedby="flagged.has(field.key) ? `caption-field-${i}-error` : undefined"
               maxlength="200"
               @update:model-value="setAnswer(field.key, String($event ?? ''))"
             />
+            <p
+              v-if="flagged.has(field.key)"
+              :id="`caption-field-${i}-error`"
+              role="alert"
+              class="text-sm text-destructive"
+            >
+              {{ field.label }} is required.
+            </p>
           </div>
         </div>
         <p
@@ -53,8 +69,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { answerFor, fillCaption, listFields } from '@shared/captionFields'
+import { computed, ref, watch } from 'vue'
+import { answerFor, fillCaption, listFields, missingRequired } from '@shared/captionFields'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -74,8 +90,22 @@ function setAnswer(key: string, value: string) {
   answers.value = { ...answers.value, [key]: value }
 }
 
-/** Submitting (the button or Enter) hands the answers to the page to copy, then closes. */
+// Required fields are only flagged after a failed submit, and unflag as soon as they are answered.
+const attempted = ref(false)
+const flagged = computed(() => new Set(attempted.value && !props.preview ? missingRequired(props.template, answers.value).map((field) => field.key) : []))
+watch(open, (isOpen) => { if (isOpen) attempted.value = false })
+
+/** Submitting (the button or Enter) hands the answers to the page to copy, then closes. A missing required field stops it. */
 function submit() {
+  if (!props.preview) {
+    attempted.value = true
+    const missing = missingRequired(props.template, answers.value)
+    if (missing.length) {
+      const index = fields.value.findIndex((field) => field.key === missing[0]!.key)
+      fieldsRef.value?.querySelectorAll('input')[index]?.focus()
+      return
+    }
+  }
   emit('submit')
   open.value = false
 }

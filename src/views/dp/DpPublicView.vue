@@ -250,7 +250,7 @@ import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
 import CaptionFields from '@/components/dp/CaptionFields.vue'
 import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
-import { answerFor, fillCaption, listFields } from '@shared/captionFields'
+import { fillCaption, missingRequired } from '@shared/captionFields'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -441,10 +441,11 @@ async function share() {
   try {
     const png = await renderPng()
     if (!png) return
+    // The caption goes along only when it is complete, so no `[Label]` is ever shared.
     const template = campaign.captionTemplate
     await navigator.share({
       files: [new File([png.blob], png.filename, { type: 'image/png' })],
-      ...(template ? { text: fillCaption(template, answers.value) } : {}),
+      ...(template && !needsDetails() ? { text: fillCaption(template, answers.value) } : {}),
     })
     sendDownloadBeacon()
   } catch (err: unknown) {
@@ -456,17 +457,27 @@ async function share() {
   }
 }
 
-/** After a download: if the caption still has empty fields, scroll to it and ask for them. */
-function promptForDetails() {
+/** True when the caption has a required field the visitor has not answered yet. */
+function needsDetails(): boolean {
   const template = campaign.captionTemplate
-  if (!template || !listFields(template).some((field) => !answerFor(answers.value, field.key).trim())) return
+  return Boolean(template) && missingRequired(template!, answers.value).length > 0
+}
+
+function askForDetails() {
   // Instant, not smooth: the dialog's scroll lock would cut a smooth scroll short.
   captionCard.value?.$el.scrollIntoView?.({ behavior: 'auto', block: 'center' })
   detailsOpen.value = true
 }
 
+/** After a download: if a required field is still empty, scroll to the caption and ask for it. Optional fields never prompt. */
+function promptForDetails() {
+  if (needsDetails()) askForDetails()
+}
+
 async function copyCaption() {
   if (!campaign.captionTemplate) return
+  // A caption with `[Name]` left in it is not worth copying: ask for the missing details first.
+  if (needsDetails()) { askForDetails(); return }
   try {
     await navigator.clipboard.writeText(fillCaption(campaign.captionTemplate, answers.value))
     toast.success('Caption copied to clipboard!')
