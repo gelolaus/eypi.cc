@@ -134,16 +134,16 @@ export function toMinutes(h: number, m: number, meridiem: 'AM' | 'PM'): number
 ```
 Collect the day lines (full day names to `Day`), then time lines (`h:mmAM - h:mmPM`), then as many room lines as there are days (the next N lines); the remaining text is the instructor. Pair by position. A room that is `ASYNC` (any case) becomes `room: ''` with `async: true`. If counts differ, return the pairs that exist and a warning naming the subject code.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `toMinutes(12, 50, 'PM')` is 770, `toMinutes(12, 0, 'AM')` is 0, `toMinutes(9, 30, 'AM')` is 570, `toMinutes(5, 30, 'PM')` is 1050.
   - QUEBEC1 gives `[{day:'Tue',start:810,end:930,room:'203'},{day:'Fri',start:810,end:930,room:'203'}]` and instructor `Ng, Ellis Zoe Ora`.
   - ALPHA1 gives two Monday meetings: `{start:810,end:930,room:'1001'}` and `{start:770,end:810,room:'',async:true}`.
   - OSCAR1 (Saturday, one meeting, 450 to 690, room `502`); HOTEL1 rooms `'Library'`; BRAVO1 room `'508-A'`; KILO1 section kept whole as `AB101/AB102/EF251` (assert at the `parseRams` level in Task 5).
   - A row with two days but one time yields one meeting and a warning containing the code.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): pair days, times and rooms into meetings`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): pair days, times and rooms into meetings`
 
 ---
 

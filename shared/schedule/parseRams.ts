@@ -1,3 +1,4 @@
+import type { Day, Meeting } from './types'
 export const MAX_PASTE_LENGTH = 100_000
 
 /** CRLF to LF, non-breaking spaces and tabs to spaces, each line trimmed, blank lines dropped. */
@@ -45,4 +46,53 @@ export function splitRows(normalized: string): RawRow[] {
 /** Minutes since midnight for a 12-hour clock time. 12 AM is 0 and 12 PM is 720. */
 export function toMinutes(h: number, m: number, meridiem: 'AM' | 'PM'): number {
   return ((h % 12) + (meridiem === 'PM' ? 12 : 0)) * 60 + m
+}
+
+const DAYS: Record<string, Day> = {
+  monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
+}
+const TIME_RANGE = /^(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+
+function readTime(line: string): { start: number; end: number } | null {
+  const m = TIME_RANGE.exec(line)
+  if (!m) return null
+  return {
+    start: toMinutes(Number(m[1]), Number(m[2]), m[3].toUpperCase() as 'AM' | 'PM'),
+    end: toMinutes(Number(m[4]), Number(m[5]), m[6].toUpperCase() as 'AM' | 'PM'),
+  }
+}
+
+/**
+ * Day lines, then time lines, then one room line per day, then the instructor. Days, times and rooms are
+ * paired by position. A room of `ASYNC` becomes an async meeting with no room.
+ */
+export function parseMeetings(row: RawRow): { meetings: Meeting[]; instructor: string; warnings: string[] } {
+  const days: Day[] = []
+  const times: { start: number; end: number }[] = []
+  const rooms: string[] = []
+  const rest: string[] = []
+  for (const line of row.lines) {
+    const day = DAYS[line.toLowerCase()]
+    const time = readTime(line)
+    if (day && times.length === 0 && rooms.length === 0 && rest.length === 0) days.push(day)
+    else if (time && rooms.length === 0 && rest.length === 0) times.push(time)
+    else if (rooms.length < days.length && rest.length === 0 && !line.includes(',')) rooms.push(line)
+    else rest.push(line)
+  }
+
+  const warnings: string[] = []
+  if (days.length !== times.length) {
+    warnings.push(`${row.code}: found ${days.length} day(s) but ${times.length} time(s), so some meetings were skipped.`)
+  }
+  const meetings: Meeting[] = []
+  for (let i = 0; i < Math.min(days.length, times.length); i++) {
+    const room = rooms[i] ?? ''
+    const meeting: Meeting = { day: days[i], ...times[i], room }
+    if (/^async$/i.test(room)) {
+      meeting.room = ''
+      meeting.async = true
+    }
+    meetings.push(meeting)
+  }
+  return { meetings, instructor: rest.join(' '), warnings }
 }

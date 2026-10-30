@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeText, parseTerm, splitRows, toMinutes } from './parseRams'
+import { normalizeText, parseMeetings, parseTerm, splitRows, toMinutes } from './parseRams'
 import { SAMPLE_TERM1, SAMPLE_TERM2, SAMPLE_TERM3, wholePage } from './fixtures'
 
 describe('normalizeText', () => {
@@ -64,5 +64,43 @@ describe('toMinutes', () => {
   it('treats 12 PM as noon and 12 AM as midnight', () => {
     expect(toMinutes(12, 50, 'PM')).toBe(770)
     expect(toMinutes(12, 0, 'AM')).toBe(0)
+  })
+})
+
+describe('parseMeetings', () => {
+  const meetingsOf = (sample: string, code: string) => {
+    const row = splitRows(normalizeText(sample)).find((r) => r.code === code)!
+    return parseMeetings(row)
+  }
+
+  it('pairs two days with their times and rooms', () => {
+    const { meetings, instructor, warnings } = meetingsOf(SAMPLE_TERM2, 'QUEBEC1')
+    expect(meetings).toEqual([
+      { day: 'Tue', start: 810, end: 930, room: '203' },
+      { day: 'Fri', start: 810, end: 930, room: '203' },
+    ])
+    expect(instructor).toBe('Ng, Ellis Zoe Ora')
+    expect(warnings).toEqual([])
+  })
+
+  it('keeps a repeated day as two meetings and marks the async one', () => {
+    const { meetings } = meetingsOf(SAMPLE_TERM3, 'ALPHA1')
+    expect(meetings).toEqual([
+      { day: 'Mon', start: 810, end: 930, room: '1001' },
+      { day: 'Mon', start: 770, end: 810, room: '', async: true },
+    ])
+  })
+
+  it('reads a Saturday-only subject and free-text rooms', () => {
+    expect(meetingsOf(SAMPLE_TERM2, 'OSCAR1').meetings).toEqual([{ day: 'Sat', start: 450, end: 690, room: '502' }])
+    expect(meetingsOf(SAMPLE_TERM1, 'HOTEL1').meetings.map((m) => m.room)).toEqual(['Library', 'Library'])
+    expect(meetingsOf(SAMPLE_TERM3, 'BRAVO1').meetings[0].room).toBe('508-A')
+  })
+
+  it('returns the pairs it can and a warning when a time is missing', () => {
+    const row = { code: 'BROKEN', section: 'AB101', units: 3, lines: ['Monday', 'Thursday', '9:30AM - 11:30AM', '502', '502', 'Last, First'] }
+    const { meetings, warnings } = parseMeetings(row)
+    expect(meetings).toHaveLength(1)
+    expect(warnings.join(' ')).toContain('BROKEN')
   })
 })
