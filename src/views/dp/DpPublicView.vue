@@ -190,6 +190,7 @@
         <!-- Caption -->
         <Card
           v-if="campaign.captionTemplate"
+          ref="captionCard"
           class="relative mt-6 gap-0 rounded-3xl p-6"
         >
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -209,6 +210,12 @@
             :template="campaign.captionTemplate"
           />
         </Card>
+        <CaptionFormDialog
+          v-if="campaign.captionTemplate"
+          v-model:open="detailsOpen"
+          v-model:answers="answers"
+          :template="campaign.captionTemplate"
+        />
       </div>
     </AppPage>
   </div>
@@ -229,7 +236,8 @@ import { useDpCanvas } from '@/composables/useDpCanvas'
 import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
 import CaptionFields from '@/components/dp/CaptionFields.vue'
-import { fillCaption } from '@shared/captionFields'
+import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
+import { fillCaption, listFields } from '@shared/captionFields'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -253,6 +261,8 @@ const exporting = ref(false)
 const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, downloadCount: 0, frames: [] })
 // A visitor's caption answers stay in this tab; they are never sent anywhere.
 const answers = ref<Record<string, string>>({})
+const detailsOpen = ref(false)
+const captionCard = ref<{ $el: HTMLElement } | null>(null)
 
 const MAX_PHOTO_EDGE = 2160
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
@@ -384,11 +394,21 @@ async function download() {
     const frameId = campaign.frames[selectedIndex.value]?.id
     sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
     api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
+    promptForDetails()
   } catch {
     toast.error('Export failed. Try again.')
   } finally {
     exporting.value = false
   }
+}
+
+/** After a download: if the caption still has empty fields, scroll to it and ask for them. */
+function promptForDetails() {
+  const template = campaign.captionTemplate
+  if (!template || !listFields(template).some((field) => !answers.value[field.key]?.trim())) return
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  captionCard.value?.$el.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+  detailsOpen.value = true
 }
 
 async function copyCaption() {

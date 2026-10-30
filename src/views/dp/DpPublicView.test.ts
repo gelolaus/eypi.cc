@@ -380,3 +380,101 @@ describe('DpPublicView caption fields', () => {
     expect(JSON.stringify(vi.mocked(sendModuleBeacon).mock.calls)).not.toContain('SecretName')
   })
 })
+
+describe('DpPublicView details dialog', () => {
+  const CAPTION = 'Hi, I am {{Name}}'
+  const dialogText = () => document.body.textContent ?? ''
+
+  async function mountReadyWithCaption(caption: string | null) {
+    Element.prototype.scrollIntoView = vi.fn()
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const body = (await campaignResponse().json()) as { campaign: { captionTemplate: string | null } }
+      body.campaign.captionTemplate = caption
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 800, height: 600, close() {} })))
+    return mountReady()
+  }
+
+  async function addPhoto(wrapper: Awaited<ReturnType<typeof mountReady>>) {
+    const input = wrapper.get('input[type="file"]').element as HTMLInputElement
+    chooseFile(input, new File([new Uint8Array([1])], 'photo.jpg', { type: 'image/jpeg' }))
+    await wrapper.get('input[type="file"]').trigger('change')
+    await flushPromises()
+  }
+
+  async function clickDownload(wrapper: Awaited<ReturnType<typeof mountReady>>) {
+    await wrapper.findAll('button').find((b) => b.text() === 'Download')!.trigger('click')
+    await flushPromises()
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('opens after a successful download when a field is empty, scrolling to the caption first', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    expect(dialogText()).not.toContain('Add your details')
+    await clickDownload(wrapper)
+    expect(saveAs).toHaveBeenCalled()
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
+    expect(dialogText()).toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('still sends the download beacon when the dialog opens', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toContainEqual(['frames', 'camp-1:frame-1', 'download'])
+    wrapper.unmount()
+  })
+
+  it('does not open when every field is answered', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await wrapper.get('input[aria-label="Name"]').setValue('Ana')
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('does not open for a caption without fields', async () => {
+    const wrapper = await mountReadyWithCaption('Hello #eypi')
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(saveAs).toHaveBeenCalled()
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('does not open when there is no photo', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await clickDownload(wrapper)
+    expect(saveAs).not.toHaveBeenCalled()
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('does not open when the download fails', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    vi.mocked(saveAs).mockImplementationOnce(() => { throw new Error('disk full') })
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('fills the inline field as the visitor types in the dialog', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    const dialogInput = document.body.querySelector<HTMLInputElement>('[role="dialog"] input')!
+    dialogInput.value = 'Ana'
+    dialogInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    expect((wrapper.get('input[aria-label="Name"]').element as HTMLInputElement).value).toBe('Ana')
+    wrapper.unmount()
+  })
+})
