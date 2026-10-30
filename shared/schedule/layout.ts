@@ -49,12 +49,16 @@ export function groupDays(schedule: ParsedSchedule): DayGroup[] {
 
 const MIN_SPAN_HOURS = 4
 
-/** Whole-hour range covering every fixed-time meeting (async ones are left out), at least four hours, 8 to 17 when empty. */
+/**
+ * The grid range, in hours, covering every fixed-time meeting (async ones are left out). Classes run on the :30, so both ends sit on a :30 mark,
+ * an hour outside the first start and last end (7:30 AM to 5:30 PM gives 6.5 to 18.5). At least four hours; 7.5 to 17.5 when empty.
+ */
 export function timelineRange(schedule: ParsedSchedule): { startHour: number; endHour: number } {
   const timed = Object.values(entriesByDay(schedule)).flat().filter((entry) => !entry.async)
-  if (timed.length === 0) return { startHour: 8, endHour: 17 }
-  const startHour = Math.floor(Math.min(...timed.map((e) => e.start)) / 60)
-  const endHour = Math.max(Math.ceil(Math.max(...timed.map((e) => e.end)) / 60), startHour + MIN_SPAN_HOURS)
+  if (timed.length === 0) return { startHour: 7.5, endHour: 17.5 }
+  const mark = (minutes: number, round: (value: number) => number) => round((minutes - 30) / 60) * 60 + 30
+  const startHour = (mark(Math.min(...timed.map((e) => e.start)), Math.floor) - 60) / 60
+  const endHour = Math.max((mark(Math.max(...timed.map((e) => e.end)), Math.ceil) + 60) / 60, startHour + MIN_SPAN_HOURS)
   return { startHour, endHour }
 }
 

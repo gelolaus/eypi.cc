@@ -38,17 +38,25 @@ describe('groupDays', () => {
 })
 
 describe('timelineRange', () => {
-  it('rounds the earliest start and latest end out to whole hours', () => {
-    expect(timelineRange(parseRams(SAMPLE_TERM2))).toEqual({ startHour: 7, endHour: 18 })
+  it('runs from an hour before the earliest :30 start to an hour after the latest :30 end', () => {
+    // classes from 7:30 AM to 5:30 PM give 6:30 AM to 6:30 PM
+    expect(timelineRange(parseRams(SAMPLE_TERM2))).toEqual({ startHour: 6.5, endHour: 18.5 })
+  })
+
+  it('keeps both ends on a :30 mark', () => {
+    expect(timelineRange(one('Mon', 540, 600))).toEqual({ startHour: 7.5, endHour: 11.5 })
   })
 
   it('spans at least four hours', () => {
-    expect(timelineRange(one('Mon', 540, 600))).toEqual({ startHour: 9, endHour: 13 })
+    const { startHour, endHour } = timelineRange(one('Mon', 540, 545))
+    expect(endHour - startHour).toBeGreaterThanOrEqual(4)
+    expect(startHour % 1).toBe(0.5)
+    expect(endHour % 1).toBe(0.5)
   })
 
-  it('falls back to 8 to 17 when no meeting has a fixed time', () => {
-    expect(timelineRange(one('Mon', 540, 600, { async: true }))).toEqual({ startHour: 8, endHour: 17 })
-    expect(timelineRange({ term: null, subjects: [], warnings: [] })).toEqual({ startHour: 8, endHour: 17 })
+  it('falls back to 7:30 to 5:30 when no meeting has a fixed time', () => {
+    expect(timelineRange(one('Mon', 540, 600, { async: true }))).toEqual({ startHour: 7.5, endHour: 17.5 })
+    expect(timelineRange({ term: null, subjects: [], warnings: [] })).toEqual({ startHour: 7.5, endHour: 17.5 })
   })
 })
 

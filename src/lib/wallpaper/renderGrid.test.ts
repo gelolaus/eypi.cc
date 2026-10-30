@@ -40,23 +40,24 @@ describe('renderGrid', () => {
     expect(Math.max(...blocks.map((b) => b.x! + b.w!))).toBeLessThanOrEqual(width)
   })
 
-  it('labels the grid every two hours from 7:30 and borders it on the whole hours', () => {
+  it('labels the grid every hour at :30, from 6:30 AM to 6:30 PM', () => {
     const { texts, blocks } = draw(parseRams(SAMPLE_TERM2))
     const ticks = texts.filter((c) => /^[0-9]{1,2}:30$/.test(c.text ?? ''))
-    expect(ticks.map((c) => c.text)).toEqual(['7:30', '9:30', '11:30', '1:30', '3:30', '5:30'])
+    expect(ticks.map((c) => c.text)).toEqual(['6:30', '7:30', '8:30', '9:30', '10:30', '11:30', '12:30', '1:30', '2:30', '3:30', '4:30', '5:30', '6:30'])
     expect(texts.some((c) => /^[0-9]{1,2} (AM|PM)$/.test(c.text ?? ''))).toBe(false)
     const gaps = ticks.slice(1).map((c, i) => c.y - ticks[i].y)
     for (const gap of gaps) expect(gap).toBeCloseTo(gaps[0])
-    // a 7:30 class starts on the first label's line
+    // a 7:30 class starts on the second label's line, an hour under the top border
     const firstBlock = Math.min(...blocks.map((b) => b.y!))
-    expect(firstBlock).toBeLessThan(ticks[0].y + 40)
+    expect(firstBlock).toBeGreaterThan(ticks[0].y)
+    expect(firstBlock).toBeLessThan(ticks[1].y + 40)
   })
 
-  it('draws lines at both borders and at each label', () => {
+  it('draws one line at each label, the first and last being the borders', () => {
     const ctx = createRecordingContext(1170, 2532)
     renderGrid(ctx as unknown as CanvasRenderingContext2D, { schedule: parseRams(SAMPLE_TERM2), width: 1170, height: 2532, theme: 'dark', layout: 'grid', photo: null, dim: 0.4 })
     const lines = ctx.calls.filter((c) => c.op === 'fillRect' && c.w! < 1170)
-    expect(lines).toHaveLength(8)
+    expect(lines).toHaveLength(13)
   })
 
   it('places blocks by time and sizes them by duration', () => {

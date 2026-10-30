@@ -9,9 +9,9 @@ import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
 
 
-/** Classes start at 7:30 and run in two-hour slots, so the grid is labelled every two hours from 7:30. */
+/** Classes start and end on the :30, so the grid is labelled every hour at :30. */
 const LABEL_ANCHOR = 7 * 60 + 30
-const LABEL_STEP = 120
+const LABEL_STEP = 60
 
 /** Gives each entry a lane so overlapping classes sit side by side. */
 function assignLanes(entries: Entry[]): { entry: Entry; lane: number; lanes: number }[] {
@@ -105,16 +105,14 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
     ctx.fillRect(gridLeft, lineY, gridRight - gridLeft, Math.max(1, unit * 0.0012))
     ctx.globalAlpha = 1
   }
-  // The borders sit on the whole hours; the lines and labels sit on the class times.
-  drawLine(hoursTop)
-  drawLine(gridBottom)
-  const firstLabel = LABEL_ANCHOR + Math.ceil((startHour * 60 - LABEL_ANCHOR) / LABEL_STEP) * LABEL_STEP
-  for (let minute = firstLabel; minute <= endHour * 60; minute += LABEL_STEP) {
+  // The range starts and ends on a :30, so the first and last lines are the borders.
+  const firstLabel = LABEL_ANCHOR + Math.ceil((Math.round(startHour * 60) - LABEL_ANCHOR) / LABEL_STEP) * LABEL_STEP
+  for (let minute = firstLabel; minute <= Math.round(endHour * 60); minute += LABEL_STEP) {
     const lineY = hoursTop + (minute / 60 - startHour) * hourH
     drawLine(lineY)
     ctx.textAlign = 'left'
     ctx.fillStyle = theme.muted
-    ctx.fillText(formatClockShort(minute), marginX, lineY + smallSize * 0.3)
+    ctx.fillText(formatClockShort(minute), marginX, lineY - smallSize * 0.45)
   }
 
   const codes = [...new Set(schedule.subjects.map((subject) => subject.code))]
