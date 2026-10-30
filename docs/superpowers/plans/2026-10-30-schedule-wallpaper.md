@@ -254,13 +254,13 @@ export function readableOn(color: string): string  // '#000000' or '#ffffff', wh
 ```
 Palettes come from `DESIGN_SYSTEM.md` section 2: light (`#f5f5f5` background, `#0a0a0a` text, `#5c5c5c` muted, accent `#35438c`), dark (`#0a0a0a`, `#ededed`, `#a3a3a3`, accent `#8b97d8`), black (`#000000` background, otherwise dark), `apc` (`#35438c` background, `#ffffff` text, `#deac4b` accent). Five block colours per theme from the `--chart-1` to `--chart-5` values of the matching theme.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Every theme has five blocks; `text` on `bg` and `muted` on `bg` have `contrastRatio ≥ 4.5`; `readableOn(block)` on each block is ≥ 4.5.
   - `contrastRatio('#000000','#ffffff')` is 21 (within 0.01); `readableOn('#35438c')` is `'#ffffff'`.
-- [ ] **Step 2:** Run; expect FAIL. If a muted colour fails, lighten or darken it until the test passes.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add wallpaper themes with contrast checks`
+- [x] **Step 2:** Run; expect FAIL. If a muted colour fails, lighten or darken it until the test passes.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add wallpaper themes with contrast checks`
 
 ---
 
