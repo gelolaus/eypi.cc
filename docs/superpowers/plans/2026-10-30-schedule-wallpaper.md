@@ -367,14 +367,14 @@ Draws the background, then the term title at `contentTop(height)`, then each `gr
 
 **Produces:** `export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): void`. One rounded card per subject in the order pasted, each with the code (bold), then lines of `Tue Fri · 7:30 to 9:30 AM · 208` per distinct time and room (days with the same time and room joined). Card height is shared so up to 7 subjects fit; more than fit becomes `+N more`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Term 2: five cards, texts include `NOVEMBER1`, `Tue Fri · 7:30 to 9:30 AM · 208`, `OSCAR1`, `Sat · 7:30 to 11:30 AM · 502`; all y ≥ `contentTop(height)` at three sizes.
   - ALPHA1 draws two lines: `Mon · 1:30 to 3:30 PM · 1001` and `Mon · 12:50 to 1:30 PM · Async`.
   - A schedule with 9 subjects draws 7 cards and `+2 more`; an empty schedule draws `No classes to show.`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement, using `formatRange` from Task 12.
-- [ ] **Step 4:** Run `npx vitest run src/lib/wallpaper`; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the subject cards wallpaper layout`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement, using `formatRange` from Task 12.
+- [x] **Step 4:** Run `npx vitest run src/lib/wallpaper`; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the subject cards wallpaper layout`
 
 ---
 
