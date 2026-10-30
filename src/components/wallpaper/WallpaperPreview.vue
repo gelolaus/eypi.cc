@@ -7,6 +7,13 @@
       class="block h-auto w-full rounded-3xl border border-border bg-muted"
       :style="{ aspectRatio: `${input.width} / ${input.height}` }"
     />
+    <p
+      v-if="failed"
+      role="alert"
+      class="mt-2 text-center text-sm text-destructive"
+    >
+      Could not draw the preview.
+    </p>
   </div>
 </template>
 
@@ -23,6 +30,7 @@ const props = defineProps<{ input: RenderInput }>()
 const PREVIEW_WIDTH = 540
 
 const canvas = ref<HTMLCanvasElement | null>(null)
+const failed = ref(false)
 let frame = 0
 
 const description = computed(() => {
@@ -39,7 +47,9 @@ function draw() {
   if (!canvas.value) return
   const { width, height } = props.input
   const scale = Math.min(1, PREVIEW_WIDTH / width)
-  void render(canvas.value, { ...props.input, width: Math.round(width * scale), height: Math.round(height * scale) })
+  render(canvas.value, { ...props.input, width: Math.round(width * scale), height: Math.round(height * scale) })
+    .then(() => { failed.value = false })
+    .catch(() => { failed.value = true })
 }
 
 function schedule() {

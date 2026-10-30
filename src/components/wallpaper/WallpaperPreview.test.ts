@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseRams } from '@shared/schedule/parseRams'
 import { SAMPLE_TERM2 } from '@shared/schedule/fixtures'
@@ -51,6 +51,17 @@ describe('WallpaperPreview', () => {
     expect(label).toContain('Wallpaper preview.')
     expect(label).toContain('Tue · Fri')
     expect(label).toContain('MIKE1')
+  })
+
+  it('says so when the preview cannot be drawn', async () => {
+    render.mockRejectedValueOnce(new Error('no canvas'))
+    const wrapper = mount(WallpaperPreview, { props: { input: input() } })
+    await flushPromises()
+    expect(wrapper.get('[role="alert"]').text()).toBe('Could not draw the preview.')
+    render.mockResolvedValue(undefined)
+    await wrapper.setProps({ input: input({ layout: 'grid' }) })
+    await flushPromises()
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('says there are no classes for an empty schedule', () => {
