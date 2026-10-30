@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { captionFieldError, fillCaption, listFields, parseCaption } from './captionFields'
+import { answerFor, captionFieldError, fillCaption, listFields, parseCaption } from './captionFields'
 
 describe('parseCaption', () => {
   it('parses text and fields in order', () => {
@@ -48,6 +48,15 @@ describe('fillCaption', () => {
 
   it('returns an empty string for an empty template', () => {
     expect(fillCaption('', {})).toBe('')
+  })
+})
+
+describe('inherited object properties', () => {
+  it('are never read as answers', () => {
+    expect(answerFor({}, 'constructor')).toBe('')
+    expect(answerFor({}, '__proto__')).toBe('')
+    expect(answerFor({ name: 'Ana' }, 'name')).toBe('Ana')
+    expect(fillCaption('{{Constructor}} {{__proto__}} {{toString}}', {})).toBe('[Constructor] [__proto__] [toString]')
   })
 })
 

@@ -25,7 +25,7 @@
           <Label :for="`caption-field-${i}`">{{ field.label }}</Label>
           <Input
             :id="`caption-field-${i}`"
-            :model-value="answers[field.key] ?? ''"
+            :model-value="answerFor(answers, field.key)"
             :placeholder="field.label"
             maxlength="200"
             @update:model-value="setAnswer(field.key, String($event ?? ''))"
@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { fillCaption, listFields } from '@shared/captionFields'
+import { answerFor, fillCaption, listFields } from '@shared/captionFields'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -71,7 +71,7 @@ function setAnswer(key: string, value: string) {
 
 /** Opens with focus on the first field the visitor has not answered yet. */
 function focusFirstEmpty() {
-  const index = fields.value.findIndex((field) => !answers.value[field.key]?.trim())
+  const index = fields.value.findIndex((field) => !answerFor(answers.value, field.key).trim())
   const inputs = fieldsRef.value?.querySelectorAll('input')
   inputs?.[index === -1 ? 0 : index]?.focus()
 }

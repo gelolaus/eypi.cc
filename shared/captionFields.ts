@@ -35,12 +35,17 @@ export function listFields(template: string): CaptionField[] {
   return [...seen.values()]
 }
 
+/** A field's answer, read from own properties only so a label like `{{constructor}}` never finds `Object`. */
+export function answerFor(values: Record<string, string>, key: string): string {
+  return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? '' : ''
+}
+
 /** The caption as plain text: answers replace their fields, unanswered fields become `[Label]`. */
 export function fillCaption(template: string, values: Record<string, string>): string {
   return parseCaption(template)
     .map((segment) => {
       if (segment.type === 'text') return segment.text
-      const answer = values[segment.key]?.trim()
+      const answer = answerFor(values, segment.key).trim()
       return answer || `[${segment.label}]`
     })
     .join('')

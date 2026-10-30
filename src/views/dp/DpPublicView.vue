@@ -237,7 +237,7 @@ import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
 import CaptionFields from '@/components/dp/CaptionFields.vue'
 import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
-import { fillCaption, listFields } from '@shared/captionFields'
+import { answerFor, fillCaption, listFields } from '@shared/captionFields'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -405,7 +405,7 @@ async function download() {
 /** After a download: if the caption still has empty fields, scroll to it and ask for them. */
 function promptForDetails() {
   const template = campaign.captionTemplate
-  if (!template || !listFields(template).some((field) => !answers.value[field.key]?.trim())) return
+  if (!template || !listFields(template).some((field) => !answerFor(answers.value, field.key).trim())) return
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   captionCard.value?.$el.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
   detailsOpen.value = true

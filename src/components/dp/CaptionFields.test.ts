@@ -39,6 +39,17 @@ describe('CaptionFields', () => {
     expect(wrapper.text()).toContain('<b>hi</b>')
   })
 
+  it('leaves a field named like an object property empty', () => {
+    const input = mountFields('I am {{Constructor}}').get('input').element as HTMLInputElement
+    expect(input.value).toBe('')
+  })
+
+  it('uses a 16px base size on phones so iOS does not zoom on focus', () => {
+    const classes = mountFields('I am {{Name}}').get('input').classes()
+    expect(classes).toContain('text-base')
+    expect(classes).toContain('md:text-sm')
+  })
+
   it('renders a caption without fields as plain text with no inputs', () => {
     const wrapper = mountFields('Hello #eypi')
     expect(wrapper.find('input').exists()).toBe(false)
