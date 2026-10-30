@@ -40,7 +40,7 @@
         </div>
       </section>
 
-      <section class="space-y-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+      <section class="space-y-4 max-lg:contents lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-stretch">
         <div
           role="status"
           class="space-y-1 text-sm"
@@ -59,10 +59,12 @@
             </ul>
           </template>
         </div>
-        <WallpaperPreview
+        <div
           v-if="hasSchedule"
-          :input="renderInput"
-        />
+          class="sticky top-0 z-30 -mx-4 bg-background/90 px-4 py-2 backdrop-blur-md [--preview-max-h:30svh] sm:-mx-6 sm:px-6 lg:top-6 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:[--preview-max-h:calc(100svh-9rem)]"
+        >
+          <WallpaperPreview :input="renderInput" />
+        </div>
         <p
           v-else-if="!text.trim()"
           class="rounded-2xl border border-dashed border-border p-6 text-center text-muted-foreground"

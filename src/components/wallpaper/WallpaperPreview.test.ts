@@ -63,6 +63,13 @@ describe('WallpaperPreview', () => {
     expect(screen.find('canvas').classes()).not.toContain('rounded-3xl')
   })
 
+  it('caps the preview height with the page-set limit so a tall phone shape never outgrows the screen', () => {
+    const canvas = mount(WallpaperPreview, { props: { input: input() } }).find('canvas')
+    expect(canvas.classes().join(' ')).toContain('var(--preview-max-h')
+    expect(canvas.attributes('style')).toContain('--preview-ratio')
+    expect(canvas.attributes('style')).toContain('aspect-ratio')
+  })
+
   it('describes the classes by day for assistive tech', () => {
     const label = mount(WallpaperPreview, { props: { input: input() } }).find('canvas').attributes('aria-label')!
     expect(label).toContain('Wallpaper preview.')

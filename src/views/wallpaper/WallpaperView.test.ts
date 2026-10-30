@@ -71,6 +71,15 @@ describe('WallpaperView', () => {
     expect(Number(wrapper.get('[data-test="preview"]').text())).toBe(6)
   })
 
+  it('pins the preview while the options are scrolled, on phones and on desktop', async () => {
+    const wrapper = mountView()
+    await paste(wrapper, SAMPLE_TERM2)
+    const pinned = wrapper.get('[data-test="preview"]').element.parentElement!
+    expect(pinned.className).toContain('sticky')
+    expect(pinned.className).toContain('lg:top-6')
+    expect(pinned.className).toContain('--preview-max-h')
+  })
+
   it('limits the paste box to the parser cap', () => {
     expect(mountView().get('textarea').attributes('maxlength')).toBe('100000')
   })
