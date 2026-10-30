@@ -30,6 +30,33 @@ describe('renderCards', () => {
     ]))
   })
 
+  describe('on a landscape screen', () => {
+    it.each<[number, number]>([[1920, 1080], [2560, 1440], [1366, 768]])('sets the cards in rows of three below a small top gap at %i x %i', (width, height) => {
+      const { texts, cards } = draw(parseRams(SAMPLE_TERM2), width, height)
+      expect(cards).toHaveLength(5)
+      for (const call of texts) expect(call.y).toBeGreaterThanOrEqual(contentTop(height, width))
+      const rowOne = cards.filter((card) => card.y === cards[0].y)
+      expect(rowOne).toHaveLength(3)
+      expect(new Set(rowOne.map((card) => card.x)).size).toBe(3)
+      for (const card of cards) expect(card.x! + card.w!).toBeLessThanOrEqual(width)
+      for (const card of cards) expect(card.y! + card.h!).toBeLessThanOrEqual(height * 0.96)
+    })
+
+    it('keeps the pasted order across the rows', () => {
+      const { labels } = draw(parseRams(SAMPLE_TERM2), 1920, 1080)
+      const codes = labels.filter((text) => /^[A-Z0-9]+$/.test(text ?? ''))
+      expect(codes).toEqual(['MIKE1', 'NOVEMBER1', 'OSCAR1', 'PAPA1', 'QUEBEC1'])
+    })
+
+    it('adds a +N more line when the rows run out of room', () => {
+      const schedule = { term: null, warnings: [], subjects: Array.from({ length: 9 }, (_, i) => subject(`CODE${i + 1}`)) }
+      const { cards, labels } = draw(schedule, 1366, 768)
+      expect(cards.length).toBeLessThan(9)
+      expect(labels.some((text) => /^\+[0-9]+ more$/.test(text ?? ''))).toBe(true)
+      for (const card of cards) expect(card.y! + card.h!).toBeLessThanOrEqual(768 * 0.96)
+    })
+  })
+
   it('writes one line per distinct time and room', () => {
     const { labels } = draw(parseRams(SAMPLE_TERM3))
     expect(labels).toEqual(expect.arrayContaining(['Mon · 1:30 to 3:30 PM · 1001', 'Mon · 12:50 to 1:30 PM · Async']))

@@ -1,13 +1,15 @@
 import type { Subject } from '@shared/schedule/types'
 import { drawBackground } from './background'
 import { formatRange, instructorLabel } from './format'
-import { contentBottom, contentTop, sizingUnit } from './safeZone'
+import { contentBottom, contentTop, isLandscape, sizingUnit } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
 
 const MAX_CARDS = 7
 const MAX_LINES = 4
+/** Cards per row on a landscape screen. */
+const LANDSCAPE_COLUMNS = 3
 
 /** One line per distinct time and room, with the days that share it joined: `Tue Fri · 7:30 to 9:30 AM · 208`. */
 function meetingLines(subject: Subject): string[] {
@@ -57,33 +59,36 @@ export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): 
   const rows = Math.max(1, ...lines.slice(0, MAX_CARDS).map((l) => l.length))
   const cardH = padding * 2 + codeSize * 1.35 + rows * lineSize * 1.45
   const moreH = lineSize * 2
-  const capacity = (reserve: number) => Math.floor((limit - y - reserve + gap) / (cardH + gap))
+  const columns = isLandscape(width, height) ? LANDSCAPE_COLUMNS : 1
+  const capacity = (reserve: number) => Math.floor((limit - y - reserve + gap) / (cardH + gap)) * columns
   let shown = Math.min(subjects.length, MAX_CARDS, capacity(0))
   if (shown < subjects.length) shown = Math.min(MAX_CARDS, capacity(moreH))
   shown = Math.max(shown, 0)
 
-  const cardW = width - marginX * 2
+  const cardW = (width - marginX * 2 - gap * (columns - 1)) / columns
   for (let i = 0; i < shown; i++) {
+    const left = marginX + (i % columns) * (cardW + gap)
+    const top = y + Math.floor(i / columns) * (cardH + gap)
     const color = theme.blocks[i % theme.blocks.length]
     const textColor = readableOn(color)
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.roundRect(marginX, y, cardW, cardH, unit * 0.026)
+    ctx.roundRect(left, top, cardW, cardH, unit * 0.026)
     ctx.fill()
 
     const textW = cardW - padding * 2
     ctx.font = fontString(700, codeSize, FAMILY)
     ctx.fillStyle = textColor
-    ctx.fillText(subjects[i].code, marginX + padding, y + padding)
-    let lineY = y + padding + codeSize * 1.35
+    ctx.fillText(subjects[i].code, left + padding, top + padding)
+    let lineY = top + padding + codeSize * 1.35
     for (const line of lines[i]) {
       const fitted = fitText(ctx, line, textW, { size: lineSize, min: lineSize * 0.7, weight: 500, family: FAMILY })
       ctx.font = fontString(500, fitted.size, FAMILY)
-      ctx.fillText(fitted.text, marginX + padding, lineY)
+      ctx.fillText(fitted.text, left + padding, lineY)
       lineY += lineSize * 1.45
     }
-    y += cardH + gap
   }
+  y += Math.ceil(shown / columns) * (cardH + gap)
 
   if (shown < subjects.length) {
     ctx.font = fontString(500, lineSize * 1.2, FAMILY)
