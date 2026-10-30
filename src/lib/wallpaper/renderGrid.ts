@@ -2,7 +2,7 @@ import { entriesByDay, timelineRange } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import type { Day } from '@shared/schedule/types'
 import { drawBackground } from './background'
-import { formatClockShort } from './format'
+import { formatClockShort, instructorsByCode } from './format'
 import { contentBottom, contentTop } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
@@ -117,6 +117,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
   }
 
   const codes = [...new Set(schedule.subjects.map((subject) => subject.code))]
+  const instructors = instructorsByCode(schedule.subjects)
   const gap = width * 0.004
   const radius = width * 0.014
   days.forEach((day, i) => {
@@ -146,6 +147,13 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
         const room = fitText(ctx, entry.room, w - padding * 2, { size: roomSize, min: roomSize * 0.6, weight: 500, family: FAMILY })
         ctx.font = fontString(500, room.size, FAMILY)
         ctx.fillText(room.text, x + padding, top + padding + label.size * 1.3)
+      }
+      const instructor = instructors.get(entry.code)
+      if (instructor && h > label.size * 4.6) {
+        const nameSize = label.size * 0.75
+        const name = fitText(ctx, instructor, w - padding * 2, { size: nameSize, min: nameSize * 0.6, weight: 500, family: FAMILY })
+        ctx.font = fontString(500, name.size, FAMILY)
+        ctx.fillText(name.text, x + padding, top + padding + label.size * 2.3)
       }
     }
   })

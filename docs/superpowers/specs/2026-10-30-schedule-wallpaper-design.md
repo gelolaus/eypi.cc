@@ -18,7 +18,7 @@ A signed-in APC student pastes their class schedule from RAMS and gets a phone w
 
 ## Out of scope for v1
 
-Saving schedules, sharing or importing classmates' schedules, OCR, instructor names on the wallpaper, per-subject colours, fonts, and usage analytics. The Frames module-event beacon could count downloads later without a schema change.
+Saving schedules, sharing or importing classmates' schedules, OCR, per-subject colours, fonts, and usage analytics. The Frames module-event beacon could count downloads later without a schema change.
 
 ## Design
 
@@ -41,7 +41,7 @@ type Subject = { code: string; section: string; units: number; instructor: strin
 type ParsedSchedule = { term: string | null; subjects: Subject[]; warnings: string[] }
 ```
 
-`start` and `end` are minutes since midnight. `instructor` and `units` are parsed but not drawn. The student's name and number are never parsed into the result.
+`start` and `end` are minutes since midnight. `units` is parsed but not drawn. `instructor` is drawn as the last name and first given name (`Doe, Jordan`), so a student sees who teaches each class. Real names come only from the student's own paste in the browser; the repository, fixtures and tests use made-up names only. The student's name and number are never parsed into the result.
 
 ### 3. Parser
 
@@ -65,7 +65,7 @@ It anchors on patterns, not columns, so a whole-page copy (sidebar, header, foot
 
 - Group days that have identical meetings into one label (`Tue · Fri`) for layout B; layout A and C keep days separate or list days per subject.
 - Hide days with no meetings, so Saturday and Sunday show only when a subject meets then.
-- Timeline range for layout A: earliest start to latest end, rounded out to whole hours, with a minimum span.
+- Timeline range for layout A: earliest start to latest end, rounded out to whole hours, with a minimum span. The grid borders sit on those whole hours (7:00 AM to 6:00 PM for classes from 7:30 AM to 5:30 PM); the lines and labels sit on the class times, every two hours from 7:30 (7:30, 9:30, 11:30, 1:30, 3:30, 5:30).
 - Conflicts: two meetings on the same day that overlap in time are flagged. Renderers draw them side by side with a marker.
 
 ### 5. Renderers and the safe zone

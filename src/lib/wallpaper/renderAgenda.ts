@@ -1,7 +1,7 @@
 import { findConflicts, groupDays } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import { drawBackground } from './background'
-import { formatClock } from './format'
+import { formatClock, instructorsByCode } from './format'
 import { contentBottom, contentTop } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES } from './themes'
@@ -47,7 +47,12 @@ export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput):
     { kind: 'day', text: group.days.join(' · ').toUpperCase() },
     ...group.entries.map((entry): Line => ({ kind: 'row', entry, conflict: inConflict(entry) })),
   ])
-  const heightOf = (line: Line) => (line.kind === 'day' ? dayRowSize * 2.1 : rowSize * 1.85)
+  const instructors = instructorsByCode(schedule.subjects)
+  const instructorSize = rowSize * 0.62
+  const heightOf = (line: Line) => {
+    if (line.kind === 'day') return dayRowSize * 2.1
+    return instructors.get(line.entry.code) ? rowSize * 1.15 + instructorSize * 1.9 : rowSize * 1.85
+  }
   const moreHeight = rowSize * 1.85
 
   let shown = lines.length
@@ -82,6 +87,13 @@ export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput):
       ctx.font = fontString(700, fitted.size, FAMILY)
       ctx.fillStyle = theme.text
       ctx.fillText(fitted.text, x, y)
+      const instructor = instructors.get(entry.code)
+      if (instructor) {
+        const small = fitText(ctx, instructor, width - marginX - x, { size: instructorSize, min: instructorSize * 0.7, weight: 500, family: FAMILY })
+        ctx.font = fontString(500, small.size, FAMILY)
+        ctx.fillStyle = theme.muted
+        ctx.fillText(small.text, x, y + rowSize * 1.15)
+      }
     }
     y += heightOf(line)
   }

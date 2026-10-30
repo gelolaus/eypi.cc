@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatClock, formatClockShort, formatRange } from './format'
+import { formatClock, formatClockShort, formatRange, instructorLabel } from './format'
 
 describe('formatClock', () => {
   it('writes 12-hour times', () => {
@@ -16,6 +16,23 @@ describe('formatClockShort', () => {
     expect(formatClockShort(810)).toBe('1:30')
     expect(formatClockShort(1050)).toBe('5:30')
     expect(formatClockShort(0)).toBe('12:00')
+  })
+})
+
+describe('instructorLabel', () => {
+  it('keeps the last name and the first given name', () => {
+    expect(instructorLabel('Doe, Jordan Ray')).toBe('Doe, Jordan')
+    expect(instructorLabel('Lopez, Casey-Lou Bay')).toBe('Lopez, Casey-Lou')
+    expect(instructorLabel('Smith, Pat Jr. Lee')).toBe('Smith, Pat')
+  })
+
+  it('skips an abbreviated first token', () => {
+    expect(instructorLabel('Reyes, Ma. Sam Lee')).toBe('Reyes, Sam')
+  })
+
+  it('passes a placeholder or an empty name through', () => {
+    expect(instructorLabel('TBA')).toBe('TBA')
+    expect(instructorLabel('')).toBe('')
   })
 })
 

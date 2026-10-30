@@ -1,6 +1,6 @@
 import type { Subject } from '@shared/schedule/types'
 import { drawBackground } from './background'
-import { formatRange } from './format'
+import { formatRange, instructorLabel } from './format'
 import { contentBottom, contentTop } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
@@ -52,7 +52,7 @@ export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): 
     return
   }
 
-  const lines = subjects.map(meetingLines)
+  const lines = subjects.map((subject) => [...meetingLines(subject), instructorLabel(subject.instructor)].filter(Boolean))
   const rows = Math.max(1, ...lines.slice(0, MAX_CARDS).map((l) => l.length))
   const cardH = padding * 2 + codeSize * 1.35 + rows * lineSize * 1.45
   const moreH = lineSize * 2

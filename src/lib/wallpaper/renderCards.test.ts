@@ -35,6 +35,11 @@ describe('renderCards', () => {
     expect(labels).toEqual(expect.arrayContaining(['Mon · 1:30 to 3:30 PM · 1001', 'Mon · 12:50 to 1:30 PM · Async']))
   })
 
+  it('shows the instructor of each class', () => {
+    const { labels } = draw(parseRams(SAMPLE_TERM3))
+    expect(labels).toEqual(expect.arrayContaining(['Doe, Jordan', 'Smith, Pat', 'Cruz, Sam']))
+  })
+
   it('keeps cards in the pasted order', () => {
     const { labels } = draw(parseRams(SAMPLE_TERM2))
     const codes = labels.filter((text) => /^[A-Z0-9]+$/.test(text ?? ''))

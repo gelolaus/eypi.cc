@@ -33,6 +33,11 @@ describe('renderAgenda', () => {
     expect(labels).toContain('ALPHA1 · Async')
   })
 
+  it('shows the instructor of each class', () => {
+    const { labels } = draw(parseRams(SAMPLE_TERM3), 1170, 2532)
+    expect(labels).toEqual(expect.arrayContaining(['Doe, Jordan', 'Smith, Pat', 'Cruz, Sam']))
+  })
+
   it('draws the term as the title', () => {
     const schedule = { ...parseRams(SAMPLE_TERM2), term: '2026-2027 · Term 2' }
     expect(draw(schedule, 1170, 2532).labels).toContain('2026-2027 · Term 2')

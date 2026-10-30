@@ -67,6 +67,11 @@ describe('renderGrid', () => {
     expect(blocks[0].x).not.toBe(blocks[1].x)
   })
 
+  it('shows the instructor of each class', () => {
+    const { labels } = draw(parseRams(SAMPLE_TERM3))
+    expect(labels).toEqual(expect.arrayContaining(['Doe, Jordan', 'Smith, Pat', 'Cruz, Sam']))
+  })
+
   it('lists async classes under the grid', () => {
     const { texts, blocks } = draw(parseRams(SAMPLE_TERM3))
     const async = texts.find((c) => c.text?.includes('Async'))!
