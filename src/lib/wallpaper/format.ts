@@ -9,6 +9,12 @@ export function formatClock(minutes: number): string {
   return `${h}:${m} ${meridiem}`
 }
 
+/** `810` to `1:30`: the 12-hour time without AM or PM, for grid labels. */
+export function formatClockShort(minutes: number): string {
+  const { h, m } = clock(minutes)
+  return `${h}:${m}`
+}
+
 /** `7:30 to 9:30 AM`, or `11:30 AM to 1:30 PM` when the range crosses noon. */
 export function formatRange(start: number, end: number): string {
   const from = clock(start)

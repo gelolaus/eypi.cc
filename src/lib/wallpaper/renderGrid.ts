@@ -2,13 +2,16 @@ import { entriesByDay, timelineRange } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import type { Day } from '@shared/schedule/types'
 import { drawBackground } from './background'
+import { formatClockShort } from './format'
 import { contentBottom, contentTop } from './safeZone'
 import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
 
 
-const hourLabel = (hour: number) => `${hour % 12 === 0 ? 12 : hour % 12} ${hour % 24 < 12 ? 'AM' : 'PM'}`
+/** Classes start at 7:30 and run in two-hour slots, so the grid is labelled every two hours from 7:30. */
+const LABEL_ANCHOR = 7 * 60 + 30
+const LABEL_STEP = 120
 
 /** Gives each entry a lane so overlapping classes sit side by side. */
 function assignLanes(entries: Entry[]): { entry: Entry; lane: number; lanes: number }[] {
@@ -95,17 +98,22 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
   days.forEach((day, i) => ctx.fillText(day.toUpperCase(), gridLeft + colW * (i + 0.5), y))
 
   ctx.font = fontString(500, smallSize * 0.9, FAMILY)
-  for (let h = 0; h <= hours; h++) {
-    const lineY = hoursTop + h * hourH
+  const drawLine = (lineY: number) => {
     ctx.fillStyle = theme.muted
     ctx.globalAlpha = 0.35
     ctx.fillRect(gridLeft, lineY, gridRight - gridLeft, Math.max(1, width * 0.0012))
     ctx.globalAlpha = 1
-    if (h < hours) {
-      ctx.textAlign = 'left'
-      ctx.fillStyle = theme.muted
-      ctx.fillText(hourLabel(startHour + h), marginX, lineY + smallSize * 0.3)
-    }
+  }
+  // The borders sit on the whole hours; the lines and labels sit on the class times.
+  drawLine(hoursTop)
+  drawLine(gridBottom)
+  const firstLabel = LABEL_ANCHOR + Math.ceil((startHour * 60 - LABEL_ANCHOR) / LABEL_STEP) * LABEL_STEP
+  for (let minute = firstLabel; minute <= endHour * 60; minute += LABEL_STEP) {
+    const lineY = hoursTop + (minute / 60 - startHour) * hourH
+    drawLine(lineY)
+    ctx.textAlign = 'left'
+    ctx.fillStyle = theme.muted
+    ctx.fillText(formatClockShort(minute), marginX, lineY + smallSize * 0.3)
   }
 
   const codes = [...new Set(schedule.subjects.map((subject) => subject.code))]

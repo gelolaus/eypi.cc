@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatClock, formatRange } from './format'
+import { formatClock, formatClockShort, formatRange } from './format'
 
 describe('formatClock', () => {
   it('writes 12-hour times', () => {
@@ -7,6 +7,15 @@ describe('formatClock', () => {
     expect(formatClock(450)).toBe('7:30 AM')
     expect(formatClock(0)).toBe('12:00 AM')
     expect(formatClock(720)).toBe('12:00 PM')
+  })
+})
+
+describe('formatClockShort', () => {
+  it('writes the 12-hour time without AM or PM', () => {
+    expect(formatClockShort(450)).toBe('7:30')
+    expect(formatClockShort(810)).toBe('1:30')
+    expect(formatClockShort(1050)).toBe('5:30')
+    expect(formatClockShort(0)).toBe('12:00')
   })
 })
 
