@@ -38,7 +38,7 @@
   // First path segment of every SPA route in src/router/index.ts, except "unlock" (the Worker redirects
   // short links there, so it must hit the network). Anything else extensionless may be a short link.
   var SPA_SEGMENTS = [
-    'login', 'dashboard', 'invites', 'links', 'forms', 'manage', 'frames', 'tix', 'tickets', 't', 'orgs', 'account',
+    'login', 'dashboard', 'invites', 'links', 'forms', 'wallpaper', 'manage', 'frames', 'tix', 'tickets', 't', 'orgs', 'account',
     'settings', 'admin', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact', 'expired', 'report',
   ]
 

@@ -81,6 +81,13 @@ const router = createRouter({
       ],
     },
 
+    {
+      path: '/wallpaper',
+      name: 'wallpaper',
+      component: () => import('@/views/wallpaper/WallpaperView.vue'),
+      meta: { requiresAuth: true, title: 'Wallpaper' },
+    },
+
     // ── Frames module (profile frames) ───────────────────────────────────────
     // Admin under /manage/frames; public at /frames/:slug.
     {

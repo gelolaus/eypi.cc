@@ -416,13 +416,13 @@ export function wallpaperFilename(schedule: ParsedSchedule, layout: LayoutId): s
 
 **Files:** Create `src/views/wallpaper/WallpaperView.vue` (an `AppPage` titled "Wallpaper" with no content yet); Modify `src/router/index.ts`, `src/config/nav.ts`, `src/components/layout/appNav.ts`, `public/sw-strategies.js` (add `'wallpaper'` to `SPA_SEGMENTS`), `src/router/documentTitle.test.ts`, `src/components/layout/appNav.test.ts`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `documentTitle.test.ts`: add `wallpaper: 'Wallpaper'` to `pages`.
   - `appNav.test.ts`: `APP_NAV` labels become `Dashboard, Links, Tix, My tickets, Frames, Forms, Wallpaper, Orgs, Invites` with `/wallpaper` after `/forms`; the overflow list gains `Wallpaper`; tabs are unchanged.
   - Run `npx vitest run src/router src/components/layout worker/sw.test.ts shared/reservedSlugs.test.ts`; expect FAIL.
-- [ ] **Step 2:** Add the route after Forms: `{ path: '/wallpaper', name: 'wallpaper', component: () => import('@/views/wallpaper/WallpaperView.vue'), meta: { requiresAuth: true, title: 'Wallpaper' } }`. Add `'wallpaper'` to `NavIconName`, the nav item `{ to: '/wallpaper', label: 'Wallpaper', icon: 'wallpaper' }` after Forms in `APP_ITEMS`, and map `wallpaper` to lucide `Smartphone` in `appNav.ts`.
-- [ ] **Step 3:** Run the same command; expect PASS. Then `npm test` and fix any other test that lists nav items or routes.
-- [ ] **Step 4: Commit** `feat(wallpaper): add the wallpaper route and nav entry`
+- [x] **Step 2:** Add the route after Forms: `{ path: '/wallpaper', name: 'wallpaper', component: () => import('@/views/wallpaper/WallpaperView.vue'), meta: { requiresAuth: true, title: 'Wallpaper' } }`. Add `'wallpaper'` to `NavIconName`, the nav item `{ to: '/wallpaper', label: 'Wallpaper', icon: 'wallpaper' }` after Forms in `APP_ITEMS`, and map `wallpaper` to lucide `Smartphone` in `appNav.ts`.
+- [x] **Step 3:** Run the same command; expect PASS. Then `npm test` and fix any other test that lists nav items or routes.
+- [x] **Step 4: Commit** `feat(wallpaper): add the wallpaper route and nav entry`
   - add `/wallpaper` as a signed-in route with a placeholder page
   - add `wallpaper` to the service worker SPA segments, the side rail and the tab overflow
 

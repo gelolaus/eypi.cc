@@ -23,6 +23,7 @@ const pages: Record<string, string> = {
   'forms-concessionaire': 'Concessionaire form',
   'forms-visitors-pass': 'Visitors pass',
   'forms-letter-of-intent': 'Letter of intent',
+  wallpaper: 'Wallpaper',
   'dp-campaigns': 'Frames',
   'dp-new': 'New frame',
   'dp-edit': 'Edit frame',

@@ -2,6 +2,7 @@
 export const RUM_ROUTE_NAMES = [
   'home', 'login', 'dashboard', 'invites', 'links',
   'forms', 'forms-concessionaire', 'forms-visitors-pass', 'forms-letter-of-intent',
+  'wallpaper',
   'dp-campaigns', 'dp-new', 'dp-edit', 'dp-public',
   'events', 'event-new', 'event-edit', 'event-select', 'event-manage', 'event-door', 'event-page', 'tickets', 'guest-ticket',
   'orgs-modify-index', 'orgs-modify', 'org-catalog', 'org-profile', 'org-insights', 'account',

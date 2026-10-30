@@ -123,7 +123,7 @@ describe('AppShell (signed in)', () => {
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
     expect(links.map((link) => link.text().replace(/\d+$/, '').trim())).toEqual([
-      'Dashboard', 'Links', 'Tix', 'My tickets', 'Frames', 'Forms', 'Orgs', 'Invites',
+      'Dashboard', 'Links', 'Tix', 'My tickets', 'Frames', 'Forms', 'Wallpaper', 'Orgs', 'Invites',
     ])
     wrapper.unmount()
   })
