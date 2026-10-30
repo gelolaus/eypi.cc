@@ -5,9 +5,9 @@
   >
     <DialogContent class="max-h-[calc(100svh-2rem)] gap-3 overflow-y-auto sm:max-w-3xl">
       <DialogHeader class="pr-8">
-        <DialogTitle>Welcome to Eypi Wallpaper</DialogTitle>
+        <DialogTitle>How Eypi Wallpaper works</DialogTitle>
         <DialogDescription>
-          Paste your RAMS schedule and get a lock screen wallpaper. Here is how it works in 30 seconds.
+          Paste your RAMS class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.
         </DialogDescription>
       </DialogHeader>
       <video
