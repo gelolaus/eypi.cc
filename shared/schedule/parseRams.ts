@@ -51,6 +51,8 @@ export function toMinutes(h: number, m: number, meridiem: 'AM' | 'PM'): number {
 const DAYS: Record<string, Day> = {
   monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
 }
+/** An instructor line with no comma, like `TBA`. After the first room it is the instructor, not a room. */
+const PLACEHOLDER_INSTRUCTOR = /^(TBA|TBD|STAFF)$/i
 const TIME_RANGE = /^(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)$/i
 
 function readTime(line: string): { start: number; end: number } | null {
@@ -76,7 +78,7 @@ export function parseMeetings(row: RawRow): { meetings: Meeting[]; instructor: s
     const time = readTime(line)
     if (day && times.length === 0 && rooms.length === 0 && rest.length === 0) days.push(day)
     else if (time && rooms.length === 0 && rest.length === 0) times.push(time)
-    else if (rooms.length < days.length && rest.length === 0 && !line.includes(',')) rooms.push(line)
+    else if (rooms.length < days.length && rest.length === 0 && !line.includes(',') && !(rooms.length > 0 && PLACEHOLDER_INSTRUCTOR.test(line))) rooms.push(line)
     else rest.push(line)
   }
 
@@ -86,6 +88,10 @@ export function parseMeetings(row: RawRow): { meetings: Meeting[]; instructor: s
   }
   const meetings: Meeting[] = []
   for (let i = 0; i < Math.min(days.length, times.length); i++) {
+    if (times[i].end <= times[i].start) {
+      warnings.push(`${row.code}: a ${days[i]} time does not end after it starts, so it was skipped.`)
+      continue
+    }
     const room = rooms[i] ?? ''
     const meeting: Meeting = { day: days[i], ...times[i], room }
     if (/^async$/i.test(room)) {

@@ -98,6 +98,20 @@ describe('parseMeetings', () => {
     expect(meetingsOf(SAMPLE_TERM3, 'BRAVO1').meetings[0].room).toBe('508-A')
   })
 
+  it('skips a meeting that does not end after it starts and says so', () => {
+    const row = { code: 'NIGHT1', section: 'AB101', units: 3, lines: ['Monday', 'Tuesday', '11:30PM - 12:30AM', '9:30AM - 11:30AM', '101', '102', 'Last, First'] }
+    const { meetings, warnings } = parseMeetings(row)
+    expect(meetings).toEqual([{ day: 'Tue', start: 570, end: 690, room: '102' }])
+    expect(warnings.join(' ')).toContain('NIGHT1')
+  })
+
+  it('keeps a comma-less instructor out of the rooms when a room is missing', () => {
+    const row = { code: 'TBA1', section: 'AB101', units: 3, lines: ['Monday', 'Thursday', '9:30AM - 11:30AM', '9:30AM - 11:30AM', '502', 'TBA'] }
+    const { meetings, instructor } = parseMeetings(row)
+    expect(instructor).toBe('TBA')
+    expect(meetings.map((m) => m.room)).toEqual(['502', ''])
+  })
+
   it('returns the pairs it can and a warning when a time is missing', () => {
     const row = { code: 'BROKEN', section: 'AB101', units: 3, lines: ['Monday', 'Thursday', '9:30AM - 11:30AM', '502', '502', 'Last, First'] }
     const { meetings, warnings } = parseMeetings(row)
