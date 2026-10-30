@@ -75,8 +75,8 @@ Use these terms. Prefer them over invented synonyms.
 | **public shell / app shell** | `PublicShell` renders public pages with no app chrome. `AppShell` (side rail, tab bar) is a lazy chunk loaded only for signed-in routes. |
 | **service worker** | `public/sw.js` caches the app shell, media and the ticket list for offline use. Kill switch: `public/sw-kill.js` (see `docs/operations.md`). |
 | **form** | Client-side document generator catalog item (DOCX fill). Not an HTML form builder. Templates are private objects in R2. |
-| **schedule wallpaper** | The `/wallpaper` page: a signed-in APC student pastes their RAMS class schedule and downloads a phone-sized PNG (layouts grid, agenda or cards; four themes; optional own photo). Parsed by `shared/schedule/`, drawn by `src/lib/wallpaper/`, all in the browser. |
-| **safe zone** | The top 30% of a wallpaper (`SAFE_ZONE_RATIO` in `src/lib/wallpaper/safeZone.ts`), kept empty for the lock screen clock and widgets. A test holds every layout to it. |
+| **schedule wallpaper** | The `/wallpaper` page: a signed-in APC student pastes their RAMS class schedule and downloads a PNG sized for their phone, laptop or desktop screen (layouts grid, agenda or cards; four themes; optional own photo). Parsed by `shared/schedule/`, drawn by `src/lib/wallpaper/`, all in the browser. |
+| **safe zone** | The top 30% of a portrait wallpaper (`SAFE_ZONE_RATIO` in `src/lib/wallpaper/safeZone.ts`), kept empty for the lock screen clock and widgets; a landscape wallpaper only keeps 8% (`LANDSCAPE_TOP_RATIO`). A test holds every layout to it. |
 
 ---
 

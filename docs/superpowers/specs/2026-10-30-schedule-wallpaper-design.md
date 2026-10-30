@@ -4,7 +4,7 @@ Date: 2026-10-30. Status: approved design, not built.
 
 ## Goal
 
-A signed-in APC student pastes their class schedule from RAMS and gets a phone wallpaper (a PNG sized for their phone) to use as a lock screen. It is the Eypi version of `gelolaus/Scheds`, built for APC and with better output: exact phone sizes, a clear lock-screen safe zone, three layouts, themes and a photo background.
+A signed-in APC student pastes their class schedule from RAMS and gets a wallpaper (a PNG sized for their phone, laptop or desktop screen) to use as a lock screen or desktop background. It is the Eypi version of `gelolaus/Scheds`, built for APC and with better output: exact phone and desktop sizes, a clear lock-screen safe zone, three layouts, themes and a photo background.
 
 ## What the owner decided
 
@@ -72,6 +72,7 @@ It anchors on patterns, not columns, so a whole-page copy (sidebar, header, foot
 
 - Each renderer takes `{ schedule, size, theme, photo?, dim }` and draws on a canvas. The preview renders at a reduced scale and the download at full size, by the same code path.
 - **Safe zone:** nothing is drawn above 30% of the height of the canvas (the lock-screen clock and widgets). Content begins under the title line. A test asserts the rule for all three layouts and a range of aspect ratios (16:9 to 20:9).
+- **Landscape:** a wallpaper wider than tall (laptop and desktop) has no lock-screen clock, so content starts at 8% of the height. Every font size and gap is a fraction of one sizing unit: the width in portrait, 46% of the height in landscape, so text keeps the same proportions on both. The agenda sets its day groups side by side (up to four columns), the cards sit in rows of three, and the grid keeps its day columns across the full width.
 - **Text fitting:** subject codes and rooms are short; if a line does not fit its block, the font shrinks to a minimum and then clips with an ellipsis. No overlap with the next block.
 - **Fonts:** the renderers wait for the Eypi fonts (`document.fonts.load`) before drawing, and fall back to a system sans if loading fails.
 - **Themes:** Light, Dark, True black and APC blue and gold, each a palette of background, text, muted text, accent and a fixed list of block colours (taken from the design tokens, with contrast checked for text on blocks).
@@ -79,10 +80,10 @@ It anchors on patterns, not columns, so a whole-page copy (sidebar, header, foot
 
 ### 6. Page (`WallpaperView.vue`)
 
-- **Desktop:** two columns. Paste box and controls on the left, live phone-shaped preview on the right.
+- **Desktop:** two columns. Paste box and controls on the left, live preview on the right (phone-shaped or screen-shaped, to match the chosen size).
 - **Mobile:** one column: paste box, preview, controls. A short tip says to select the whole page, copy, and paste. The page does not read the clipboard automatically (iOS does not allow it); a "Paste from clipboard" button appears only where the browser supports it.
 - **Controls, in order:** layout (A, B, C; default B), theme, photo and dim slider, size, Download PNG. On phones that support it, a Share button saves to Photos.
-- **Size:** auto-detected from `screen.width × devicePixelRatio` on a phone. On desktop it defaults to 1170×2532, with a list of common sizes and a custom width and height (limits 320 to 4000 px per side).
+- **Size:** auto-detected from `screen.width × devicePixelRatio`. A phone (coarse pointer) is always portrait; a laptop or desktop keeps its own orientation, so a 1536×864 screen at 125% scaling starts at 1920×1080. A screen larger than 4000 px on its longest side is scaled down as a whole to keep its shape. If the browser reports no screen size, it starts at 1170×2532. The list has phone sizes plus 1366×768, 1440×900, 1920×1080, 2560×1440, 2880×1800 and 3840×2160, and a custom width and height (limits 320 to 4000 px per side).
 - **Copy and a11y:** the UI follows `DESIGN_SYSTEM.md` (wantap tokens in all three themes). The preview carries alt text listing the classes. All controls are keyboard-reachable, and the dim slider shows its value.
 - **Navigation:** a "Wallpaper" item in the side rail and tab bar. The route and nav entry follow the existing router and `SPA_SEGMENTS` rules in `public/sw-strategies.js` (kept in sync and tested in `worker/sw.test.ts`).
 
