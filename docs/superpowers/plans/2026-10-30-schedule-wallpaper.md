@@ -111,15 +111,15 @@ export function splitRows(normalized: string): RawRow[]
 ```
 A row starts at a line matching code, section and units on one line: `^([A-Z][A-Z0-9]{2,9})\s+([A-Z0-9][A-Z0-9/-]*)\s+(\d+\.\d)\b`. Rows end at the next row start or at a line starting `Total Units`. The remainder of the start line after the units (if any) is ignored.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `splitRows` on `normalizeText(SAMPLE_TERM2)` returns codes `['MIKE1','NOVEMBER1','OSCAR1','PAPA1','QUEBEC1']` with sections `AB101`, `AB101`, `AB101/AB102`, `XY01`, `AB101`.
   - On `SAMPLE_TERM3`, section `XYZ01-T` and units `2.0` for ALPHA1 are read.
   - Room and section lines do not start rows: `'1001'`, `'ASYNC'`, `'AB101'`, `'XY01'` alone on a line never produce a row.
   - `wholePage(SAMPLE_TERM1, ...)` returns the same six rows as the table-only text, and nothing from the sidebar text or the `Total Units` line.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement `splitRows`.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): split a pasted schedule into subject rows`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement `splitRows`.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): split a pasted schedule into subject rows`
 
 ---
 

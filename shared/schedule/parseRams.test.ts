@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeText, parseTerm } from './parseRams'
+import { normalizeText, parseTerm, splitRows } from './parseRams'
+import { SAMPLE_TERM1, SAMPLE_TERM2, SAMPLE_TERM3, wholePage } from './fixtures'
 
 describe('normalizeText', () => {
   it('turns browser whitespace into plain lines', () => {
@@ -18,5 +19,38 @@ describe('parseTerm', () => {
 
   it('returns null when there is no term line', () => {
     expect(parseTerm('hello')).toBeNull()
+  })
+})
+
+describe('splitRows', () => {
+  const codes = (text: string) => splitRows(normalizeText(text)).map((row) => row.code)
+
+  it('finds one row per subject in the Term 2 sample', () => {
+    const rows = splitRows(normalizeText(SAMPLE_TERM2))
+    expect(rows.map((row) => row.code)).toEqual(['MIKE1', 'NOVEMBER1', 'OSCAR1', 'PAPA1', 'QUEBEC1'])
+    expect(rows.map((row) => row.section)).toEqual(['AB101', 'AB101', 'AB101/AB102', 'XY01', 'AB101'])
+  })
+
+  it('reads a hyphenated section and the units', () => {
+    const rows = splitRows(normalizeText(SAMPLE_TERM3))
+    expect(rows[0]).toMatchObject({ code: 'ALPHA1', section: 'AB101', units: 2 })
+    expect(rows[1]).toMatchObject({ code: 'BRAVO1', section: 'XYZ01-T', units: 3 })
+  })
+
+  it('keeps the lines after the units for the row', () => {
+    const rows = splitRows(normalizeText(SAMPLE_TERM2))
+    expect(rows[2].lines).toEqual(['Saturday', '7:30AM - 11:30AM', '502', 'Reed, Taylor Jay Moss'])
+  })
+
+  it('does not start a row at a section or room line', () => {
+    expect(codes('AB101\nXY01\n1001\nASYNC\nAB101/AB102 3.0')).toEqual([])
+  })
+
+  it('ignores the sidebar, name and total line of a whole-page copy', () => {
+    const page = wholePage(SAMPLE_TERM1, '2026 -2027, Term 1')
+    expect(codes(page)).toEqual(codes(SAMPLE_TERM1))
+    expect(codes(page)).toHaveLength(6)
+    const last = splitRows(normalizeText(page)).at(-1)!
+    expect(last.lines.join(' ')).not.toContain('Total Units')
   })
 })
