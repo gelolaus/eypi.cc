@@ -277,14 +277,14 @@ export function ensureFonts(): Promise<void>  // document.fonts.load for Plus Ja
 export function createRecordingContext(width: number, height: number): RecordingContext  // test helper: measureText = 0.6 * size per char; records { op, x, y, text? } for fillText, fillRect, roundRect, drawImage
 ```
 
-- [ ] **Step 1: Failing tests (`text.test.ts`)**
+- [x] **Step 1: Failing tests (`text.test.ts`)**
   - `contentTop(2532)` is 760; `contentTop(1920)` is 576.
   - `fitText` returns the text unchanged and the starting size when it fits; shrinks the size (not below `min`) when it does not; at `min` it clips and ends with `…` and the measured width is ≤ `maxWidth`.
   - `ensureFonts()` resolves when `document.fonts` is missing or its `load` rejects.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add safe zone, text fitting and font loading`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add safe zone, text fitting and font loading`
 
 ---
 
