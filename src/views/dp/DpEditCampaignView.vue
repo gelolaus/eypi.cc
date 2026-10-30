@@ -128,12 +128,11 @@
                 <!-- Caption -->
                 <div class="space-y-1.5">
                   <Label for="edit-campaign-caption">Caption <span class="text-muted-foreground">(optional)</span></Label>
-                  <Textarea
+                  <CaptionEditor
                     id="edit-campaign-caption"
                     v-model="form.captionTemplate"
                     rows="3"
                     maxlength="2000"
-                    class="resize-y font-mono"
                   />
                 </div>
 
@@ -196,7 +195,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import CaptionEditor from '@/components/dp/CaptionEditor.vue'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import { onTabKeydown } from '@/lib/tix/tabKeys'
 import { uploadVariants } from '@/lib/images/uploadVariants'
