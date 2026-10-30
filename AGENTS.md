@@ -17,6 +17,8 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Dark mode, task-by-task | `docs/superpowers/plans/2026-10-29-dark-mode.md` |
 | Avatar picker (icon and colour presets, build after dark mode) | `docs/superpowers/specs/2026-10-29-avatar-picker-design.md` |
 | Avatar picker, task-by-task | `docs/superpowers/plans/2026-10-29-avatar-picker.md` |
+| Frame caption fields (`{{Field}}` placeholders) and the downloads pill, what and why | `docs/superpowers/specs/2026-10-30-frame-caption-fields-design.md` |
+| Frame caption fields, task-by-task | `docs/superpowers/plans/2026-10-30-frame-caption-fields.md` |
 | Next round: loose ends after dark mode and avatar picker (lint, accepted risks, stale plans, owner checklist) | `docs/superpowers/plans/2026-10-29-next-round.md` |
 | Audit findings (`F-*` IDs) | `docs/superpowers/specs/2026-10-25-eypi-audit-findings.md` |
 | Live database schema | `docs/db/schema-baseline.md` (2026-10-25 snapshot) and `backend/migrations/` |

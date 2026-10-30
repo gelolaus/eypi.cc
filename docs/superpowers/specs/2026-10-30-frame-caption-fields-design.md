@@ -1,6 +1,6 @@
 # Frame caption fields and downloads pill design
 
-Date: 2026-10-30. Status: awaiting owner review.
+Date: 2026-10-30. Status: approved and built.
 
 ## Goal
 
