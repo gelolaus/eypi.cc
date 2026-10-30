@@ -81,7 +81,7 @@
             </div>
           </div>
 
-          <div class="mt-auto flex items-center gap-2 pt-2">
+          <div class="mt-auto flex flex-wrap items-center gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -97,6 +97,14 @@
               <router-link :to="`/manage/frames/${c.slug}/edit`">
                 Edit
               </router-link>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              :disabled="duplicatingId === c.id"
+              @click="duplicate(c.id)"
+            >
+              {{ duplicatingId === c.id ? '...' : 'Duplicate' }}
             </Button>
             <Button
               type="button"
@@ -116,6 +124,7 @@
 <script setup lang="ts">
 import { api } from '@/lib/api'
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { invalidate, useQuery } from '@/lib/queryCache'
 import { useToast } from '@/composables/useToast'
 import { useDialog } from '@/composables/useDialog'
@@ -151,7 +160,9 @@ const error = computed(() => {
 const isLocked = computed(() => query.data.value?.locked === true)
 watch(query.data, (d) => { campaigns.value = d?.campaigns ?? [] }, { immediate: true })
 watch(error, (message) => { if (message) toast.error(message) })
+const router = useRouter()
 const deletingId = ref<string | null>(null)
+const duplicatingId = ref<string | null>(null)
 const searchQuery = ref('')
 
 const filteredCampaigns = computed(() => {
@@ -170,6 +181,23 @@ async function copyLink(slug: string) {
     toast.success('Link copied to clipboard!')
   } catch {
     toast.error('Could not copy the link.')
+  }
+}
+
+/** Copies a campaign on the server, then opens the copy so it can be renamed. */
+async function duplicate(id: string) {
+  duplicatingId.value = id
+  try {
+    const res = await api.raw(`/api/dp/${id}/duplicate`, { method: 'POST' })
+    const data = await res.json() as { status: string; message?: string; campaign?: { title: string; slug: string } }
+    if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Could not duplicate the campaign.')
+    invalidate('dp:')
+    toast.success(`"${data.campaign.title}" created.`)
+    await router.push(`/manage/frames/${data.campaign.slug}/edit`)
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : 'Could not duplicate the campaign.')
+  } finally {
+    duplicatingId.value = null
   }
 }
 

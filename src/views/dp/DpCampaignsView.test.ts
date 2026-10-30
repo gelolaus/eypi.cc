@@ -3,8 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import DpCampaignsView from './DpCampaignsView.vue'
 import { clearQueryCache } from '@/lib/queryCache'
+import { useToast } from '@/composables/useToast'
+
+const push = vi.hoisted(() => vi.fn())
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
 
 beforeEach(() => {
+  push.mockReset()
+  const toast = useToast()
+  while (toast.toasts.value.length > 0) toast.dismiss(toast.toasts.value[0].id)
   clearQueryCache()
   localStorage.clear()
   vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
@@ -37,6 +44,49 @@ describe('DpCampaignsView', () => {
     expect(text).toMatch(/1 download(?!s)/)
     expect(text).toContain('2 downloads')
     wrapper.unmount()
+  })
+
+  describe('duplicate', () => {
+    const stubs = { RouterLink: { template: '<a><slot /></a>' } }
+    const duplicateButton = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('button').find((b) => b.text() === 'Duplicate')
+
+    function respond(duplicate: Response) {
+      const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') return duplicate
+        return new Response(JSON.stringify({
+          status: 'ok',
+          campaigns: [{ id: 'c1', slug: 'launch', title: 'Launch', description: null, downloadCount: 2, frameCount: 1 }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      return fetchMock
+    }
+
+    it('copies the campaign, says so and opens the copy in the editor', async () => {
+      const fetchMock = respond(new Response(JSON.stringify({ status: 'ok', campaign: { id: 'c2', title: 'Launch (copy)', slug: 'launch-copy' } }), { status: 201 }))
+      const wrapper = mount(DpCampaignsView, { global: { stubs } })
+      await flushPromises()
+      await duplicateButton(wrapper)!.trigger('click')
+      await flushPromises()
+
+      expect(fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/api/dp/c1/duplicate') && init?.method === 'POST')).toBe(true)
+      expect(useToast().toasts.value.map((t) => t.message)).toContain('"Launch (copy)" created.')
+      expect(push).toHaveBeenCalledWith('/manage/frames/launch-copy/edit')
+      wrapper.unmount()
+    })
+
+    it('shows the error and stays on the list when copying fails', async () => {
+      respond(new Response(JSON.stringify({ status: 'error', message: 'Could not duplicate the campaign.' }), { status: 500 }))
+      const wrapper = mount(DpCampaignsView, { global: { stubs } })
+      await flushPromises()
+      await duplicateButton(wrapper)!.trigger('click')
+      await flushPromises()
+
+      expect(useToast().toasts.value.map((t) => t.message)).toContain('Could not duplicate the campaign.')
+      expect(push).not.toHaveBeenCalled()
+      expect(duplicateButton(wrapper)!.attributes('disabled')).toBeUndefined()
+      wrapper.unmount()
+    })
   })
 
   it('shows one create action in the empty campaign list', async () => {
