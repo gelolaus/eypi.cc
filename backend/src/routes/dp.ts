@@ -8,6 +8,7 @@ import { reportError } from '../lib/reportError'
 import { checkRateLimit } from '../lib/rateLimit'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
+import { captionFieldError } from '../../../shared/captionFields'
 
 // Profile-frame campaigns. Frames are validated PNGs in R2. The public page
 // merges a visitor photo on a canvas. The server stores object keys.
@@ -251,6 +252,8 @@ app.post('/api/dp', isOrgFeature, async (c) => {
 
   const captionTemplate = (body.captionTemplate ?? '').trim()
   if (captionTemplate.length > CAPTION_MAX) return c.json({ status: 'error', message: `Caption must be ${CAPTION_MAX} characters or fewer.` }, 400)
+  const captionFieldIssue = captionFieldError(captionTemplate)
+  if (captionFieldIssue) return c.json({ status: 'error', message: captionFieldIssue }, 400)
 
   const frames = Array.isArray(body.frames) ? body.frames : []
   if (frames.length === 0) return c.json({ status: 'error', message: 'Add at least one frame.' }, 400)
@@ -521,6 +524,8 @@ app.patch('/api/dp/:id', isOrgFeature, async (c) => {
   if (body.captionTemplate !== undefined) {
     const captionTemplate = body.captionTemplate.trim()
     if (captionTemplate.length > CAPTION_MAX) return c.json({ status: 'error', message: `Caption must be ${CAPTION_MAX} characters or fewer.` }, 400)
+    const captionFieldIssue = captionFieldError(captionTemplate)
+    if (captionFieldIssue) return c.json({ status: 'error', message: captionFieldIssue }, 400)
     updates.push('caption_template = ?'); args.push(captionTemplate || null)
   }
   let nextSlug: string | undefined

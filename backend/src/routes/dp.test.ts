@@ -193,6 +193,46 @@ describe('frame campaigns', () => {
     expect(addedBody.frame.position).toBe(2)
   })
 
+  describe('caption fields', () => {
+    const fields = (n: number) => Array.from({ length: n }, (_, i) => `{{f${i + 1}}}`).join(' ')
+    const LIMIT_MESSAGE = 'A caption can have at most 10 fields.'
+
+    it('rejects a caption with more than 10 fields on create', async () => {
+      const { request } = await createTestApp({ user: member, seed: seedOrg })
+      const response = await request('/api/dp', json('POST', {
+        title: 'Launch', slug: 'launch-eleven', captionTemplate: fields(11), frames: [{ imageData: frameDataUrl() }],
+      }))
+      expect(response.status).toBe(400)
+      expect(((await response.json()) as { message: string }).message).toBe(LIMIT_MESSAGE)
+    })
+
+    it('accepts a caption with fields on create', async () => {
+      const { request, client } = await createTestApp({ user: member, seed: seedOrg })
+      const caption = 'Hi, I am {{Name}} from {{Committee Name}}'
+      const response = await request('/api/dp', json('POST', {
+        title: 'Launch', slug: 'launch-fields', captionTemplate: caption, frames: [{ imageData: frameDataUrl() }],
+      }))
+      expect(response.status).toBe(201)
+      const stored = await client.execute('SELECT caption_template FROM dp_campaigns')
+      expect(String(stored.rows[0]?.caption_template)).toBe(caption)
+    })
+
+    it('rejects more than 10 fields on edit and accepts fewer', async () => {
+      const { request } = await createTestApp({ user: member, seed: seedOrg })
+      const created = await request('/api/dp', json('POST', {
+        title: 'Launch', slug: 'launch-edit', frames: [{ imageData: frameDataUrl() }],
+      }))
+      const { campaign } = (await created.json()) as { campaign: { id: string } }
+
+      const tooMany = await request(`/api/dp/${campaign.id}`, json('PATCH', { captionTemplate: fields(11) }))
+      expect(tooMany.status).toBe(400)
+      expect(((await tooMany.json()) as { message: string }).message).toBe(LIMIT_MESSAGE)
+
+      const ok = await request(`/api/dp/${campaign.id}`, json('PATCH', { captionTemplate: fields(2) }))
+      expect(ok.status).toBe(200)
+    })
+  })
+
   it('resolves an old slug through dp_slug_history', async () => {
     const { request, client } = await createTestApp({
       user: member,
