@@ -28,6 +28,31 @@ describe('renderAgenda', () => {
     expect(labels).toEqual(expect.arrayContaining(['TUE · FRI', 'SAT', 'MIKE1 · 318', 'OSCAR1 · 502']))
   })
 
+  describe('on a landscape screen', () => {
+    it.each<[number, number]>([[1920, 1080], [2560, 1440], [1366, 768]])('starts near the top and lists the day groups side by side at %i x %i', (width, height) => {
+      const { texts, labels } = draw(parseRams(SAMPLE_TERM2), width, height)
+      for (const call of texts) expect(call.y).toBeGreaterThanOrEqual(contentTop(height, width))
+      for (const call of texts) expect(call.y).toBeLessThanOrEqual(height * 0.96)
+      const headings = texts.filter((c) => c.text === 'TUE · FRI' || c.text === 'SAT')
+      expect(headings).toHaveLength(2)
+      expect(headings[0].y).toBe(headings[1].y)
+      expect(headings[0].x).toBeLessThan(headings[1].x!)
+      expect(labels).toEqual(expect.arrayContaining(['MIKE1 · 318', 'OSCAR1 · 502']))
+    })
+
+    it('keeps every column inside the screen', () => {
+      const { texts } = draw(parseRams(SAMPLE_TERM3), 1920, 1080)
+      for (const call of texts) expect(call.x).toBeLessThan(1920)
+    })
+
+    it('stops at the bottom margin and adds a +N more line', () => {
+      const many = Array.from({ length: 40 }, (_, i) => subject(`CODE${i}`, meeting('Mon', 480 + i * 10, 485 + i * 10)))
+      const { texts, labels } = draw({ term: null, warnings: [], subjects: many }, 1920, 1080)
+      for (const call of texts) expect(call.y).toBeLessThanOrEqual(1080 * 0.96)
+      expect(labels.some((text) => /^\+[0-9]+ more$/.test(text ?? ''))).toBe(true)
+    })
+  })
+
   it('writes Async for a meeting with no room', () => {
     const { labels } = draw(parseRams(SAMPLE_TERM3), 1170, 2532)
     expect(labels).toContain('ALPHA1 · Async')
