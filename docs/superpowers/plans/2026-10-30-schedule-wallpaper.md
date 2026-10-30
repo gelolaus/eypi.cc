@@ -496,15 +496,15 @@ export function useWallpaper(): {
 
 **Interfaces:** Consumes `useWallpaper`, `WallpaperPreview`, `WallpaperControls`. Layout: `AppPage` titled "Wallpaper" with a one-line description; two columns from `lg` up (paste box and controls left, preview right), one column below (paste box, preview, controls). Paste box: a `Textarea` labelled "Your schedule" with help text "In RAMS, open My Class Schedules/Assessments. Select the whole page, copy, and paste it here." and, on phones, "Tip: tap and hold, choose Select all, then Copy."; a "Paste from clipboard" button shown only when `navigator.clipboard?.readText` exists; a "Clear" button. Empty state (no text): "Paste your schedule to see your wallpaper." Text but no schedule: "We could not find a class schedule in that text. Copy the whole page from RAMS and paste it again." Parser warnings listed in a `role="status"` region above the preview. `maxlength` of `MAX_PASTE_LENGTH`.
 
-- [ ] **Step 1: Failing tests** (stub the preview)
+- [x] **Step 1: Failing tests** (stub the preview)
   - Pasting `SAMPLE_TERM2` shows no empty state and passes five subjects to the preview; clearing shows the empty state.
   - Pasting `hello` shows the "could not find" message.
   - A paste with a broken row (two days, one time) shows the warning text in the status region while the other rows still render.
   - The "Paste from clipboard" button is absent when `navigator.clipboard` is undefined and, when present, fills the box from `readText`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the paste box and wallpaper page`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the paste box and wallpaper page`
 
 ---
 

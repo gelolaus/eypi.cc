@@ -32,6 +32,8 @@ export function useWallpaper(): {
   photoNotice: ComputedRef<string | null>
   photoError: Ref<string | null>
   hasSchedule: ComputedRef<boolean>
+  /** True while the pasted text has not been parsed yet (the 150 ms debounce). */
+  pending: ComputedRef<boolean>
   setPhoto: (file: File) => Promise<void>
   clearPhoto: () => void
 } {
@@ -46,6 +48,7 @@ export function useWallpaper(): {
 
   const parsed = computed(() => parseRams(settled.value))
   const hasSchedule = computed(() => parsed.value.subjects.length > 0)
+  const pending = computed(() => text.value !== settled.value)
 
   const layout = ref<LayoutId>('agenda')
   const theme = ref<ThemeName>('dark')
@@ -79,5 +82,5 @@ export function useWallpaper(): {
     photoError.value = null
   }
 
-  return { text, parsed, layout, theme, size, photo, dim, photoNotice, photoError, hasSchedule, setPhoto, clearPhoto }
+  return { text, parsed, layout, theme, size, photo, dim, photoNotice, photoError, hasSchedule, pending, setPhoto, clearPhoto }
 }

@@ -87,3 +87,17 @@ describe('useWallpaper', () => {
     expect(photo.close).toHaveBeenCalled()
   })
 })
+
+describe('useWallpaper pending', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('is true from the change until the debounce has parsed it', () => {
+    const w = useWallpaper()
+    expect(w.pending.value).toBe(false)
+    w.text.value = 'hello'
+    expect(w.pending.value).toBe(true)
+    vi.advanceTimersByTime(150)
+    expect(w.pending.value).toBe(false)
+  })
+})
