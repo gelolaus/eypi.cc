@@ -24,14 +24,14 @@ async function seedOrgs(client: Client) {
   })
 }
 
-async function daily(client: Client, subject: string, action: string, day: string, n: number) {
+async function _daily(client: Client, subject: string, action: string, day: string, n: number) {
   await client.execute({
     sql: "INSERT INTO module_daily (subject_id, module, action, day, n, uniques) VALUES (?, 'frames', ?, ?, ?, ?)",
     args: [subject, action, day, n, n],
   })
 }
 
-async function raw(client: Client, subject: string, action: string, day: string, count = 1) {
+async function _raw(client: Client, subject: string, action: string, day: string, count = 1) {
   for (let i = 0; i < count; i++) {
     await client.execute({
       sql: "INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('org-1', 'frames', ?, ?, ?, ?)",
