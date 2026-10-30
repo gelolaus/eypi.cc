@@ -59,10 +59,10 @@ describe('renderToBlob', () => {
 
 describe('wallpaperFilename', () => {
   it('names the file after the term', () => {
-    expect(wallpaperFilename(schedule, 'agenda')).toBe('eypi-schedule-2026-2027-term-2.png')
+    expect(wallpaperFilename(schedule)).toBe('eypi-schedule-2026-2027-term-2.png')
   })
 
   it('falls back to a plain name without a term', () => {
-    expect(wallpaperFilename({ ...schedule, term: null }, 'agenda')).toBe('eypi-schedule.png')
+    expect(wallpaperFilename({ ...schedule, term: null })).toBe('eypi-schedule.png')
   })
 })

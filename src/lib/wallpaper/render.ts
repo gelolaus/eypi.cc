@@ -31,7 +31,7 @@ export async function renderToBlob(input: RenderInput): Promise<Blob> {
 }
 
 /** `eypi-schedule-2026-2027-term-2.png`, or `eypi-schedule.png` when the term is unknown. */
-export function wallpaperFilename(schedule: ParsedSchedule, _layout: LayoutId): string {
+export function wallpaperFilename(schedule: ParsedSchedule): string {
   const slug = (schedule.term ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
   return slug ? `eypi-schedule-${slug}.png` : 'eypi-schedule.png'
 }

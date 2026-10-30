@@ -146,6 +146,34 @@ describe('WallpaperView download and share', () => {
     expect(messages()).toEqual([])
   })
 
+  it('has the png ready when the share button is tapped so the tap is still fresh', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+    expect(renderToBlob).toHaveBeenCalledTimes(1)
+    await button(wrapper, 'Share')!.trigger('click')
+    expect(share).toHaveBeenCalledTimes(1)
+    expect(renderToBlob).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders again when the options changed after the png was prepared', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })
+    const wrapper = mountView()
+    await paste(wrapper, page())
+    vi.advanceTimersByTime(500)
+    await flushPromises()
+    await paste(wrapper, `${page()}
+`)
+    await button(wrapper, 'Share')!.trigger('click')
+    await flushPromises()
+    expect(vi.mocked(renderToBlob).mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(share).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores a closed share sheet but reports other share failures', async () => {
     const share = vi.fn().mockRejectedValueOnce(new DOMException('closed', 'AbortError')).mockRejectedValueOnce(new Error('no'))
     vi.stubGlobal('navigator', { ...navigator, share, canShare: () => true })

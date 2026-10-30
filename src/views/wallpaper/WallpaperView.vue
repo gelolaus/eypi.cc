@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { MAX_PASTE_LENGTH } from '@shared/schedule/parseRams'
 import WallpaperControls from '@/components/wallpaper/WallpaperControls.vue'
 import WallpaperPreview from '@/components/wallpaper/WallpaperPreview.vue'
@@ -160,10 +160,17 @@ async function onPhoto(file: File) {
 
 const exporting = ref(false)
 
+// Share needs a fresh tap, and a full-size render can outlast it on a phone, so the png is prepared ahead
+// of time (only where Share exists) and used when it still matches the current options.
+let prepared: { input: RenderInput; blob: Blob } | null = null
+let prepareTimer: ReturnType<typeof setTimeout> | undefined
+
 async function makePng(): Promise<{ blob: Blob; filename: string } | null> {
+  const input = renderInput.value
+  const filename = wallpaperFilename(parsed.value)
+  if (prepared?.input === input) return { blob: prepared.blob, filename }
   try {
-    const blob = await renderToBlob(renderInput.value)
-    return { blob, filename: wallpaperFilename(parsed.value, layout.value) }
+    return { blob: await renderToBlob(input), filename }
   } catch {
     toast.error('Could not render the image. Try again.')
     return null
@@ -193,6 +200,18 @@ onMounted(() => {
     canShareFiles.value = false
   }
 })
+
+watch(renderInput, (input) => {
+  clearTimeout(prepareTimer)
+  prepared = null
+  if (!canShareFiles.value || !hasSchedule.value) return
+  prepareTimer = setTimeout(() => {
+    renderToBlob(input)
+      .then((blob) => { if (renderInput.value === input) prepared = { input, blob } })
+      .catch(() => {})
+  }, 400)
+})
+onBeforeUnmount(() => clearTimeout(prepareTimer))
 
 async function share() {
   exporting.value = true
