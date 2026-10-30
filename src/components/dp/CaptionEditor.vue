@@ -8,7 +8,7 @@
       <div
         data-caption-mirror
         aria-hidden="true"
-        class="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-2.5 py-2 font-mono text-base break-words whitespace-pre-wrap text-foreground md:text-sm"
+        class="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-2.5 py-2 font-mono text-base break-words whitespace-pre-wrap text-transparent [scrollbar-gutter:stable] md:text-sm"
       >
         <div :style="{ transform: `translateY(-${scrollTop}px)` }">
           <template
@@ -17,7 +17,7 @@
           >
             <mark
               v-if="segment.type === 'field'"
-              class="rounded-sm bg-primary/20 text-foreground underline decoration-primary decoration-2 underline-offset-2"
+              class="rounded-sm bg-primary/20 underline decoration-primary decoration-2 underline-offset-2"
             >{{ segment.raw }}</mark>
             <template v-else>
               {{ segment.text }}
@@ -35,7 +35,7 @@
         ref="textareaRef"
         v-model="model"
         v-bind="$attrs"
-        class="relative resize-y bg-transparent font-mono text-transparent caret-foreground"
+        class="relative resize-y bg-transparent font-mono [scrollbar-gutter:stable]"
       />
     </div>
     <p

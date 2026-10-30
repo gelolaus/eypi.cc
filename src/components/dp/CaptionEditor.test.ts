@@ -45,6 +45,12 @@ describe('CaptionEditor', () => {
     expect(editor(caption).get('[data-caption-mirror]').element.textContent).toBe(caption)
   })
 
+  it('keeps the real text visible and only the highlight in the mirror, so drift stays cosmetic', () => {
+    const wrapper = editor('Hi {{Name}}')
+    expect(wrapper.get('textarea').classes()).not.toContain('text-transparent')
+    expect(wrapper.get('[data-caption-mirror]').classes()).toContain('text-transparent')
+  })
+
   it('hides the mirror from assistive tech', () => {
     expect(editor('x').get('[data-caption-mirror]').attributes('aria-hidden')).toBe('true')
   })
