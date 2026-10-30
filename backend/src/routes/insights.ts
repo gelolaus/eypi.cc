@@ -23,35 +23,11 @@ function parseDays(raw: string | undefined): number {
   return days
 }
 
-type SubjectRow = { subject: string; action: string; day: string; n: number }
-
 /**
- * Campaign events for Manila days from..to. Days before today come from module_daily; today comes from raw
- * module_events (the hourly rollup lags), so a rollup row for today is never read. The subject match is exact or
- * the range [`<id>:`, `<id>;`) (';' follows ':'), never LIKE, because '_' is a wildcard.
+ * A campaign's frames events: the subject is the campaign id or `<id>:<frame>`. Matched as exact or the range
+ * [`<id>:`, `<id>;`) (';' follows ':'), never LIKE, because '_' is a wildcard. `?1` is the campaign id.
  */
-async function loadCampaignRows(client: Client, id: string, from: string, to: string, today: string): Promise<SubjectRow[]> {
-  const match = "module = 'frames' AND (subject_id = ?1 OR (subject_id >= ?1 || ':' AND subject_id < ?1 || ';'))"
-  const rows: SubjectRow[] = []
-  const rollupTo = to < today ? to : addDays(today, -1)
-  if (from <= rollupTo) {
-    const result = await client.execute({
-      sql: `SELECT subject_id, action, day, SUM(n) AS n FROM module_daily
-            WHERE ${match} AND day >= ?2 AND day <= ?3 GROUP BY subject_id, action, day`,
-      args: [id, from, rollupTo],
-    })
-    for (const r of result.rows) rows.push({ subject: String(r.subject_id), action: String(r.action), day: String(r.day), n: Number(r.n) })
-  }
-  if (from <= today && to >= today) {
-    const result = await client.execute({
-      sql: `SELECT subject_id, action, day, COUNT(*) AS n FROM module_events
-            WHERE ${match} AND day = ?2 GROUP BY subject_id, action, day`,
-      args: [id, today],
-    })
-    for (const r of result.rows) rows.push({ subject: String(r.subject_id), action: String(r.action), day: String(r.day), n: Number(r.n) })
-  }
-  return rows
-}
+const CAMPAIGN_EVENTS = "module = 'frames' AND (subject_id = ?1 OR (subject_id >= ?1 || ':' AND subject_id < ?1 || ';'))"
 
 // GET /api/dp/:id/insights?days=30
 app.get('/api/dp/:id/insights', isOrgFeature, async (c) => {
@@ -64,27 +40,45 @@ app.get('/api/dp/:id/insights', isOrgFeature, async (c) => {
 
   const today = manilaDay(new Date())
   const from = addDays(today, -(days - 1))
-  const rows = await loadCampaignRows(client, id, from, today, today)
 
-  let view = 0
-  let photoAdded = 0
-  let downloadOrShare = 0
+  // Visitors, not events: per Manila day, one person counts once per step however often they repeat it or
+  // however many frames they save. The visitor hash changes every day, so someone back on another day counts again.
+  // Read from raw events (kept 400 days): the rollup only has uniques per frame, which cannot be combined.
+  const [perDayRows, perFrameRows, savesRow] = await Promise.all([
+    client.execute({
+      sql: `SELECT day, action, COUNT(DISTINCT visitor_hash) AS n FROM module_events
+            WHERE ${CAMPAIGN_EVENTS} AND day >= ?2 AND day <= ?3 GROUP BY day, action`,
+      args: [id, from, today],
+    }),
+    client.execute({
+      sql: `SELECT subject_id, day, COUNT(DISTINCT visitor_hash) AS n FROM module_events
+            WHERE ${CAMPAIGN_EVENTS} AND action = 'download' AND day >= ?2 AND day <= ?3 GROUP BY subject_id, day`,
+      args: [id, from, today],
+    }),
+    // Every download and copy ever, the number the Frames list and the public page show.
+    client.execute({
+      sql: `SELECT COUNT(*) AS n FROM module_events WHERE ${CAMPAIGN_EVENTS} AND action IN ('download', 'share')`,
+      args: [id],
+    }),
+  ])
+
+  const funnel = { visitors: 0, photo_added: 0, download: 0, share: 0 }
+  const perDay = new Map<string, { visitors: number; downloads: number; copies: number }>()
+  for (const row of perDayRows.rows) {
+    const n = Number(row.n)
+    const bucket = perDay.get(String(row.day)) ?? { visitors: 0, downloads: 0, copies: 0 }
+    perDay.set(String(row.day), bucket)
+    if (row.action === 'view') { funnel.visitors += n; bucket.visitors += n }
+    else if (row.action === 'photo_added') funnel.photo_added += n
+    else if (row.action === 'download') { funnel.download += n; bucket.downloads += n }
+    else if (row.action === 'share') { funnel.share += n; bucket.copies += n }
+  }
   const perFrameCount = new Map<string, number>()
-  const perDay = new Map<string, { views: number; downloads: number }>()
-  for (const row of rows) {
-    const bucket = perDay.get(row.day) ?? { views: 0, downloads: 0 }
-    perDay.set(row.day, bucket)
-    if (row.action === 'view') {
-      view += row.n
-      bucket.views += row.n
-    } else if (row.action === 'photo_added') {
-      photoAdded += row.n
-    } else if (row.action === 'download' || row.action === 'share') {
-      downloadOrShare += row.n
-      bucket.downloads += row.n
-      const frameId = row.subject.slice(id.length + 1)
-      if (row.subject.length > id.length) perFrameCount.set(frameId, (perFrameCount.get(frameId) ?? 0) + row.n)
-    }
+  for (const row of perFrameRows.rows) {
+    const subject = String(row.subject_id)
+    if (subject.length <= id.length) continue // a download with no frame id has no frame bar
+    const frameId = subject.slice(id.length + 1)
+    perFrameCount.set(frameId, (perFrameCount.get(frameId) ?? 0) + Number(row.n))
   }
 
   const frames = await client.execute({
@@ -100,18 +94,19 @@ app.get('/api/dp/:id/insights', isOrgFeature, async (c) => {
     }
   })
 
-  const daily: { day: string; views: number; downloads: number }[] = []
+  const daily: { day: string; visitors: number; downloads: number; copies: number }[] = []
   for (let i = 0; i < days; i++) {
     const day = addDays(from, i)
     const bucket = perDay.get(day)
-    daily.push({ day, views: bucket?.views ?? 0, downloads: bucket?.downloads ?? 0 })
+    daily.push({ day, visitors: bucket?.visitors ?? 0, downloads: bucket?.downloads ?? 0, copies: bucket?.copies ?? 0 })
   }
 
   c.header('Cache-Control', 'private, no-store')
   return c.json({
-    funnel: { view, photo_added: photoAdded, downloadOrShare },
-    // Downloads can outnumber views (a visitor may download several frames), so the rate is capped at 1.
-    conversion: view > 0 ? Math.min(1, downloadOrShare / view) : 0,
+    funnel,
+    // A visit may not be counted (a dropped beacon), so downloaders can outnumber visitors; the rate is capped at 1.
+    conversion: funnel.visitors > 0 ? Math.min(1, funnel.download / funnel.visitors) : 0,
+    totals: { downloadsAndCopies: Number(savesRow.rows[0]?.n ?? 0) },
     perFrame,
     daily,
   })

@@ -40,6 +40,16 @@ async function raw(client: Client, subject: string, action: string, day: string,
   }
 }
 
+/** One raw frames event per entry in `visitors`, so a repeated hash is a repeat visit by the same person. */
+async function rawBy(client: Client, subject: string, action: string, day: string, visitors: string[]) {
+  for (const visitor of visitors) {
+    await client.execute({
+      sql: "INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('org-1', 'frames', ?, ?, ?, ?)",
+      args: [subject, action, visitor, day],
+    })
+  }
+}
+
 afterEach(() => vi.useRealTimers())
 
 async function framesApp(seed?: (client: Client) => Promise<void>, user: TestUser | null = member) {
@@ -67,39 +77,44 @@ async function framesApp(seed?: (client: Client) => Promise<void>, user: TestUse
 }
 
 describe('GET /api/dp/:id/insights', () => {
-  it('builds the funnel from rollups, today from raw rows, and ignores look-alike campaign ids', async () => {
+  type CampaignInsights = {
+    funnel: { visitors: number; photo_added: number; download: number; share: number }
+    conversion: number
+    totals: { downloadsAndCopies: number }
+    perFrame: { frameId: string; label: string; downloads: number }[]
+    daily: { day: string; visitors: number; downloads: number; copies: number }[]
+  }
+
+  it('counts distinct visitors per day, so repeats do not inflate a step, and ignores look-alike campaign ids', async () => {
     const { request } = await framesApp(async (client) => {
-      await daily(client, 'camp1', 'view', '2026-10-24', 10)
-      await daily(client, 'camp1', 'photo_added', '2026-10-24', 6)
-      await daily(client, 'camp1', 'download', '2026-10-24', 99) // a bare-subject download is still a download
-      await daily(client, 'camp1:f1', 'download', '2026-10-24', 3)
-      await daily(client, 'camp1:f2', 'share', '2026-10-25', 1)
-      await daily(client, 'camp1', 'view', '2026-10-25', 10)
+      // 10-24: a, b, c view (a twice); a uploads three times; a downloads two frames; b copies the caption
+      await rawBy(client, 'camp1', 'view', '2026-10-24', ['a', 'b', 'c', 'a'])
+      await rawBy(client, 'camp1', 'photo_added', '2026-10-24', ['a', 'a', 'a'])
+      await rawBy(client, 'camp1:f1', 'download', '2026-10-24', ['a', 'a'])
+      await rawBy(client, 'camp1:f2', 'download', '2026-10-24', ['a'])
+      await rawBy(client, 'camp1:f2', 'share', '2026-10-24', ['b'])
+      // 10-25: the same hashes on another day are new daily visitors
+      await rawBy(client, 'camp1', 'view', '2026-10-25', ['a', 'b'])
       // a different campaign whose id shares a prefix must not leak in
-      await daily(client, 'camp10', 'view', '2026-10-25', 500)
-      await daily(client, 'camp10:f9', 'download', '2026-10-25', 500)
-      // today: a stale rollup row must not be read; raw rows are
-      await daily(client, 'camp1', 'view', '2026-10-26', 1000)
-      await raw(client, 'camp1', 'view', '2026-10-26', 4)
-      await raw(client, 'camp1:f1', 'download', '2026-10-26', 2)
+      await rawBy(client, 'camp10', 'view', '2026-10-25', ['x', 'y', 'z'])
+      await rawBy(client, 'camp10:f9', 'download', '2026-10-25', ['x', 'y', 'z'])
+      // today
+      await rawBy(client, 'camp1', 'view', '2026-10-26', ['a'])
+      await rawBy(client, 'camp1:f1', 'download', '2026-10-26', ['a'])
     })
     const res = await request('/api/dp/camp1/insights?days=30', { headers })
     expect(res.status).toBe(200)
-    const body = await res.json() as {
-      funnel: { view: number; photo_added: number; downloadOrShare: number }
-      conversion: number
-      perFrame: { frameId: string; label: string; downloads: number }[]
-      daily: { day: string; views: number; downloads: number }[]
-    }
-    expect(body.funnel).toEqual({ view: 24, photo_added: 6, downloadOrShare: 105 })
-    expect(body.conversion).toBe(1) // downloads can exceed views (bare-subject rows), the rate is capped
+    const body = await res.json() as CampaignInsights
+    expect(body.funnel).toEqual({ visitors: 6, photo_added: 1, download: 2, share: 1 })
+    expect(body.conversion).toBeCloseTo(2 / 6)
+    expect(body.totals).toEqual({ downloadsAndCopies: 5 }) // every download and share event, as the Frames list counts them
     expect(body.perFrame).toEqual([
-      { frameId: 'f1', label: 'Blue', downloads: 5 },
+      { frameId: 'f1', label: 'Blue', downloads: 2 },
       { frameId: 'f2', label: 'Frame 2', downloads: 1 },
     ])
     expect(body.daily).toHaveLength(30)
-    expect(body.daily.at(-1)).toEqual({ day: '2026-10-26', views: 4, downloads: 2 })
-    expect(body.daily.find((d) => d.day === '2026-10-24')).toEqual({ day: '2026-10-24', views: 10, downloads: 102 })
+    expect(body.daily.at(-1)).toEqual({ day: '2026-10-26', visitors: 1, downloads: 1, copies: 0 })
+    expect(body.daily.find((d) => d.day === '2026-10-24')).toEqual({ day: '2026-10-24', visitors: 3, downloads: 1, copies: 1 })
   })
 
   it('does not match campaign ids that only look alike (underscore is not a wildcard)', async () => {
@@ -108,32 +123,46 @@ describe('GET /api/dp/:id/insights', () => {
         sql: "INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, frame_image_url) VALUES ('camp_1', 'owner', 'org-1', 'u', 'u', '')",
         args: [],
       })
-      await daily(client, 'camp_1', 'view', '2026-10-25', 3)
-      await daily(client, 'camp_1:f1', 'download', '2026-10-25', 1)
-      await daily(client, 'camp11', 'view', '2026-10-25', 50)
-      await daily(client, 'camp11:f1', 'download', '2026-10-25', 50)
-      await daily(client, 'camp1', 'view', '2026-10-25', 7)
-      await raw(client, 'camp11', 'view', '2026-10-26', 9)
+      await rawBy(client, 'camp_1', 'view', '2026-10-25', ['a', 'b', 'c'])
+      await rawBy(client, 'camp_1:f1', 'download', '2026-10-25', ['a'])
+      await rawBy(client, 'camp11', 'view', '2026-10-25', ['n1', 'n2'])
+      await rawBy(client, 'camp11:f1', 'download', '2026-10-25', ['n1', 'n2'])
+      await rawBy(client, 'camp1', 'view', '2026-10-25', ['p', 'q'])
     })
-    const body = await (await request('/api/dp/camp_1/insights', { headers })).json() as { funnel: { view: number; downloadOrShare: number } }
-    expect(body.funnel).toMatchObject({ view: 3, downloadOrShare: 1 })
+    const body = await (await request('/api/dp/camp_1/insights', { headers })).json() as CampaignInsights
+    expect(body.funnel).toMatchObject({ visitors: 3, download: 1 })
+    expect(body.totals.downloadsAndCopies).toBe(1)
   })
 
   it('respects the days window', async () => {
     const { request } = await framesApp(async (client) => {
-      await daily(client, 'camp1', 'view', '2026-10-20', 7)
-      await daily(client, 'camp1', 'view', '2026-10-25', 2)
+      await rawBy(client, 'camp1', 'view', '2026-10-20', ['a', 'b'])
+      await rawBy(client, 'camp1', 'view', '2026-10-25', ['a'])
+      await rawBy(client, 'camp1:f1', 'download', '2026-10-20', ['a'])
     })
-    const body = await (await request('/api/dp/camp1/insights?days=3', { headers })).json() as { funnel: { view: number }; daily: unknown[] }
-    expect(body.funnel.view).toBe(2)
+    const body = await (await request('/api/dp/camp1/insights?days=3', { headers })).json() as CampaignInsights
+    expect(body.funnel.visitors).toBe(1)
+    expect(body.funnel.download).toBe(0)
     expect(body.daily).toHaveLength(3)
+    // the all-time total is not windowed, so it matches the Frames list
+    expect(body.totals.downloadsAndCopies).toBe(1)
   })
 
-  it('returns conversion 0, not NaN, when there are no views', async () => {
+  it('caps conversion at 1 when more people download than were counted as visitors', async () => {
+    const { request } = await framesApp(async (client) => {
+      await rawBy(client, 'camp1', 'view', '2026-10-25', ['a'])
+      await rawBy(client, 'camp1:f1', 'download', '2026-10-25', ['a', 'b'])
+    })
+    const body = await (await request('/api/dp/camp1/insights', { headers })).json() as CampaignInsights
+    expect(body.conversion).toBe(1)
+  })
+
+  it('returns conversion 0, not NaN, when there are no visitors', async () => {
     const { request } = await framesApp()
-    const body = await (await request('/api/dp/camp1/insights', { headers })).json() as { conversion: number; funnel: { view: number } }
-    expect(body.funnel.view).toBe(0)
+    const body = await (await request('/api/dp/camp1/insights', { headers })).json() as CampaignInsights
+    expect(body.funnel).toEqual({ visitors: 0, photo_added: 0, download: 0, share: 0 })
     expect(body.conversion).toBe(0)
+    expect(body.totals.downloadsAndCopies).toBe(0)
   })
 
   it.each(['0', '401', 'abc', '1.5', '-3'])('rejects days=%s', async (days) => {
