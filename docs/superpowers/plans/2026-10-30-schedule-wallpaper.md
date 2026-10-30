@@ -329,17 +329,17 @@ export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput):
 ```
 Draws the background, then the term title at `contentTop(height)`, then each `groupDays` group as a day label (accent, uppercase) followed by rows of start time (`formatClock`, muted) and `CODE · room` (`Async` when async); a conflict marker (`!`) before the code. Scale all sizes from `width`. Rows that would pass the bottom margin (4% of height) are dropped and a final `+N more` line is drawn instead. An empty week draws the title and `No classes to show.`.
 
-- [ ] **Step 1: Failing tests (using `createRecordingContext`)**
+- [x] **Step 1: Failing tests (using `createRecordingContext`)**
   - `formatClock(770)` is `'12:50 PM'`, `formatClock(0)` is `'12:00 AM'`; `formatRange(450, 570)` is `'7:30 to 9:30 AM'`; `formatRange(690, 810)` is `'11:30 AM to 1:30 PM'`.
   - For `parseRams(SAMPLE_TERM2)` at 1170×2532, 1080×1920 and 1080×2400: every recorded `fillText` has `y ≥ contentTop(height)`, and the texts include `TUE · FRI`, `SAT`, `MIKE1 · 318` and `OSCAR1 · 502`.
   - An async meeting draws `ALPHA1 · Async`.
   - An empty schedule draws `No classes to show.` and no day labels.
   - Overlapping classes draw the `!` marker.
   - Nothing is drawn below `height * 0.96`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the agenda wallpaper layout`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the agenda wallpaper layout`
 
 ---
 
