@@ -20,6 +20,18 @@ describe('readableOn', () => {
   })
 })
 
+describe('the APC theme', () => {
+  it('has blocks that stand out from the blue background and from each other', () => {
+    const { bg, blocks } = THEMES.apc
+    for (const block of blocks) expect(contrastRatio(block, bg)).toBeGreaterThanOrEqual(3)
+    expect(new Set(blocks).size).toBe(blocks.length)
+  })
+
+  it('keeps the gold accent readable on the blue', () => {
+    expect(contrastRatio(THEMES.apc.accent, THEMES.apc.bg)).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('THEMES', () => {
   it.each(names)('%s has five blocks and readable text', (name) => {
     const theme = THEMES[name]

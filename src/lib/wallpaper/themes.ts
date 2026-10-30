@@ -3,6 +3,8 @@ import type { ThemeName } from './types'
 export type Theme = { bg: string; text: string; muted: string; accent: string; blocks: string[] }
 
 const LIGHT_BLOCKS = ['#35438c', '#deac4b', '#7783c4', '#a87a1c', '#9aa0b8']
+// Light tints and gold: the light-theme blocks include the APC blue itself, which vanishes on the blue background.
+const APC_BLOCKS = ['#deac4b', '#ffffff', '#c3cbf5', '#f0d08a', '#8fa0f0']
 const DARK_BLOCKS = ['#8b97d8', '#deac4b', '#5a68b8', '#f0d08a', '#9aa0b8']
 
 const DARK: Theme = { bg: '#0a0a0a', text: '#ededed', muted: '#a3a3a3', accent: '#8b97d8', blocks: DARK_BLOCKS }
@@ -11,7 +13,7 @@ export const THEMES: Record<ThemeName, Theme> = {
   light: { bg: '#f5f5f5', text: '#0a0a0a', muted: '#5c5c5c', accent: '#35438c', blocks: LIGHT_BLOCKS },
   dark: DARK,
   black: { ...DARK, bg: '#000000' },
-  apc: { bg: '#35438c', text: '#ffffff', muted: '#dfe3f5', accent: '#deac4b', blocks: LIGHT_BLOCKS },
+  apc: { bg: '#35438c', text: '#ffffff', muted: '#dfe3f5', accent: '#f0d08a', blocks: APC_BLOCKS },
 }
 
 function luminance(hex: string): number {
