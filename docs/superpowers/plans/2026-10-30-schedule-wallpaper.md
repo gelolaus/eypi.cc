@@ -226,14 +226,14 @@ export function detectSize(env: { screenWidth: number; screenHeight: number; pix
 export function clampSize(size: Size): Size  // each side 320 to 4000, area at most 16,000,000 (scale both sides down, keeping the ratio)
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `DEFAULT_SIZE` is `{1170, 2532}`.
   - `detectSize({screenWidth:390,screenHeight:844,pixelRatio:3,coarsePointer:true})` is `{1170, 2532}`; landscape input is swapped to portrait; `coarsePointer:false` returns `null`.
   - `clampSize({width:100,height:100})` is `{320,320}`; `clampSize({width:4000,height:4000})` has area ≤ 16,000,000 and the same ratio; `clampSize({width:1080,height:2400})` is unchanged.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add phone sizes, detection and clamping`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add phone sizes, detection and clamping`
 
 ---
 
