@@ -5,7 +5,6 @@ import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
 import { deleteWithVariants, mediaUrl, parseImageMeta, putImage, type ImageMeta } from '../lib/media'
 import { reportError } from '../lib/reportError'
-import { checkRateLimit } from '../lib/rateLimit'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
 import { captionFieldError } from '../../../shared/captionFields'
@@ -22,8 +21,6 @@ const SLUG_MAX = 60
 const MAX_FRAMES = 10
 const MIN_FRAME_PX = 1080
 const MAX_FRAME_BYTES = 10 * 1024 * 1024
-const DOWNLOAD_LIMIT_PER_HOUR = 30
-const DOWNLOAD_WINDOW_SEC = 60 * 60
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 type StoredFrame = {
@@ -593,32 +590,6 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   return c.json({ status: 'ok', message: 'Campaign deleted.' })
 })
 
-// ── POST /api/dp/:id/download ─────────────────────────────────────────────────
-// Public counter. Counts every save; a loose hourly guard per IP per campaign stops scripted floods.
-app.post('/api/dp/:id/download', async (c) => {
-  const id = c.req.param('id')!
-  const client = db(c)
-  const existing = await client.execute({ sql: 'SELECT id FROM dp_campaigns WHERE id = ?', args: [id] })
-  if (existing.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
-
-  const ip = c.req.header('CF-Connecting-IP')?.trim() || 'unknown'
-  const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-    bucket: 'dp-download-hour',
-    subject: `${id}:${ip}`,
-    limit: DOWNLOAD_LIMIT_PER_HOUR,
-    windowSec: DOWNLOAD_WINDOW_SEC,
-  })
-  if (!decision.ok) {
-    return c.json({ status: 'error', message: 'You are saving too fast. Try again in a little while.' }, 429)
-  }
-
-  await client.execute({
-    sql: 'UPDATE dp_campaigns SET download_count = download_count + 1 WHERE id = ?',
-    args: [id],
-  })
-  return c.json({ status: 'ok', ok: true })
-})
-
 // ── GET /api/dp/:slug ─────────────────────────────────────────────────────────
 // Public page payload by slug, including every frame. Declared last so the more
 // specific /:id/* routes above are matched first by segment count (Hono matches
@@ -627,7 +598,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   const slug = c.req.param('slug')!
   const client = db(c)
   let result = await client.execute({
-    sql: 'SELECT id, title, slug, description, caption_template, download_count FROM dp_campaigns WHERE slug = ?',
+    sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) {
@@ -637,7 +608,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
     })
     if (history.rows.length > 0) {
       result = await client.execute({
-        sql: 'SELECT id, title, slug, description, caption_template, download_count FROM dp_campaigns WHERE id = ?',
+        sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE id = ?',
         args: [history.rows[0]?.campaign_id],
       })
     }

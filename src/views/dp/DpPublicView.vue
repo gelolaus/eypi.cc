@@ -395,7 +395,6 @@ async function download() {
     toast.success('Downloaded. Share your new profile picture.')
     const frameId = campaign.frames[selectedIndex.value]?.id
     sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
-    api.raw(`/api/dp/${campaign.id}/download`, { method: 'POST' }).catch(() => {})
     promptForDetails()
   } catch {
     toast.error('Export failed. Try again.')

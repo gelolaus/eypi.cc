@@ -431,6 +431,16 @@ describe('DpPublicView details dialog', () => {
     wrapper.unmount()
   })
 
+  it('no longer calls the removed download counter endpoint', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(saveAs).toHaveBeenCalled()
+    const urls = vi.mocked(fetch).mock.calls.map(([url]) => String(url))
+    expect(urls.some((url) => url.endsWith('/download'))).toBe(false)
+    wrapper.unmount()
+  })
+
   it('still sends the download beacon when the dialog opens', async () => {
     const wrapper = await mountReadyWithCaption(CAPTION)
     await addPhoto(wrapper)

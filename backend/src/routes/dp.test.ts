@@ -3,8 +3,6 @@ import type { Client } from '@libsql/client'
 import { createTestApp, type TestUser } from '../test/createTestApp'
 
 const ORIGIN = 'https://eypi.cc'
-const IP_A = '203.0.113.10'
-const IP_B = '203.0.113.11'
 
 const member: TestUser = {
   id: 'user-member',
@@ -66,14 +64,6 @@ async function frameCount(client: Client, campaignId: string): Promise<number> {
     args: [campaignId],
   })
   return Number(result.rows[0]?.cnt ?? 0)
-}
-
-async function downloadCount(client: Client, campaignId: string): Promise<number> {
-  const result = await client.execute({
-    sql: 'SELECT download_count FROM dp_campaigns WHERE id = ?',
-    args: [campaignId],
-  })
-  return Number(result.rows[0]?.download_count ?? 0)
 }
 
 describe('frame campaigns', () => {
@@ -281,7 +271,7 @@ describe('frame campaigns', () => {
     expect(history.rows[0]?.campaign_id).toBe(createdBody.campaign.id)
   })
 
-  describe('download counter', () => {
+  describe('download count', () => {
     async function setup() {
       const app = await createTestApp({
         user: member,
@@ -308,37 +298,6 @@ describe('frame campaigns', () => {
         })
       return { client: app.client, download, request: app.request }
     }
-
-    it('counts every save from the same connection', async () => {
-      const { client, download } = await setup()
-      for (let i = 0; i < 3; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
-      expect(await downloadCount(client, 'camp-a')).toBe(3)
-    })
-
-    it('refuses the 31st save in an hour without counting it', async () => {
-      const { client, download } = await setup()
-      for (let i = 0; i < 30; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
-      const over = await download('camp-a', IP_A)
-      expect(over.status).toBe(429)
-      expect(((await over.json()) as { message: string }).message).toBe('You are saving too fast. Try again in a little while.')
-      expect(await downloadCount(client, 'camp-a')).toBe(30)
-    })
-
-    it('gives each connection its own hourly allowance', async () => {
-      const { client, download } = await setup()
-      for (let i = 0; i < 30; i++) expect((await download('camp-a', IP_A)).status).toBe(200)
-      expect((await download('camp-a', IP_A)).status).toBe(429)
-      expect(await downloadCount(client, 'camp-a')).toBe(30)
-      expect((await download('camp-a', IP_B)).status).toBe(200)
-      expect(await downloadCount(client, 'camp-a')).toBe(31)
-    })
-
-    it('limits each frame on its own', async () => {
-      const { client, download } = await setup()
-      for (let i = 0; i < 30; i++) await download('camp-a', IP_A)
-      expect((await download('camp-b', IP_A)).status).toBe(200)
-      expect(await downloadCount(client, 'camp-b')).toBe(1)
-    })
 
     it('public payload counts downloads and shares the way insights does', async () => {
       const { client, request } = await setup()
@@ -390,11 +349,10 @@ describe('frame campaigns', () => {
       expect(body.campaign).not.toHaveProperty('downloadCount')
     })
 
-    it('returns 404 for an unknown frame without counting', async () => {
-      const { client, download } = await setup()
-      expect((await download('nope', IP_A)).status).toBe(404)
-      expect(await downloadCount(client, 'camp-a')).toBe(0)
-      expect(await downloadCount(client, 'camp-b')).toBe(0)
+    it('no longer serves a download counter endpoint', async () => {
+      const { request } = await setup()
+      const res = await request('/api/dp/camp-a/download', { method: 'POST', headers: { Origin: ORIGIN } })
+      expect(res.status).toBe(404)
     })
   })
 })
