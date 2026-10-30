@@ -72,10 +72,10 @@ export const SAMPLE_TERM3: string; export const SAMPLE_TERM1: string; export con
 export function wholePage(table: string, term: string): string  // adds sidebar, name, term line, Total Units, footer
 ```
 
-- [ ] **Step 1:** Write the types as above.
-- [ ] **Step 2:** Write the fixtures from the Appendix verbatim (a tab after the units value, then a newline), and `wholePage` as described in the Appendix.
-- [ ] **Step 3:** `npm run typecheck` passes.
-- [ ] **Step 4: Commit** `test(wallpaper): add rams schedule types and sample fixtures`
+- [x] **Step 1:** Write the types as above.
+- [x] **Step 2:** Write the fixtures from the Appendix verbatim (a tab after the units value, then a newline), and `wholePage` as described in the Appendix.
+- [x] **Step 3:** `npm run typecheck` passes.
+- [x] **Step 4: Commit** `test(wallpaper): add rams schedule types and sample fixtures`
 
 ---
 
