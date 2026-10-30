@@ -36,13 +36,12 @@
       :description="campaign.description ?? undefined"
     >
       <div class="mx-auto w-full max-w-3xl">
-        <p
+        <div
           v-if="campaign.downloadCount >= 1"
-          class="mb-4 text-center font-mono text-sm text-muted-foreground"
-          data-download-count
+          class="mb-4 flex justify-center"
         >
-          {{ campaign.downloadCount.toLocaleString('en-US') }} {{ campaign.downloadCount === 1 ? 'download' : 'downloads' }}
-        </p>
+          <DownloadPill :count="campaign.downloadCount" />
+        </div>
         <!-- Canvas card -->
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
@@ -227,6 +226,7 @@ import { saveAs } from 'file-saver'
 import { useToast } from '@/composables/useToast'
 import { useDpCanvas } from '@/composables/useDpCanvas'
 import { sendModuleBeacon } from '@/lib/beacon'
+import DownloadPill from '@/components/dp/DownloadPill.vue'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()

@@ -73,11 +73,8 @@
             {{ c.description }}
           </p>
 
-          <div class="mt-1 flex items-end gap-4">
-            <div class="flex items-baseline gap-1.5">
-              <span class="font-mono text-2xl font-bold">{{ c.downloadCount }}</span>
-              <span class="text-xs text-muted-foreground">download{{ c.downloadCount === 1 ? '' : 's' }}</span>
-            </div>
+          <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <DownloadPill :count="c.downloadCount" />
             <div class="flex items-baseline gap-1.5">
               <span class="font-mono text-2xl font-bold">{{ c.frameCount }}</span>
               <span class="text-xs text-muted-foreground">frame{{ c.frameCount === 1 ? '' : 's' }}</span>
@@ -125,6 +122,7 @@ import { useDialog } from '@/composables/useDialog'
 import type { DpCampaignSummary } from '@/types/dp'
 import OrgLockout from '@/components/OrgLockout.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import DownloadPill from '@/components/dp/DownloadPill.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { Button } from '@/components/ui/button'

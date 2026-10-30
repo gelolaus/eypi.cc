@@ -33,9 +33,9 @@ describe('DpCampaignsView', () => {
     const wrapper = mount(DpCampaignsView, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
     await flushPromises()
     const text = wrapper.text()
-    expect(text).toContain('0downloads')
-    expect(text).toMatch(/1download(?!s)/)
-    expect(text).toContain('2downloads')
+    expect(text).toContain('0 downloads')
+    expect(text).toMatch(/1 download(?!s)/)
+    expect(text).toContain('2 downloads')
     wrapper.unmount()
   })
 
