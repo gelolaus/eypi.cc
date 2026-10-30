@@ -153,15 +153,15 @@ Collect the day lines (full day names to `Day`), then time lines (`h:mmAM - h:mm
 
 **Produces:** `export function parseRams(raw: string): ParsedSchedule`. It truncates input to `MAX_PASTE_LENGTH`, normalises, reads the term, splits rows, parses each row, and collects warnings. It never includes the student's name or number.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - For each of the three samples, table-only and `wholePage(...)` give identical `subjects`, equal to the expected counts in the Appendix (subjects and meetings). The term is `null` for table-only text and the matching term for `wholePage` (`'2025-2026 · Term 3'`, `'2026-2027 · Term 1'`, `'2026-2027 · Term 2'`).
   - `parseRams('hello')` returns `{ term: null, subjects: [], warnings: [] }`; `parseRams('')` likewise.
   - A paste of 150,000 characters of repeated sample text does not throw and reads only the first 100,000.
   - `JSON.stringify(parseRams(wholePage(SAMPLE_TERM2, ...)))` does not contain `DOE`, `2000-000000` or `Jane`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run `npx vitest run shared/schedule`; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): parse a rams schedule from pasted text`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run `npx vitest run shared/schedule`; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): parse a rams schedule from pasted text`
 
 ---
 

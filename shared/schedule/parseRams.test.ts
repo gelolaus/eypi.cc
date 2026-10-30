@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeText, parseMeetings, parseTerm, splitRows, toMinutes } from './parseRams'
+import { normalizeText, MAX_PASTE_LENGTH, parseMeetings, parseRams, parseTerm, splitRows, toMinutes } from './parseRams'
 import { SAMPLE_TERM1, SAMPLE_TERM2, SAMPLE_TERM3, wholePage } from './fixtures'
 
 describe('normalizeText', () => {
@@ -102,5 +102,56 @@ describe('parseMeetings', () => {
     const { meetings, warnings } = parseMeetings(row)
     expect(meetings).toHaveLength(1)
     expect(warnings.join(' ')).toContain('BROKEN')
+  })
+})
+
+describe('parseRams', () => {
+  const samples = [
+    { name: 'Term 3', table: SAMPLE_TERM3, label: '2025 -2026, Term 3', term: '2025-2026 · Term 3', subjects: 6, meetings: 11 },
+    { name: 'Term 1', table: SAMPLE_TERM1, label: '2026 -2027, Term 1', term: '2026-2027 · Term 1', subjects: 6, meetings: 11 },
+    { name: 'Term 2', table: SAMPLE_TERM2, label: '2026 -2027, Term 2', term: '2026-2027 · Term 2', subjects: 5, meetings: 9 },
+  ]
+
+  it.each(samples)('reads the $name sample from a table-only copy and a whole-page copy', (s) => {
+    const table = parseRams(s.table)
+    const page = parseRams(wholePage(s.table, s.label))
+    expect(table.subjects).toHaveLength(s.subjects)
+    expect(table.subjects.flatMap((subject) => subject.meetings)).toHaveLength(s.meetings)
+    expect(table.warnings).toEqual([])
+    expect(table.term).toBeNull()
+    expect(page.subjects).toEqual(table.subjects)
+    expect(page.term).toBe(s.term)
+  })
+
+  it('keeps merged sections whole and reads units and instructors', () => {
+    const kilo = parseRams(SAMPLE_TERM1).subjects.find((s) => s.code === 'KILO1')!
+    expect(kilo).toMatchObject({ section: 'AB101/AB102/EF251', units: 3, instructor: 'Rivera, Morgan Vale' })
+  })
+
+  it('returns an empty schedule for text with no classes', () => {
+    expect(parseRams('hello')).toEqual({ term: null, subjects: [], warnings: [] })
+    expect(parseRams('')).toEqual({ term: null, subjects: [], warnings: [] })
+  })
+
+  it('warns about a row with no readable meeting and keeps the others', () => {
+    const result = parseRams(`ABC123 AB101 3.0\nnothing useful\n${SAMPLE_TERM2}`)
+    expect(result.subjects).toHaveLength(6)
+    expect(result.warnings.join(' ')).toContain('ABC123')
+  })
+
+  it('reads only the first 100,000 characters of a huge paste', () => {
+    const huge = `${SAMPLE_TERM2}\n`.repeat(Math.ceil((MAX_PASTE_LENGTH * 1.5) / SAMPLE_TERM2.length))
+    expect(huge.length).toBeGreaterThan(MAX_PASTE_LENGTH)
+    const result = parseRams(huge)
+    expect(result.subjects.length).toBeGreaterThan(0)
+    const subjectsInHuge = (huge.split('MIKE1').length - 1) * 5
+    expect(result.subjects.length).toBeLessThan(subjectsInHuge)
+  })
+
+  it('never keeps the student name or number', () => {
+    const json = JSON.stringify(parseRams(wholePage(SAMPLE_TERM2, '2026 -2027, Term 2')))
+    expect(json).not.toContain('DOE')
+    expect(json).not.toContain('2000-000000')
+    expect(json).not.toContain('Jane')
   })
 })

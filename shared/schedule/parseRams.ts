@@ -1,4 +1,4 @@
-import type { Day, Meeting } from './types'
+import type { Day, Meeting, ParsedSchedule, Subject } from './types'
 export const MAX_PASTE_LENGTH = 100_000
 
 /** CRLF to LF, non-breaking spaces and tabs to spaces, each line trimmed, blank lines dropped. */
@@ -95,4 +95,18 @@ export function parseMeetings(row: RawRow): { meetings: Meeting[]; instructor: s
     meetings.push(meeting)
   }
   return { meetings, instructor: rest.join(' '), warnings }
+}
+
+/** Reads a RAMS class schedule from pasted text: the table alone or the whole page. Never keeps the student's name or number. */
+export function parseRams(raw: string): ParsedSchedule {
+  const normalized = normalizeText(raw.slice(0, MAX_PASTE_LENGTH))
+  const warnings: string[] = []
+  const subjects: Subject[] = []
+  for (const row of splitRows(normalized)) {
+    const { meetings, instructor, warnings: rowWarnings } = parseMeetings(row)
+    warnings.push(...rowWarnings)
+    if (meetings.length === 0 && rowWarnings.length === 0) warnings.push(`${row.code}: no days or times found.`)
+    subjects.push({ code: row.code, section: row.section, units: row.units, instructor, meetings })
+  }
+  return { term: parseTerm(normalized), subjects, warnings }
 }
