@@ -479,14 +479,14 @@ export function useWallpaper(): {
 
 **Interfaces:** Props and `v-model`s for `layout`, `theme`, `dim`, `size`; props `photoName: string | null`, `photoNotice`, `photoError`; emits `photo(file)`, `clearPhoto`. Uses `Tabs` (layout: "Grid", "Agenda", "Cards"), `Tabs` or a radio group (theme: "Light", "Dark", "True black", "APC"), a file `Input` with a "Choose photo" button and "Remove photo", `Slider` for dim with a visible percent value and `thumbLabel="Photo dimming"`, `Select` for size presets plus "Custom" revealing width and height `Input`s (numbers, clamped on blur through `clampSize`).
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Clicking "Cards" emits `update:layout` with `'cards'`; the default selected tab matches the prop.
   - Choosing a preset emits its size; choosing Custom shows two number inputs, and entering `99999` for both emits the clamped size.
   - The dim slider shows `45%` for `0.45`; the file input emits `photo` with the chosen file; "Remove photo" appears only with a `photoName` and emits `clearPhoto`; `photoNotice` and `photoError` render as text.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement following the component catalogue in `DESIGN_SYSTEM.md` section 7 (sizes `h-11`, tab keyboard behaviour from the primitives).
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add layout, theme, photo and size controls`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement following the component catalogue in `DESIGN_SYSTEM.md` section 7 (sizes `h-11`, tab keyboard behaviour from the primitives).
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add layout, theme, photo and size controls`
 
 ---
 
