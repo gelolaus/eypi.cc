@@ -466,6 +466,31 @@ describe('DpPublicView details dialog', () => {
     wrapper.unmount()
   })
 
+  it('copies the full caption straight away when the details form is submitted', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    const dialogInput = document.body.querySelector<HTMLInputElement>('[role="dialog"] input')!
+    dialogInput.value = 'Ana'
+    dialogInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    const copy = [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Copy caption')!
+    copy.click()
+    await flushPromises()
+    expect(writeText).toHaveBeenCalledWith('Hi, I am Ana')
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toContainEqual(['frames', 'camp-1:frame-1', 'share'])
+    expect(dialogText()).not.toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('centres the title and description', async () => {
+    const wrapper = await mountReadyWithCaption(null)
+    expect(wrapper.get('header').classes()).toContain('text-center')
+    wrapper.unmount()
+  })
+
   it('fills the inline field as the visitor types in the dialog', async () => {
     const wrapper = await mountReadyWithCaption(CAPTION)
     await addPhoto(wrapper)

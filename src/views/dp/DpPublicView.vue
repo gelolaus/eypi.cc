@@ -34,6 +34,7 @@
       v-else
       :title="campaign.title"
       :description="campaign.description ?? undefined"
+      centered
     >
       <div class="mx-auto w-full max-w-3xl">
         <div
@@ -215,6 +216,7 @@
           v-model:open="detailsOpen"
           v-model:answers="answers"
           :template="campaign.captionTemplate"
+          @submit="copyCaption"
         />
       </div>
     </AppPage>

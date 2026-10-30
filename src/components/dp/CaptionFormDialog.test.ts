@@ -36,14 +36,19 @@ describe('CaptionFormDialog', () => {
     expect(document.body.textContent).toContain('Add your details')
   })
 
-  it('typing updates the answers and the preview', async () => {
+  it('typing updates the answers', async () => {
     await open()
     const [name] = inputs()
     name!.value = 'Ana'
     name!.dispatchEvent(new Event('input', { bubbles: true }))
     await flushPromises()
     expect(wrapper!.emitted('update:answers')?.[0]).toEqual([{ name: 'Ana' }])
-    expect(document.body.querySelector('[data-caption-preview]')?.textContent).toBe('I am Ana of [Committee Name]')
+  })
+
+  it('shows no caption preview under the form', async () => {
+    await open({ name: 'Ana' })
+    expect(document.body.querySelector('[data-caption-preview]')).toBeNull()
+    expect(document.body.textContent).not.toContain('I am Ana')
   })
 
   it('the x button closes and keeps answers', async () => {
@@ -54,11 +59,26 @@ describe('CaptionFormDialog', () => {
     expect(wrapper!.emitted('update:answers')).toBeUndefined()
   })
 
-  it('Done closes', async () => {
-    await open()
-    buttonNamed('Done')!.click()
+  it('Copy caption submits and closes', async () => {
+    await open({ name: 'Ana' })
+    buttonNamed('Copy caption')!.click()
     await flushPromises()
+    expect(wrapper!.emitted('submit')).toHaveLength(1)
     expect(wrapper!.emitted('update:open')?.[0]).toEqual([false])
+  })
+
+  it('pressing Enter in a field submits the form', async () => {
+    await open({ name: 'Ana' })
+    document.body.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await flushPromises()
+    expect(wrapper!.emitted('submit')).toHaveLength(1)
+  })
+
+  it('the x button and Escape close without submitting', async () => {
+    await open({ name: 'Ana' })
+    buttonNamed('Close')!.click()
+    await flushPromises()
+    expect(wrapper!.emitted('submit')).toBeUndefined()
   })
 
   it('Escape closes', async () => {
@@ -68,9 +88,9 @@ describe('CaptionFormDialog', () => {
     expect(wrapper!.emitted('update:open')?.[0]).toEqual([false])
   })
 
-  it('shows an answer containing html as text', async () => {
+  it('shows an answer containing html as an input value, not markup', async () => {
     await open({ name: '<b>x</b>' })
-    expect(document.body.querySelector('[data-caption-preview] b')).toBeNull()
-    expect(document.body.querySelector('[data-caption-preview]')?.textContent).toContain('<b>x</b>')
+    expect(document.body.querySelector('[role="dialog"] b')).toBeNull()
+    expect(inputs()[0]!.value).toBe('<b>x</b>')
   })
 })
