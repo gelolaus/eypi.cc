@@ -389,14 +389,14 @@ export async function renderToBlob(input: RenderInput): Promise<Blob>  // draws 
 export function wallpaperFilename(schedule: ParsedSchedule, layout: LayoutId): string  // 'eypi-schedule-2026-2027-term-2.png' or 'eypi-schedule.png' without a term
 ```
 
-- [ ] **Step 1: Failing tests** (stub `getContext` and `toBlob` as `DpPublicView.test.ts` does)
+- [x] **Step 1: Failing tests** (stub `getContext` and `toBlob` as `DpPublicView.test.ts` does)
   - `render` calls only the renderer for the chosen layout and sets `canvas.width/height`.
   - `renderToBlob` resolves a PNG blob and rejects with the message above when `toBlob` yields null.
   - `wallpaperFilename` returns the two names above.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add render dispatch, png export and file names`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add render dispatch, png export and file names`
 
 ---
 
