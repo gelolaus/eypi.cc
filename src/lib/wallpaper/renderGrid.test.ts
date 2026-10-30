@@ -31,6 +31,15 @@ describe('renderGrid', () => {
     expect(codes.filter((code) => labels.includes(code))).toHaveLength(5)
   })
 
+  it.each<[number, number]>([[1920, 1080], [2560, 1440], [1366, 768]])('fills the width of a landscape screen below a small top gap at %i x %i', (width, height) => {
+    const { texts, blocks } = draw(parseRams(SAMPLE_TERM2), width, height)
+    for (const call of texts) expect(call.y).toBeGreaterThanOrEqual(contentTop(height, width))
+    for (const call of texts) expect(call.y).toBeLessThanOrEqual(height * 0.96)
+    for (const block of blocks) expect(block.y! + block.h!).toBeLessThanOrEqual(height * 0.96)
+    expect(Math.max(...blocks.map((b) => b.x! + b.w!))).toBeGreaterThan(width * 0.85)
+    expect(Math.max(...blocks.map((b) => b.x! + b.w!))).toBeLessThanOrEqual(width)
+  })
+
   it('labels the grid every two hours from 7:30 and borders it on the whole hours', () => {
     const { texts, blocks } = draw(parseRams(SAMPLE_TERM2))
     const ticks = texts.filter((c) => /^[0-9]{1,2}:30$/.test(c.text ?? ''))
