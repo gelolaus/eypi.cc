@@ -300,16 +300,16 @@ export async function loadPhoto(file: File): Promise<ImageBitmap>  // createImag
 export function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme, photo: ImageBitmap | null, dim: number): void  // fills theme.bg; with a photo draws the cover crop then an overlay of theme.bg at alpha clamp(dim, 0, 0.8)
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - `coverRect(4000, 3000, 1080, 2400)` crops width: `sw/sh` equals `1080/2400` and the crop is centred.
   - `coverRect(1000, 3000, 1080, 2400)` crops height instead, centred.
   - `isSmallerThan({width:800,height:600}, 1080, 2400)` is true; a larger photo is false.
   - `loadPhoto` with a stubbed `createImageBitmap` returning a 6000×8000 bitmap calls it a second time with a resize so the longest side is 4096; with a `text/plain` file it rejects with the message above.
   - `drawBackground` with no photo calls `fillRect(0,0,w,h)` once; with a photo and `dim: 2` the overlay alpha is 0.8; with `dim: -1` it is 0.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add photo background with cover crop and dim`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add photo background with cover crop and dim`
 
 ---
 
