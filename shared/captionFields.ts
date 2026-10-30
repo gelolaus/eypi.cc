@@ -1,8 +1,8 @@
 export type CaptionSegment =
   | { type: 'text'; text: string }
-  | { type: 'field'; key: string; label: string; raw: string }
+  | { type: 'field'; key: string; label: string; optional: boolean; raw: string }
 
-export type CaptionField = { key: string; label: string }
+export type CaptionField = { key: string; label: string; optional: boolean }
 
 export const MAX_CAPTION_FIELDS = 10
 const MAX_LABEL_LENGTH = 40
@@ -15,22 +15,28 @@ export function parseCaption(template: string): CaptionSegment[] {
   const segments: CaptionSegment[] = []
   let cursor = 0
   for (const match of template.matchAll(PLACEHOLDER)) {
-    const label = match[1].trim().replace(/\s+/g, ' ')
+    // A trailing `?` marks the field optional and is not part of its label.
+    const written = match[1].trim()
+    const optional = written.endsWith('?')
+    const label = (optional ? written.slice(0, -1) : written).trim().replace(/\s+/g, ' ')
     if (!label || label.length > MAX_LABEL_LENGTH) continue
     const start = match.index ?? 0
     if (start > cursor) segments.push({ type: 'text', text: template.slice(cursor, start) })
-    segments.push({ type: 'field', key: label.toLowerCase(), label, raw: match[0] })
+    segments.push({ type: 'field', key: label.toLowerCase(), label, optional, raw: match[0] })
     cursor = start + match[0].length
   }
   if (cursor < template.length) segments.push({ type: 'text', text: template.slice(cursor) })
   return segments
 }
 
-/** Distinct fields in order of first appearance, labelled as first written. */
+/** Distinct fields in order of first appearance, labelled as first written. A field is optional only if every occurrence is. */
 export function listFields(template: string): CaptionField[] {
   const seen = new Map<string, CaptionField>()
   for (const segment of parseCaption(template)) {
-    if (segment.type === 'field' && !seen.has(segment.key)) seen.set(segment.key, { key: segment.key, label: segment.label })
+    if (segment.type !== 'field') continue
+    const known = seen.get(segment.key)
+    if (!known) seen.set(segment.key, { key: segment.key, label: segment.label, optional: segment.optional })
+    else if (!segment.optional) known.optional = false
   }
   return [...seen.values()]
 }
@@ -40,15 +46,36 @@ export function answerFor(values: Record<string, string>, key: string): string {
   return Object.prototype.hasOwnProperty.call(values, key) ? values[key] ?? '' : ''
 }
 
-/** The caption as plain text: answers replace their fields, unanswered fields become `[Label]`. */
+/** Required fields the visitor has not answered yet. */
+export function missingRequired(template: string, values: Record<string, string>): CaptionField[] {
+  return listFields(template).filter((field) => !field.optional && !answerFor(values, field.key).trim())
+}
+
+/**
+ * The caption as plain text: answers replace their fields, an unanswered required field becomes `[Label]`,
+ * and an unanswered optional field disappears along with the spaces before it.
+ */
 export function fillCaption(template: string, values: Record<string, string>): string {
-  return parseCaption(template)
-    .map((segment) => {
-      if (segment.type === 'text') return segment.text
-      const answer = answerFor(values, segment.key).trim()
-      return answer || `[${segment.label}]`
-    })
-    .join('')
+  let out = ''
+  let trimNext = false
+  for (const segment of parseCaption(template)) {
+    if (segment.type === 'text') {
+      out += trimNext ? segment.text.replace(/^[ \t]+/, '') : segment.text
+      trimNext = false
+      continue
+    }
+    const answer = answerFor(values, segment.key).trim()
+    if (answer) out += answer
+    else if (!segment.optional) out += `[${segment.label}]`
+    else {
+      out = out.replace(/[ \t]+$/, '')
+      // Nothing left on this line to follow, so the next text should not start with an indent.
+      trimNext = out === '' || out.endsWith('\n')
+      continue
+    }
+    trimNext = false
+  }
+  return out
 }
 
 export function captionFieldError(template: string): string | null {
