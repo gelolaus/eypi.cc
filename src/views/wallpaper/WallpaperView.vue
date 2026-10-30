@@ -129,6 +129,7 @@
         </div>
       </section>
     </div>
+    <WallpaperIntro />
   </AppPage>
 </template>
 
@@ -136,6 +137,7 @@
 import { saveAs } from 'file-saver'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { MAX_PASTE_LENGTH } from '@shared/schedule/parseRams'
+import WallpaperIntro from '@/components/wallpaper/WallpaperIntro.vue'
 import WallpaperControls from '@/components/wallpaper/WallpaperControls.vue'
 import WallpaperPreview from '@/components/wallpaper/WallpaperPreview.vue'
 import AppPage from '@/components/layout/AppPage.vue'
