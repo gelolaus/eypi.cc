@@ -349,15 +349,15 @@ Draws the background, then the term title at `contentTop(height)`, then each `gr
 
 **Produces:** `export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): void`. Visible days from `entriesByDay` become equal-width columns with a day header; hour lines and labels on the left from `timelineRange`; each timed entry is a rounded block (theme block colour by subject code order, text from `readableOn`) at its time position, with the code and room via `fitText`. Overlapping entries on a day split the column width. Async entries are listed as a line of text under the grid. The grid sits between `contentTop + title` and the bottom margin.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Term 2 at three sizes: all `fillText` y ≥ `contentTop(height)`; three day headers `TUE`, `FRI`, `SAT` and no `MON`; five distinct subject codes drawn.
   - A block for a 7:30 to 9:30 class starts above one for a 9:30 to 11:30 class (smaller y), and its height equals the block for another 2-hour class.
   - Two overlapping entries on one day are drawn with half-width blocks (each `roundRect` width ≤ half the column).
   - Term 3 (ALPHA1 async) draws `Async` below the grid; an empty schedule draws `No classes to show.`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the weekly grid wallpaper layout`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the weekly grid wallpaper layout`
 
 ---
 

@@ -76,7 +76,7 @@ describe('drawBackground', () => {
   it('fills the theme background once when there is no photo', () => {
     const ctx = createRecordingContext(1080, 2400)
     drawBackground(ctx as unknown as CanvasRenderingContext2D, 1080, 2400, THEMES.dark, null, 0.5)
-    expect(ctx.calls).toEqual([{ op: 'fillRect', x: 0, y: 0 }])
+    expect(ctx.calls).toEqual([{ op: 'fillRect', x: 0, y: 0, w: 1080, h: 2400 }])
     expect(ctx.fillStyle).toBe(THEMES.dark.bg)
   })
 

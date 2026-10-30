@@ -1,4 +1,4 @@
-export type RecordedCall = { op: 'fillText' | 'fillRect' | 'roundRect' | 'drawImage'; x: number; y: number; text?: string }
+export type RecordedCall = { op: 'fillText' | 'fillRect' | 'roundRect' | 'drawImage'; x: number; y: number; w?: number; h?: number; text?: string }
 
 export type RecordingContext = {
   canvas: { width: number; height: number }
@@ -47,8 +47,8 @@ export function createRecordingContext(width: number, height: number): Recording
       return { width: text.length * size * 0.6 }
     },
     fillText: (text, x, y) => void calls.push({ op: 'fillText', x, y, text }),
-    fillRect: (x, y) => void calls.push({ op: 'fillRect', x, y }),
-    roundRect: (x, y) => void calls.push({ op: 'roundRect', x, y }),
+    fillRect: (x, y, w, h) => void calls.push({ op: 'fillRect', x, y, w, h }),
+    roundRect: (x, y, w, h) => void calls.push({ op: 'roundRect', x, y, w, h }),
     drawImage: (_image, x, y) => void calls.push({ op: 'drawImage', x, y }),
     save: noop, restore: noop, beginPath: noop, closePath: noop, fill: noop, stroke: noop,
     clip: noop, moveTo: noop, lineTo: noop, arc: noop, rect: noop,
