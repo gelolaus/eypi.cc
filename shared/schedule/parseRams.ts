@@ -10,3 +10,11 @@ export function normalizeText(raw: string): string {
     .filter(Boolean)
     .join('\n')
 }
+
+const TERM_LINE = /Academic Year\s*&\s*Term:\s*(\d{4})\s*-\s*(\d{4})\s*,\s*Term\s*(\d)/i
+
+/** The term from the "Academic Year & Term:" line, as `2026-2027 · Term 2`, or null when it is not there. */
+export function parseTerm(text: string): string | null {
+  const match = TERM_LINE.exec(text)
+  return match ? `${match[1]}-${match[2]} · Term ${match[3]}` : null
+}
