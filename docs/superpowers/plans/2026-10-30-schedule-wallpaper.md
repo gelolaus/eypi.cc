@@ -446,14 +446,14 @@ export function useWallpaper(): {
 }
 ```
 
-- [ ] **Step 1: Failing tests** (fake timers)
+- [x] **Step 1: Failing tests** (fake timers)
   - Setting `text` to `SAMPLE_TERM2` updates `parsed` only after 150 ms; `hasSchedule` is true; clearing text makes it false.
   - Defaults are `agenda`, `dark`, dim 0.45; `size` is clamped when set to `{width: 99999, height: 99999}`.
   - `setPhoto` with a stubbed `loadPhoto` sets `photo`; a rejected load keeps the previous photo and exposes the error message through a `photoError` ref; `photoNotice` shows when the photo is smaller than `size`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): add the wallpaper view state`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): add the wallpaper view state`
 
 ---
 

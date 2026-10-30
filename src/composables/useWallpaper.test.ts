@@ -1,0 +1,89 @@
+// @vitest-environment happy-dom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { SAMPLE_TERM2 } from '@shared/schedule/fixtures'
+
+const loadPhoto = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/wallpaper/background', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/wallpaper/background')>()),
+  loadPhoto,
+}))
+
+import { useWallpaper } from './useWallpaper'
+
+const bitmap = (width: number, height: number) => ({ width, height, close: vi.fn() }) as unknown as ImageBitmap
+const file = () => new File(['x'], 'p.jpg', { type: 'image/jpeg' })
+
+describe('useWallpaper', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    loadPhoto.mockReset()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('parses the pasted text after 150 ms', () => {
+    const w = useWallpaper()
+    expect(w.hasSchedule.value).toBe(false)
+    w.text.value = SAMPLE_TERM2
+    vi.advanceTimersByTime(149)
+    expect(w.hasSchedule.value).toBe(false)
+    vi.advanceTimersByTime(1)
+    expect(w.hasSchedule.value).toBe(true)
+    expect(w.parsed.value.subjects).toHaveLength(5)
+    w.text.value = ''
+    vi.advanceTimersByTime(150)
+    expect(w.hasSchedule.value).toBe(false)
+  })
+
+  it('starts with the agenda layout, the dark theme and a 0.45 dim', () => {
+    const w = useWallpaper()
+    expect(w.layout.value).toBe('agenda')
+    expect(w.theme.value).toBe('dark')
+    expect(w.dim.value).toBe(0.45)
+    expect(w.size.value).toEqual({ width: 1170, height: 2532 })
+    expect(w.photo.value).toBeNull()
+  })
+
+  it('clamps the size when it is set', () => {
+    const w = useWallpaper()
+    w.size.value = { width: 99999, height: 99999 }
+    expect(w.size.value.width).toBeLessThanOrEqual(4000)
+    expect(w.size.value.width * w.size.value.height).toBeLessThanOrEqual(16_000_000)
+  })
+
+  it('keeps the chosen photo', async () => {
+    const photo = bitmap(3000, 4000)
+    loadPhoto.mockResolvedValue(photo)
+    const w = useWallpaper()
+    await w.setPhoto(file())
+    expect(w.photo.value).toBe(photo)
+    expect(w.photoError.value).toBeNull()
+    expect(w.photoNotice.value).toBeNull()
+  })
+
+  it('keeps the previous photo and shows the message when a load fails', async () => {
+    const first = bitmap(3000, 4000)
+    loadPhoto.mockResolvedValueOnce(first).mockRejectedValueOnce(new Error('Choose an image file.'))
+    const w = useWallpaper()
+    await w.setPhoto(file())
+    await w.setPhoto(file())
+    expect(w.photo.value).toBe(first)
+    expect(w.photoError.value).toBe('Choose an image file.')
+  })
+
+  it('warns when the photo is smaller than the wallpaper', async () => {
+    loadPhoto.mockResolvedValue(bitmap(800, 600))
+    const w = useWallpaper()
+    await w.setPhoto(file())
+    expect(w.photoNotice.value).toBe('This photo is smaller than the wallpaper, so it may look soft.')
+  })
+
+  it('clears the photo', async () => {
+    const photo = bitmap(3000, 4000)
+    loadPhoto.mockResolvedValue(photo)
+    const w = useWallpaper()
+    await w.setPhoto(file())
+    w.clearPhoto()
+    expect(w.photo.value).toBeNull()
+    expect(photo.close).toHaveBeenCalled()
+  })
+})
