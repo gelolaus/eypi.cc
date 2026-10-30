@@ -68,7 +68,7 @@ export function useWallpaper(): {
   async function setPhoto(file: File): Promise<void> {
     try {
       const next = await loadPhoto(file)
-      photo.value?.close?.()
+      // The old bitmap is left to the garbage collector: an export that already started may still be drawing it.
       photo.value = next
       photoError.value = null
     } catch (error) {
@@ -77,7 +77,6 @@ export function useWallpaper(): {
   }
 
   function clearPhoto(): void {
-    photo.value?.close?.()
     photo.value = null
     photoError.value = null
   }

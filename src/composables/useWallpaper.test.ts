@@ -84,7 +84,16 @@ describe('useWallpaper', () => {
     await w.setPhoto(file())
     w.clearPhoto()
     expect(w.photo.value).toBeNull()
-    expect(photo.close).toHaveBeenCalled()
+  })
+
+  it('leaves the old bitmap open so an export that already started can still draw it', async () => {
+    const first = bitmap(3000, 4000)
+    loadPhoto.mockResolvedValueOnce(first).mockResolvedValueOnce(bitmap(3000, 4000))
+    const w = useWallpaper()
+    await w.setPhoto(file())
+    await w.setPhoto(file())
+    w.clearPhoto()
+    expect(first.close).not.toHaveBeenCalled()
   })
 })
 

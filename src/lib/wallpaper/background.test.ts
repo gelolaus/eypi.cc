@@ -55,6 +55,11 @@ describe('loadPhoto', () => {
     expect(create).toHaveBeenCalledTimes(1)
   })
 
+  it('says the photo could not be read when decoding fails', async () => {
+    vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('out of memory')))
+    await expect(loadPhoto(new File(['x'], 'p.jpg', { type: 'image/jpeg' }))).rejects.toThrow('Could not read that photo. Try a smaller image.')
+  })
+
   it('rejects a file that is not an image', async () => {
     await expect(loadPhoto(new File(['x'], 'a.txt', { type: 'text/plain' }))).rejects.toThrow('Choose an image file.')
   })

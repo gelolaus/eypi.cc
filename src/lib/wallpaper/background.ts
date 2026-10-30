@@ -24,19 +24,18 @@ export function isSmallerThan(photo: { width: number; height: number }, width: n
 export async function loadPhoto(file: File): Promise<ImageBitmap> {
   if (!file.type.startsWith('image/')) throw new Error('Choose an image file.')
   const options = { imageOrientation: 'from-image' } as const
-  let bitmap: ImageBitmap
   try {
-    bitmap = await createImageBitmap(file, options)
+    const bitmap = await createImageBitmap(file, options)
+    const longest = Math.max(bitmap.width, bitmap.height)
+    if (longest <= MAX_SIDE) return bitmap
+    const scale = MAX_SIDE / longest
+    const resizeWidth = Math.round(bitmap.width * scale)
+    const resizeHeight = Math.round(bitmap.height * scale)
+    bitmap.close?.()
+    return await createImageBitmap(file, { ...options, resizeWidth, resizeHeight })
   } catch {
-    throw new Error('Choose an image file.')
+    throw new Error('Could not read that photo. Try a smaller image.')
   }
-  const longest = Math.max(bitmap.width, bitmap.height)
-  if (longest <= MAX_SIDE) return bitmap
-  const scale = MAX_SIDE / longest
-  const resizeWidth = Math.round(bitmap.width * scale)
-  const resizeHeight = Math.round(bitmap.height * scale)
-  bitmap.close?.()
-  return createImageBitmap(file, { ...options, resizeWidth, resizeHeight })
 }
 
 /** Fills the theme background, then the photo cropped to cover with an overlay in the theme colour. */
