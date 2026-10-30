@@ -178,14 +178,14 @@ export type DayGroup = { days: Day[]; label: string; entries: Entry[] }  // labe
 export function groupDays(s: ParsedSchedule): DayGroup[]  // days whose entries match on code, start, end, room merge; groups in week order
 ```
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
   - Term 2 sample: `Object.keys(entriesByDay(...))` is `['Tue','Fri','Sat']` (no Mon, Wed, Thu).
   - `groupDays` gives two groups: label `'Tue · Fri'` with four entries sorted by start (NOVEMBER1, MIKE1, QUEBEC1, PAPA1) and `'Sat'` with OSCAR1.
   - Term 3 sample: Monday (it has the two ALPHA1 entries) and Thursday are separate groups, and Tuesday (it has BRAVO1) and Friday are separate groups, because their entries differ; assert the label list is `['Mon','Tue','Thu','Fri']`.
-- [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement.
-- [ ] **Step 4:** Run; expect PASS.
-- [ ] **Step 5: Commit** `feat(wallpaper): group schedule days for layout`
+- [x] **Step 2:** Run; expect FAIL.
+- [x] **Step 3:** Implement.
+- [x] **Step 4:** Run; expect PASS.
+- [x] **Step 5: Commit** `feat(wallpaper): group schedule days for layout`
 
 ---
 
