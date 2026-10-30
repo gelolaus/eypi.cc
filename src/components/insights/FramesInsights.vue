@@ -8,10 +8,11 @@ import { Card } from '@/components/ui/card'
 import { api } from '@/lib/api'
 
 type Payload = {
-  funnel: { view: number; photo_added: number; downloadOrShare: number }
+  funnel: { visitors: number; photo_added: number; download: number; share: number }
   conversion: number
+  totals: { downloadsAndCopies: number }
   perFrame: { frameId: string; label: string; downloads: number }[]
-  daily: { day: string; views: number; downloads: number }[]
+  daily: { day: string; visitors: number; downloads: number; copies: number }[]
 }
 
 const props = defineProps<{ campaignId: string; publicPath: string }>()
@@ -46,16 +47,18 @@ watch(() => [props.campaignId, range.value], () => { if (props.campaignId) void 
 const number = new Intl.NumberFormat('en-PH')
 const percent = computed(() => `${Math.round((data.value?.conversion ?? 0) * 1000) / 10}%`)
 const funnelItems = computed(() => [
-  { label: 'Page views', value: data.value?.funnel.view ?? 0 },
+  { label: 'Visitors', value: data.value?.funnel.visitors ?? 0 },
   { label: 'Photo added', value: data.value?.funnel.photo_added ?? 0 },
-  { label: 'Downloaded or shared', value: data.value?.funnel.downloadOrShare ?? 0 },
+  { label: 'Downloaded', value: data.value?.funnel.download ?? 0 },
+  { label: 'Copied caption', value: data.value?.funnel.share ?? 0 },
 ])
 const frameItems = computed(() => (data.value?.perFrame ?? []).map((f) => ({ label: f.label, value: f.downloads })))
 const trend = computed(() => [
-  { label: 'Views', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.views })) },
-  { label: 'Downloads and shares', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.downloads })) },
+  { label: 'Visitors', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.visitors })) },
+  { label: 'Downloads', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.downloads })) },
+  { label: 'Copies', points: (data.value?.daily ?? []).map((d) => ({ x: d.day.slice(5), y: d.copies })) },
 ])
-const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.value?.funnel.downloadOrShare ?? 0) === 0)
+const isEmpty = computed(() => (data.value?.funnel.visitors ?? 0) === 0 && (data.value?.funnel.download ?? 0) === 0)
 </script>
 
 <template>
@@ -126,22 +129,28 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
     <template v-else-if="data">
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile
-          label="Page views"
-          :value="number.format(data.funnel.view)"
+          label="Visitors"
+          :value="number.format(data.funnel.visitors)"
         />
         <StatTile
           label="Photo added"
           :value="number.format(data.funnel.photo_added)"
         />
         <StatTile
-          label="Downloaded or shared"
-          :value="number.format(data.funnel.downloadOrShare)"
+          label="Downloaded"
+          :value="number.format(data.funnel.download)"
         />
         <StatTile
           label="Conversion"
           :value="percent"
         />
       </div>
+      <p
+        data-insights-note
+        class="text-sm text-muted-foreground"
+      >
+        Counted per visitor per day, so someone who returns on another day counts again. The Frames list counts every download and copy: {{ number.format(data.totals.downloadsAndCopies) }}.
+      </p>
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
@@ -152,7 +161,7 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
 
       <div>
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
-          Views, downloads and shares per day (Manila time)
+          Visitors, downloads and copies per day (Manila time)
         </h3>
         <LineChart
           :series="trend"
@@ -162,7 +171,7 @@ const isEmpty = computed(() => (data.value?.funnel.view ?? 0) === 0 && (data.val
 
       <div v-if="frameItems.length">
         <h3 class="mb-3 text-sm font-semibold text-muted-foreground">
-          Downloads and shares per frame
+          Downloads per frame
         </h3>
         <BarList :items="frameItems" />
       </div>

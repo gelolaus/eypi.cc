@@ -18,44 +18,51 @@ describe('insights components', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('FramesInsights shows the funnel, conversion and per-frame downloads', async () => {
-    fetchMock.mockResolvedValue(respond({
-      funnel: { view: 40, photo_added: 20, downloadOrShare: 10 },
-      conversion: 0.25,
-      perFrame: [{ frameId: 'f1', label: 'Blue', downloads: 10 }],
-      daily: [{ day: '2026-10-26', views: 40, downloads: 10 }],
-    }))
+  const payload = {
+    funnel: { visitors: 40, photo_added: 20, download: 10, share: 6 },
+    conversion: 0.25,
+    totals: { downloadsAndCopies: 91 },
+    perFrame: [{ frameId: 'f1', label: 'Blue', downloads: 10 }],
+    daily: [{ day: '2026-10-26', visitors: 40, downloads: 10, copies: 6 }],
+  }
+  const mountFrames = async () => {
     const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
     await flushPromises()
+    return wrapper
+  }
+
+  it('FramesInsights shows visitors, the people funnel, conversion and per-frame downloads', async () => {
+    fetchMock.mockResolvedValue(respond(payload))
+    const wrapper = await mountFrames()
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/dp/c1/insights?days=30')
     const text = wrapper.text()
     expect(text).toContain('25%')
-    expect(text).toContain('Downloaded or shared')
-    expect(text).toContain('Blue')
+    for (const label of ['Visitors', 'Photo added', 'Downloaded', 'Copied caption', 'Blue']) expect(text).toContain(label)
+    expect(text).not.toContain('Downloaded or shared')
+    expect(text).not.toContain('Page views')
   })
 
-  it('FramesInsights labels the trend and per-frame figures as downloads and shares', async () => {
-    fetchMock.mockResolvedValue(respond({
-      funnel: { view: 40, photo_added: 20, downloadOrShare: 10 },
-      conversion: 0.25,
-      perFrame: [{ frameId: 'f1', label: 'Blue', downloads: 10 }],
-      daily: [{ day: '2026-10-26', views: 40, downloads: 10 }],
-    }))
-    const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
-    await flushPromises()
+  it('FramesInsights explains per-visitor counting and shows the total the Frames list uses', async () => {
+    fetchMock.mockResolvedValue(respond(payload))
+    const note = (await mountFrames()).get('[data-insights-note]').text()
+    expect(note).toContain('per visitor per day')
+    expect(note).toContain('every download and copy')
+    expect(note).toContain('91')
+  })
+
+  it('FramesInsights labels the trend and per-frame figures as visitors, downloads and copies', async () => {
+    fetchMock.mockResolvedValue(respond(payload))
+    const wrapper = await mountFrames()
     const headings = wrapper.findAll('h3').map((h) => h.text())
-    expect(headings).toContain('Views, downloads and shares per day (Manila time)')
-    expect(headings).toContain('Downloads and shares per frame')
+    expect(headings).toContain('Visitors, downloads and copies per day (Manila time)')
+    expect(headings).toContain('Downloads per frame')
     expect(wrapper.findComponent({ name: 'LineChart' }).props('series').map((s: { label: string }) => s.label))
-      .toContain('Downloads and shares')
+      .toEqual(['Visitors', 'Downloads', 'Copies'])
   })
 
   it('FramesInsights refetches when the range changes', async () => {
-    fetchMock.mockImplementation(async () => respond({
-      funnel: { view: 1, photo_added: 0, downloadOrShare: 0 }, conversion: 0, perFrame: [], daily: [],
-    }))
-    const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
-    await flushPromises()
+    fetchMock.mockImplementation(async () => respond({ ...payload, perFrame: [], daily: [] }))
+    const wrapper = await mountFrames()
     await wrapper.findAll('button').find((b) => b.text() === 'Last 7 days')!.trigger('click')
     await flushPromises()
     expect(String(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][0])).toContain('days=7')
@@ -63,10 +70,10 @@ describe('insights components', () => {
 
   it('FramesInsights empty state has one primary action', async () => {
     fetchMock.mockResolvedValue(respond({
-      funnel: { view: 0, photo_added: 0, downloadOrShare: 0 }, conversion: 0, perFrame: [], daily: [],
+      funnel: { visitors: 0, photo_added: 0, download: 0, share: 0 },
+      conversion: 0, totals: { downloadsAndCopies: 0 }, perFrame: [], daily: [],
     }))
-    const wrapper = mount(FramesInsights, { props: { campaignId: 'c1', publicPath: '/frames/x' }, global: { stubs } })
-    await flushPromises()
+    const wrapper = await mountFrames()
     expect(wrapper.text()).toContain('No visits in this period yet')
     expect(wrapper.find('a[href="/frames/x"]').text()).toContain('Open the campaign page')
   })
