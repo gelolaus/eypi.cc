@@ -408,8 +408,8 @@ async function download() {
 function promptForDetails() {
   const template = campaign.captionTemplate
   if (!template || !listFields(template).some((field) => !answerFor(answers.value, field.key).trim())) return
-  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  captionCard.value?.$el.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center' })
+  // Instant, not smooth: the dialog's scroll lock would cut a smooth scroll short.
+  captionCard.value?.$el.scrollIntoView?.({ behavior: 'auto', block: 'center' })
   detailsOpen.value = true
 }
 

@@ -423,6 +423,14 @@ describe('DpPublicView details dialog', () => {
     wrapper.unmount()
   })
 
+  it('scrolls to the caption instantly so the dialog cannot interrupt it', async () => {
+    const wrapper = await mountReadyWithCaption(CAPTION)
+    await addPhoto(wrapper)
+    await clickDownload(wrapper)
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'center' })
+    wrapper.unmount()
+  })
+
   it('still sends the download beacon when the dialog opens', async () => {
     const wrapper = await mountReadyWithCaption(CAPTION)
     await addPhoto(wrapper)
