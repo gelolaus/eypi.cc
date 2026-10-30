@@ -50,7 +50,8 @@ describe('splitRows', () => {
     const page = wholePage(SAMPLE_TERM1, '2026 -2027, Term 1')
     expect(codes(page)).toEqual(codes(SAMPLE_TERM1))
     expect(codes(page)).toHaveLength(6)
-    const last = splitRows(normalizeText(page)).at(-1)!
+    const rows = splitRows(normalizeText(page))
+    const last = rows[rows.length - 1]!
     expect(last.lines.join(' ')).not.toContain('Total Units')
   })
 })
