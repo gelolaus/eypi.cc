@@ -307,9 +307,11 @@ describe('legacy design cleanup', () => {
   })
 
   it('keeps the brand hex values inside tokens.css', () => {
+    // Wallpapers are drawn to a canvas and downloaded as images, so their themes need literal colours.
+    const allowed = new Set(['src/styles/tokens.css', 'src/lib/wallpaper/themes.ts'])
     const files = [...sources(['.vue', '.ts', '.css']), 'index.html', 'public/manifest.webmanifest']
     const offenders = files.filter(
-      (f) => f !== 'src/styles/tokens.css' && /#35438c|#deac4b/i.test(readFileSync(f, 'utf8')),
+      (f) => !allowed.has(f) && /#35438c|#deac4b/i.test(readFileSync(f, 'utf8')),
     )
     expect(offenders).toEqual([])
   })
