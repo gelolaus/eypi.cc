@@ -2,13 +2,10 @@ import { findConflicts, groupDays } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import { drawBackground } from './background'
 import { formatClock } from './format'
-import { contentTop } from './safeZone'
-import { fitText, fontString } from './text'
+import { contentBottom, contentTop } from './safeZone'
+import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES } from './themes'
 import type { RenderInput } from './types'
-
-const FAMILY = '"Plus Jakarta Sans", system-ui, sans-serif'
-const BOTTOM_MARGIN = 0.04
 
 type Line =
   | { kind: 'day'; text: string }
@@ -24,7 +21,7 @@ export function renderAgenda(ctx: CanvasRenderingContext2D, input: RenderInput):
   const titleSize = width * 0.052
   const dayRowSize = width * 0.034
   const rowSize = width * 0.044
-  const limit = height * (1 - BOTTOM_MARGIN)
+  const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 

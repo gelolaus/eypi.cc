@@ -1,13 +1,11 @@
 import type { Subject } from '@shared/schedule/types'
 import { drawBackground } from './background'
 import { formatRange } from './format'
-import { contentTop } from './safeZone'
-import { fitText, fontString } from './text'
+import { contentBottom, contentTop } from './safeZone'
+import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
 
-const FAMILY = '"Plus Jakarta Sans", system-ui, sans-serif'
-const BOTTOM_MARGIN = 0.04
 const MAX_CARDS = 7
 const MAX_LINES = 4
 
@@ -36,7 +34,7 @@ export function renderCards(ctx: CanvasRenderingContext2D, input: RenderInput): 
   const codeSize = width * 0.038
   const lineSize = width * 0.028
   const gap = width * 0.018
-  const limit = height * (1 - BOTTOM_MARGIN)
+  const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 

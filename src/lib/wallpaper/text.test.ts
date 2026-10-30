@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { contentTop } from './safeZone'
+import { contentBottom, contentTop } from './safeZone'
 import { ensureFonts, fitText } from './text'
 import { createRecordingContext } from './testContext'
 
@@ -9,6 +9,10 @@ describe('contentTop', () => {
   it('keeps the top 30 percent clear', () => {
     expect(contentTop(2532)).toBe(760)
     expect(contentTop(1920)).toBe(576)
+  })
+
+  it('keeps a 4 percent margin at the bottom', () => {
+    expect(contentBottom(1920)).toBe(1843)
   })
 })
 

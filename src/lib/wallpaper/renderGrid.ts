@@ -2,13 +2,11 @@ import { entriesByDay, timelineRange } from '@shared/schedule/layout'
 import type { Entry } from '@shared/schedule/layout'
 import type { Day } from '@shared/schedule/types'
 import { drawBackground } from './background'
-import { contentTop } from './safeZone'
-import { fitText, fontString } from './text'
+import { contentBottom, contentTop } from './safeZone'
+import { FONT_FAMILY as FAMILY, fitText, fontString } from './text'
 import { THEMES, readableOn } from './themes'
 import type { RenderInput } from './types'
 
-const FAMILY = '"Plus Jakarta Sans", system-ui, sans-serif'
-const BOTTOM_MARGIN = 0.04
 
 const hourLabel = (hour: number) => `${hour % 12 === 0 ? 12 : hour % 12} ${hour % 24 < 12 ? 'AM' : 'PM'}`
 
@@ -45,7 +43,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, input: RenderInput): v
   const marginX = width * 0.06
   const titleSize = width * 0.052
   const smallSize = width * 0.026
-  const limit = height * (1 - BOTTOM_MARGIN)
+  const limit = contentBottom(height)
   ctx.textBaseline = 'top'
   ctx.textAlign = 'left'
 

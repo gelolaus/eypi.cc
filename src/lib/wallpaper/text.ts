@@ -1,3 +1,6 @@
+/** The face every wallpaper renderer draws with, falling back to the system sans. */
+export const FONT_FAMILY = '"Plus Jakarta Sans", system-ui, sans-serif'
+
 type FontSpec = { size: number; min: number; weight: number; family: string }
 type MeasureContext = { font: string; measureText: (text: string) => { width: number } }
 
@@ -19,12 +22,12 @@ export function fitText(ctx: MeasureContext, text: string, maxWidth: number, fon
   return { text: `${clipped}…`, size: font.min }
 }
 
-/** Waits for the Eypi fonts. Never rejects: the renderers fall back to a system sans. */
+/** Waits for the Eypi font. Never rejects: the renderers fall back to a system sans. */
 export async function ensureFonts(): Promise<void> {
   try {
     const fonts = typeof document === 'undefined' ? undefined : document.fonts
     if (!fonts) return
-    await Promise.all([fonts.load('600 16px "Plus Jakarta Sans"'), fonts.load('700 16px "Syne"')])
+    await fonts.load('600 16px "Plus Jakarta Sans"')
   } catch {
     // keep going with the fallback font
   }
