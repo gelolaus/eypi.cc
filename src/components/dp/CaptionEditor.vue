@@ -39,21 +39,27 @@
       />
     </div>
     <p
-      class="text-xs"
-      :class="fieldError ? 'text-destructive' : 'text-muted-foreground'"
+      data-caption-hint
+      class="flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
+      :class="fieldError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-foreground'"
     >
-      <template v-if="fieldError">
-        {{ fieldError }}
-      </template>
-      <template v-else>
-        Use <code v-text="'{{Name}}'" /> to ask visitors for their details. Up to {{ MAX_CAPTION_FIELDS }} fields.
-      </template>
+      <Braces
+        class="mt-0.5 size-4 shrink-0"
+        :class="fieldError ? 'text-destructive' : 'text-primary'"
+        aria-hidden="true"
+      />
+      <span v-if="fieldError">{{ fieldError }}</span>
+      <span v-else>Use <code
+        class="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-xs font-semibold"
+        v-text="'{{Name}}'"
+      /> to ask visitors for their details. Up to {{ MAX_CAPTION_FIELDS }} fields.</span>
     </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { Braces } from 'lucide-vue-next'
 import { Textarea } from '@/components/ui/textarea'
 import { captionFieldError, MAX_CAPTION_FIELDS, parseCaption } from '@shared/captionFields'
 

@@ -34,6 +34,20 @@ describe('CaptionEditor', () => {
     expect(editor(eleven).text()).toContain('A caption can have at most 10 fields.')
   })
 
+  it('shows the hint as a tinted callout with the placeholder as a chip', () => {
+    const hint = editor('').get('[data-caption-hint]')
+    expect(hint.classes()).toContain('bg-primary/10')
+    expect(hint.get('code').text()).toBe('{{Name}}')
+    expect(hint.get('code').classes()).toContain('bg-primary/20')
+  })
+
+  it('turns the callout destructive when there are too many fields', () => {
+    const eleven = Array.from({ length: 11 }, (_, i) => `{{f${i + 1}}}`).join(' ')
+    const hint = editor(eleven).get('[data-caption-hint]')
+    expect(hint.classes()).toContain('bg-destructive/10')
+    expect(hint.text()).toContain('A caption can have at most 10 fields.')
+  })
+
   it('escapes html in the mirror', () => {
     const wrapper = editor('<b>{{Name}}</b>')
     expect(wrapper.find('b').exists()).toBe(false)
