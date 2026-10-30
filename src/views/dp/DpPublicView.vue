@@ -204,9 +204,10 @@
               Copy to clipboard
             </Button>
           </div>
-          <p class="whitespace-pre-wrap font-mono text-sm leading-relaxed text-muted-foreground">
-            {{ campaign.captionTemplate }}
-          </p>
+          <CaptionFields
+            v-model:answers="answers"
+            :template="campaign.captionTemplate"
+          />
         </Card>
       </div>
     </AppPage>
@@ -227,6 +228,8 @@ import { useToast } from '@/composables/useToast'
 import { useDpCanvas } from '@/composables/useDpCanvas'
 import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
+import CaptionFields from '@/components/dp/CaptionFields.vue'
+import { fillCaption } from '@shared/captionFields'
 import type { DpFrame } from '@/types/dp'
 
 const route = useRoute()
@@ -248,6 +251,8 @@ const loading = ref(true)
 const error = ref('')
 const exporting = ref(false)
 const campaign = reactive<Campaign>({ id: '', title: '', slug: '', description: null, captionTemplate: null, downloadCount: 0, frames: [] })
+// A visitor's caption answers stay in this tab; they are never sent anywhere.
+const answers = ref<Record<string, string>>({})
 
 const MAX_PHOTO_EDGE = 2160
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
@@ -389,7 +394,7 @@ async function download() {
 async function copyCaption() {
   if (!campaign.captionTemplate) return
   try {
-    await navigator.clipboard.writeText(campaign.captionTemplate)
+    await navigator.clipboard.writeText(fillCaption(campaign.captionTemplate, answers.value))
     toast.success('Caption copied to clipboard!')
     const frameId = campaign.frames[selectedIndex.value]?.id
     sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'share')

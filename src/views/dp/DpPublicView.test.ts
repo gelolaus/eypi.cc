@@ -337,3 +337,46 @@ describe('DpPublicView download count', () => {
     expect(wrapper.find('[data-download-count]').exists()).toBe(false)
   })
 })
+
+describe('DpPublicView caption fields', () => {
+  const CAPTION = 'Hi, I am {{Name}} of {{Committee Name}}'
+
+  async function mountWithCaption(caption: string) {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      const body = (await campaignResponse().json()) as { campaign: { captionTemplate: string | null } }
+      body.campaign.captionTemplate = caption
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }))
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    return { wrapper: await mountReady(), writeText }
+  }
+
+  const copy = async (wrapper: Awaited<ReturnType<typeof mountReady>>) => {
+    await wrapper.findAll('button').find((b) => b.text() === 'Copy to clipboard')!.trigger('click')
+    await flushPromises()
+  }
+
+  it('copies the filled caption', async () => {
+    const { wrapper, writeText } = await mountWithCaption(CAPTION)
+    const inputs = wrapper.findAll('input[aria-label]')
+    await inputs[0]!.setValue('Ana')
+    await inputs[1]!.setValue('Logistics')
+    await copy(wrapper)
+    expect(writeText).toHaveBeenCalledWith('Hi, I am Ana of Logistics')
+  })
+
+  it('copies [Label] for an empty field', async () => {
+    const { wrapper, writeText } = await mountWithCaption(CAPTION)
+    await wrapper.findAll('input[aria-label]')[0]!.setValue('Ana')
+    await copy(wrapper)
+    expect(writeText).toHaveBeenCalledWith('Hi, I am Ana of [Committee Name]')
+  })
+
+  it('never puts an answer in a beacon call', async () => {
+    const { wrapper } = await mountWithCaption(CAPTION)
+    await wrapper.findAll('input[aria-label]')[0]!.setValue('SecretName')
+    await copy(wrapper)
+    expect(JSON.stringify(vi.mocked(sendModuleBeacon).mock.calls)).not.toContain('SecretName')
+  })
+})
