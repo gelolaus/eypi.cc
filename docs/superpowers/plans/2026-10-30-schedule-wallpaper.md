@@ -404,10 +404,10 @@ export function wallpaperFilename(schedule: ParsedSchedule, layout: LayoutId): s
 
 **Files:** Modify `shared/reservedSlugs.ts`, `worker/index.ts` (`SPA_EXACT_PATHS`).
 
-- [ ] **Step 1:** Add `'wallpaper'` to the "Suite modules" line of `RESERVED_SLUGS` and `'/wallpaper'` to `SPA_EXACT_PATHS`.
-- [ ] **Step 2:** In `shared/reservedSlugs.test.ts` add `expect(isReservedSlug('wallpaper')).toBe(true)` to the "blocks known reserved slugs" test.
-- [ ] **Step 3:** Run `npx vitest run shared/reservedSlugs.test.ts worker/index.test.ts`; expect PASS.
-- [ ] **Step 4: Commit** `feat(wallpaper): reserve the wallpaper path for short links`
+- [x] **Step 1:** Add `'wallpaper'` to the "Suite modules" line of `RESERVED_SLUGS` and `'/wallpaper'` to `SPA_EXACT_PATHS`.
+- [x] **Step 2:** In `shared/reservedSlugs.test.ts` add `expect(isReservedSlug('wallpaper')).toBe(true)` to the "blocks known reserved slugs" test.
+- [x] **Step 3:** Run `npx vitest run shared/reservedSlugs.test.ts worker/index.test.ts`; expect PASS.
+- [x] **Step 4: Commit** `feat(wallpaper): reserve the wallpaper path for short links`
   - add `wallpaper` to the reserved slugs and the worker SPA paths
 
 ---

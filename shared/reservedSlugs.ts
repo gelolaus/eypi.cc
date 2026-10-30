@@ -1,7 +1,7 @@
 /** First-segment paths that must never be used as short-link slugs. */
 export const RESERVED_SLUGS = [
   // Suite modules (from src/router/index.ts)
-  'dashboard', 'links', 'forms', 'manage', 'frames', 'tix', 'orgs',
+  'dashboard', 'links', 'forms', 'wallpaper', 'manage', 'frames', 'tix', 'orgs',
   // Account & legal
   'settings', 'login', 'verify', 'reset-password', 'privacy', 'terms', 'acceptable-use', 'consent', 'contact',
   // Defensive / legacy

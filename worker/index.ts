@@ -230,6 +230,7 @@ const SPA_EXACT_PATHS = new Set([
   '/invites',
   '/links',
   '/forms',
+  '/wallpaper',
   '/orgs',
   '/settings',
   '/account',

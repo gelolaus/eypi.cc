@@ -36,6 +36,7 @@ describe('isReservedSlug', () => {
     expect(isReservedSlug('links')).toBe(true)
     expect(isReservedSlug('orgs')).toBe(true)
     expect(isReservedSlug('dp')).toBe(true)
+    expect(isReservedSlug('wallpaper')).toBe(true)
   })
 
   it('reserves the ticket paths /tickets and /t/:token', () => {

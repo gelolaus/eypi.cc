@@ -1070,7 +1070,7 @@ describe('seo surface', () => {
     const fetchAsset = frameShellFetch()
     const env = makeEnv({}, fetchAsset)
 
-    for (const path of ['/privacy', '/forms/concessionaire', '/unlock/abc', '/orgs/modify']) {
+    for (const path of ['/privacy', '/forms/concessionaire', '/unlock/abc', '/orgs/modify', '/wallpaper']) {
       const response = await worker.fetch(new Request(`https://eypi.cc${path}`), env, ctx())
       expect(response.status, path).toBe(200)
       expect(await response.text()).toBe(FRAME_SHELL)
