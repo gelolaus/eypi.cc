@@ -636,6 +636,14 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   if (result.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
 
   const row = result.rows[0]
+  // Same source as the Insights funnel (downloads plus shares), so the public page and Insights agree.
+  // The subject range [id:, id;) matches every 'id:frame' without LIKE ('_' is a wildcard there); ';' follows ':'.
+  const saved = await client.execute({
+    sql: `SELECT COUNT(*) AS n FROM module_events
+          WHERE module = 'frames' AND action IN ('download', 'share')
+            AND (subject_id = ?1 OR (subject_id >= ?1 || ':' AND subject_id < ?1 || ';'))`,
+    args: [row.id],
+  })
   return c.json({
     status: 'ok',
     campaign: {
@@ -644,7 +652,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
-      downloadCount: Number(row.download_count ?? 0),
+      downloadCount: Number(saved.rows[0]?.n ?? 0),
       frames: await loadFrames(c.env, client, String(row.id)),
     },
   })

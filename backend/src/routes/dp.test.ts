@@ -300,10 +300,19 @@ describe('frame campaigns', () => {
       expect(await downloadCount(client, 'camp-b')).toBe(1)
     })
 
-    it('public payload includes downloadCount', async () => {
-      const { client, download, request } = await setup()
-      expect((await download('camp-a', IP_A)).status).toBe(200)
-      expect((await download('camp-a', IP_A)).status).toBe(200)
+    it('public payload counts downloads and shares the way insights does', async () => {
+      const { client, request } = await setup()
+      const event = (subject: string, action: string) => client.execute({
+        sql: "INSERT INTO module_events (org_id, module, subject_id, action, visitor_hash, day) VALUES ('org-1', 'frames', ?, ?, 'v', '2026-10-28')",
+        args: [subject, action],
+      })
+      await event('camp-a:f1', 'download')
+      await event('camp-a:f1', 'download')
+      await event('camp-a:f2', 'share')
+      await event('camp-a', 'view')
+      await event('camp-a', 'photo_added')
+      await event('camp-a-other:f1', 'download')
+      await event('camp-b:f1', 'download')
       await client.execute({
         sql: 'INSERT INTO dp_slug_history (old_slug, campaign_id) VALUES (?, ?)',
         args: ['camp-a-old', 'camp-a'],
@@ -312,9 +321,9 @@ describe('frame campaigns', () => {
         const res = await request(`/api/dp/${slug}`)
         return (await res.json()) as { campaign: { downloadCount: number } }
       }
-      expect((await get('camp-a')).campaign.downloadCount).toBe(2)
-      expect((await get('camp-a-old')).campaign.downloadCount).toBe(2)
-      expect((await get('camp-b')).campaign.downloadCount).toBe(0)
+      expect((await get('camp-a')).campaign.downloadCount).toBe(3)
+      expect((await get('camp-a-old')).campaign.downloadCount).toBe(3)
+      expect((await get('camp-b')).campaign.downloadCount).toBe(1)
     })
 
     it('keeps the count out of the editor payload', async () => {
