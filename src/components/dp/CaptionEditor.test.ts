@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import CaptionEditor from './CaptionEditor.vue'
 
 const editor = (modelValue: string, attrs: Record<string, unknown> = {}) =>
@@ -60,6 +60,50 @@ describe('CaptionEditor', () => {
     const eleven = Array.from({ length: 11 }, (_, i) => `{{f${i + 1}}}`).join(' ')
     expect(editor('{{Name}}').get('textarea').attributes('aria-invalid')).toBeUndefined()
     expect(editor(eleven).get('textarea').attributes('aria-invalid')).toBe('true')
+  })
+
+  describe('Try it', () => {
+    const tryIt = (wrapper: ReturnType<typeof editor>) => wrapper.findAll('button').find((b) => b.text() === 'Try it')
+    const dialogInputs = () => [...document.body.querySelectorAll<HTMLInputElement>('[role="dialog"] input')]
+
+    afterEach(() => {
+      document.body.innerHTML = ''
+    })
+
+    it('is hidden when the caption has no fields and never submits a surrounding form', () => {
+      expect(tryIt(editor('Hello #eypi'))).toBeUndefined()
+      const button = tryIt(editor('Hi {{Name}}'))
+      expect(button).toBeTruthy()
+      expect(button!.attributes('type')).toBe('button')
+    })
+
+    it('opens the details dialog for the caption as typed, without saving', async () => {
+      const wrapper = editor('Hi {{Name}} of {{Committee Name}}')
+      await tryIt(wrapper)!.trigger('click')
+      await flushPromises()
+      expect(document.body.textContent).toContain('Add your details')
+      expect(dialogInputs().map((i) => i.getAttribute('placeholder'))).toEqual(['Name', 'Committee Name'])
+      wrapper.unmount()
+    })
+
+    it('shows the filled result as the owner types and closes with Done without copying', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+      const wrapper = editor('Hi {{Name}}')
+      await tryIt(wrapper)!.trigger('click')
+      await flushPromises()
+      const [input] = dialogInputs()
+      input!.value = 'Ana'
+      input!.dispatchEvent(new Event('input', { bubbles: true }))
+      await flushPromises()
+      expect(document.body.querySelector('[data-caption-result]')?.textContent).toBe('Hi Ana')
+      const done = [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Done')!
+      done.click()
+      await flushPromises()
+      expect(writeText).not.toHaveBeenCalled()
+      expect(document.body.textContent).not.toContain('Add your details')
+      wrapper.unmount()
+    })
   })
 
   it('escapes html in the mirror', () => {

@@ -40,32 +40,50 @@
         class="relative resize-y bg-transparent font-mono [scrollbar-gutter:stable]"
       />
     </div>
-    <p
-      :id="hintId"
-      data-caption-hint
-      aria-live="polite"
-      class="flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
-      :class="fieldError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-foreground'"
-    >
-      <Braces
-        class="mt-0.5 size-4 shrink-0"
-        :class="fieldError ? 'text-destructive' : 'text-primary'"
-        aria-hidden="true"
-      />
-      <span v-if="fieldError">{{ fieldError }}</span>
-      <span v-else>Use <code
-        class="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-xs font-semibold"
-        v-text="'{{Name}}'"
-      /> to ask visitors for their details. Up to {{ MAX_CAPTION_FIELDS }} fields.</span>
-    </p>
+    <div class="flex flex-wrap items-start gap-2">
+      <p
+        :id="hintId"
+        data-caption-hint
+        aria-live="polite"
+        class="flex min-w-0 flex-1 items-start gap-2 rounded-lg border px-3 py-2 text-sm"
+        :class="fieldError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-foreground'"
+      >
+        <Braces
+          class="mt-0.5 size-4 shrink-0"
+          :class="fieldError ? 'text-destructive' : 'text-primary'"
+          aria-hidden="true"
+        />
+        <span v-if="fieldError">{{ fieldError }}</span>
+        <span v-else>Use <code
+          class="rounded bg-primary/20 px-1.5 py-0.5 font-mono text-xs font-semibold"
+          v-text="'{{Name}}'"
+        /> to ask visitors for their details. Up to {{ MAX_CAPTION_FIELDS }} fields.</span>
+      </p>
+      <Button
+        v-if="hasFields"
+        type="button"
+        variant="outline"
+        @click="previewOpen = true"
+      >
+        Try it
+      </Button>
+    </div>
+    <CaptionFormDialog
+      v-model:open="previewOpen"
+      v-model:answers="previewAnswers"
+      :template="model"
+      preview
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { Braces } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { captionFieldError, MAX_CAPTION_FIELDS, parseCaption } from '@shared/captionFields'
+import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
+import { captionFieldError, listFields, MAX_CAPTION_FIELDS, parseCaption } from '@shared/captionFields'
 
 defineOptions({ inheritAttrs: false })
 
@@ -77,6 +95,10 @@ const ZERO_WIDTH_SPACE = '​'
 
 const segments = computed(() => parseCaption(model.value))
 const fieldError = computed(() => captionFieldError(model.value))
+const hasFields = computed(() => listFields(model.value).length > 0)
+// The owner's trial answers live in this page visit only; they are never saved or sent.
+const previewOpen = ref(false)
+const previewAnswers = ref<Record<string, string>>({})
 
 function syncScroll() {
   scrollTop.value = textareaRef.value?.$el.scrollTop ?? 0
