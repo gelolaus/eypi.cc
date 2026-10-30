@@ -48,6 +48,20 @@ describe('CaptionEditor', () => {
     expect(hint.text()).toContain('A caption can have at most 10 fields.')
   })
 
+  it('links the hint to the textarea and announces it politely', () => {
+    const wrapper = editor('')
+    const hint = wrapper.get('[data-caption-hint]')
+    expect(hint.attributes('id')).toBeTruthy()
+    expect(wrapper.get('textarea').attributes('aria-describedby')).toBe(hint.attributes('id'))
+    expect(hint.attributes('aria-live')).toBe('polite')
+  })
+
+  it('marks the textarea invalid only while there are too many fields', () => {
+    const eleven = Array.from({ length: 11 }, (_, i) => `{{f${i + 1}}}`).join(' ')
+    expect(editor('{{Name}}').get('textarea').attributes('aria-invalid')).toBeUndefined()
+    expect(editor(eleven).get('textarea').attributes('aria-invalid')).toBe('true')
+  })
+
   it('escapes html in the mirror', () => {
     const wrapper = editor('<b>{{Name}}</b>')
     expect(wrapper.find('b').exists()).toBe(false)

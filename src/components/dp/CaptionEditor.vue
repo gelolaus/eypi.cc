@@ -35,11 +35,15 @@
         ref="textareaRef"
         v-model="model"
         v-bind="$attrs"
+        :aria-describedby="hintId"
+        :aria-invalid="fieldError ? 'true' : undefined"
         class="relative resize-y bg-transparent font-mono [scrollbar-gutter:stable]"
       />
     </div>
     <p
+      :id="hintId"
       data-caption-hint
+      aria-live="polite"
       class="flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
       :class="fieldError ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-primary/30 bg-primary/10 text-foreground'"
     >
@@ -58,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { Braces } from 'lucide-vue-next'
 import { Textarea } from '@/components/ui/textarea'
 import { captionFieldError, MAX_CAPTION_FIELDS, parseCaption } from '@shared/captionFields'
@@ -68,6 +72,7 @@ defineOptions({ inheritAttrs: false })
 const model = defineModel<string>({ default: '' })
 const textareaRef = ref<{ $el: HTMLTextAreaElement } | null>(null)
 const scrollTop = ref(0)
+const hintId = useId()
 const ZERO_WIDTH_SPACE = '​'
 
 const segments = computed(() => parseCaption(model.value))
