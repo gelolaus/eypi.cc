@@ -107,6 +107,7 @@ describe('WallpaperView download and share', () => {
   })
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
@@ -118,6 +119,10 @@ describe('WallpaperView download and share', () => {
   })
 
   it('renders at the full size, saves the png and says so', async () => {
+    vi.spyOn(window.screen, 'width', 'get').mockReturnValue(390)
+    vi.spyOn(window.screen, 'height', 'get').mockReturnValue(844)
+    vi.stubGlobal('devicePixelRatio', 3)
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
     const wrapper = mountView()
     await paste(wrapper, page())
     await button(wrapper, 'Download PNG')!.trigger('click')

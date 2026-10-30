@@ -1,10 +1,10 @@
 <template>
-  <div class="mx-auto w-full max-w-[320px]">
+  <div :class="['mx-auto w-full', landscape ? 'max-w-[640px]' : 'max-w-[320px]']">
     <canvas
       ref="canvas"
       role="img"
       :aria-label="description"
-      class="block h-auto w-full rounded-3xl border border-border bg-muted"
+      :class="['block h-auto w-full border border-border bg-muted', landscape ? 'rounded-lg' : 'rounded-3xl']"
       :style="{ aspectRatio: `${input.width} / ${input.height}` }"
     />
     <p
@@ -22,15 +22,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { groupDays } from '@shared/schedule/layout'
 import { formatRange } from '@/lib/wallpaper/format'
 import { render } from '@/lib/wallpaper/render'
+import { isLandscape } from '@/lib/wallpaper/safeZone'
 import type { RenderInput } from '@/lib/wallpaper/types'
 
 const props = defineProps<{ input: RenderInput }>()
 
-/** The preview is drawn at this width at most; the download is drawn at full size by the same code. */
+/** The preview is drawn at this width at most; the download is drawn at full size by the same code. A landscape screen gets more, since its text is sized from the height. */
 const PREVIEW_WIDTH = 540
+const LANDSCAPE_PREVIEW_WIDTH = 960
 
 const canvas = ref<HTMLCanvasElement | null>(null)
 const failed = ref(false)
+const landscape = computed(() => isLandscape(props.input.width, props.input.height))
 let frame = 0
 
 const description = computed(() => {
@@ -46,7 +49,7 @@ const description = computed(() => {
 function draw() {
   if (!canvas.value) return
   const { width, height } = props.input
-  const scale = Math.min(1, PREVIEW_WIDTH / width)
+  const scale = Math.min(1, (landscape.value ? LANDSCAPE_PREVIEW_WIDTH : PREVIEW_WIDTH) / width)
   render(canvas.value, { ...props.input, width: Math.round(width * scale), height: Math.round(height * scale) })
     .then(() => { failed.value = false })
     .catch(() => { failed.value = true })

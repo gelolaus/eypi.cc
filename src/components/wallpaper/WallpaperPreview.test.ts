@@ -46,6 +46,23 @@ describe('WallpaperPreview', () => {
     expect(drawn.width / drawn.height).toBeCloseTo(1170 / 2532, 2)
   })
 
+  it('draws a landscape screen wider than a phone so its text stays readable', () => {
+    mount(WallpaperPreview, { props: { input: input({ width: 1920, height: 1080 }) } })
+    const drawn = render.mock.calls[0][1] as RenderInput
+    expect(drawn.width).toBe(960)
+    expect(drawn.width / drawn.height).toBeCloseTo(1920 / 1080, 2)
+  })
+
+  it('shows a landscape screen wider on the page and with square-ish corners', () => {
+    const phone = mount(WallpaperPreview, { props: { input: input() } })
+    const screen = mount(WallpaperPreview, { props: { input: input({ width: 1920, height: 1080 }) } })
+    expect(phone.classes()).toContain('max-w-[320px]')
+    expect(phone.find('canvas').classes()).toContain('rounded-3xl')
+    expect(screen.classes()).toContain('max-w-[640px]')
+    expect(screen.find('canvas').classes()).toContain('rounded-lg')
+    expect(screen.find('canvas').classes()).not.toContain('rounded-3xl')
+  })
+
   it('describes the classes by day for assistive tech', () => {
     const label = mount(WallpaperPreview, { props: { input: input() } }).find('canvas').attributes('aria-label')!
     expect(label).toContain('Wallpaper preview.')
