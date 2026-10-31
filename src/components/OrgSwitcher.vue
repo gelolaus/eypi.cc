@@ -47,74 +47,52 @@
     </button>
 
     <!-- Below sm the menu is a bottom sheet teleported to body; from sm it is an anchored dropdown. -->
-    <Teleport
-      to="body"
-      :disabled="!isMobile"
+    <BottomSheet
+      :id="menuId"
+      v-model:open="isOpen"
+      title="Switch organization"
+      data-org-switcher-menu
+      :class="[
+        'absolute z-50 sm:w-72 max-w-[calc(100vw-2rem)]',
+        placement === 'up' ? 'bottom-full left-0 mb-1.5' : 'right-0 mt-1.5',
+      ]"
     >
-      <button
-        v-if="isOpen"
-        type="button"
-        data-org-switcher-backdrop
-        class="fixed inset-0 z-[10000] cursor-default border-0 bg-black/50 p-0 sm:z-40 sm:bg-transparent"
-        aria-label="Close organization menu"
-        @click="isOpen = false"
-      />
-
-      <div
-        v-if="isOpen"
-        :id="menuId"
-        ref="menuRef"
-        data-org-switcher-menu
-        :role="isMobile ? 'dialog' : undefined"
-        :aria-modal="isMobile ? 'true' : undefined"
-        :aria-label="isMobile ? 'Switch organization' : undefined"
-        class="fixed inset-x-0 bottom-0 z-[10001] max-h-[80dvh] overflow-y-auto rounded-t-3xl bg-popover text-popover-foreground ring-1 ring-foreground/10 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-left shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:z-50 sm:max-h-none sm:w-72 sm:max-w-[calc(100vw-2rem)] sm:overflow-visible sm:rounded-lg sm:p-0 sm:py-1.5 sm:shadow-md"
-        :class="placement === 'up' ? 'sm:bottom-full sm:left-0 sm:mb-1.5' : 'sm:right-0 sm:mt-1.5'"
-      >
-        <div
-          class="mx-auto mb-2 h-1.5 w-10 rounded-full bg-border sm:hidden"
-          aria-hidden="true"
-        />
-        <p class="px-3 pb-2 text-sm font-semibold text-muted-foreground sm:hidden">
-          Switch organization
-        </p>
-        <div class="sm:max-h-56 sm:overflow-y-auto sm:py-1">
-          <button
-            v-for="org in orgs"
-            :key="org.org_id"
-            type="button"
-            class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted sm:rounded-none"
-            :title="org.org_name"
-            :class="activeOrg?.org_id === org.org_id ? 'bg-muted/80' : ''"
-            :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
-            @click="handleSelect(org)"
-          >
-            <OrgLogo
-              :logo-url="org.logo_url"
-              :logo-meta="org.logoMeta"
-              :name="org.org_name"
-              size="sm"
-            />
-            <span
-              class="min-w-0 flex-1 truncate font-mono text-base leading-snug sm:text-sm"
-              :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
-            >{{ orgSlugLabel(org) }}</span>
-            <span
-              v-if="activeOrg?.org_id === org.org_id"
-              class="text-xs font-bold text-primary"
-              aria-hidden="true"
-            >●</span>
-          </button>
-        </div>
+      <div class="sm:max-h-56 sm:overflow-y-auto sm:py-1">
+        <button
+          v-for="org in orgs"
+          :key="org.org_id"
+          type="button"
+          class="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted sm:rounded-none"
+          :title="org.org_name"
+          :class="activeOrg?.org_id === org.org_id ? 'bg-muted/80' : ''"
+          :aria-current="activeOrg?.org_id === org.org_id ? 'true' : undefined"
+          @click="handleSelect(org)"
+        >
+          <OrgLogo
+            :logo-url="org.logo_url"
+            :logo-meta="org.logoMeta"
+            :name="org.org_name"
+            size="sm"
+          />
+          <span
+            class="min-w-0 flex-1 truncate font-mono text-base leading-snug sm:text-sm"
+            :class="activeOrg?.org_id === org.org_id ? 'font-semibold text-primary' : 'text-foreground'"
+          >{{ orgSlugLabel(org) }}</span>
+          <span
+            v-if="activeOrg?.org_id === org.org_id"
+            class="text-xs font-bold text-primary"
+            aria-hidden="true"
+          >●</span>
+        </button>
       </div>
-    </Teleport>
+    </BottomSheet>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, useId, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, useId, onMounted } from 'vue'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { useFocusTrap } from '@/composables/useFocusTrap'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 import OrgLogo from '@/components/OrgLogo.vue'
 import { orgSlugLabel, type OrgListItem } from '@/types/orgs'
 
@@ -137,30 +115,11 @@ const props = withDefaults(
 const { orgs, activeOrg, fetchOrgs, selectOrg } = useActiveOrg()
 const isOpen = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
-const menuRef = ref<HTMLElement | null>(null)
-const trap = useFocusTrap(menuRef)
 const menuId = useId()
-const isMobile = ref(false)
-let mql: MediaQueryList | null = null
 
-function syncMobile() {
-  isMobile.value = mql?.matches ?? false
-}
-
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') isOpen.value = false
-}
-
+// Safari does not focus a button on click, so hand focus back to the trigger explicitly.
 watch(isOpen, (open) => {
-  if (open) {
-    window.addEventListener('keydown', onKeydown)
-    // The mobile sheet is modal: move focus in and keep Tab inside it.
-    if (isMobile.value) void nextTick(() => trap.activate())
-  } else {
-    window.removeEventListener('keydown', onKeydown)
-    trap.release()
-    void nextTick(() => triggerRef.value?.focus())
-  }
+  if (!open) void nextTick(() => triggerRef.value?.focus())
 })
 
 function handleSelect(org: OrgListItem) {
@@ -169,16 +128,6 @@ function handleSelect(org: OrgListItem) {
 }
 
 onMounted(() => {
-  if (typeof window.matchMedia === 'function') {
-    mql = window.matchMedia('(max-width: 639px)')
-    syncMobile()
-    mql.addEventListener?.('change', syncMobile)
-  }
   if (props.autoFetch) fetchOrgs()
-})
-
-onBeforeUnmount(() => {
-  mql?.removeEventListener?.('change', syncMobile)
-  window.removeEventListener('keydown', onKeydown)
 })
 </script>

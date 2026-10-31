@@ -82,7 +82,7 @@ describe('orgs mobile layout', () => {
     expect(menu!.contains(document.activeElement)).toBe(true)
     const rows = Array.from(menu!.querySelectorAll('button'))
     expect(rows.some((b) => b.getAttribute('aria-current') === 'true')).toBe(true)
-    document.body.querySelector<HTMLButtonElement>('[data-org-switcher-backdrop]')!.click()
+    document.body.querySelector<HTMLButtonElement>('[data-sheet-backdrop]')!.click()
     await flushPromises()
     expect(document.body.querySelector('[data-org-switcher-menu]')).toBeNull()
     expect(document.activeElement).toBe(trigger.element)
