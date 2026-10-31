@@ -31,8 +31,14 @@ describe('WallpaperIntro', () => {
     expect(v.getAttribute('poster')).toBe('/wallpaper-intro-poster.jpg')
     expect(v.hasAttribute('controls')).toBe(true)
     expect(v.hasAttribute('playsinline')).toBe(true)
-    expect(v.muted).toBe(true)
+    expect(v.muted).toBe(false)
+    expect(v.hasAttribute('muted')).toBe(false)
     expect(v.getAttribute('preload')).toBe('metadata')
+  })
+
+  it('hides the download button from the native player controls', async () => {
+    await mountIntro()
+    expect(video()!.getAttribute('controlslist')).toContain('nodownload')
   })
 
   it('has a close button that dismisses it for this visit only', async () => {

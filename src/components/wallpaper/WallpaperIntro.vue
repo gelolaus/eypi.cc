@@ -15,8 +15,8 @@
         :src="VIDEO_SRC"
         :poster="VIDEO_POSTER"
         controls
+        controlslist="nodownload"
         playsinline
-        muted
         :autoplay="!prefersReducedMotion"
         preload="metadata"
       />
@@ -42,6 +42,7 @@ const VIDEO_POSTER = '/wallpaper-intro-poster.jpg'
 
 const { open, close } = useWallpaperIntro()
 
-// With reduced motion on, the video waits for a tap instead of starting by itself.
+// With reduced motion on, the video waits for a tap instead of starting by itself. It has sound, so a browser that
+// blocks unmuted autoplay also leaves it on the poster until the first tap.
 const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 </script>
