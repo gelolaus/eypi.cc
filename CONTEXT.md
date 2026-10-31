@@ -83,7 +83,7 @@ Use these terms. Prefer them over invented synonyms.
 
 | Module | Path | Owns |
 |---|---|---|
-| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display, wallpaper canvas renderers (`src/lib/wallpaper/`), descriptive dashboard panels (`src/components/dashboard/`: `PeriodPicker`, `PanelState`, `LinkKpis`, `ClicksTrend`, `TopLinks`, `AudiencePanels`, `BestHours`, `UpcomingTickets`, `AcrossApc`, `OrgInsightsSection`, `FeatureCards`) |
+| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display, wallpaper canvas renderers (`src/lib/wallpaper/`), descriptive dashboard panels (`src/components/dashboard/`: `PeriodPicker`, `PanelState`, `LinkKpis`, `BestHours`, `UpcomingTickets`, `AcrossApc`, `OrgInsightsSection`, `FeatureCards`) |
 | **Frontend Worker** | `worker/index.ts` | Serves SPA assets at `eypi.cc`; **edge short-link redirects** via `LINKS_KV`; async click logging; per-route meta tags; media route |
 | **Backend API** | `backend/` | All `/api/*` on `api.eypi.cc` (Hono Worker): sign-in, sessions, links, orgs, events, DP, forms, admin, account, legal, stats, cron retention |
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |

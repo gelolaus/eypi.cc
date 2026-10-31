@@ -286,9 +286,6 @@ Rules: color is never the only signal. `LineChart` gives each series its own das
 | `PeriodPicker` | `modelValue` (`7` / `30` / `90`) | `role="group"` labelled "Period"; each option is a `Button` with `aria-pressed` and `min-h-11`. Range is owned by `useDashboardRange` (`sessionStorage` key `eypi.dashboardRange`, default 30). |
 | `PanelState` | `status` (`loading` / `error` / `empty` / `ready`), `title`, `emptyBody?`, `action?` | Shared skeleton (`role="status" aria-busy="true"`), error with Retry (`retry` emit), and `EmptyState` when empty; slot when ready. One panel failing never blanks the page. |
 | `LinkKpis` | `trends`, `status`, `previous?` | Stat tiles for clicks, daily uniques, QR scans, active links, and links total (links total has no previous-period delta). |
-| `ClicksTrend` | `trends`, `status` | `LineChart` of clicks (and uniques) for the selected range. |
-| `TopLinks` | `trends`, `status` | Own bar rows (same look as `BarList`) of the top links by clicks; each row links to `/links` and has a 44px copy button (`aria-label` `Copy eypi.cc/{slug}`) that uses `copyShortLink`. |
-| `AudiencePanels` | `trends`, `status` | `BarList`s for device, country, referrer and in-app browser when present. |
 | `BestHours` | `trends`, `status` | `HeatGrid` of the 168 Manila hour-of-week cells with a peak caption. |
 | `UpcomingTickets` | `tickets`, `status` | Up to three upcoming tickets with a link to `/tickets`. |
 | `AcrossApc` | `stats`, `status` | Muted strip of platform totals from `GET /api/stats`. |

@@ -47,21 +47,6 @@
           :status="trendsStatus"
           @retry="trendsQuery.refresh()"
         />
-        <ClicksTrend
-          :trends="trends"
-          :status="trendsStatus"
-          @retry="trendsQuery.refresh()"
-        />
-        <TopLinks
-          :trends="trends"
-          :status="trendsStatus"
-          @retry="trendsQuery.refresh()"
-        />
-        <AudiencePanels
-          :trends="trends"
-          :status="trendsStatus"
-          @retry="trendsQuery.refresh()"
-        />
         <BestHours
           :trends="trends"
           :status="trendsStatus"
@@ -110,15 +95,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AcrossApc from '@/components/dashboard/AcrossApc.vue'
-import AudiencePanels from '@/components/dashboard/AudiencePanels.vue'
 import BestHours from '@/components/dashboard/BestHours.vue'
-import ClicksTrend from '@/components/dashboard/ClicksTrend.vue'
 import FeatureCards from '@/components/dashboard/FeatureCards.vue'
 import GetStarted from '@/components/dashboard/GetStarted.vue'
 import LinkKpis from '@/components/dashboard/LinkKpis.vue'
 import OrgInsightsSection from '@/components/dashboard/OrgInsightsSection.vue'
 import PeriodPicker from '@/components/dashboard/PeriodPicker.vue'
-import TopLinks from '@/components/dashboard/TopLinks.vue'
 import UpcomingTickets from '@/components/dashboard/UpcomingTickets.vue'
 import AppPage from '@/components/layout/AppPage.vue'
 import { Card } from '@/components/ui/card'
