@@ -75,12 +75,12 @@ Steps: "Create your first link" → `/links`, done when `linkCount > 0`; "Make a
 
 **Files:** Create `src/components/dashboard/dashboardA11y.test.ts`; extend `src/components/a11ySurfaces.test.ts` if it already enumerates shell surfaces (read it first and follow its style).
 
-- [ ] **Step 1: Write the tests** (they should pass if Phases 1 to 3 followed the plan; any failure is a defect to fix in the owning component):
+- [x] **Step 1: Write the tests** (they should pass if Phases 1 to 3 followed the plan; any failure is a defect to fix in the owning component):
   - mount `AppShell` as a member and as a non-member: every `<a>` and `<button>` in the rail, tab bar and open profile sheet has non-empty accessible text (text content or `aria-label`), and the tab bar links carry `min-h` classes giving at least 44px (class-based assertion, as other tests in this repo do).
   - mount `DashboardView`: exactly one `<h1>`; the two `section` landmarks are labelled by their headings; each chart has an `aria-label` or an associated hidden table; no element uses a `dark:` utility class (the repo's `design.test.ts` already guards this repo-wide, so only assert here that it still passes).
   - removing the last org (set `orgs.value = []`, `orgsLoaded` true) removes the Orgs rail section and the dashboard Orgs section after `flushPromises` (Review Focus 4).
-- [ ] **Step 2:** Run `npx vitest run src/components/dashboard/dashboardA11y.test.ts`. Fix any real defect it finds in the owning component, then re-run until PASS.
-- [ ] **Step 3: Commit** `test(nav): guard names, targets and gating on the new surfaces`
+- [x] **Step 2:** Run `npx vitest run src/components/dashboard/dashboardA11y.test.ts`. Fix any real defect it finds in the owning component, then re-run until PASS.
+- [x] **Step 3: Commit** `test(nav): guard names, targets and gating on the new surfaces`
 
 ### Task 4: Whole-branch verification and handoff notes
 
