@@ -258,7 +258,7 @@ const inviteCount = computed(() => session.pendingInviteCount.value)
 const ticketCount = computed(() => session.ticketUpdates.value)
 const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
 const ticketLabel = computed(() => `${ticketCount.value} new ${ticketCount.value === 1 ? 'update' : 'updates'}`)
-const entries = computed(() => appNav({ admin: isAdmin.value }))
+const entries = computed(() => appNav({ admin: isAdmin.value, org: orgs.value.length > 0 }))
 const tabs = computed(() => tabEntries(entries.value))
 const overflow = computed(() => overflowEntries(entries.value))
 const appShell = computed(() =>

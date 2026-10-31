@@ -98,6 +98,7 @@ import { useRoute } from 'vue-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { navItems } from '@/config/nav'
 import { useSession } from '@/stores/session'
@@ -108,6 +109,7 @@ const route = useRoute()
 const session = useSession()
 const drawer = useNavDrawer()
 const signOut = useSignOut()
+const { orgs } = useActiveOrg()
 
 const isAuthenticated = computed(() => session.user.value !== null)
 const inviteCount = computed(() => session.pendingInviteCount.value)
@@ -115,7 +117,7 @@ const ticketCount = computed(() => session.ticketUpdates.value)
 const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
 const entries = computed(() => {
   const admin = session.user.value?.role === 'admin'
-  return [...appNav({ admin }), ...menuEntries({ admin })]
+  return [...appNav({ admin, org: orgs.value.length > 0 }), ...menuEntries({ admin })]
 })
 const publicLinks = navItems({ authenticated: false, admin: false })
 

@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import {
+  Building,
   Building2,
   FileText,
   Frame,
@@ -12,7 +13,7 @@ import {
   TicketCheck,
   User,
 } from 'lucide-vue-next'
-import { isNavActive, navItems, tabItems, type NavIconName, type NavItem } from '@/config/nav'
+import { GROUP_LABELS, isNavActive, navItems, tabItems, type NavGroup, type NavIconName, type NavItem } from '@/config/nav'
 
 export type AppNavEntry = {
   to: string
@@ -31,6 +32,7 @@ const ICONS: Partial<Record<NavIconName, Component>> = {
   form: FileText,
   wallpaper: Smartphone,
   orgs: Building2,
+  myorg: Building,
   invites: Mail,
   account: User,
   admin: ShieldCheck,
@@ -43,8 +45,8 @@ function toEntry(item: NavItem): AppNavEntry {
 const MENU_ICONS = new Set<NavIconName>(['account', 'admin'])
 
 /** Signed-in module links for the rail and tabs. Account and Admin live in the account menu. */
-export function appNav({ admin }: { admin: boolean }): AppNavEntry[] {
-  return navItems({ authenticated: true, admin })
+export function appNav({ admin, org }: { admin: boolean; org: boolean }): AppNavEntry[] {
+  return navItems({ authenticated: true, admin, org })
     .filter((item) => !MENU_ICONS.has(item.icon))
     .map(toEntry)
 }
@@ -55,7 +57,8 @@ export function menuEntries({ admin }: { admin: boolean }): AppNavEntry[] {
   return items.sort((a, b) => (a.icon === 'admin' ? -1 : 0) - (b.icon === 'admin' ? -1 : 0)).map(toEntry)
 }
 
-export const APP_NAV: AppNavEntry[] = appNav({ admin: false })
+/** The member list: every module link, including the Orgs group. */
+export const APP_NAV: AppNavEntry[] = appNav({ admin: false, org: true })
 
 /** Exact match or a child path (`to` + `/`). */
 export function isAppNavActive(to: string, path: string): boolean {
@@ -73,7 +76,26 @@ export function tabEntries(entries: AppNavEntry[]): AppNavEntry[] {
   return entries.filter((entry) => keep.has(entry.item))
 }
 
+/** Rams items that are not tabs. The Orgs group never overflows. */
 export function overflowEntries(entries: AppNavEntry[]): AppNavEntry[] {
   const tabs = new Set(tabEntries(entries))
-  return entries.filter((entry) => !tabs.has(entry))
+  return entries.filter((entry) => entry.item.group === 'rams' && !tabs.has(entry))
+}
+
+export type AppNavGroup = { group: NavGroup; label: string; entries: AppNavEntry[] }
+
+const GROUP_ORDER: NavGroup[] = ['rams', 'orgs']
+
+/** Rams first, then Orgs. A group with no entries is left out. */
+export function groupedEntries(entries: AppNavEntry[]): AppNavGroup[] {
+  return GROUP_ORDER.map((group) => ({
+    group,
+    label: GROUP_LABELS[group],
+    entries: entries.filter((entry) => entry.item.group === group),
+  })).filter((group) => group.entries.length > 0)
+}
+
+/** The Orgs group (empty for a non-member). */
+export function orgEntries(entries: AppNavEntry[]): AppNavEntry[] {
+  return entries.filter((entry) => entry.item.group === 'orgs')
 }
