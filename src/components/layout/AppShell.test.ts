@@ -252,7 +252,7 @@ describe('AppShell (signed in)', () => {
           expect(badge.attributes('aria-label')).toBe('3 pending invites')
           expect(badge.text()).toBe('3')
         } else {
-          expect(tab.html()).not.toContain('data-slot=\"badge\"')
+          expect(tab.html()).not.toContain('data-slot="badge"')
         }
       }
       wrapper.unmount()

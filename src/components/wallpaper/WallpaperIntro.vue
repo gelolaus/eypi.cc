@@ -5,11 +5,12 @@
   >
     <DialogContent class="max-h-[calc(100svh-2rem)] gap-3 overflow-y-auto sm:max-w-3xl">
       <DialogHeader class="pr-8">
-        <DialogTitle>How Eypi Wallpaper works</DialogTitle>
+        <DialogTitle>Welcome to Eypi Wallpaper</DialogTitle>
         <DialogDescription>
           Paste your class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.
         </DialogDescription>
       </DialogHeader>
+      <!-- eslint-disable-next-line vuejs-accessibility/media-has-caption -- the intro has no spoken captions to ship yet; the heading and description above carry the content -->
       <video
         class="aspect-video max-h-[55svh] w-full rounded-lg bg-black object-contain"
         :src="VIDEO_SRC"
