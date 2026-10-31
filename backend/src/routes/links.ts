@@ -10,6 +10,7 @@ import { checkRateLimit } from '../lib/rateLimit'
 import { visitorHash } from '../lib/ipHash'
 import { isBot } from '../lib/links/bots'
 import { addDays, daysBetween, isDay, loadLinkPeriod, MAX_RANGE_DAYS } from '../lib/links/analyticsQuery'
+import { loadUserTrends } from '../lib/links/userTrends'
 import { toCsv } from '../lib/links/csv'
 import { hashLinkPassword, verifyLinkPassword } from '../lib/links/password'
 import { checkSafeBrowsing } from '../lib/links/safeBrowsing'
@@ -555,6 +556,20 @@ app.get('/api/links/summary/live', requireAuth, async (c) => {
   const headers = { ETag: etag, 'Cache-Control': LIVE_CACHE_CONTROL }
   if (etagMatches(c.req.header('If-None-Match'), etag)) return new Response(null, { status: 304, headers })
   return c.json({ last60, recent }, 200, headers)
+})
+
+app.get('/api/links/summary/trends', requireAuth, async (c) => {
+  const raw = c.req.query('range')
+  let range: 7 | 30 | 90 = 30
+  if (raw != null && raw !== '') {
+    if (raw !== '7' && raw !== '30' && raw !== '90') {
+      return fail(c, 422, 'invalid_range', 'Use range 7, 30 or 90.')
+    }
+    range = Number(raw) as 7 | 30 | 90
+  }
+  c.header('Cache-Control', 'private, no-store')
+  const body = await loadUserTrends(db(c), c.var.userId, range, c.req.query('compare') === '1')
+  return c.json(body)
 })
 
 app.get('/api/links/slug-available', requireAuth, async (c) => {

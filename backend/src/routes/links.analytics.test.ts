@@ -155,7 +155,7 @@ describe('link analytics and CSV export', () => {
     }
 
     expect(res.status).toBe(200)
-    expect(body.totals).toEqual({ clicks: 0, avgDailyUniques: 0, qrShare: 0 })
+    expect(body.totals).toEqual({ clicks: 0, avgDailyUniques: 0, qrShare: 0, uniques: 0, qr: 0 })
     expect(body.previous).toBeUndefined()
     expect(body.timeline).toHaveLength(30)
     expect(body.timeline[0]?.day).toBe('2026-09-27')

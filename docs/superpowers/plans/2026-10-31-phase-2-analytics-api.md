@@ -54,12 +54,12 @@ export const loadLinkPeriod = (database, linkId, from, to, today?) => loadPeriod
 ```
 `totals.uniques` and `totals.qr` are added (sums over the period); existing fields are unchanged.
 
-- [ ] **Step 1:** Run the current link analytics tests to confirm green: `npx vitest run backend/src/routes/links backend/src/jobs/rollups.test.ts`.
-- [ ] **Step 2: Write a failing test** in a new `backend/src/lib/links/analyticsQuery.test.ts`: seed two links of one user and one of another, with `analytics_daily` rows, call `loadPeriod(db, userScope('u1'), ...)` and expect the clicks to be the sum of the two links only; expect `totals.uniques` and `totals.qr` to be the sums.
-- [ ] **Step 3:** Run it. Expect FAIL (`loadPeriod` undefined).
-- [ ] **Step 4: Implement.** Replace every `link_id = ?` and `[linkId, ...]` in the module's SQL with the scope's `sql` and `args`, spreading `scope.args` before the date args. `rawDimSql` takes the scope too. Keep `loadLinkPeriod` as the thin wrapper.
-- [ ] **Step 5:** Run the new test and the link analytics tests. Expect PASS.
-- [ ] **Step 6: Commit** `refactor(links): load analytics periods for any link scope`
+- [x] **Step 1:** Run the current link analytics tests to confirm green: `npx vitest run backend/src/routes/links backend/src/jobs/rollups.test.ts`.
+- [x] **Step 2: Write a failing test** in a new `backend/src/lib/links/analyticsQuery.test.ts`: seed two links of one user and one of another, with `analytics_daily` rows, call `loadPeriod(db, userScope('u1'), ...)` and expect the clicks to be the sum of the two links only; expect `totals.uniques` and `totals.qr` to be the sums.
+- [x] **Step 3:** Run it. Expect FAIL (`loadPeriod` undefined).
+- [x] **Step 4: Implement.** Replace every `link_id = ?` and `[linkId, ...]` in the module's SQL with the scope's `sql` and `args`, spreading `scope.args` before the date args. `rawDimSql` takes the scope too. Keep `loadLinkPeriod` as the thin wrapper.
+- [x] **Step 5:** Run the new test and the link analytics tests. Expect PASS.
+- [x] **Step 6: Commit** `refactor(links): load analytics periods for any link scope`
   - bullets: add `LinkScope`, `linkScope` and `userScope`; return period unique and qr sums; cover the user scope with Vitest.
 
 ### Task 2: User-wide trends endpoint
@@ -83,7 +83,7 @@ export async function loadUserTrends(database: Client, userId: string, range: 7 
 ```
 Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, mounted right after `/api/links/summary/live` so it is not shadowed by `/api/links/:id`.
 
-- [ ] **Step 1: Write failing route tests** in `links.trends.test.ts` (pattern: `links.summary.test.ts`):
+- [x] **Step 1: Write failing route tests** in `links.trends.test.ts` (pattern: `links.summary.test.ts`):
   - 401 without a session; 422 `invalid_range` for `range=14`; default range is 30 (timeline length 30).
   - no links: `totals` all 0 and `links: 0`, `timeline` has 30 rows of zero, `heat` has 168 zeros, all `top` arrays empty (Review Focus 1).
   - two links of the user plus one of another user, rollup rows over several days: totals, timeline sums and `top.links` order by clicks descending, other user excluded (Review Focus 2).
@@ -92,11 +92,11 @@ Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, m
   - `compare=1` returns `previous.timeline` of the same length for the preceding equal span; omitted otherwise.
   - today's clicks come from raw `analytics` rows and a seeded rollup row for today is ignored (reuses the rule in `loadLinkPeriod`); a click at `2026-10-30 16:30:00` UTC lands on Manila day `2026-10-31` (Review Focus 5).
   - response header `Cache-Control` is `private, no-store`.
-- [ ] **Step 2:** Run `npx vitest run backend/src/routes/links.trends.test.ts`. Expect FAIL (404).
-- [ ] **Step 3: Implement `loadUserTrends`.** Current span = `[today-(range-1), today]`; previous = the `range` days before. Use `loadPeriod(database, userScope(userId), ...)` for each. `top.links`: one query over `analytics_daily` joined to `links` (`links.user_id = ?`, past days) merged with a raw-today `GROUP BY link_id` query, top 5 by clicks with slug tiebreak. `activeLinks`: count of distinct link ids with clicks in the same merged data. `links`: `SELECT COUNT(*) FROM links WHERE user_id = ?`.
-- [ ] **Step 4: Implement the route** with `range` parsed by the same rule as `analyticsRange` but 422 on a present, unsupported value.
-- [ ] **Step 5:** Run the route test and `npm run typecheck`. Expect PASS.
-- [ ] **Step 6: Commit** `feat(dashboard): add user-wide link trends endpoint`
+- [x] **Step 2:** Run `npx vitest run backend/src/routes/links.trends.test.ts`. Expect FAIL (404).
+- [x] **Step 3: Implement `loadUserTrends`.** Current span = `[today-(range-1), today]`; previous = the `range` days before. Use `loadPeriod(database, userScope(userId), ...)` for each. `top.links`: one query over `analytics_daily` joined to `links` (`links.user_id = ?`, past days) merged with a raw-today `GROUP BY link_id` query, top 5 by clicks with slug tiebreak. `activeLinks`: count of distinct link ids with clicks in the same merged data. `links`: `SELECT COUNT(*) FROM links WHERE user_id = ?`.
+- [x] **Step 4: Implement the route** with `range` parsed by the same rule as `analyticsRange` but 422 on a present, unsupported value.
+- [x] **Step 5:** Run the route test and `npm run typecheck`. Expect PASS.
+- [x] **Step 6: Commit** `feat(dashboard): add user-wide link trends endpoint`
   - bullets: add `GET /api/links/summary/trends` with optional previous period; read past days from rollups and today from raw rows; cover empty, cross-user, deleted-link and Manila-day cases with Vitest.
 
 ### Task 3: Read-only upcoming tickets
@@ -105,11 +105,11 @@ Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, m
 
 **Produces:** `GET /api/tickets/upcoming` → `{ tickets: Ticket[] }` (same `ticketFromRow` shape as `GET /api/tickets`), at most 3, upcoming only (`e.event_date >= date('now','+2 hours')`), ordered by event date and time, statuses `confirmed`, `pending`, `entered`, `waitlisted` (not `cancelled` or `declined`). Auth and consent exactly as `GET /api/tickets`. Does **not** call `linkImportedRows` and does **not** update `tickets_seen_at`.
 
-- [ ] **Step 1: Write failing tests**: 401 unauthenticated; returns only the signed-in user's tickets; capped at 3 and ordered soonest first; past events and cancelled or declined rows excluded; after two calls `users.tickets_seen_at` is unchanged and `GET /api/me` `ticketUpdates` is unchanged (Review Focus 4).
-- [ ] **Step 2:** Run it. Expect FAIL (404).
-- [ ] **Step 3: Implement** the route above `GET /api/tickets/guest/:token` handling so it is not captured by a param route. Reuse `TICKET_SELECT` and `ticketFromRow`.
-- [ ] **Step 4:** Run the test and `npm run typecheck`. Expect PASS.
-- [ ] **Step 5: Commit** `feat(tix): add a read-only upcoming tickets endpoint`
+- [x] **Step 1: Write failing tests**: 401 unauthenticated; returns only the signed-in user's tickets; capped at 3 and ordered soonest first; past events and cancelled or declined rows excluded; after two calls `users.tickets_seen_at` is unchanged and `GET /api/me` `ticketUpdates` is unchanged (Review Focus 4).
+- [x] **Step 2:** Run it. Expect FAIL (404).
+- [x] **Step 3: Implement** the route above `GET /api/tickets/guest/:token` handling so it is not captured by a param route. Reuse `TICKET_SELECT` and `ticketFromRow`.
+- [x] **Step 4:** Run the test and `npm run typecheck`. Expect PASS.
+- [x] **Step 5: Commit** `feat(tix): add a read-only upcoming tickets endpoint`
   - bullets: add `GET /api/tickets/upcoming` limited to three tickets; leave the seen marker alone; cover ordering, exclusions and the seen marker with Vitest.
 
 ### Task 4: Client types, keys and fetchers
@@ -133,9 +133,9 @@ export const fetchPlatformStats = () => api.get<PlatformStats>('/api/stats')
 ```
 `prefetchDashboard()` also warms `trendsKey(30)` and `UPCOMING_TICKETS_KEY`. Keys under `links:` invalidate with link writes (cache prefix rule in `CONTEXT.md`); `orgs:insights:*` falls under `/api/orgs` writes; tickets and stats keys have no write invalidation and rely on the cache TTL.
 
-- [ ] **Step 1: Write failing tests**: each fetcher calls the documented path (stub `fetch`, as `DashboardView.test.ts` does); `trendsKey(7) !== trendsKey(30)`; `prefetchDashboard` requests `/api/links/summary/trends?range=30&compare=1` and `/api/tickets/upcoming`.
-- [ ] **Step 2:** Run `npx vitest run src/lib/queries.dashboard.test.ts`. Expect FAIL.
-- [ ] **Step 3: Implement** the exports. Find the existing ticket type used by `MyTicketsView` and reuse it for `TicketSummary`.
-- [ ] **Step 4:** Run the test, `npm test` and `npm run typecheck`. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add dashboard query keys and fetchers`
-- [ ] **Step 6:** Update `CONTEXT.md` (backend route ownership: the two new routes; glossary: replace "live view" if Phase 3 removed it, otherwise leave) and commit `docs(dashboard): document the trends and upcoming tickets routes`.
+- [x] **Step 1: Write failing tests**: each fetcher calls the documented path (stub `fetch`, as `DashboardView.test.ts` does); `trendsKey(7) !== trendsKey(30)`; `prefetchDashboard` requests `/api/links/summary/trends?range=30&compare=1` and `/api/tickets/upcoming`.
+- [x] **Step 2:** Run `npx vitest run src/lib/queries.dashboard.test.ts`. Expect FAIL.
+- [x] **Step 3: Implement** the exports. Find the existing ticket type used by `MyTicketsView` and reuse it for `TicketSummary`.
+- [x] **Step 4:** Run the test, `npm test` and `npm run typecheck`. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add dashboard query keys and fetchers`
+- [x] **Step 6:** Update `CONTEXT.md` (backend route ownership: the two new routes; glossary: replace "live view" if Phase 3 removed it, otherwise leave) and commit `docs(dashboard): document the trends and upcoming tickets routes`.

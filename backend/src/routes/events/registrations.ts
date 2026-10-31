@@ -265,6 +265,23 @@ app.get('/api/tickets', requireAuth, async (c) => {
   return c.json({ tickets: [...upcoming.rows, ...past.rows].map(ticketFromRow) })
 })
 
+// Dashboard preview: upcoming tickets only. Does not link imports or touch tickets_seen_at.
+app.get('/api/tickets/upcoming', requireAuth, async (c) => {
+  const denied = await enforceConsent(c)
+  if (denied) return denied
+  const userId = c.var.userId
+  const result = await db(c).execute({
+    sql: `${TICKET_SELECT}
+          WHERE a.user_id = ?
+            AND e.event_date >= date('now', '+2 hours')
+            AND a.status IN ('confirmed', 'pending', 'entered', 'waitlisted')
+          ORDER BY e.event_date, e.event_time
+          LIMIT 3`,
+    args: [userId],
+  })
+  return c.json({ tickets: result.rows.map(ticketFromRow) })
+})
+
 const PASS_RL_LIMIT = 20
 const PASS_RL_WINDOW = 900
 

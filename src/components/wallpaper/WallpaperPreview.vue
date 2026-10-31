@@ -4,7 +4,7 @@
       ref="canvas"
       role="img"
       :aria-label="description"
-      :class="['mx-auto block h-auto w-[min(100%,calc(var(--preview-max-h,100vh)*var(--preview-ratio)))] border border-border bg-muted', landscape ? 'rounded-lg' : 'rounded-3xl']"
+      :class="['mx-auto block h-auto w-[min(100%,calc(var(--preview-max-h,100dvh)*var(--preview-ratio)))] border border-border bg-muted', landscape ? 'rounded-lg' : 'rounded-3xl']"
       :style="{ aspectRatio: `${input.width} / ${input.height}`, '--preview-ratio': input.width / input.height }"
     />
     <p

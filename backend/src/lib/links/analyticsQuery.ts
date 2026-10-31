@@ -14,6 +14,15 @@ export type AnalyticsPeriod = {
   top: Record<(typeof TOP_DIMS)[number], TopItem[]>
 }
 
+export type LinkScope = { sql: string; args: (string | number)[] }
+
+export const linkScope = (linkId: string): LinkScope => ({ sql: 'link_id = ?', args: [linkId] })
+
+export const userScope = (userId: string): LinkScope => ({
+  sql: 'link_id IN (SELECT id FROM links WHERE user_id = ?)',
+  args: [userId],
+})
+
 export function isDay(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const time = Date.parse(`${value}T00:00:00Z`)
@@ -31,33 +40,35 @@ export function daysBetween(from: string, to: string): number {
 type DimRow = { dim: string; value: string; clicks: number }
 
 /** Same gap handling as the rollup: empty becomes Unknown, a missing app is not a bucket. */
-function rawDimSql(dim: string): string {
+function rawDimSql(dim: string, scope: LinkScope): string {
   const value = dim === 'app' ? 'app' : `COALESCE(NULLIF(${dim}, ''), 'Unknown')`
   return `SELECT '${dim}' AS dim, ${value} AS value, COUNT(*) AS clicks
           FROM analytics
-          WHERE link_id = ? AND created_at >= ? AND created_at < ?${dim === 'app' ? ' AND app IS NOT NULL' : ''}
+          WHERE ${scope.sql} AND created_at >= ? AND created_at < ?${dim === 'app' ? ' AND app IS NOT NULL' : ''}
           GROUP BY 2`
 }
 
-const RAW_HOW_SQL = `SELECT 'how' AS dim,
+function rawHowSql(scope: LinkScope): string {
+  return `SELECT 'how' AS dim,
           CAST(((CAST(strftime('%w', datetime(created_at, '+8 hours')) AS INTEGER) + 6) % 7) * 24
                + CAST(strftime('%H', datetime(created_at, '+8 hours')) AS INTEGER) AS TEXT) AS value,
           COUNT(*) AS clicks
         FROM analytics
-        WHERE link_id = ? AND created_at >= ? AND created_at < ?
+        WHERE ${scope.sql} AND created_at >= ? AND created_at < ?
         GROUP BY 2`
+}
 
 /**
  * Link analytics for Manila days `from`..`to` (inclusive). Days before today come from the rollup tables;
  * today comes from raw rows, so a rollup row for today (written by the hourly job) is never read.
  */
-export async function loadLinkPeriod(
+export async function loadPeriod(
   database: Client,
-  linkId: string,
+  scope: LinkScope,
   from: string,
   to: string,
   today: string = manilaDay(new Date()),
-): Promise<AnalyticsPeriod> {
+): Promise<AnalyticsPeriod & { totals: AnalyticsPeriod['totals'] & { uniques: number; qr: number } }> {
   const dayCount = daysBetween(from, to)
   const rollupTo = to < today ? to : addDays(today, -1)
   const includesToday = from <= today && to >= today
@@ -68,15 +79,16 @@ export async function loadLinkPeriod(
   if (from <= rollupTo) {
     const [dailyResult, dimResult] = await Promise.all([
       database.execute({
-        sql: `SELECT day, clicks, uniques, qr FROM analytics_daily
-              WHERE link_id = ? AND day >= ? AND day <= ?`,
-        args: [linkId, from, rollupTo],
+        sql: `SELECT day, SUM(clicks) AS clicks, SUM(uniques) AS uniques, SUM(qr) AS qr FROM analytics_daily
+              WHERE ${scope.sql} AND day >= ? AND day <= ?
+              GROUP BY day`,
+        args: [...scope.args, from, rollupTo],
       }),
       database.execute({
         sql: `SELECT dim, value, SUM(clicks) AS clicks FROM analytics_daily_dim
-              WHERE link_id = ? AND day >= ? AND day <= ?
+              WHERE ${scope.sql} AND day >= ? AND day <= ?
               GROUP BY dim, value`,
-        args: [linkId, from, rollupTo],
+        args: [...scope.args, from, rollupTo],
       }),
     ])
     for (const row of dailyResult.rows) {
@@ -89,15 +101,17 @@ export async function loadLinkPeriod(
 
   if (includesToday) {
     const range = manilaDayRange(today)
-    const rawArgs = [linkId, ...range]
+    const rawArgs = [...scope.args, ...range]
     const [dailyResult, ...dimResults] = await Promise.all([
       database.execute({
         sql: `SELECT COUNT(*) AS clicks, COUNT(DISTINCT visitor_hash) AS uniques,
                      COALESCE(SUM(source = 'qr'), 0) AS qr
-              FROM analytics WHERE link_id = ? AND created_at >= ? AND created_at < ?`,
+              FROM analytics WHERE ${scope.sql} AND created_at >= ? AND created_at < ?`,
         args: rawArgs,
       }),
-      ...[...TOP_DIMS.map(rawDimSql), RAW_HOW_SQL].map((sql) => database.execute({ sql, args: rawArgs })),
+      ...[...TOP_DIMS.map((dim) => rawDimSql(dim, scope)), rawHowSql(scope)].map((sql) =>
+        database.execute({ sql, args: rawArgs }),
+      ),
     ])
     const todayRow = dailyResult.rows[0]
     if (todayRow && Number(todayRow.clicks) > 0) {
@@ -152,9 +166,19 @@ export async function loadLinkPeriod(
       clicks,
       avgDailyUniques: Math.round((uniques / dayCount) * 10) / 10,
       qrShare: clicks > 0 ? qr / clicks : 0,
+      uniques,
+      qr,
     },
     timeline,
     heat,
     top,
   }
 }
+
+export const loadLinkPeriod = (
+  database: Client,
+  linkId: string,
+  from: string,
+  to: string,
+  today?: string,
+) => loadPeriod(database, linkScope(linkId), from, to, today)
