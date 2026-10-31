@@ -83,7 +83,7 @@ export async function loadUserTrends(database: Client, userId: string, range: 7 
 ```
 Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, mounted right after `/api/links/summary/live` so it is not shadowed by `/api/links/:id`.
 
-- [ ] **Step 1: Write failing route tests** in `links.trends.test.ts` (pattern: `links.summary.test.ts`):
+- [x] **Step 1: Write failing route tests** in `links.trends.test.ts` (pattern: `links.summary.test.ts`):
   - 401 without a session; 422 `invalid_range` for `range=14`; default range is 30 (timeline length 30).
   - no links: `totals` all 0 and `links: 0`, `timeline` has 30 rows of zero, `heat` has 168 zeros, all `top` arrays empty (Review Focus 1).
   - two links of the user plus one of another user, rollup rows over several days: totals, timeline sums and `top.links` order by clicks descending, other user excluded (Review Focus 2).
@@ -92,11 +92,11 @@ Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, m
   - `compare=1` returns `previous.timeline` of the same length for the preceding equal span; omitted otherwise.
   - today's clicks come from raw `analytics` rows and a seeded rollup row for today is ignored (reuses the rule in `loadLinkPeriod`); a click at `2026-10-30 16:30:00` UTC lands on Manila day `2026-10-31` (Review Focus 5).
   - response header `Cache-Control` is `private, no-store`.
-- [ ] **Step 2:** Run `npx vitest run backend/src/routes/links.trends.test.ts`. Expect FAIL (404).
-- [ ] **Step 3: Implement `loadUserTrends`.** Current span = `[today-(range-1), today]`; previous = the `range` days before. Use `loadPeriod(database, userScope(userId), ...)` for each. `top.links`: one query over `analytics_daily` joined to `links` (`links.user_id = ?`, past days) merged with a raw-today `GROUP BY link_id` query, top 5 by clicks with slug tiebreak. `activeLinks`: count of distinct link ids with clicks in the same merged data. `links`: `SELECT COUNT(*) FROM links WHERE user_id = ?`.
-- [ ] **Step 4: Implement the route** with `range` parsed by the same rule as `analyticsRange` but 422 on a present, unsupported value.
-- [ ] **Step 5:** Run the route test and `npm run typecheck`. Expect PASS.
-- [ ] **Step 6: Commit** `feat(dashboard): add user-wide link trends endpoint`
+- [x] **Step 2:** Run `npx vitest run backend/src/routes/links.trends.test.ts`. Expect FAIL (404).
+- [x] **Step 3: Implement `loadUserTrends`.** Current span = `[today-(range-1), today]`; previous = the `range` days before. Use `loadPeriod(database, userScope(userId), ...)` for each. `top.links`: one query over `analytics_daily` joined to `links` (`links.user_id = ?`, past days) merged with a raw-today `GROUP BY link_id` query, top 5 by clicks with slug tiebreak. `activeLinks`: count of distinct link ids with clicks in the same merged data. `links`: `SELECT COUNT(*) FROM links WHERE user_id = ?`.
+- [x] **Step 4: Implement the route** with `range` parsed by the same rule as `analyticsRange` but 422 on a present, unsupported value.
+- [x] **Step 5:** Run the route test and `npm run typecheck`. Expect PASS.
+- [x] **Step 6: Commit** `feat(dashboard): add user-wide link trends endpoint`
   - bullets: add `GET /api/links/summary/trends` with optional previous period; read past days from rollups and today from raw rows; cover empty, cross-user, deleted-link and Manila-day cases with Vitest.
 
 ### Task 3: Read-only upcoming tickets
