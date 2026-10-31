@@ -65,11 +65,11 @@ Steps: "Create your first link" → `/links`, done when `linkCount > 0`; "Make a
 
 **Consumes:** the existing copy helper used by `LinkRow.vue` (grep `clipboard` in `src/components/links/`); reuse it, do not write a second one.
 
-- [ ] **Step 1: Write failing tests**: each row has a button with `aria-label="Copy eypi.cc/{slug}"` and at least 44px; clicking calls the clipboard helper with `https://eypi.cc/{slug}` and shows the success toast; when the helper rejects (Review Focus 2) an error toast shows and nothing throws.
-- [ ] **Step 2:** Run it. Expect FAIL.
-- [ ] **Step 3: Implement** the button inside each `BarList` row via the component's slot if it has one, otherwise render the list rows in `TopLinks` itself using the same bar markup (do not modify `BarList` for one caller).
-- [ ] **Step 4:** Run it. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add a copy button to top links`
+- [x] **Step 1: Write failing tests**: each row has a button with `aria-label="Copy eypi.cc/{slug}"` and at least 44px; clicking calls the clipboard helper with `https://eypi.cc/{slug}` and shows the success toast; when the helper rejects (Review Focus 2) an error toast shows and nothing throws.
+- [x] **Step 2:** Run it. Expect FAIL.
+- [x] **Step 3: Implement** the button inside each `BarList` row via the component's slot if it has one, otherwise render the list rows in `TopLinks` itself using the same bar markup (do not modify `BarList` for one caller).
+- [x] **Step 4:** Run it. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add a copy button to top links`
 
 ### Task 3: Accessibility and size guards for the new surfaces
 
