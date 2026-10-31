@@ -53,11 +53,11 @@ export function markWallpaperMade(): void   // sets localStorage['eypi.wallpaper
 ```
 Steps: "Create your first link" → `/links`, done when `linkCount > 0`; "Make a wallpaper from your schedule" → `/wallpaper`, done when the flag is set; "Check your invites" → `/invites`, done when `pendingInvites === 0` **and** the user has opened `/invites` once (flag `eypi.invitesSeen`, set by `InvitesView` on mount).
 
-- [ ] **Step 1: Write failing tests**: all three steps pending for a new user; `linkCount` null (still loading) hides the checklist; completing a step flips only that step; all done hides it; `dismiss()` writes `eypi.getStartedDismissed` and hides it; throwing storage keeps it visible and does not throw (Review Focus 1); the component renders a progress text "1 of 3 done", each step as a link with a check icon (`aria-hidden`) and a visually hidden "done"/"to do" word, and a Dismiss button of at least 44px.
-- [ ] **Step 2:** Run `npx vitest run src/composables/useGetStarted.test.ts src/components/dashboard/GetStarted.test.ts`. Expect FAIL.
-- [ ] **Step 3: Implement.** Render it at the top of the Rams section only (above the KPIs), only for users who have fewer than 3 links so established users never see it.
-- [ ] **Step 4:** Add the dashboard test (visible for a new user, hidden once dismissed) and run `npx vitest run src/views/DashboardView.test.ts`. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add a first-run checklist for new students`
+- [x] **Step 1: Write failing tests**: all three steps pending for a new user; `linkCount` null (still loading) hides the checklist; completing a step flips only that step; all done hides it; `dismiss()` writes `eypi.getStartedDismissed` and hides it; throwing storage keeps it visible and does not throw (Review Focus 1); the component renders a progress text "1 of 3 done", each step as a link with a check icon (`aria-hidden`) and a visually hidden "done"/"to do" word, and a Dismiss button of at least 44px.
+- [x] **Step 2:** Run `npx vitest run src/composables/useGetStarted.test.ts src/components/dashboard/GetStarted.test.ts`. Expect FAIL.
+- [x] **Step 3: Implement.** Render it at the top of the Rams section only (above the KPIs), only for users who have fewer than 3 links so established users never see it.
+- [x] **Step 4:** Add the dashboard test (visible for a new user, hidden once dismissed) and run `npx vitest run src/views/DashboardView.test.ts`. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add a first-run checklist for new students`
 
 ### Task 2: Copy short link on top links
 

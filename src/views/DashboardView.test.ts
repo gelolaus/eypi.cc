@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import DashboardView from './DashboardView.vue'
 import { clearQueryCache } from '@/lib/queryCache'
 import { useDashboardRange } from '@/composables/useDashboardRange'
+import { resetGetStartedState } from '@/composables/useGetStarted'
 import { useSession } from '@/stores/session'
 import type { OrgListItem } from '@/types/orgs'
 import { sampleTrends } from '@/components/dashboard/trendsFixture'
@@ -179,7 +180,11 @@ beforeEach(async () => {
   activeOrg.value = null
   orgs.value = []
   sessionStorage.clear()
+  localStorage.clear()
+  resetGetStartedState()
   useDashboardRange().setRange(30)
+  // Drop any refetch that lingering mounts triggered when the shared range changed.
+  clearQueryCache()
   stubApi()
   useSession().reset()
   await router.push('/')
@@ -286,5 +291,53 @@ describe('DashboardView rams and orgs', () => {
     expect(wrapper.get('[aria-label="Period"] button[aria-pressed="true"]').text()).toBe('7 days')
     expect(wrapper.text()).toContain('Clicks7')
     expect(wrapper.text()).not.toContain('Clicks30')
+  })
+})
+
+describe('DashboardView get started', () => {
+  it('shows the checklist for a new user with no links', async () => {
+    stubApi({ trends30: emptyTrends })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'https://eypi.cc')
+      if (url.pathname === '/api/links/summary/trends') {
+        return new Response(JSON.stringify(emptyTrends), { headers: { 'Content-Type': 'application/json' } })
+      }
+      if (url.pathname === '/api/tickets/upcoming') {
+        return new Response(JSON.stringify({ tickets: [] }), { headers: { 'Content-Type': 'application/json' } })
+      }
+      if (url.pathname === '/api/stats') {
+        return new Response(JSON.stringify(platformStats), { headers: { 'Content-Type': 'application/json' } })
+      }
+      return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+    }))
+    clearQueryCache()
+    const wrapper = mountDashboard(1)
+    await flushPromises()
+    expect(wrapper.find('[data-get-started]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Get started')
+    expect(wrapper.text()).toContain('0 of 3 done')
+  })
+
+  it('hides the checklist once dismissed', async () => {
+    stubApi({ trends30: emptyTrends })
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), 'https://eypi.cc')
+      if (url.pathname === '/api/links/summary/trends') {
+        return new Response(JSON.stringify(emptyTrends), { headers: { 'Content-Type': 'application/json' } })
+      }
+      if (url.pathname === '/api/tickets/upcoming') {
+        return new Response(JSON.stringify({ tickets: [] }), { headers: { 'Content-Type': 'application/json' } })
+      }
+      if (url.pathname === '/api/stats') {
+        return new Response(JSON.stringify(platformStats), { headers: { 'Content-Type': 'application/json' } })
+      }
+      return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+    }))
+    clearQueryCache()
+    const wrapper = mountDashboard(1)
+    await flushPromises()
+    await wrapper.get('[data-get-started] button').trigger('click')
+    expect(wrapper.find('[data-get-started]').exists()).toBe(false)
+    expect(localStorage.getItem('eypi.getStartedDismissed')).toBe('1')
   })
 })

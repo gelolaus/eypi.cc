@@ -135,6 +135,7 @@
 
 <script setup lang="ts">
 import { saveAs } from 'file-saver'
+import { markWallpaperMade } from '@/composables/useGetStarted'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { MAX_PASTE_LENGTH } from '@shared/schedule/parseRams'
 import WallpaperIntro from '@/components/wallpaper/WallpaperIntro.vue'
@@ -207,6 +208,7 @@ async function download() {
     const png = await makePng()
     if (!png) return
     saveAs(png.blob, png.filename)
+    markWallpaperMade()
     toast.success('Downloaded. Set it as your lock screen.')
   } finally {
     exporting.value = false
