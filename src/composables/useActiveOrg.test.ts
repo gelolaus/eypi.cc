@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
+const { apiRaw } = vi.hoisted(() => ({ apiRaw: vi.fn() }))
 const push = vi.fn()
 const currentRoute = {
   value: {
@@ -24,7 +25,13 @@ vi.mock('@/composables/useToast', () => ({
   }),
 }))
 
-import { useActiveOrg } from './useActiveOrg'
+vi.mock('@/lib/api', () => ({
+  api: {
+    raw: apiRaw,
+  },
+}))
+
+import { clearOrgHint, useActiveOrg } from './useActiveOrg'
 import { peekQuery, prefetchQuery } from '@/lib/queryCache'
 import type { OrgListItem } from '@/types/orgs'
 
@@ -61,6 +68,7 @@ describe('useActiveOrg', () => {
 
   beforeEach(() => {
     stubLocalStorage()
+    apiRaw.mockReset()
     push.mockReset()
     currentRoute.value = {
       name: 'orgs-modify',
@@ -71,10 +79,12 @@ describe('useActiveOrg', () => {
     vi.stubGlobal('location', { reload: reloadSpy, pathname: '/orgs/modify/jpcs' })
 
     // Reset shared module state between tests
-    const { activeOrg, orgs } = useActiveOrg()
+    const { activeOrg, orgs, orgsLoaded } = useActiveOrg()
     orgs.value = []
     activeOrg.value = null
+    orgsLoaded.value = false
     localStorage.removeItem('active_org_id')
+    localStorage.removeItem('eypi.hasOrg')
   })
 
   afterEach(() => {
@@ -116,6 +126,90 @@ describe('useActiveOrg', () => {
     expect(localStorage.getItem('active_org_id')).toBe('test')
     expect(push).not.toHaveBeenCalled()
     expect(reloadSpy).toHaveBeenCalledOnce()
+  })
+
+  it('reports no membership before orgs load when the hint is absent', () => {
+    const { hasOrg, orgsLoaded } = useActiveOrg()
+
+    expect(orgsLoaded.value).toBe(false)
+    expect(hasOrg.value).toBe(false)
+  })
+
+  it('reports membership before orgs load when the hint is 1', () => {
+    localStorage.setItem('eypi.hasOrg', '1')
+
+    const { hasOrg } = useActiveOrg()
+
+    expect(hasOrg.value).toBe(true)
+  })
+
+  it('stores a membership hint after fetching orgs', async () => {
+    apiRaw.mockResolvedValue({
+      ok: true,
+      json: async () => ({ orgs: [jpcs, testOrg] }),
+    })
+    const { fetchOrgs, hasOrg, orgsLoaded } = useActiveOrg()
+
+    await fetchOrgs()
+
+    expect(orgsLoaded.value).toBe(true)
+    expect(hasOrg.value).toBe(true)
+    expect(localStorage.getItem('eypi.hasOrg')).toBe('1')
+  })
+
+  it('stores a non-membership hint after fetching an empty org list', async () => {
+    localStorage.setItem('eypi.hasOrg', '1')
+    apiRaw.mockResolvedValue({
+      ok: true,
+      json: async () => ({ orgs: [] }),
+    })
+    const { fetchOrgs, hasOrg, orgsLoaded } = useActiveOrg()
+
+    await fetchOrgs()
+
+    expect(orgsLoaded.value).toBe(true)
+    expect(hasOrg.value).toBe(false)
+    expect(localStorage.getItem('eypi.hasOrg')).toBe('0')
+  })
+
+  it.each([
+    ['a rejected request', () => apiRaw.mockRejectedValue(new Error('offline'))],
+    ['a non-ok response', () => apiRaw.mockResolvedValue({ ok: false, json: async () => ({}) })],
+  ])('leaves membership unloaded and the hint untouched after %s', async (_name, arrangeFailure) => {
+    localStorage.setItem('eypi.hasOrg', '1')
+    arrangeFailure()
+    const { fetchOrgs, hasOrg, orgsLoaded } = useActiveOrg()
+
+    await fetchOrgs()
+
+    expect(orgsLoaded.value).toBe(false)
+    expect(hasOrg.value).toBe(true)
+    expect(localStorage.getItem('eypi.hasOrg')).toBe('1')
+  })
+
+  it('does not throw when localStorage access fails', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => { throw new Error('storage unavailable') },
+      setItem: () => { throw new Error('storage unavailable') },
+      removeItem: () => { throw new Error('storage unavailable') },
+    })
+    apiRaw.mockResolvedValue({
+      ok: true,
+      json: async () => ({ orgs: [jpcs] }),
+    })
+    const { fetchOrgs, hasOrg } = useActiveOrg()
+
+    expect(() => hasOrg.value).not.toThrow()
+    await expect(fetchOrgs()).resolves.toBeUndefined()
+    expect(() => clearOrgHint()).not.toThrow()
+  })
+
+  it('clears the stored membership hint', () => {
+    localStorage.setItem('eypi.hasOrg', '1')
+
+    clearOrgHint()
+
+    expect(localStorage.getItem('eypi.hasOrg')).toBeNull()
   })
 })
 

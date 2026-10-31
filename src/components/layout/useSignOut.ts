@@ -1,5 +1,5 @@
 import { useRouter } from 'vue-router'
-import { useActiveOrg } from '@/composables/useActiveOrg'
+import { clearOrgHint, useActiveOrg } from '@/composables/useActiveOrg'
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { useToast } from '@/composables/useToast'
 import { useSession } from '@/stores/session'
@@ -16,6 +16,7 @@ export function useSignOut() {
     await session.logout()
     orgs.value = []
     activeOrg.value = null
+    clearOrgHint()
     drawer.close()
     toast.success('Signed out.')
     await router.push('/login')
