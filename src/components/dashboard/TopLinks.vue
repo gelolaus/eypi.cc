@@ -54,6 +54,9 @@ async function onCopy(slug: string) {
     @retry="emit('retry')"
   >
     <div>
+      <h3 class="mb-2 text-sm font-medium text-muted-foreground">
+        Top links
+      </h3>
       <ul
         class="space-y-2"
         :aria-label="ariaLabel"
