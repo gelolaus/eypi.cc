@@ -105,11 +105,11 @@ Route: `GET /api/links/summary/trends?range=7|30|90&compare=1`, `requireAuth`, m
 
 **Produces:** `GET /api/tickets/upcoming` → `{ tickets: Ticket[] }` (same `ticketFromRow` shape as `GET /api/tickets`), at most 3, upcoming only (`e.event_date >= date('now','+2 hours')`), ordered by event date and time, statuses `confirmed`, `pending`, `entered`, `waitlisted` (not `cancelled` or `declined`). Auth and consent exactly as `GET /api/tickets`. Does **not** call `linkImportedRows` and does **not** update `tickets_seen_at`.
 
-- [ ] **Step 1: Write failing tests**: 401 unauthenticated; returns only the signed-in user's tickets; capped at 3 and ordered soonest first; past events and cancelled or declined rows excluded; after two calls `users.tickets_seen_at` is unchanged and `GET /api/me` `ticketUpdates` is unchanged (Review Focus 4).
-- [ ] **Step 2:** Run it. Expect FAIL (404).
-- [ ] **Step 3: Implement** the route above `GET /api/tickets/guest/:token` handling so it is not captured by a param route. Reuse `TICKET_SELECT` and `ticketFromRow`.
-- [ ] **Step 4:** Run the test and `npm run typecheck`. Expect PASS.
-- [ ] **Step 5: Commit** `feat(tix): add a read-only upcoming tickets endpoint`
+- [x] **Step 1: Write failing tests**: 401 unauthenticated; returns only the signed-in user's tickets; capped at 3 and ordered soonest first; past events and cancelled or declined rows excluded; after two calls `users.tickets_seen_at` is unchanged and `GET /api/me` `ticketUpdates` is unchanged (Review Focus 4).
+- [x] **Step 2:** Run it. Expect FAIL (404).
+- [x] **Step 3: Implement** the route above `GET /api/tickets/guest/:token` handling so it is not captured by a param route. Reuse `TICKET_SELECT` and `ticketFromRow`.
+- [x] **Step 4:** Run the test and `npm run typecheck`. Expect PASS.
+- [x] **Step 5: Commit** `feat(tix): add a read-only upcoming tickets endpoint`
   - bullets: add `GET /api/tickets/upcoming` limited to three tickets; leave the seen marker alone; cover ordering, exclusions and the seen marker with Vitest.
 
 ### Task 4: Client types, keys and fetchers
