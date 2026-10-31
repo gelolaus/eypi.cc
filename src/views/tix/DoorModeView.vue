@@ -77,7 +77,7 @@
       </div>
 
       <template v-if="state === 'ready'">
-        <div class="grid gap-4 lg:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ScannerPanel
             :slug="slug"
             emit-only

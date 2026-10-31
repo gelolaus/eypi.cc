@@ -144,7 +144,7 @@
             />
           </div>
 
-          <div class="grid gap-5 md:grid-cols-2">
+          <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div class="flex flex-col gap-3">
               <span class="text-base font-medium">Banner</span>
               <div
@@ -231,7 +231,7 @@
             <p class="mb-3 text-base font-medium">
               Social links
             </p>
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div
                 v-for="field in SOCIAL_FIELD_META"
                 :key="field.key"

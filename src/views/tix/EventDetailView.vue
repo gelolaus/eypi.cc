@@ -216,7 +216,7 @@
               title="Event settings"
             >
               <dl
-                class="grid gap-3 text-sm sm:grid-cols-2"
+                class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"
                 data-event-summary
               >
                 <div>

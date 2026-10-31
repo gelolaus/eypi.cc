@@ -506,6 +506,18 @@ describe('OrgModifyView mobile layout', () => {
     expect(wrapper.findAll('tbody [role="cell"]')).toHaveLength(4)
     wrapper.unmount()
   })
+
+  it('gives the profile and social link grids a shrinkable single column on phones', async () => {
+    installFetch({ asOwner: true })
+    const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+
+    // Without an explicit one-column track, a text input's own width stretches the column past the card.
+    const grids = wrapper.findAll('form div.grid')
+    expect(grids.length).toBeGreaterThanOrEqual(2)
+    for (const grid of grids) expect(grid.classes()).toContain('grid-cols-1')
+    wrapper.unmount()
+  })
 })
 
 describe('OrgModifyView undo', () => {

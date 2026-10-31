@@ -3,7 +3,7 @@
     title="Wallpaper"
     description="Turn your class schedule into a phone wallpaper."
   >
-    <div class="grid gap-8 lg:grid-cols-2 lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
       <section class="space-y-3 lg:col-start-1 lg:row-start-1">
         <Label for="wallpaper-schedule">Your schedule</Label>
         <Textarea

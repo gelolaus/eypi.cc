@@ -2,7 +2,7 @@
   <div
     role="status"
     aria-busy="true"
-    class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+    class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
   >
     <span class="sr-only">{{ label }}</span>
     <Skeleton

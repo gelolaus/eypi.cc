@@ -140,7 +140,7 @@ const hasActivity = computed(() => {
     />
 
     <template v-else-if="data">
-      <div class="grid gap-3 sm:grid-cols-2">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Card class="gap-3 rounded-3xl p-5">
           <StatTile
             label="Profile views"

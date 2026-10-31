@@ -94,7 +94,7 @@
       </p>
 
       <Card class="gap-4 rounded-3xl p-5 sm:p-6">
-        <dl class="grid gap-4 text-sm sm:grid-cols-2">
+        <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt class="text-muted-foreground">
               When (Manila time)

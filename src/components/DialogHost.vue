@@ -17,7 +17,7 @@
 
       <div
         v-if="current.requireText"
-        class="grid gap-1.5"
+        class="grid grid-cols-1 gap-1.5"
       >
         <label
           :for="inputId"

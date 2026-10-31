@@ -8,7 +8,7 @@
       @open-auto-focus.prevent="focusFirstEmpty"
     >
       <form
-        class="grid gap-4"
+        class="grid grid-cols-1 gap-4"
         @submit.prevent="submit"
       >
         <DialogHeader>

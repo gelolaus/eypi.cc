@@ -33,7 +33,7 @@
       </li>
     </ul>
 
-    <dl class="mt-14 grid gap-8 md:grid-cols-3">
+    <dl class="mt-14 grid grid-cols-1 gap-8 md:grid-cols-3">
       <div
         v-for="pillar in pillars"
         :key="pillar.title"

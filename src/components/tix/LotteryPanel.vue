@@ -28,7 +28,7 @@
 
     <div
       v-if="!drawn"
-      class="grid gap-4 sm:max-w-md"
+      class="grid grid-cols-1 gap-4 sm:max-w-md"
     >
       <div class="space-y-1.5">
         <Label for="lottery-seed">Seed (optional)</Label>

@@ -160,7 +160,7 @@
       <!-- Events -->
       <div
         v-else
-        class="grid gap-6 md:grid-cols-2"
+        class="grid grid-cols-1 gap-6 md:grid-cols-2"
       >
         <Card
           v-for="group in eventGroups"
