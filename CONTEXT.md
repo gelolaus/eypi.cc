@@ -236,6 +236,7 @@ Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run
 ## UI conventions
 
 - The product is called **Eypi** in the UI; `eypi.cc` is the domain and appears only in URLs and legal text.
-- **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. The member dashboard shows them in a small Across APC strip.
+- **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. The member dashboard shows them in a small Across APC strip.
+- The Rams section of the member dashboard may show a first-run `GetStarted` checklist (create a link, make a wallpaper, check invites) for users with fewer than 3 links; dismissal and step flags live in `localStorage` via `useGetStarted`.
 - The side rail collapses to icons; the org switcher shows the capitalised org slug only.
 - The signed-in rail has two groups, Rams and Orgs. Rams: Dashboard, Links, My tickets, Wallpaper, Invites, Orgs (`/orgs`). Orgs, members only: Tix, Frames, Forms, My org (`/orgs/modify`), hidden when `useActiveOrg().hasOrg` is false. Phone tabs, exactly five: Dashboard, Links, My tickets, Wallpaper, Invites. On phones the profile menu is a bottom sheet, and from `sm` up it stays the dropdown. The command palette and the site sheet use the same membership gate.

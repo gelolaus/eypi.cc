@@ -163,7 +163,7 @@ async function mountShell() {
   return wrapper
 }
 
-function assertNamedControls(scope: ParentNode) {
+function assertNamedControls(scope: Element) {
   const controls = [...scope.querySelectorAll('a, button')]
   expect(controls.length).toBeGreaterThan(0)
   const unnamed = controls.filter((el) => !nameOf(el)).map((el) => el.outerHTML.slice(0, 100))

@@ -86,8 +86,8 @@ Steps: "Create your first link" → `/links`, done when `linkCount > 0`; "Make a
 
 **Files:** Modify `CONTEXT.md` and `DESIGN_SYSTEM.md` only where the earlier phases left them stale; modify `docs/superpowers/plans/2026-10-31-phase-4-extras.md` (tick boxes).
 
-- [ ] **Step 1:** Run `npm test`, `npm run typecheck`, `npm run build`, `npm run release:check` (if present in `package.json`). All must pass; paste any failure output into your report instead of working around it.
-- [ ] **Step 2:** Manual pass with `npm run dev:local`, signed in with a non-member account and a member account (ask the owner for credentials; never invent or store them): desktop at 1280px and phone at 360px. Check the list below and report each line as pass or fail with a one-line note:
+- [x] **Step 1:** Run `npm test`, `npm run typecheck`, `npm run build`, `npm run release:check` (if present in `package.json`). All must pass; paste any failure output into your report instead of working around it.
+- [x] **Step 2:** Manual pass with `npm run dev:local`, signed in with a non-member account and a member account (ask the owner for credentials; never invent or store them): desktop at 1280px and phone at 360px. Check the list below and report each line as pass or fail with a one-line note:
   - non-member sees no Tix, Frames, Forms or My org anywhere (rail, tabs, profile sheet, palette with Ctrl+K, dashboard cards);
   - member sees all four in the rail, the profile sheet, the palette and the dashboard Orgs section;
   - tab bar shows Dashboard, Links, My tickets, Wallpaper, Invites with working badges and no wrapped labels;
@@ -95,5 +95,5 @@ Steps: "Create your first link" → `/links`, done when `linkCount > 0`; "Make a
   - `/orgs/modify/...` highlights only My org;
   - dashboard period picker changes every Rams chart, Orgs section follows the same period;
   - light, dark and true black themes render charts legibly.
-- [ ] **Step 3:** Update the docs that are stale, tick the boxes, and run `npm test` once more.
-- [ ] **Step 4: Commit** `docs(dashboard): record the finished nav and dashboard round`
+- [x] **Step 3:** Update the docs that are stale, tick the boxes, and run `npm test` once more.
+- [x] **Step 4: Commit** `docs(dashboard): record the finished nav and dashboard round`
