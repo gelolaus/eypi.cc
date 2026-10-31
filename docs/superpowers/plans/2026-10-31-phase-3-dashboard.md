@@ -84,11 +84,11 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 // PanelState: props { status: 'loading' | 'error' | 'empty' | 'ready'; title: string; emptyBody?: string; action?: { label: string; to: string } }, emits retry; default slot renders when ready
 ```
 
-- [ ] **Step 1: Write failing tests**: default range 30; `setRange(7)` writes `sessionStorage`; a throwing `sessionStorage` does not throw and falls back to 30; `PeriodPicker` marks only the active button `aria-pressed="true"` and emits the chosen value; `PanelState` shows a `role="status"` skeleton when loading, an error message with a Retry button that emits `retry`, the empty body and action link when empty, and the slot when ready.
-- [ ] **Step 2:** Run the three test files. Expect FAIL.
-- [ ] **Step 3: Implement.** Copy the skeleton markup pattern (`role="status" aria-busy="true"` plus `sr-only` text) from the current `DashboardView.vue`.
-- [ ] **Step 4:** Run them. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add period picker and shared panel states`
+- [x] **Step 1: Write failing tests**: default range 30; `setRange(7)` writes `sessionStorage`; a throwing `sessionStorage` does not throw and falls back to 30; `PeriodPicker` marks only the active button `aria-pressed="true"` and emits the chosen value; `PanelState` shows a `role="status"` skeleton when loading, an error message with a Retry button that emits `retry`, the empty body and action link when empty, and the slot when ready.
+- [x] **Step 2:** Run the three test files. Expect FAIL.
+- [x] **Step 3: Implement.** Copy the skeleton markup pattern (`role="status" aria-busy="true"` plus `sr-only` text) from the current `DashboardView.vue`.
+- [x] **Step 4:** Run them. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add period picker and shared panel states`
 
 ### Task 3: Link KPIs, clicks trend and top links
 
