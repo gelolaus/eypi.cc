@@ -87,7 +87,7 @@ Use these terms. Prefer them over invented synonyms.
 | **Frontend Worker** | `worker/index.ts` | Serves SPA assets at `eypi.cc`; **edge short-link redirects** via `LINKS_KV`; async click logging; per-route meta tags; media route |
 | **Backend API** | `backend/` | All `/api/*` on `api.eypi.cc` (Hono Worker): sign-in, sessions, links, orgs, events, DP, forms, admin, account, legal, stats, cron retention |
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |
-| **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list, RAMS schedule parser and layout helpers (`shared/schedule/`) |
+| **Shared contracts** | `shared/` | `LINKS_KV` encode/decode, click analytics helpers, reserved slug list, class schedule parser and layout helpers (`shared/schedule/`) |
 | **Legacy redirects** | `redirects/` | Only `tix.eypi.cc` / `forms.eypi.cc` → unified `eypi.cc` — **not** general short links |
 | **Design system** | `DESIGN_SYSTEM.md` | Visual/UI language (wantap layout and components in the APC palette with Light, Dark and True black themes, APC blue and gold, Plus Jakarta Sans, Syne, JetBrains Mono) |
 | **Plans / specs** | `docs/superpowers/` | Agent plans and design specs |

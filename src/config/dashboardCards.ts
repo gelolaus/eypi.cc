@@ -2,7 +2,7 @@
 export const CARD_DESCRIPTIONS: Record<string, string> = {
   '/links': 'Shorten URLs and track click analytics by OS, country, and referrer.',
   '/tickets': 'See your upcoming tickets and event check-in status.',
-  '/wallpaper': 'Turn a RAMS schedule into a phone wallpaper.',
+  '/wallpaper': 'Turn your class schedule into a phone wallpaper.',
   '/invites': 'Review organization invites waiting for a response.',
   '/orgs': 'Browse the student organizations on campus and see what each one does.',
   '/manage/tix': 'Create events, manage guest lists, and run QR-code check-in.',

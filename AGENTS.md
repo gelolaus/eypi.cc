@@ -19,7 +19,7 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Avatar picker, task-by-task | `docs/superpowers/plans/2026-10-29-avatar-picker.md` |
 | Frame caption fields (`{{Field}}` placeholders) and the downloads pill, what and why | `docs/superpowers/specs/2026-10-30-frame-caption-fields-design.md` |
 | Frame caption fields, task-by-task | `docs/superpowers/plans/2026-10-30-frame-caption-fields.md` |
-| Schedule wallpaper (paste a RAMS schedule, get a phone wallpaper), what and why | `docs/superpowers/specs/2026-10-30-schedule-wallpaper-design.md` |
+| Schedule wallpaper (paste a class schedule, get a phone wallpaper), what and why | `docs/superpowers/specs/2026-10-30-schedule-wallpaper-design.md` |
 | Schedule wallpaper, task-by-task | `docs/superpowers/plans/2026-10-30-schedule-wallpaper.md` |
 | Nav groups (Rams / Orgs), org-only gating, five phone tabs, descriptive dashboard, what and why | `docs/superpowers/specs/2026-10-31-nav-groups-dashboard-design.md` |
 | Nav and dashboard, task-by-task (build in order) | `docs/superpowers/plans/2026-10-31-phase-{1-nav,2-analytics-api,3-dashboard,4-extras}.md` |

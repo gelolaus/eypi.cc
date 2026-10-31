@@ -7,7 +7,7 @@
       <DialogHeader class="pr-8">
         <DialogTitle>How Eypi Wallpaper works</DialogTitle>
         <DialogDescription>
-          Paste your RAMS class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.
+          Paste your class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.
         </DialogDescription>
       </DialogHeader>
       <video

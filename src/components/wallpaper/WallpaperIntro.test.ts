@@ -25,7 +25,7 @@ describe('WallpaperIntro', () => {
     await mountIntro()
     expect(dialog()).not.toBeNull()
     expect(dialog()!.querySelector('h2')?.textContent).toBe('How Eypi Wallpaper works')
-    expect(dialog()!.textContent).toContain('Paste your RAMS class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.')
+    expect(dialog()!.textContent).toContain('Paste your class schedule, pick a layout and theme, then download it as a lock screen or desktop wallpaper.')
     const v = video()!
     expect(v.getAttribute('src')).toBe('/wallpaper-intro.mp4')
     expect(v.getAttribute('poster')).toBe('/wallpaper-intro-poster.jpg')
