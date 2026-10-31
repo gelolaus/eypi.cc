@@ -138,4 +138,4 @@ export const fetchPlatformStats = () => api.get<PlatformStats>('/api/stats')
 - [x] **Step 3: Implement** the exports. Find the existing ticket type used by `MyTicketsView` and reuse it for `TicketSummary`.
 - [x] **Step 4:** Run the test, `npm test` and `npm run typecheck`. Expect PASS.
 - [x] **Step 5: Commit** `feat(dashboard): add dashboard query keys and fetchers`
-- [ ] **Step 6:** Update `CONTEXT.md` (backend route ownership: the two new routes; glossary: replace "live view" if Phase 3 removed it, otherwise leave) and commit `docs(dashboard): document the trends and upcoming tickets routes`.
+- [x] **Step 6:** Update `CONTEXT.md` (backend route ownership: the two new routes; glossary: replace "live view" if Phase 3 removed it, otherwise leave) and commit `docs(dashboard): document the trends and upcoming tickets routes`.

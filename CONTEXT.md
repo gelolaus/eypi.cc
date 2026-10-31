@@ -104,11 +104,11 @@ Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. 
 | Current user, logout | `backend/src/routes/me.ts` |
 | Account (export, sessions, delete) | `backend/src/routes/account.ts` |
 | Legal consent | `backend/src/routes/legal.ts`, `middleware/requireConsent.ts` |
-| Links + link analytics (`GET /api/links/summary` for the dashboard) | `backend/src/routes/links.ts` |
+| Links + link analytics (`GET /api/links/summary` and `GET /api/links/summary/trends` for the dashboard) | `backend/src/routes/links.ts` |
 | Link reports (public) | `backend/src/routes/reports.ts` |
 | Orgs, members, invites, public catalog (`GET /api/orgs/:org_id/summary` for the dashboard) | `backend/src/routes/orgs.ts` |
 | Org feature gate / org context | `backend/src/middleware/orgGuard.ts` (`isOrgFeature`), `orgContext.ts` |
-| Events / Tix | `backend/src/routes/events/*` (split by area: `index.ts` mounts them). `manage.ts` events CRUD, publish/close/cancel, cover, clusters, finalize, add-guest; `import.ts` CSV upload and column mapping; `public.ts` `GET /api/events/:slug`, `GET /api/events/:slug/public` and the Google Wallet pass; `registrations.ts` `POST /api/events/:slug/register`, `DELETE /api/events/:slug/registration`, `GET /api/tickets`, `POST /api/tickets/:id/pass`; `inbox.ts` `GET /attendees` and `POST /attendees/bulk`; `lottery.ts` `POST /draw`; `guests.ts` `guest-link`, `attendees.csv` (needs `X-Active-Org-Id`) and `GET /api/tickets/guest/:token`; `door.ts` check-in, remove/restore, `roster`, `live`, `checkins/sync` |
+| Events / Tix | `backend/src/routes/events/*` (split by area: `index.ts` mounts them). `manage.ts` events CRUD, publish/close/cancel, cover, clusters, finalize, add-guest; `import.ts` CSV upload and column mapping; `public.ts` `GET /api/events/:slug`, `GET /api/events/:slug/public` and the Google Wallet pass; `registrations.ts` `POST /api/events/:slug/register`, `DELETE /api/events/:slug/registration`, `GET /api/tickets`, `GET /api/tickets/upcoming` (read-only dashboard preview), `POST /api/tickets/:id/pass`; `inbox.ts` `GET /attendees` and `POST /attendees/bulk`; `lottery.ts` `POST /draw`; `guests.ts` `guest-link`, `attendees.csv` (needs `X-Active-Org-Id`) and `GET /api/tickets/guest/:token`; `door.ts` check-in, remove/restore, `roster`, `live`, `checkins/sync` |
 | Frames / DP | `backend/src/routes/dp.ts` |
 | Forms catalog + templates | `backend/src/routes/forms.ts` |
 | Admin panel API, audit log | `backend/src/routes/admin.ts`, `lib/audit.ts` |
