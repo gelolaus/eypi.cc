@@ -147,11 +147,11 @@ export const CARD_DESCRIPTIONS: Record<string, string>   // keyed by nav `to`; o
 ```
 Rams cards: Links, My tickets, Wallpaper, Invites, Orgs. Orgs cards: Tix, Frames, Forms, My org. Reuse the current card markup (`router-link` wrapping `Card`). Invites card shows the pending-invite count as a `Badge`.
 
-- [ ] **Step 1: Write failing tests**: a test that every nav item with a group (except Dashboard) has a `CARD_DESCRIPTIONS` entry; non-member renders only the Rams heading and five cards; member renders both headings and nine cards; cards link to the right routes; invite badge appears only when `pendingInviteCount > 0`.
-- [ ] **Step 2:** Run it. Expect FAIL.
-- [ ] **Step 3: Implement.** Keep existing copy for Links, Forms, Tix, Frames, Orgs descriptions; write new one-sentence copy for My tickets, Wallpaper, Invites and My org.
-- [ ] **Step 4:** Run it. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): group feature cards as rams and orgs`
+- [x] **Step 1: Write failing tests**: a test that every nav item with a group (except Dashboard) has a `CARD_DESCRIPTIONS` entry; non-member renders only the Rams heading and five cards; member renders both headings and nine cards; cards link to the right routes; invite badge appears only when `pendingInviteCount > 0`.
+- [x] **Step 2:** Run it. Expect FAIL.
+- [x] **Step 3: Implement.** Keep existing copy for Links, Forms, Tix, Frames, Orgs descriptions; write new one-sentence copy for My tickets, Wallpaper, Invites and My org.
+- [x] **Step 4:** Run it. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): group feature cards as rams and orgs`
 
 ### Task 7: Compose the dashboard
 
