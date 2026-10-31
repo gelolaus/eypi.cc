@@ -67,11 +67,11 @@ export function checkInRate(checkIns: number, registrations: number): number | n
 export function sumTimeline(timeline: { clicks: number; uniques: number }[]): { clicks: number; uniques: number }
 ```
 
-- [ ] **Step 1: Write failing tests**: `deltaPercent(110, 100) === 10`, `(50, 100) === -50`, `(5, 0) === null`, `(0, 0) === null`; `formatDelta(5, 0)` is `{ direction: 'new', text: 'New' }`, `(0, 0)` is `{ direction: 'none', text: '' }`, `(100, 100)` is `flat`; `peakHourLabel` returns `null` for 168 zeros and for a 10-length array (Review Focus 2), and for a single non-zero cell at index 19 (Monday 19:00) returns text containing `Mondays` and `7 PM`; `checkInRate(30, 60) === 50`, `(1, 0) === null`, never above 100.
-- [ ] **Step 2:** Run `npx vitest run src/lib/dashboardModel.test.ts`. Expect FAIL.
-- [ ] **Step 3: Implement** the helpers. Round percentages to integers; Manila-hour labels use 12-hour clock with `AM`/`PM`.
-- [ ] **Step 4:** Run the test. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add pure helpers for deltas, peaks and rates`
+- [x] **Step 1: Write failing tests**: `deltaPercent(110, 100) === 10`, `(50, 100) === -50`, `(5, 0) === null`, `(0, 0) === null`; `formatDelta(5, 0)` is `{ direction: 'new', text: 'New' }`, `(0, 0)` is `{ direction: 'none', text: '' }`, `(100, 100)` is `flat`; `peakHourLabel` returns `null` for 168 zeros and for a 10-length array (Review Focus 2), and for a single non-zero cell at index 19 (Monday 19:00) returns text containing `Mondays` and `7 PM`; `checkInRate(30, 60) === 50`, `(1, 0) === null`, never above 100.
+- [x] **Step 2:** Run `npx vitest run src/lib/dashboardModel.test.ts`. Expect FAIL.
+- [x] **Step 3: Implement** the helpers. Round percentages to integers; Manila-hour labels use 12-hour clock with `AM`/`PM`.
+- [x] **Step 4:** Run the test. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add pure helpers for deltas, peaks and rates`
 
 ### Task 2: Period state, picker and panel wrapper
 
