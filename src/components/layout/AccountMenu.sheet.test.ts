@@ -82,6 +82,7 @@ describe('AccountMenu on a phone', () => {
     expect(sheet!.getAttribute('aria-modal')).toBe('true')
     expect(document.body.querySelector('[data-slot="dropdown-menu-content"]')).toBeNull()
     expect(sheet!.className).toContain('rounded-t-3xl')
+    expect(document.body.querySelector('[data-sheet-backdrop]')!.getAttribute('aria-label')).toBe('Close')
     expect(trigger(wrapper).attributes('aria-haspopup')).toBe('dialog')
     expect(trigger(wrapper).attributes('aria-expanded')).toBe('true')
     expect(trigger(wrapper).attributes('aria-controls')).toBe(sheet!.id)
@@ -196,10 +197,28 @@ describe('AccountMenu on a phone', () => {
 
   it('closes and opens the avatar picker from Change avatar', async () => {
     const { wrapper, sheet } = await openSheet({ member: true })
-    Array.from(sheet!.querySelectorAll<HTMLElement>('button')).find((el) => text(el) === 'Change avatar')!.click()
-    await flushPromises()
-    expect(document.body.querySelector('[role="dialog"][aria-label="Account"]')).toBeNull()
-    expect(document.body.textContent).toContain('Choose your avatar')
+    const menuButton = trigger(wrapper).element as HTMLElement
+    const focused: HTMLElement[] = []
+    const orig = HTMLElement.prototype.focus
+    HTMLElement.prototype.focus = function (this: HTMLElement, ...args: []) {
+      focused.push(this)
+      return orig.apply(this, args)
+    }
+    try {
+      Array.from(sheet!.querySelectorAll<HTMLElement>('button')).find((el) => text(el) === 'Change avatar')!.click()
+      await flushPromises()
+      expect(document.body.querySelector('[role="dialog"][aria-label="Account"]')).toBeNull()
+      const picker = document.body.querySelector('[data-slot="dialog-content"]')
+      expect(picker).not.toBeNull()
+      expect(picker!.textContent).toContain('Choose your avatar')
+      expect(picker!.contains(document.activeElement)).toBe(true)
+      expect(document.activeElement).not.toBe(menuButton)
+      const tookPicker = focused.findIndex((el) => picker!.contains(el))
+      expect(tookPicker).toBeGreaterThanOrEqual(0)
+      expect(focused.slice(tookPicker)).not.toContain(menuButton)
+    } finally {
+      HTMLElement.prototype.focus = orig
+    }
     wrapper.unmount()
   })
 

@@ -39,6 +39,7 @@
     :id="menuId"
     v-model:open="sheetOpen"
     title="Account"
+    :restore-focus="restoreSheetFocus"
   >
     <div
       data-sheet-identity
@@ -396,6 +397,8 @@ const isPhone = useIsPhone()
 const menuId = useId()
 const phoneTrigger = ref<HTMLButtonElement | null>(null)
 const sheetOpen = ref(false)
+/** False only while Change avatar is handing focus to the picker. */
+const restoreSheetFocus = ref(true)
 /** Lives outside the menu content so it survives the menu closing. */
 const avatarOpen = ref(false)
 
@@ -483,8 +486,12 @@ function onSheetNavigate(event: MouseEvent) {
 }
 
 function onSheetAvatar() {
+  restoreSheetFocus.value = false
   sheetOpen.value = false
   avatarOpen.value = true
+  void nextTick(() => {
+    restoreSheetFocus.value = true
+  })
 }
 
 function onSheetInstall() {

@@ -51,6 +51,7 @@
       :id="menuId"
       v-model:open="isOpen"
       title="Switch organization"
+      close-label="Close organization menu"
       data-org-switcher-menu
       :class="[
         'absolute z-50 sm:w-72 max-w-[calc(100vw-2rem)]',

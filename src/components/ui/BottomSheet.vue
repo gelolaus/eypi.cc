@@ -9,7 +9,7 @@
         type="button"
         data-sheet-backdrop
         class="fixed inset-0 z-[10000] cursor-default border-0 bg-black/50 p-0 sm:z-40 sm:bg-transparent"
-        aria-label="Close"
+        :aria-label="closeLabel"
         tabindex="-1"
         @click="close"
       />
@@ -60,12 +60,19 @@ function useIsPhone(): Ref<boolean> {
 
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{
-  open: boolean
-  title: string
-  /** Id of the panel, so a trigger can point `aria-controls` at it. */
-  id?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title: string
+    /** Id of the panel, so a trigger can point `aria-controls` at it. */
+    id?: string
+    /** Accessible name of the backdrop button. */
+    closeLabel?: string
+    /** Move focus back to the opener after close. Turn off when another dialog is taking focus. */
+    restoreFocus?: boolean
+  }>(),
+  { closeLabel: 'Close', restoreFocus: true },
+)
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
@@ -108,9 +115,10 @@ watch(
       window.removeEventListener('keydown', onKeydown)
       trap.release()
       const target = opener
+      const shouldRestore = props.restoreFocus
       opener = null
       void nextTick(() => {
-        if (target?.isConnected) target.focus()
+        if (shouldRestore && target?.isConnected) target.focus()
       })
     }
   },
