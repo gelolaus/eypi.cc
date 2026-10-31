@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { checkInRate, deltaPercent, formatDelta, peakHourLabel, sumTimeline } from './dashboardModel'
+import { checkInRate, deltaPercent, formatDelta, sumTimeline } from './dashboardModel'
 
 describe('deltaPercent', () => {
   it('computes signed percentage change', () => {
@@ -26,20 +26,6 @@ describe('formatDelta', () => {
   it('formats up and down with a sign', () => {
     expect(formatDelta(110, 100)).toEqual({ direction: 'up', text: '+10%' })
     expect(formatDelta(50, 100)).toEqual({ direction: 'down', text: '-50%' })
-  })
-})
-
-describe('peakHourLabel', () => {
-  it('returns null for all zeros or wrong length', () => {
-    expect(peakHourLabel(Array.from({ length: 168 }, () => 0))).toBeNull()
-    expect(peakHourLabel(Array.from({ length: 10 }, () => 1))).toBeNull()
-  })
-  it('names Mondays around 7 PM for index 19', () => {
-    const heat = Array.from({ length: 168 }, () => 0)
-    heat[19] = 5
-    const label = peakHourLabel(heat)
-    expect(label).toContain('Mondays')
-    expect(label).toContain('7 PM')
   })
 })
 

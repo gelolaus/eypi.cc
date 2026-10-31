@@ -47,22 +47,12 @@
           :status="trendsStatus"
           @retry="trendsQuery.refresh()"
         />
-        <BestHours
-          :trends="trends"
-          :status="trendsStatus"
-          @retry="trendsQuery.refresh()"
-        />
         <UpcomingTickets
           :tickets="tickets"
           :status="ticketsStatus"
           @retry="ticketsQuery.refresh()"
         />
       </div>
-
-      <AcrossApc
-        :stats="stats"
-        :status="statsStatus"
-      />
 
       <FeatureCards
         :admin="isAdmin"
@@ -94,8 +84,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import AcrossApc from '@/components/dashboard/AcrossApc.vue'
-import BestHours from '@/components/dashboard/BestHours.vue'
 import FeatureCards from '@/components/dashboard/FeatureCards.vue'
 import GetStarted from '@/components/dashboard/GetStarted.vue'
 import LinkKpis from '@/components/dashboard/LinkKpis.vue'
@@ -107,13 +95,10 @@ import { Card } from '@/components/ui/card'
 import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useDashboardRange } from '@/composables/useDashboardRange'
 import {
-  PLATFORM_STATS_KEY,
   UPCOMING_TICKETS_KEY,
-  fetchPlatformStats,
   fetchTrends,
   fetchUpcomingTickets,
   trendsKey,
-  type PlatformStats,
   type TicketSummary,
   type UserTrends,
 } from '@/lib/queries'
@@ -139,7 +124,6 @@ const trendsQuery = useQuery(
   () => fetchTrends(range.value),
 )
 const ticketsQuery = useQuery(UPCOMING_TICKETS_KEY, fetchUpcomingTickets)
-const statsQuery = useQuery(PLATFORM_STATS_KEY, fetchPlatformStats)
 
 function panelStatus(
   status: 'idle' | 'loading' | 'ready' | 'error',
@@ -162,7 +146,4 @@ const tickets = computed<TicketSummary[] | null>(() => {
   return data ? data.tickets : ticketsQuery.status.value === 'ready' ? [] : null
 })
 const ticketsStatus = computed(() => panelStatus(ticketsQuery.status.value, ticketsQuery.data.value))
-
-const stats = computed<PlatformStats | null>(() => statsQuery.data.value ?? null)
-const statsStatus = computed(() => panelStatus(statsQuery.status.value, statsQuery.data.value))
 </script>

@@ -73,7 +73,7 @@ Title stays `Hi, {name}.` with the invite banner. Two sections, each a labelled 
 Removed: the "Your org" card, org slug and name block, `LiveClicks` panel on the dashboard (the component stays for the Links page if it is used there; otherwise delete it with its endpoint test only if nothing else imports it).
 
 ### Rams section
-> Update 2026-10-31: items 2 (clicks per day), 3 (top links) and 4 (who clicks) were removed from the dashboard at the owner's request after review. The trends API still returns that data; only the panels are gone.
+> Update 2026-10-31: items 2 (clicks per day), 3 (top links), 4 (who clicks), 5 (best hours) and 7 (Across APC) were removed from the dashboard at the owner's request after review. The trends API still returns that data; only the panels are gone.
 
 1. **KPI strip** (`StatTile`, each with delta against the previous equal period): Clicks, Unique visitors (sum of per-day uniques, labelled "daily uniques"), QR scans, Active links (links with at least one click in the period). A second row: Links total, Next ticket (event name and date, or "No upcoming tickets").
 2. **Clicks per day** `LineChart`: clicks and uniques, with the previous period as a second series when the period fits.

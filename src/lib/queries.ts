@@ -40,19 +40,6 @@ export type OrgInsights = {
   members: { daily: { day: string; count: number }[] }
 }
 
-export type PlatformStats = {
-  users: number
-  orgs: number
-  members: number
-  links: number
-  clicks: number
-  events: number
-  tickets: number
-  checkIns: number
-  frames: number
-  frameDownloads: number
-}
-
 /** Same shape as MyTicketsView / GET /api/tickets. */
 export type TicketSummary = TicketDto
 
@@ -72,9 +59,6 @@ export const fetchUpcomingTickets = () => api.get<{ tickets: TicketSummary[] }>(
 export const orgInsightsKey = (orgId: string, days: TrendRange) => `orgs:insights:${orgId}:${days}`
 export const fetchOrgInsights = (orgId: string, days: TrendRange) =>
   api.get<OrgInsights>(`/api/orgs/${orgId}/insights?days=${days}`)
-
-export const PLATFORM_STATS_KEY = 'stats:platform'
-export const fetchPlatformStats = () => api.get<PlatformStats>('/api/stats')
 
 export const ORGS_CATALOG_KEY = 'orgs:catalog'
 export async function fetchOrgsCatalog(): Promise<PublicOrgCatalogItem[]> {

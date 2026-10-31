@@ -15,31 +15,6 @@ export function formatDelta(
   return { direction: 'down', text: `${pct}%` }
 }
 
-const DAY_NAMES = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'] as const
-
-function hourLabel(hour: number): string {
-  const period = hour < 12 ? 'AM' : 'PM'
-  const h12 = hour % 12 === 0 ? 12 : hour % 12
-  return `${h12} ${period}`
-}
-
-/** Peak cell in a 168-length Manila hour-of-week heat (Mon 00:00 = 0). */
-export function peakHourLabel(heat: number[]): string | null {
-  if (heat.length !== 168) return null
-  let peak = 0
-  let peakIndex = -1
-  for (let i = 0; i < heat.length; i++) {
-    if (heat[i] > peak) {
-      peak = heat[i]
-      peakIndex = i
-    }
-  }
-  if (peak <= 0 || peakIndex < 0) return null
-  const day = DAY_NAMES[Math.floor(peakIndex / 24)]
-  const hour = peakIndex % 24
-  return `${day} around ${hourLabel(hour)}`
-}
-
 export function checkInRate(checkIns: number, registrations: number): number | null {
   if (registrations === 0) return null
   return Math.min(100, Math.round((checkIns / registrations) * 100))

@@ -286,9 +286,7 @@ Rules: color is never the only signal. `LineChart` gives each series its own das
 | `PeriodPicker` | `modelValue` (`7` / `30` / `90`) | `role="group"` labelled "Period"; each option is a `Button` with `aria-pressed` and `min-h-11`. Range is owned by `useDashboardRange` (`sessionStorage` key `eypi.dashboardRange`, default 30). |
 | `PanelState` | `status` (`loading` / `error` / `empty` / `ready`), `title`, `emptyBody?`, `action?` | Shared skeleton (`role="status" aria-busy="true"`), error with Retry (`retry` emit), and `EmptyState` when empty; slot when ready. One panel failing never blanks the page. |
 | `LinkKpis` | `trends`, `status`, `previous?` | Stat tiles for clicks, daily uniques, QR scans, active links, and links total (links total has no previous-period delta). |
-| `BestHours` | `trends`, `status` | `HeatGrid` of the 168 Manila hour-of-week cells with a peak caption. |
 | `UpcomingTickets` | `tickets`, `status` | Up to three upcoming tickets with a link to `/tickets`. |
-| `AcrossApc` | `stats`, `status` | Muted strip of platform totals from `GET /api/stats`. |
 | `OrgInsightsSection` | (uses active org + range) | Member-only org KPI strip, profile-views chart, members sparkline and "Full insights" link; fetches `GET /api/orgs/:org_id/insights`. |
 | `FeatureCards` | `admin`, `org`, `group?` (`rams` / `orgs`) | Grouped nav cards with one-line descriptions; optional `group` mounts only that landmark's cards. |
 | `GetStarted` | `linkCount`, `pendingInvites` | First-run Rams checklist (create a link, make a wallpaper, check invites); hidden when dismissed, all steps done, or the user already has 3+ links. Progress text, 44px Dismiss, and per-step done/to-do wording for screen readers. |
