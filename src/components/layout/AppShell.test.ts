@@ -123,7 +123,7 @@ describe('AppShell (signed in)', () => {
     }
     const links = aside.get('nav[aria-label="App modules"]').findAll('a')
     expect(links.map((link) => link.text().replace(/\d+$/, '').trim())).toEqual([
-      'Dashboard', 'Links', 'Tix', 'My tickets', 'Frames', 'Forms', 'Wallpaper', 'Orgs', 'Invites',
+      'Dashboard', 'Links', 'My tickets', 'Wallpaper', 'Invites', 'Orgs',
     ])
     wrapper.unmount()
   })
@@ -171,15 +171,15 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
-  it('shows at most four module links in the Primary bottom nav', async () => {
+  it('shows the five tab links in the Primary bottom nav', async () => {
     signIn()
-    const wrapper = await mountAt('/manage/tix')
+    const wrapper = await mountAt('/invites')
     const nav = wrapper.get('nav[aria-label="Primary"]')
     for (const cls of ['fixed', 'inset-x-0', 'bottom-0', 'lg:hidden']) expect(nav.classes()).toContain(cls)
     const tabs = nav.findAll('a')
-    expect(tabs.map((tab) => tab.text())).toEqual(['Dashboard', 'Links', 'Tix', 'My tickets'])
+    expect(tabs.map((tab) => tab.text())).toEqual(['Dashboard', 'Links', 'My tickets', 'Wallpaper', 'Invites'])
     expect(nav.get('[data-tab-grid]').classes()).toEqual(expect.arrayContaining(['grid', 'h-[4.5rem]', 'grid-cols-4']))
-    expect(nav.get('[aria-current="page"]').text()).toBe('Tix')
+    expect(nav.get('[aria-current="page"]').text()).toBe('Invites')
     wrapper.unmount()
   })
 
@@ -199,7 +199,8 @@ describe('AppShell (signed in)', () => {
     expect(document.body.querySelector('[data-slot="dropdown-menu-content"]')).toBeNull()
     const menu = await openAccountMenu(wrapper)
     const text = menu.textContent ?? ''
-    for (const label of ['Forms', 'Orgs', 'Invites', 'Account', 'Sign out']) expect(text).toContain(label)
+    for (const label of ['Orgs', 'Account', 'Sign out']) expect(text).toContain(label)
+    for (const label of ['Forms', 'Invites']) expect(text).not.toContain(label)
     expect(text).not.toContain('Dashboard')
     wrapper.unmount()
   })
@@ -208,8 +209,7 @@ describe('AppShell (signed in)', () => {
     signIn(2)
     const wrapper = await mountAt('/links')
     expect(wrapper.get('[data-account-menu="header"]').attributes('aria-label')).toBe('Ada account menu, 2 pending invites')
-    const menu = await openAccountMenu(wrapper)
-    const invites = menu.querySelector<HTMLElement>('a[href="/invites"]')!
+    const invites = wrapper.get('aside a[href="/invites"]').element
     const badge = invites.querySelector('[data-slot="badge"]')!
     expect(badge.textContent?.trim()).toBe('2')
     expect(badge.getAttribute('aria-label')).toBe('2 pending invites')

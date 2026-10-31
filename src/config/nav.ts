@@ -7,11 +7,16 @@ export type NavIconName =
   | 'form'
   | 'wallpaper'
   | 'orgs'
+  | 'myorg'
   | 'invites'
   | 'account'
   | 'admin'
   | 'login'
   | 'signup'
+
+export type NavGroup = 'rams' | 'orgs'
+
+export const GROUP_LABELS: Record<NavGroup, string> = { rams: 'Rams', orgs: 'Orgs' }
 
 export type NavItem = {
   to: string
@@ -23,21 +28,30 @@ export type NavItem = {
   exact?: boolean
   /** Render as the gold call to action. */
   cta?: boolean
+  /** Rail section the item belongs to. Ungrouped items (Account, Admin) sit below the groups. */
+  group?: NavGroup
+  /** Only listed for members of an org. */
+  orgOnly?: boolean
+  /** Shown as a tab in the phone bottom bar. */
+  tab?: boolean
+  /** Path (and anything under it) that never marks the item active. */
+  except?: string
 }
 
-/** Number of items shown as tabs in the bottom bar; the rest live behind "More". */
-export const TAB_COUNT = 4
+/** Number of items flagged 	ab in the bottom bar. */
+export const TAB_COUNT = 5
 
 const APP_ITEMS: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'home', exact: true },
-  { to: '/links', label: 'Links', icon: 'link' },
-  { to: '/manage/tix', label: 'Tix', icon: 'ticket' },
-  { to: '/tickets', label: 'My tickets', icon: 'tickets' },
-  { to: '/manage/frames', label: 'Frames', icon: 'frame' },
-  { to: '/forms', label: 'Forms', icon: 'form' },
-  { to: '/wallpaper', label: 'Wallpaper', icon: 'wallpaper' },
-  { to: '/orgs', label: 'Orgs', icon: 'orgs' },
-  { to: '/invites', label: 'Invites', icon: 'invites' },
+  { to: '/dashboard', label: 'Dashboard', icon: 'home', exact: true, group: 'rams', tab: true },
+  { to: '/links', label: 'Links', icon: 'link', group: 'rams', tab: true },
+  { to: '/tickets', label: 'My tickets', icon: 'tickets', group: 'rams', tab: true },
+  { to: '/wallpaper', label: 'Wallpaper', icon: 'wallpaper', group: 'rams', tab: true },
+  { to: '/invites', label: 'Invites', icon: 'invites', group: 'rams', tab: true },
+  { to: '/orgs', label: 'Orgs', icon: 'orgs', group: 'rams', except: '/orgs/modify' },
+  { to: '/manage/tix', label: 'Tix', icon: 'ticket', group: 'orgs', orgOnly: true },
+  { to: '/manage/frames', label: 'Frames', icon: 'frame', group: 'orgs', orgOnly: true },
+  { to: '/forms', label: 'Forms', icon: 'form', group: 'orgs', orgOnly: true },
+  { to: '/orgs/modify', label: 'My org', icon: 'myorg', group: 'orgs', orgOnly: true },
   { to: '/account', label: 'Account', icon: 'account' },
 ]
 
@@ -49,19 +63,29 @@ const PUBLIC_ITEMS: NavItem[] = [
   { to: '/login?tab=register', label: 'Sign up', icon: 'signup', match: null, cta: true },
 ]
 
-export function navItems({ authenticated, admin }: { authenticated: boolean; admin: boolean }): NavItem[] {
+export function navItems({
+  authenticated,
+  admin,
+  org = false,
+}: {
+  authenticated: boolean
+  admin: boolean
+  org?: boolean
+}): NavItem[] {
   if (!authenticated) return [...PUBLIC_ITEMS]
-  return admin ? [...APP_ITEMS, ADMIN_ITEM] : [...APP_ITEMS]
+  const items = APP_ITEMS.filter((item) => org || !item.orgOnly)
+  return admin ? [...items, ADMIN_ITEM] : items
 }
 
 export function tabItems(items: NavItem[]): NavItem[] {
-  return items.slice(0, TAB_COUNT)
+  return items.filter((item) => item.tab)
 }
 
 /** Home items (`/`, or `exact`) match exactly; every other item matches its path and anything below it. */
 export function isNavActive(item: NavItem, path: string): boolean {
   const base = item.match === undefined ? item.to.split('?')[0] : item.match
   if (base === null) return false
+  if (item.except && (path === item.except || path.startsWith(`${item.except}/`))) return false
   if (item.exact || base === '/') return path === base
   return path === base || path.startsWith(`${base}/`)
 }
