@@ -287,15 +287,16 @@ Rules: color is never the only signal. `LineChart` gives each series its own das
 | `PanelState` | `status` (`loading` / `error` / `empty` / `ready`), `title`, `emptyBody?`, `action?` | Shared skeleton (`role="status" aria-busy="true"`), error with Retry (`retry` emit), and `EmptyState` when empty; slot when ready. One panel failing never blanks the page. |
 | `LinkKpis` | `trends`, `status`, `previous?` | Stat tiles for clicks, daily uniques, QR scans, active links, and links total (links total has no previous-period delta). |
 | `ClicksTrend` | `trends`, `status` | `LineChart` of clicks (and uniques) for the selected range. |
-| `TopLinks` | `trends`, `status` | `BarList` of the top links by clicks; rows link to `/links`. |
+| `TopLinks` | `trends`, `status` | Own bar rows (same look as `BarList`) of the top links by clicks; each row links to `/links` and has a 44px copy button (`aria-label` `Copy eypi.cc/{slug}`) that uses `copyShortLink`. |
 | `AudiencePanels` | `trends`, `status` | `BarList`s for device, country, referrer and in-app browser when present. |
 | `BestHours` | `trends`, `status` | `HeatGrid` of the 168 Manila hour-of-week cells with a peak caption. |
 | `UpcomingTickets` | `tickets`, `status` | Up to three upcoming tickets with a link to `/tickets`. |
 | `AcrossApc` | `stats`, `status` | Muted strip of platform totals from `GET /api/stats`. |
 | `OrgInsightsSection` | (uses active org + range) | Member-only org KPI strip, profile-views chart, members sparkline and "Full insights" link; fetches `GET /api/orgs/:org_id/insights`. |
 | `FeatureCards` | `admin`, `org`, `group?` (`rams` / `orgs`) | Grouped nav cards with one-line descriptions; optional `group` mounts only that landmark's cards. |
+| `GetStarted` | `linkCount`, `pendingInvites` | First-run Rams checklist (create a link, make a wallpaper, check invites); hidden when dismissed, all steps done, or the user already has 3+ links. Progress text, 44px Dismiss, and per-step done/to-do wording for screen readers. |
 
-The dashboard view composes two labelled landmarks (Rams and Orgs). Orgs is members only. Analytics panels sit under Rams with the period picker; org insights and Orgs cards sit under Orgs.
+The dashboard view composes two labelled landmarks (Rams and Orgs). Orgs is members only. Under Rams, `GetStarted` sits above the KPIs for new students (fewer than 3 links), then the analytics panels with the period picker; org insights and Orgs cards sit under Orgs.
 
 
 **Tix patterns** (`src/components/tix/`, `src/views/tix/`):
