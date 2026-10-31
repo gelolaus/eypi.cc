@@ -15,7 +15,7 @@
       :aria-controls="isOpen ? menuId : undefined"
       :aria-expanded="isOpen ? 'true' : 'false'"
      
-      @click="isOpen = !isOpen"
+      @click="onTriggerClick"
     >
       <OrgLogo
         :logo-url="activeOrg?.logo_url"
@@ -118,7 +118,12 @@ const isOpen = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
 const menuId = useId()
 
-// Safari does not focus a button on click, so hand focus back to the trigger explicitly.
+// Safari does not focus a button on click, so record the trigger as the opener before the sheet opens.
+function onTriggerClick() {
+  if (!isOpen.value) triggerRef.value?.focus()
+  isOpen.value = !isOpen.value
+}
+
 watch(isOpen, (open) => {
   if (!open) void nextTick(() => triggerRef.value?.focus())
 })

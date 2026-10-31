@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import OrgSwitcher from './OrgSwitcher.vue'
@@ -60,6 +60,27 @@ describe('OrgSwitcher label', () => {
   it('keeps the compact label hidden below sm', () => {
     const wrapper = mount(OrgSwitcher, { props: { compact: true, autoFetch: false } })
     expect(wrapper.get('[data-org-label]').classes()).toEqual(expect.arrayContaining(['hidden', 'sm:inline']))
+    wrapper.unmount()
+  })
+
+  it('returns focus to the trigger when another control was focused before open', async () => {
+    const wrapper = mount(OrgSwitcher, { props: { block: true, autoFetch: false }, attachTo: document.body })
+    const other = document.createElement('button')
+    other.type = 'button'
+    other.textContent = 'Elsewhere'
+    document.body.appendChild(other)
+    other.focus()
+
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    // dispatchEvent does not focus the button, unlike HTMLElement.click().
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+
+    trigger.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(trigger)
+
+    other.remove()
     wrapper.unmount()
   })
 })
