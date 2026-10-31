@@ -113,15 +113,15 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 
 **Produces:** `AudiencePanels` and `BestHours` take `{ trends, status }`. `UpcomingTickets` takes `{ tickets: TicketSummary[] | null; status }`. `AcrossApc` takes `{ stats: PlatformStats | null; status }`.
 
-- [ ] **Step 1: Write failing tests**:
+- [x] **Step 1: Write failing tests**:
   - `AudiencePanels` renders one `BarList` each for Device, Country, Referrer and, when non-empty, App; a dimension with no rows is not rendered; an all-empty set shows "No audience data yet".
   - `BestHours` passes the 168 cells to `HeatGrid` and shows the sentence from `peakHourLabel`; no sentence and the empty state for an all-zero heat (Review Focus 2).
   - `UpcomingTickets` lists up to 3 tickets with event name and date and a "View all" link to `/tickets`; empty state "No upcoming tickets" with no action button.
   - `AcrossApc` renders students, orgs, links, clicks and events from `PlatformStats` as one muted `<dl>` strip; an error state hides the strip silently (it is decoration, no retry button).
-- [ ] **Step 2:** Run `npx vitest run src/components/dashboard`. Expect FAIL.
-- [ ] **Step 3: Implement.** Country codes display as provided by the API (no extra lookup table).
-- [ ] **Step 4:** Run them. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add audience, best hours, tickets and campus panels`
+- [x] **Step 2:** Run `npx vitest run src/components/dashboard`. Expect FAIL.
+- [x] **Step 3: Implement.** Country codes display as provided by the API (no extra lookup table).
+- [x] **Step 4:** Run them. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add audience, best hours, tickets and campus panels`
 
 ### Task 5: Orgs section
 
