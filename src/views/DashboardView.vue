@@ -19,227 +19,158 @@
       </p>
     </Card>
 
-
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div data-card="links">
-        <AppSection title="Your links">
-          <p
-            v-if="linkSummary === 'error'"
-            class="text-base text-muted-foreground"
-          >
-            Link totals are unavailable right now.
-          </p>
-          <EmptyState
-            v-else-if="linkSummary && linkSummary.count === 0"
-            title="No links yet"
-            body="Create a short link and share it anywhere."
-            :action="{ label: 'Create your first link', to: '/links' }"
-          />
-          <div
-            v-else-if="!linkSummary"
-            role="status"
-            aria-busy="true"
-            class="grid grid-cols-2 gap-3"
-          >
-            <span class="sr-only">Loading link totals</span>
-            <Skeleton
-              v-for="n in 2"
-              :key="n"
-              data-skeleton-tile
-              :h="STAT_TILE_HEIGHT"
-              :radius="16"
-            />
-          </div>
-          <dl
-            v-else
-            class="grid grid-cols-2 gap-3"
-          >
-            <div class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4">
-              <dt class="text-sm text-muted-foreground">
-                Links
-              </dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">
-                {{ linkSummary.count.toLocaleString('en-US') }}
-              </dd>
-            </div>
-            <div class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4">
-              <dt class="text-sm text-muted-foreground">
-                Clicks
-              </dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">
-                {{ linkSummary.clicks.toLocaleString('en-US') }}
-              </dd>
-            </div>
-            <div
-              v-if="linkSummary.top"
-              class="col-span-2 min-w-0 rounded-2xl border border-border bg-muted/40 p-4"
-            >
-              <p class="text-sm text-muted-foreground">
-                Top link
-              </p>
-              <p class="truncate font-mono text-base">
-                eypi.cc/{{ linkSummary.top.slug }}
-              </p>
-              <p class="text-sm text-muted-foreground tabular-nums">
-                {{ linkSummary.top.clicks.toLocaleString('en-US') }} clicks
-              </p>
-            </div>
-          </dl>
-        </AppSection>
+    <section
+      class="space-y-6"
+      aria-labelledby="rams-heading"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2
+          id="rams-heading"
+          class="font-heading text-xl font-semibold tracking-tight"
+        >
+          Rams
+        </h2>
+        <PeriodPicker
+          :model-value="range"
+          @update:model-value="setRange"
+        />
       </div>
 
-      <div
-        v-if="activeOrg"
-        data-card="org"
-      >
-        <AppSection title="Your org">
-          <p class="line-clamp-2 break-words text-base font-medium">
-            {{ activeOrg.org_name }}
-          </p>
-          <p class="mb-4 font-mono text-sm text-muted-foreground">
-            {{ orgSlugLabel(activeOrg) }}
-          </p>
-          <p
-            v-if="orgSummary === 'error'"
-            class="text-base text-muted-foreground"
-          >
-            Org totals are unavailable right now.
-          </p>
-          <div
-            v-else-if="!orgSummary"
-            role="status"
-            aria-busy="true"
-            class="grid grid-cols-2 gap-3"
-          >
-            <span class="sr-only">Loading org totals</span>
-            <Skeleton
-              v-for="n in 4"
-              :key="n"
-              data-skeleton-tile
-              :h="STAT_TILE_HEIGHT"
-              :radius="16"
-            />
-          </div>
-          <dl
-            v-else
-            class="grid grid-cols-2 gap-3"
-          >
-            <div
-              v-for="item in orgItems"
-              :key="item.key"
-              class="flex flex-col-reverse rounded-2xl border border-border bg-muted/40 p-4"
-            >
-              <dt class="text-sm text-muted-foreground">
-                {{ item.label }}
-              </dt>
-              <dd class="font-heading text-3xl font-semibold tabular-nums">
-                {{ orgSummary[item.key].toLocaleString('en-US') }}
-              </dd>
-            </div>
-          </dl>
-        </AppSection>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <LinkKpis
+          :trends="trends"
+          :status="trendsStatus"
+          @retry="trendsQuery.refresh()"
+        />
+        <ClicksTrend
+          :trends="trends"
+          :status="trendsStatus"
+          @retry="trendsQuery.refresh()"
+        />
+        <TopLinks
+          :trends="trends"
+          :status="trendsStatus"
+          @retry="trendsQuery.refresh()"
+        />
+        <AudiencePanels
+          :trends="trends"
+          :status="trendsStatus"
+          @retry="trendsQuery.refresh()"
+        />
+        <BestHours
+          :trends="trends"
+          :status="trendsStatus"
+          @retry="trendsQuery.refresh()"
+        />
+        <UpcomingTickets
+          :tickets="tickets"
+          :status="ticketsStatus"
+          @retry="ticketsQuery.refresh()"
+        />
       </div>
-    </div>
 
-    <LiveClicks v-if="linkSummary && linkSummary !== 'error' && linkSummary.count > 0" />
+      <AcrossApc
+        :stats="stats"
+        :status="statsStatus"
+      />
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-      <router-link
-        v-for="mod in modules"
-        :key="mod.id"
-        :to="mod.route"
-        class="group/module block min-w-0 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      <FeatureCards
+        :admin="isAdmin"
+        :org="hasOrgMembership"
+        group="rams"
+      />
+    </section>
+
+    <section
+      v-if="activeOrg"
+      class="mt-8 space-y-6"
+      aria-labelledby="orgs-heading"
+    >
+      <h2
+        id="orgs-heading"
+        class="font-heading text-xl font-semibold tracking-tight"
       >
-        <Card class="h-full min-h-11 gap-2 p-6 text-left transition-colors group-active/module:translate-y-px [@media(hover:hover)_and_(pointer:fine)]:group-hover/module:bg-muted">
-          <h2 class="text-xl font-semibold tracking-tight text-foreground">
-            {{ mod.title }}
-          </h2>
-          <p class="text-base text-muted-foreground">
-            {{ mod.description }}
-          </p>
-        </Card>
-      </router-link>
-    </div>
+        Orgs
+      </h2>
+      <OrgInsightsSection />
+      <FeatureCards
+        :admin="isAdmin"
+        :org="true"
+        group="orgs"
+      />
+    </section>
   </AppPage>
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
-import { Card } from '@/components/ui/card'
-import EmptyState from '@/components/EmptyState.vue'
-import Skeleton from '@/components/ui/Skeleton.vue'
+import { computed } from 'vue'
+import AcrossApc from '@/components/dashboard/AcrossApc.vue'
+import AudiencePanels from '@/components/dashboard/AudiencePanels.vue'
+import BestHours from '@/components/dashboard/BestHours.vue'
+import ClicksTrend from '@/components/dashboard/ClicksTrend.vue'
+import FeatureCards from '@/components/dashboard/FeatureCards.vue'
+import LinkKpis from '@/components/dashboard/LinkKpis.vue'
+import OrgInsightsSection from '@/components/dashboard/OrgInsightsSection.vue'
+import PeriodPicker from '@/components/dashboard/PeriodPicker.vue'
+import TopLinks from '@/components/dashboard/TopLinks.vue'
+import UpcomingTickets from '@/components/dashboard/UpcomingTickets.vue'
 import AppPage from '@/components/layout/AppPage.vue'
-import AppSection from '@/components/layout/AppSection.vue'
+import { Card } from '@/components/ui/card'
 import { useActiveOrg } from '@/composables/useActiveOrg'
-import { LINKS_SUMMARY_KEY, fetchLinksSummary, fetchOrgSummary, orgSummaryKey, type LinkSummary, type OrgSummary } from '@/lib/queries'
+import { useDashboardRange } from '@/composables/useDashboardRange'
+import {
+  PLATFORM_STATS_KEY,
+  UPCOMING_TICKETS_KEY,
+  fetchPlatformStats,
+  fetchTrends,
+  fetchUpcomingTickets,
+  trendsKey,
+  type PlatformStats,
+  type TicketSummary,
+  type UserTrends,
+} from '@/lib/queries'
 import { useQuery } from '@/lib/queryCache'
 import { useSession } from '@/stores/session'
-import { orgSlugLabel } from '@/types/orgs'
-
-
-// p-4 (32) + text-sm line (20) + text-3xl line (36) + 2px border
-const STAT_TILE_HEIGHT = 90
-
-const LiveClicks = defineAsyncComponent(() => import('@/components/links/LiveClicks.vue'))
 
 const { activeOrg } = useActiveOrg()
-const orgItems: { key: keyof OrgSummary; label: string }[] = [
-  { key: 'members', label: 'Members' },
-  { key: 'events', label: 'Events' },
-  { key: 'tickets', label: 'Tickets' },
-  { key: 'frames', label: 'Frames' },
-]
-
-const linkQuery = useQuery(LINKS_SUMMARY_KEY, fetchLinksSummary)
-const orgQuery = useQuery(
-  () => (activeOrg.value?.org_id ? orgSummaryKey(activeOrg.value.org_id) : ''),
-  () => fetchOrgSummary(activeOrg.value?.org_id ?? ''),
-)
-const linkSummary = computed<LinkSummary | 'error' | null>(() =>
-  linkQuery.status.value === 'error' ? 'error' : linkQuery.data.value ?? null)
-const orgSummary = computed<OrgSummary | 'error' | null>(() =>
-  orgQuery.status.value === 'error' ? 'error' : orgQuery.data.value ?? null)
-
+const { range, setRange } = useDashboardRange()
 const session = useSession()
 
 const userName = computed(() => session.user.value?.name ?? '')
+const isAdmin = computed(() => session.user.value?.role === 'admin')
 const pendingInviteCount = computed(() => session.pendingInviteCount.value)
 const inviteBanner = computed(() => {
   const count = pendingInviteCount.value
   const noun = count === 1 ? 'invite' : 'invites'
   return `You have ${count} pending org ${noun}.`
 })
+const hasOrgMembership = computed(() => !!activeOrg.value)
 
-const modules = [
-  {
-    id: 'links',
-    title: 'Links',
-    description: 'Shorten URLs and track click analytics by OS, country, and referrer.',
-    route: '/links',
-  },
-  {
-    id: 'forms',
-    title: 'Forms',
-    description: 'Generate MOAs, letters of intent, and printable event documents.',
-    route: '/forms',
-  },
-  {
-    id: 'ticketing',
-    title: 'Tix',
-    description: 'Create events, manage guest lists, and run QR-code check-in.',
-    route: '/manage/tix',
-  },
-  {
-    id: 'frames',
-    title: 'Frames',
-    description: 'Upload a frame and share a link so anyone can make a matching profile picture.',
-    route: '/manage/frames',
-  },
-  {
-    id: 'orgs',
-    title: 'Orgs',
-    description: 'Edit your organization profile, manage members, and control public directory visibility.',
-    route: '/orgs',
-  },
-]
+const trendsQuery = useQuery(
+  () => trendsKey(range.value),
+  () => fetchTrends(range.value),
+)
+const ticketsQuery = useQuery(UPCOMING_TICKETS_KEY, fetchUpcomingTickets)
+const statsQuery = useQuery(PLATFORM_STATS_KEY, fetchPlatformStats)
+
+function panelStatus(
+  status: 'idle' | 'loading' | 'ready' | 'error',
+  data: unknown,
+): 'loading' | 'error' | 'ready' {
+  if (status === 'error') return 'error'
+  if (status === 'ready' && data != null) return 'ready'
+  return 'loading'
+}
+
+const trends = computed<UserTrends | null>(() => trendsQuery.data.value ?? null)
+const trendsStatus = computed(() => panelStatus(trendsQuery.status.value, trendsQuery.data.value))
+
+const tickets = computed<TicketSummary[] | null>(() => {
+  const data = ticketsQuery.data.value
+  return data ? data.tickets : ticketsQuery.status.value === 'ready' ? [] : null
+})
+const ticketsStatus = computed(() => panelStatus(ticketsQuery.status.value, ticketsQuery.data.value))
+
+const stats = computed<PlatformStats | null>(() => statsQuery.data.value ?? null)
+const statsStatus = computed(() => panelStatus(statsQuery.status.value, statsQuery.data.value))
 </script>

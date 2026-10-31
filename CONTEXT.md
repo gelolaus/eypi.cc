@@ -69,7 +69,6 @@ Use these terms. Prefer them over invented synonyms.
 | **per-day unique** | Count of distinct `visitor_hash` in one Manila day. The hash is rotated daily, so uniques are never summed or compared across days. |
 | **rollup** | Hourly cron (`backend/src/jobs/rollups.ts`) that rebuilds yesterday's and today's rows: `analytics_daily` (clicks, uniques, qr per link and day), `analytics_daily_dim` (clicks per dimension value, including the `how` hour-of-week bucket 0–167, Monday 00:00 Manila = 0), `module_daily` and `rum_daily`. Retention deletes raw rows only after a rollup exists. |
 | **module event** | One public beacon row in `module_events` (`POST /api/beacon`, no session): module `frames` (view, photo_added, download, share) or `org` (view), the subject id, a daily `visitor_hash`, and the Manila day. Rate-limited to 20 per visitor, subject and action per hour. Rolled up into `module_daily`. |
-| **live view** | Dashboard panel at `GET /api/links/summary/live` (auth): clicks per minute for the last 60 minutes plus the 10 latest clicks as time, country and app only. Polled every 5 s while visible with `If-None-Match` (weak ETag, 304); no Durable Object or WebSocket. |
 | **image variants** | Resized copies of an uploaded image in R2, written by the browser (`PUT /api/media/variants`) and listed in the stored image metadata (`ImageMeta`). `AppImage` builds the `srcset`. Admin → Maintenance backfills existing media. |
 | **query cache** | In-memory cache of GET responses in `src/lib/queryCache.ts`. Writes through `src/lib/api.ts` invalidate it centrally, but only under the `/api/links`, `/api/events`, `/api/dp` and `/api/orgs` prefixes (the media variants PUT is not covered); logout and org switch clear it. |
 | **public shell / app shell** | `PublicShell` renders public pages with no app chrome. `AppShell` (side rail, tab bar) is a lazy chunk loaded only for signed-in routes. |
@@ -84,7 +83,7 @@ Use these terms. Prefer them over invented synonyms.
 
 | Module | Path | Owns |
 |---|---|---|
-| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display, wallpaper canvas renderers (`src/lib/wallpaper/`) |
+| **Frontend SPA** | `src/` | UI, routing, shared API client (`src/lib/api.ts`), client form generation, DP canvas, QR display, wallpaper canvas renderers (`src/lib/wallpaper/`), descriptive dashboard panels (`src/components/dashboard/`: `PeriodPicker`, `PanelState`, `LinkKpis`, `ClicksTrend`, `TopLinks`, `AudiencePanels`, `BestHours`, `UpcomingTickets`, `AcrossApc`, `OrgInsightsSection`, `FeatureCards`) |
 | **Frontend Worker** | `worker/index.ts` | Serves SPA assets at `eypi.cc`; **edge short-link redirects** via `LINKS_KV`; async click logging; per-route meta tags; media route |
 | **Backend API** | `backend/` | All `/api/*` on `api.eypi.cc` (Hono Worker): sign-in, sessions, links, orgs, events, DP, forms, admin, account, legal, stats, cron retention |
 | **Migrations** | `backend/migrations/` | Versioned SQL, applied with `backend/scripts/migrate.mjs` (ledger `schema_migrations`) |
@@ -106,7 +105,7 @@ Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. 
 | Legal consent | `backend/src/routes/legal.ts`, `middleware/requireConsent.ts` |
 | Links + link analytics (`GET /api/links/summary` and `GET /api/links/summary/trends` for the dashboard) | `backend/src/routes/links.ts` |
 | Link reports (public) | `backend/src/routes/reports.ts` |
-| Orgs, members, invites, public catalog (`GET /api/orgs/:org_id/summary` for the dashboard) | `backend/src/routes/orgs.ts` |
+| Orgs, members, invites, public catalog (`GET /api/orgs/:org_id/insights` for the dashboard org strip) | `backend/src/routes/orgs.ts` |
 | Org feature gate / org context | `backend/src/middleware/orgGuard.ts` (`isOrgFeature`), `orgContext.ts` |
 | Events / Tix | `backend/src/routes/events/*` (split by area: `index.ts` mounts them). `manage.ts` events CRUD, publish/close/cancel, cover, clusters, finalize, add-guest; `import.ts` CSV upload and column mapping; `public.ts` `GET /api/events/:slug`, `GET /api/events/:slug/public` and the Google Wallet pass; `registrations.ts` `POST /api/events/:slug/register`, `DELETE /api/events/:slug/registration`, `GET /api/tickets`, `GET /api/tickets/upcoming` (read-only dashboard preview), `POST /api/tickets/:id/pass`; `inbox.ts` `GET /attendees` and `POST /attendees/bulk`; `lottery.ts` `POST /draw`; `guests.ts` `guest-link`, `attendees.csv` (needs `X-Active-Org-Id`) and `GET /api/tickets/guest/:token`; `door.ts` check-in, remove/restore, `roster`, `live`, `checkins/sync` |
 | Frames / DP | `backend/src/routes/dp.ts` |
@@ -125,6 +124,7 @@ Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. 
 | Area | Routes |
 |---|---|
 | Sign-in, consent | `/login`, `/consent` |
+| Dashboard | `/dashboard` |
 | Links | `/links` |
 | Forms | `/forms` (org-gated) |
 | Wallpaper | `/wallpaper` |
@@ -236,6 +236,6 @@ Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run
 ## UI conventions
 
 - The product is called **Eypi** in the UI; `eypi.cc` is the domain and appears only in URLs and legal text.
-- **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. They are not on the member dashboard.
+- **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. The member dashboard shows them in a small Across APC strip.
 - The side rail collapses to icons; the org switcher shows the capitalised org slug only.
 - The signed-in rail has two groups, Rams and Orgs. Rams: Dashboard, Links, My tickets, Wallpaper, Invites, Orgs (`/orgs`). Orgs, members only: Tix, Frames, Forms, My org (`/orgs/modify`), hidden when `useActiveOrg().hasOrg` is false. Phone tabs, exactly five: Dashboard, Links, My tickets, Wallpaper, Invites. On phones the profile menu is a bottom sheet, and from `sm` up it stays the dropdown. The command palette and the site sheet use the same membership gate.
