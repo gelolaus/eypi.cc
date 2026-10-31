@@ -98,7 +98,7 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 **Produces:** each component takes `props: { trends: UserTrends | null; status: 'loading' | 'error' | 'ready' }` (the view owns the query so the three share one request) and renders its panel.
 
 - [x] **Step 1: Write failing tests** with a fixture `UserTrends`:
-  - `LinkKpis` renders `StatTile`s Clicks, Daily uniques, QR scans, Active links, Links, each with a delta against `previous` (no delta shown when `previous` is absent); `new` shows "New".
+  - `LinkKpis` renders `StatTile`s Clicks, Daily uniques, QR scans, Active links, Links; Clicks, Daily uniques, QR scans and Active links each show a delta against `previous` (no delta shown when `previous` is absent); the Links tile has no delta (`previous` totals have no `links` count); `new` shows "New".
   - `ClicksTrend` passes a `LineChart` two series (clicks, uniques) and a third "Previous period clicks" series when `previous` exists; its `aria-label` includes the total clicks and the best day.
   - `TopLinks` renders at most 5 `BarList` rows labelled `eypi.cc/{slug}`; with no links shows the `EmptyState` "No links yet" with action to `/links`; with links but zero clicks shows "No clicks in this period".
   - Period switching (Review Focus 3): mount the view-level query with a stubbed `fetch` that resolves 30 slowly and 7 quickly; after switching to 7 the rendered total equals the 7-day fixture even after the 30-day response lands. (This test lives in Task 7's view test; here assert only that components render solely from their `trends` prop.)
@@ -143,11 +143,11 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 **Produces:**
 ```ts
 export const CARD_DESCRIPTIONS: Record<string, string>   // keyed by nav `to`; one sentence each
-// FeatureCards props: { admin: boolean; org: boolean }; renders groupedEntries(appNav({ admin, org })) minus Dashboard, with a heading per group
+// FeatureCards props: { admin: boolean; org: boolean; group?: 'rams' | 'orgs' }; renders groupedEntries(appNav({ admin, org })) minus Dashboard; when `group` is set, filter to that group only (one heading); when omitted, render every available group with a heading per group
 ```
 Rams cards: Links, My tickets, Wallpaper, Invites, Orgs. Orgs cards: Tix, Frames, Forms, My org. Reuse the current card markup (`router-link` wrapping `Card`). Invites card shows the pending-invite count as a `Badge`.
 
-- [x] **Step 1: Write failing tests**: a test that every nav item with a group (except Dashboard) has a `CARD_DESCRIPTIONS` entry; non-member renders only the Rams heading and five cards; member renders both headings and nine cards; cards link to the right routes; invite badge appears only when `pendingInviteCount > 0`.
+- [x] **Step 1: Write failing tests**: a test that every nav item with a group (except Dashboard) has a `CARD_DESCRIPTIONS` entry; non-member renders only the Rams heading and five cards; member with no `group` renders both headings and nine cards; `group: 'rams'` / `group: 'orgs'` each render only that group's cards; cards link to the right routes; invite badge appears only when `pendingInviteCount > 0`.
 - [x] **Step 2:** Run it. Expect FAIL.
 - [x] **Step 3: Implement.** Keep existing copy for Links, Forms, Tix, Frames, Orgs descriptions; write new one-sentence copy for My tickets, Wallpaper, Invites and My org.
 - [x] **Step 4:** Run it. Expect PASS.
@@ -157,11 +157,11 @@ Rams cards: Links, My tickets, Wallpaper, Invites, Orgs. Orgs cards: Tix, Frames
 
 **Files:** Modify `src/views/DashboardView.vue`, `DashboardView.test.ts`, `src/views/pageSkeletons.test.ts` if it lists dashboard blocks; remove the "Your org" card markup and `LiveClicks` usage (grep for other importers of `LiveClicks`; delete `LiveClicks.vue` and its test only if the dashboard was its only user, and keep `GET /api/links/summary/live` untouched either way).
 
-Layout (top to bottom): greeting and invite banner; `<section aria-labelledby="rams-heading">` heading "Rams" with `PeriodPicker`, `LinkKpis`, `ClicksTrend`, `TopLinks`, `AudiencePanels`, `BestHours`, `UpcomingTickets`, `AcrossApc`, Rams `FeatureCards`; then, for members, `<section aria-labelledby="orgs-heading">` heading "Orgs" with `OrgInsightsSection` and Orgs `FeatureCards`. Two columns from `lg`, one column below.
+Layout (top to bottom): greeting and invite banner; `<section aria-labelledby="rams-heading">` heading "Rams" with `PeriodPicker`, `LinkKpis`, `ClicksTrend`, `TopLinks`, `AudiencePanels`, `BestHours`, `UpcomingTickets`, `AcrossApc`, and a `FeatureCards` with `group="rams"`; then, for members, `<section aria-labelledby="orgs-heading">` heading "Orgs" with `OrgInsightsSection` and a `FeatureCards` with `group="orgs"`. Two columns from `lg`, one column below.
 
 - [x] **Step 1: Update tests first.** Stub `fetch` for `/api/links/summary/trends`, `/api/tickets/upcoming`, `/api/stats`, `/api/orgs/jpcs-apc/insights`. Assert: a non-member sees "Rams" and no "Orgs" heading and no org requests are made; a member sees both; the old "Your org" text and `LiveClicks` are absent; the invite banner still shows for `pendingInviteCount > 0`; one failing endpoint leaves the other panels rendered (error text only in its own panel); a user with no links, no tickets and no org sees the welcome empty states and the five Rams cards (Review Focus 5); period switch re-requests with `range=7` and shows the 7-day data after a slower 30-day response resolves late (Review Focus 3).
 - [x] **Step 2:** Run `npx vitest run src/views/DashboardView.test.ts`. Expect FAIL.
-- [x] **Step 3: Implement** the composition. One `useQuery` for trends keyed by the range, one each for tickets and stats; pass results down as props. Heading ids for the two landmarks.
+- [x] **Step 3: Implement** the composition. One `useQuery` for trends keyed by the range, one each for tickets and stats; pass results down as props. Heading ids for the two landmarks. Mount one filtered `FeatureCards` per section (`group="rams"` / `group="orgs"`).
 - [x] **Step 4:** Run the view test, then `npm test`, `npm run typecheck`, `npm run build`.
 - [x] **Step 5:** Run `npm run release:check`; if the entry budget fails, find the import that leaked into the entry chunk and make it lazy (`defineAsyncComponent`) before committing.
 - [x] **Step 6: Commit** `feat(dashboard): compose rams and orgs sections with descriptive analytics`
