@@ -14,30 +14,38 @@ export interface CommandContext {
   role: string
   orgs: { id: string; name: string }[]
   activeOrgId: string | null
+  /** Same membership flag as the rail and the site sheet. Required; there is no default. */
+  hasOrg: boolean
   /** Wired by the palette so a command can close the dialog before it navigates. */
   go: (path: string) => void
   /** Wired by the palette to useActiveOrg().selectOrg, the same path as the org switcher. */
   switchOrg: (orgId: string) => void
 }
 
-const DESTINATIONS: { label: string; to: string; keywords: string[] }[] = [
+const DESTINATIONS: { label: string; to: string; keywords: string[]; orgOnly?: boolean }[] = [
   { label: 'Dashboard', to: '/dashboard', keywords: ['home', 'overview'] },
   { label: 'Links', to: '/links', keywords: ['short', 'url', 'qr'] },
   { label: 'My tickets', to: '/tickets', keywords: ['ticket', 'passes', 'events'] },
-  { label: 'Tix', to: '/manage/tix', keywords: ['ticketing', 'events', 'door'] },
-  { label: 'Frames', to: '/manage/frames', keywords: ['profile', 'photo', 'frame'] },
+  { label: 'Wallpaper', to: '/wallpaper', keywords: ['schedule', 'phone', 'background'] },
+  { label: 'Invites', to: '/invites', keywords: ['invite', 'pending', 'join'] },
   { label: 'Orgs', to: '/orgs', keywords: ['organization', 'clubs', 'catalog'] },
+  { label: 'Tix', to: '/manage/tix', keywords: ['ticketing', 'events', 'door'], orgOnly: true },
+  { label: 'Frames', to: '/manage/frames', keywords: ['profile', 'photo', 'frame'], orgOnly: true },
+  { label: 'Forms', to: '/forms', keywords: ['registration', 'signup', 'form'], orgOnly: true },
+  { label: 'My org', to: '/orgs/modify', keywords: ['organization', 'settings', 'club'], orgOnly: true },
   { label: 'Account', to: '/account', keywords: ['settings', 'profile', 'security'] },
 ]
 
 export function buildCommands(ctx: CommandContext): Command[] {
-  const commands: Command[] = DESTINATIONS.map((destination) => ({
-    id: `go:${destination.to}`,
-    label: destination.label,
-    group: 'Go to',
-    keywords: destination.keywords,
-    run: () => ctx.go(destination.to),
-  }))
+  const commands: Command[] = DESTINATIONS
+    .filter((destination) => ctx.hasOrg || !destination.orgOnly)
+    .map((destination) => ({
+      id: `go:${destination.to}`,
+      label: destination.label,
+      group: 'Go to',
+      keywords: destination.keywords,
+      run: () => ctx.go(destination.to),
+    }))
 
   if (ctx.role === 'admin') {
     commands.push({

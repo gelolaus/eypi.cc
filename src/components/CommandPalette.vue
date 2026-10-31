@@ -111,7 +111,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
 const router = useRouter()
 const session = useSession()
-const { orgs, activeOrg, selectOrg } = useActiveOrg()
+const { orgs, activeOrg, selectOrg, hasOrg } = useActiveOrg()
 
 const listId = 'command-palette-list'
 const GROUP_ORDER: CommandGroup[] = ['Go to', 'Create', 'Switch org']
@@ -161,6 +161,7 @@ function snapshot() {
     role,
     orgs: orgs.value.map((org) => ({ id: org.org_id, name: org.org_name })),
     activeOrgId: activeOrg.value?.org_id ?? null,
+    hasOrg: hasOrg.value,
     go: (path) => { void router.push(path) },
     switchOrg: (id) => {
       const org = orgs.value.find((item) => item.org_id === id)

@@ -6,7 +6,8 @@ const orgs = [
   { id: 'debate', name: 'Debate Society' },
 ]
 
-function ctx(over: Partial<Parameters<typeof buildCommands>[0]> = {}) {
+function ctx(over: Partial<Parameters<typeof buildCommands>[0]> & { hasOrg?: boolean } = {}) {
+  const hasOrg = over.hasOrg ?? true
   return {
     role: 'user',
     orgs,
@@ -14,6 +15,7 @@ function ctx(over: Partial<Parameters<typeof buildCommands>[0]> = {}) {
     go: vi.fn(),
     switchOrg: vi.fn(),
     ...over,
+    hasOrg,
   }
 }
 
@@ -22,20 +24,40 @@ describe('buildCommands', () => {
     const go = vi.fn()
     const list = buildCommands(ctx({ go }))
     const labels = list.filter((command) => command.group === 'Go to').map((command) => command.label)
-    expect(labels).toEqual(['Dashboard', 'Links', 'My tickets', 'Tix', 'Frames', 'Orgs', 'Account'])
+    expect(labels).toEqual([
+      'Dashboard', 'Links', 'My tickets', 'Wallpaper', 'Invites', 'Orgs',
+      'Tix', 'Frames', 'Forms', 'My org', 'Account',
+    ])
 
     for (const [label, path] of [
       ['Dashboard', '/dashboard'],
       ['Links', '/links'],
       ['My tickets', '/tickets'],
+      ['Wallpaper', '/wallpaper'],
+      ['Invites', '/invites'],
+      ['Orgs', '/orgs'],
       ['Tix', '/manage/tix'],
       ['Frames', '/manage/frames'],
-      ['Orgs', '/orgs'],
+      ['Forms', '/forms'],
+      ['My org', '/orgs/modify'],
       ['Account', '/account'],
     ]) {
       list.find((command) => command.label === label)!.run()
       expect(go).toHaveBeenLastCalledWith(path)
     }
+  })
+
+  it('hides org-only destinations unless the user has an org', () => {
+    const hidden = ['go:/manage/tix', 'go:/manage/frames', 'go:/forms', 'go:/orgs/modify']
+    const shown = ['go:/wallpaper', 'go:/invites']
+
+    const without = buildCommands(ctx({ hasOrg: false })).map((command) => command.id)
+    for (const id of hidden) expect(without).not.toContain(id)
+    for (const id of shown) expect(without).toContain(id)
+
+    const withOrg = buildCommands(ctx({ hasOrg: true })).map((command) => command.id)
+    for (const id of hidden) expect(withOrg).toContain(id)
+    for (const id of shown) expect(withOrg).toContain(id)
   })
 
   it('hides admin commands from non-admins and shows them to admins', () => {

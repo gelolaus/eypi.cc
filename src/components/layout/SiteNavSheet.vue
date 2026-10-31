@@ -19,33 +19,48 @@
           class="flex flex-col gap-1"
           aria-label="App modules"
         >
-          <router-link
-            v-for="entry in entries"
-            :key="entry.to"
-            :to="entry.to"
-            class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            @click="drawer.close"
+          <div
+            v-for="(section, index) in sections"
+            :key="section.key"
+            :data-nav-group="section.group"
+            class="flex flex-col gap-1"
+            :class="index > 0 ? 'mt-3' : ''"
           >
-            <component
-              :is="entry.icon"
-              class="size-5 shrink-0"
-              aria-hidden="true"
-            />
-            <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
-            <Badge
-              v-if="entry.to === '/invites' && inviteCount > 0"
-              :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
+            <h2
+              v-if="section.label"
+              data-nav-group-heading
+              class="px-3 text-xs font-medium text-muted-foreground"
             >
-              {{ inviteCount }}
-            </Badge>
-            <Badge
-              v-if="entry.to === '/tickets' && ticketCount > 0"
-              data-ticket-updates
+              {{ section.label }}
+            </h2>
+            <router-link
+              v-for="entry in section.entries"
+              :key="entry.to"
+              :to="entry.to"
+              class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              @click="drawer.close"
             >
-              <span aria-hidden="true">{{ ticketBadge }}</span>
-              <span class="sr-only">{{ ticketCount }} new {{ ticketCount === 1 ? 'update' : 'updates' }}</span>
-            </Badge>
-          </router-link>
+              <component
+                :is="entry.icon"
+                class="size-5 shrink-0"
+                aria-hidden="true"
+              />
+              <span class="min-w-0 flex-1 truncate">{{ entry.label }}</span>
+              <Badge
+                v-if="entry.to === '/invites' && inviteCount > 0"
+                :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
+              >
+                {{ inviteCount }}
+              </Badge>
+              <Badge
+                v-if="entry.to === '/tickets' && ticketCount > 0"
+                data-ticket-updates
+              >
+                <span aria-hidden="true">{{ ticketBadge }}</span>
+                <span class="sr-only">{{ ticketCount }} new {{ ticketCount === 1 ? 'update' : 'updates' }}</span>
+              </Badge>
+            </router-link>
+          </div>
         </nav>
         <Button
           variant="outline"
@@ -102,22 +117,31 @@ import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useNavDrawer } from '@/composables/useNavDrawer'
 import { navItems } from '@/config/nav'
 import { useSession } from '@/stores/session'
-import { appNav, menuEntries } from './appNav'
+import { appNav, groupedEntries, menuEntries } from './appNav'
 import { useSignOut } from './useSignOut'
 
 const route = useRoute()
 const session = useSession()
 const drawer = useNavDrawer()
 const signOut = useSignOut()
-const { orgs } = useActiveOrg()
+const { hasOrg } = useActiveOrg()
 
 const isAuthenticated = computed(() => session.user.value !== null)
 const inviteCount = computed(() => session.pendingInviteCount.value)
 const ticketCount = computed(() => session.ticketUpdates.value)
 const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
-const entries = computed(() => {
+const sections = computed(() => {
   const admin = session.user.value?.role === 'admin'
-  return [...appNav({ admin, org: orgs.value.length > 0 }), ...menuEntries({ admin })]
+  const groups = groupedEntries(appNav({ admin, org: hasOrg.value }))
+  return [
+    ...groups.map((group) => ({
+      key: group.group,
+      group: group.group,
+      label: group.label,
+      entries: group.entries,
+    })),
+    { key: 'menu', group: undefined, label: null, entries: menuEntries({ admin }) },
+  ]
 })
 const publicLinks = navItems({ authenticated: false, admin: false })
 

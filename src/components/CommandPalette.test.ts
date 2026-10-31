@@ -19,6 +19,9 @@ const router = createRouter({
     { path: '/manage/tix', component: stub },
     { path: '/manage/frames', component: stub },
     { path: '/orgs', component: stub },
+    { path: '/wallpaper', component: stub },
+    { path: '/invites', component: stub },
+    { path: '/forms', component: stub },
     { path: '/account', component: stub },
     { path: '/admin/users', component: stub },
     { path: '/orgs/modify/:slug', name: 'orgs-modify', component: stub },
@@ -118,12 +121,27 @@ describe('CommandPalette', () => {
     await mountOpen()
 
     const labels = optionLabels()
-    for (const label of ['Dashboard', 'Links', 'My tickets', 'Tix', 'Frames', 'Orgs', 'Account', 'Create a link', 'Robotics Club']) {
+    for (const label of [
+      'Dashboard', 'Links', 'My tickets', 'Wallpaper', 'Invites', 'Orgs',
+      'Tix', 'Frames', 'Forms', 'My org', 'Account', 'Create a link', 'Robotics Club',
+    ]) {
       expect(labels).toContain(label)
     }
     expect(labels).not.toContain('Admin')
     const text = document.body.textContent ?? ''
     for (const group of ['Go to', 'Create', 'Switch org']) expect(text).toContain(group)
+  })
+
+  it('hides org-only destinations from a non-member and keeps wallpaper and invites', async () => {
+    const state = useActiveOrg()
+    state.orgs.value = []
+    state.orgsLoaded.value = true
+    localStorage.removeItem('eypi.hasOrg')
+    await mountOpen()
+
+    const labels = optionLabels()
+    for (const label of ['Tix', 'Frames', 'Forms', 'My org']) expect(labels).not.toContain(label)
+    for (const label of ['Wallpaper', 'Invites']) expect(labels).toContain(label)
   })
 
   it('shows admin destinations to admins only', async () => {
@@ -232,6 +250,7 @@ describe('CommandPalette', () => {
   })
 
   it('filters as you type and clamps the selection at the ends', async () => {
+    setOrgs([org('robotics', 'Robotics Club')], 'robotics')
     await mountOpen()
     await type('tix')
     expect(optionLabels()).toEqual(['Tix'])
@@ -252,7 +271,7 @@ describe('CommandPalette', () => {
     expect(ids.length).toBeGreaterThan(3)
     expect(ids).toEqual(ids.map((_, index) => index))
     expect(optionLabels()).toEqual([
-      'Orgs', 'My tickets', 'Tix', 'Account',
+      'Orgs', 'My org', 'My tickets', 'Wallpaper', 'Tix', 'Account',
       'Create a link',
       'Robotics Club', 'Debate Society',
     ])
