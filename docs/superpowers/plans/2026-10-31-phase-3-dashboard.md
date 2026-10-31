@@ -171,6 +171,6 @@ Layout (top to bottom): greeting and invite banner; `<section aria-labelledby="r
 
 **Files:** Modify `CONTEXT.md` (remove or reword the "live view" glossary row if `LiveClicks` was deleted; replace the UI convention "Platform totals … are not on the member dashboard" with "The member dashboard shows them in a small Across APC strip"; add the dashboard panels to the module map), `DESIGN_SYSTEM.md` (add the dashboard panels and `PeriodPicker`, `PanelState` to the component catalogue).
 
-- [ ] **Step 1:** Make the edits and tick this file's boxes.
-- [ ] **Step 2:** Run `npm test` and `npm run typecheck`. Expect PASS.
-- [ ] **Step 3: Commit** `docs(dashboard): describe the grouped dashboard and its panels`
+- [x] **Step 1:** Make the edits and tick this file's boxes.
+- [x] **Step 2:** Run `npm test` and `npm run typecheck`. Expect PASS.
+- [x] **Step 3: Commit** `docs(dashboard): describe the grouped dashboard and its panels`

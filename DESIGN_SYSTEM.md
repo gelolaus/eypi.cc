@@ -279,6 +279,25 @@ Focus on every interactive primitive: `focus-visible:border-ring focus-visible:r
 
 Rules: color is never the only signal. `LineChart` gives each series its own dash pattern and marker shape (circle, square, diamond, triangle, cross) as well as its color, and `StatTile` pairs the delta color with an arrow and a signed percent. Every chart has `role="img"` and an `aria-label` that states the data (`BarList` is HTML, not SVG, but carries the same `role="img"`). Charts need a visible text label or legend and must fit 360px without horizontal scroll.
 
+**Dashboard panels** (`src/components/dashboard/`, used by `/dashboard`):
+
+| Component | Props | Notes |
+|---|---|---|
+| `PeriodPicker` | `modelValue` (`7` / `30` / `90`) | `role="group"` labelled "Period"; each option is a `Button` with `aria-pressed` and `min-h-11`. Range is owned by `useDashboardRange` (`sessionStorage` key `eypi.dashboardRange`, default 30). |
+| `PanelState` | `status` (`loading` / `error` / `empty` / `ready`), `title`, `emptyBody?`, `action?` | Shared skeleton (`role="status" aria-busy="true"`), error with Retry (`retry` emit), and `EmptyState` when empty; slot when ready. One panel failing never blanks the page. |
+| `LinkKpis` | `trends`, `status`, `previous?` | Stat tiles for clicks, daily uniques, QR scans, active links, and links total (links total has no previous-period delta). |
+| `ClicksTrend` | `trends`, `status` | `LineChart` of clicks (and uniques) for the selected range. |
+| `TopLinks` | `trends`, `status` | `BarList` of the top links by clicks; rows link to `/links`. |
+| `AudiencePanels` | `trends`, `status` | `BarList`s for device, country, referrer and in-app browser when present. |
+| `BestHours` | `trends`, `status` | `HeatGrid` of the 168 Manila hour-of-week cells with a peak caption. |
+| `UpcomingTickets` | `tickets`, `status` | Up to three upcoming tickets with a link to `/tickets`. |
+| `AcrossApc` | `stats`, `status` | Muted strip of platform totals from `GET /api/stats`. |
+| `OrgInsightsSection` | (uses active org + range) | Member-only org KPI strip, profile-views chart, members sparkline and "Full insights" link; fetches `GET /api/orgs/:org_id/insights`. |
+| `FeatureCards` | `admin`, `org`, `group?` (`rams` / `orgs`) | Grouped nav cards with one-line descriptions; optional `group` mounts only that landmark's cards. |
+
+The dashboard view composes two labelled landmarks (Rams and Orgs). Orgs is members only. Analytics panels sit under Rams with the period picker; org insights and Orgs cards sit under Orgs.
+
+
 **Tix patterns** (`src/components/tix/`, `src/views/tix/`):
 
 - **Ticket card** (`TicketCard`): `Card` with `rounded-3xl`, event name and a status `Badge` at the top, date and location below, then a bordered section with a sentence that explains the status. The QR shows only when the status is `confirmed`; other statuses show their sentence instead. Waitlisted cards state the position as text. Used on `/tickets` and `/t/:token`.
