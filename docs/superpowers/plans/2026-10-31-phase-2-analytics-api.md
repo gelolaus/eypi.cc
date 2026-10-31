@@ -133,9 +133,9 @@ export const fetchPlatformStats = () => api.get<PlatformStats>('/api/stats')
 ```
 `prefetchDashboard()` also warms `trendsKey(30)` and `UPCOMING_TICKETS_KEY`. Keys under `links:` invalidate with link writes (cache prefix rule in `CONTEXT.md`); `orgs:insights:*` falls under `/api/orgs` writes; tickets and stats keys have no write invalidation and rely on the cache TTL.
 
-- [ ] **Step 1: Write failing tests**: each fetcher calls the documented path (stub `fetch`, as `DashboardView.test.ts` does); `trendsKey(7) !== trendsKey(30)`; `prefetchDashboard` requests `/api/links/summary/trends?range=30&compare=1` and `/api/tickets/upcoming`.
-- [ ] **Step 2:** Run `npx vitest run src/lib/queries.dashboard.test.ts`. Expect FAIL.
-- [ ] **Step 3: Implement** the exports. Find the existing ticket type used by `MyTicketsView` and reuse it for `TicketSummary`.
-- [ ] **Step 4:** Run the test, `npm test` and `npm run typecheck`. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): add dashboard query keys and fetchers`
+- [x] **Step 1: Write failing tests**: each fetcher calls the documented path (stub `fetch`, as `DashboardView.test.ts` does); `trendsKey(7) !== trendsKey(30)`; `prefetchDashboard` requests `/api/links/summary/trends?range=30&compare=1` and `/api/tickets/upcoming`.
+- [x] **Step 2:** Run `npx vitest run src/lib/queries.dashboard.test.ts`. Expect FAIL.
+- [x] **Step 3: Implement** the exports. Find the existing ticket type used by `MyTicketsView` and reuse it for `TicketSummary`.
+- [x] **Step 4:** Run the test, `npm test` and `npm run typecheck`. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): add dashboard query keys and fetchers`
 - [ ] **Step 6:** Update `CONTEXT.md` (backend route ownership: the two new routes; glossary: replace "live view" if Phase 3 removed it, otherwise leave) and commit `docs(dashboard): document the trends and upcoming tickets routes`.
