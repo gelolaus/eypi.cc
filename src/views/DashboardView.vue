@@ -36,6 +36,11 @@
         />
       </div>
 
+      <GetStarted
+        :link-count="linkCount"
+        :pending-invites="pendingInviteCount"
+      />
+
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <LinkKpis
           :trends="trends"
@@ -109,6 +114,7 @@ import AudiencePanels from '@/components/dashboard/AudiencePanels.vue'
 import BestHours from '@/components/dashboard/BestHours.vue'
 import ClicksTrend from '@/components/dashboard/ClicksTrend.vue'
 import FeatureCards from '@/components/dashboard/FeatureCards.vue'
+import GetStarted from '@/components/dashboard/GetStarted.vue'
 import LinkKpis from '@/components/dashboard/LinkKpis.vue'
 import OrgInsightsSection from '@/components/dashboard/OrgInsightsSection.vue'
 import PeriodPicker from '@/components/dashboard/PeriodPicker.vue'
@@ -164,6 +170,10 @@ function panelStatus(
 
 const trends = computed<UserTrends | null>(() => trendsQuery.data.value ?? null)
 const trendsStatus = computed(() => panelStatus(trendsQuery.status.value, trendsQuery.data.value))
+const linkCount = computed<number | null>(() => {
+  if (trendsQuery.status.value !== 'ready') return null
+  return trends.value?.totals.links ?? 0
+})
 
 const tickets = computed<TicketSummary[] | null>(() => {
   const data = ticketsQuery.data.value

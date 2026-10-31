@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { markInvitesSeen } from '@/composables/useGetStarted'
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -49,6 +50,7 @@ function removeInvite(orgId: string) {
 }
 
 onMounted(async () => {
+  markInvitesSeen()
   try {
     invites.value = await loadPendingInvites()
   } catch (err) {
