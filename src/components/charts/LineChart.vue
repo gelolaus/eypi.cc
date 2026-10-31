@@ -142,37 +142,39 @@ const xTicks = computed(() => {
         {{ s.label }}
       </li>
     </ul>
-    <table class="sr-only">
-      <caption>{{ ariaLabel }}</caption>
-      <thead>
-        <tr>
-          <th scope="col">
-            <span class="sr-only">Period</span>
-          </th><th
-            v-for="s in series"
-            :key="s.label"
-            scope="col"
+    <div class="sr-only">
+      <table>
+        <caption>{{ ariaLabel }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">
+              <span class="sr-only">Period</span>
+            </th><th
+              v-for="s in series"
+              :key="s.label"
+              scope="col"
+            >
+              {{ s.label }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(x, i) in labels"
+            :key="x"
           >
-            {{ s.label }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(x, i) in labels"
-          :key="x"
-        >
-          <th scope="row">
-            {{ x }}
-          </th>
-          <td
-            v-for="s in series"
-            :key="s.label"
-          >
-            {{ s.points[i]?.y }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <th scope="row">
+              {{ x }}
+            </th>
+            <td
+              v-for="s in series"
+              :key="s.label"
+            >
+              {{ s.points[i]?.y }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </figure>
 </template>

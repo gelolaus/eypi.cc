@@ -35,37 +35,39 @@ const hours = Array.from({ length: 24 }, (_, h) => h)
         />
       </g>
     </svg>
-    <table class="sr-only">
-      <caption>{{ label }}</caption>
-      <thead>
-        <tr>
-          <th scope="col">
-            Day
-          </th><th
-            v-for="h in hours"
-            :key="h"
-            scope="col"
+    <div class="sr-only">
+      <table>
+        <caption>{{ label }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">
+              Day
+            </th><th
+              v-for="h in hours"
+              :key="h"
+              scope="col"
+            >
+              {{ h }}:00
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(d, di) in DAYS"
+            :key="d"
           >
-            {{ h }}:00
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(d, di) in DAYS"
-          :key="d"
-        >
-          <th scope="row">
-            {{ d }}
-          </th>
-          <td
-            v-for="h in hours"
-            :key="h"
-          >
-            {{ cells[di * 24 + h] }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <th scope="row">
+              {{ d }}
+            </th>
+            <td
+              v-for="h in hours"
+              :key="h"
+            >
+              {{ cells[di * 24 + h] }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>

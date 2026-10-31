@@ -33,18 +33,20 @@ const path = computed(() => {
         vector-effect="non-scaling-stroke"
       />
     </svg>
-    <table class="sr-only">
-      <caption>{{ label }}</caption>
-      <tbody>
-        <tr
-          v-for="(v, i) in values"
-          :key="i"
-        >
-          <th scope="row">
-            {{ i + 1 }}
-          </th><td>{{ v }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="sr-only">
+      <table>
+        <caption>{{ label }}</caption>
+        <tbody>
+          <tr
+            v-for="(v, i) in values"
+            :key="i"
+          >
+            <th scope="row">
+              {{ i + 1 }}
+            </th><td>{{ v }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>

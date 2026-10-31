@@ -30,18 +30,20 @@ const ariaLabel = computed(() => `Bar list: ${props.items.map((i) => `${i.label}
         </div>
       </li>
     </ul>
-    <table class="sr-only">
-      <caption>{{ ariaLabel }}</caption>
-      <tbody>
-        <tr
-          v-for="item in items"
-          :key="item.label"
-        >
-          <th scope="row">
-            {{ item.label }}
-          </th><td>{{ item.value }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="sr-only">
+      <table>
+        <caption>{{ ariaLabel }}</caption>
+        <tbody>
+          <tr
+            v-for="item in items"
+            :key="item.label"
+          >
+            <th scope="row">
+              {{ item.label }}
+            </th><td>{{ item.value }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>

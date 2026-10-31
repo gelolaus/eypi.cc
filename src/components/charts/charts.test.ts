@@ -14,7 +14,10 @@ function expectAccessible(w: ReturnType<typeof mount>) {
   const el = w.find('[role="img"]')
   expect(el.exists()).toBe(true)
   expect(el.attributes('aria-label')).toBeTruthy()
-  expect(w.find('table.sr-only').exists()).toBe(true)
+  // A table ignores width and overflow, so a bare `table.sr-only` stays as wide as its columns and
+  // makes the whole page scroll sideways on phones. The clipping box has to be a wrapper around it.
+  expect(w.find('.sr-only table').exists()).toBe(true)
+  expect(w.find('table.sr-only').exists()).toBe(false)
 }
 
 describe('scale', () => {
