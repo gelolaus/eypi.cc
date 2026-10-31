@@ -97,15 +97,15 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 **Consumes:** `fetchTrends`, `trendsKey`, `formatDelta`, `PanelState`, `useDashboardRange`.
 **Produces:** each component takes `props: { trends: UserTrends | null; status: 'loading' | 'error' | 'ready' }` (the view owns the query so the three share one request) and renders its panel.
 
-- [ ] **Step 1: Write failing tests** with a fixture `UserTrends`:
+- [x] **Step 1: Write failing tests** with a fixture `UserTrends`:
   - `LinkKpis` renders `StatTile`s Clicks, Daily uniques, QR scans, Active links, Links, each with a delta against `previous` (no delta shown when `previous` is absent); `new` shows "New".
   - `ClicksTrend` passes a `LineChart` two series (clicks, uniques) and a third "Previous period clicks" series when `previous` exists; its `aria-label` includes the total clicks and the best day.
   - `TopLinks` renders at most 5 `BarList` rows labelled `eypi.cc/{slug}`; with no links shows the `EmptyState` "No links yet" with action to `/links`; with links but zero clicks shows "No clicks in this period".
   - Period switching (Review Focus 3): mount the view-level query with a stubbed `fetch` that resolves 30 slowly and 7 quickly; after switching to 7 the rendered total equals the 7-day fixture even after the 30-day response lands. (This test lives in Task 7's view test; here assert only that components render solely from their `trends` prop.)
-- [ ] **Step 2:** Run `npx vitest run src/components/dashboard`. Expect FAIL.
-- [ ] **Step 3: Implement** the three components using the chart components in `src/components/charts/` (read their prop types first). Numbers use `toLocaleString('en-US')`.
-- [ ] **Step 4:** Run them. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): show link totals, a clicks trend and top links`
+- [x] **Step 2:** Run `npx vitest run src/components/dashboard`. Expect FAIL.
+- [x] **Step 3: Implement** the three components using the chart components in `src/components/charts/` (read their prop types first). Numbers use `toLocaleString('en-US')`.
+- [x] **Step 4:** Run them. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): show link totals, a clicks trend and top links`
 
 ### Task 4: Audience, best hours, upcoming tickets and campus strip
 
