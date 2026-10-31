@@ -114,6 +114,7 @@ import { useRoute } from 'vue-router'
 import { api } from '@/lib/api'
 import { useDialog } from '@/composables/useDialog'
 import { useToast } from '@/composables/useToast'
+import { copyShortLink } from '@/lib/copyShortLink'
 import { activeOrgHeaders, activeOrgId, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import {
   linksKey,
@@ -233,12 +234,7 @@ function onStatus(value: LinkStatusFilter) {
 }
 
 async function copyLink(link: LinkListItem) {
-  try {
-    await navigator.clipboard.writeText(`https://eypi.cc/${link.slug}`)
-    toast.success('Link copied.')
-  } catch {
-    toast.error('Could not copy the link.')
-  }
+  await copyShortLink(link.slug)
 }
 
 // Delete waits out the undo window before it is sent, so nothing is lost if Undo is tapped.
