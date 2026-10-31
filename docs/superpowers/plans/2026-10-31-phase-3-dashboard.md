@@ -130,11 +130,11 @@ export function useDashboardRange(): { range: Ref<TrendRange>; setRange: (value:
 **Consumes:** `fetchOrgInsights`, `orgInsightsKey`, `useActiveOrg().activeOrg`, `checkInRate`, `useDashboardRange`.
 **Produces:** a component with no props; renders nothing when `activeOrg` is null.
 
-- [ ] **Step 1: Write failing tests**: no `activeOrg` renders nothing; with an org it shows one header line (org name and slug label), `StatTile`s Profile views, Registrations, Check-ins (with "x% checked in" only when `checkInRate` is not null), Frames views, Frames downloads, Members (last value of `members.daily`); a `LineChart` of `profileViews.daily`; a `SparkLine` of members; a link "Full insights" to `/orgs/{slug}/insights`; an org with all zeros shows the stat tiles at 0 and no divide-by-zero (Review Focus 4); a 403 from the endpoint shows the panel error with retry.
-- [ ] **Step 2:** Run it. Expect FAIL.
-- [ ] **Step 3: Implement** with `useQuery(() => orgInsightsKey(id, range), () => fetchOrgInsights(id, range))`. Delta against the previous period is not available from this endpoint, so show no deltas here.
-- [ ] **Step 4:** Run it. Expect PASS.
-- [ ] **Step 5: Commit** `feat(dashboard): show org insights for members`
+- [x] **Step 1: Write failing tests**: no `activeOrg` renders nothing; with an org it shows one header line (org name and slug label), `StatTile`s Profile views, Registrations, Check-ins (with "x% checked in" only when `checkInRate` is not null), Frames views, Frames downloads, Members (last value of `members.daily`); a `LineChart` of `profileViews.daily`; a `SparkLine` of members; a link "Full insights" to `/orgs/{slug}/insights`; an org with all zeros shows the stat tiles at 0 and no divide-by-zero (Review Focus 4); a 403 from the endpoint shows the panel error with retry.
+- [x] **Step 2:** Run it. Expect FAIL.
+- [x] **Step 3: Implement** with `useQuery(() => orgInsightsKey(id, range), () => fetchOrgInsights(id, range))`. Delta against the previous period is not available from this endpoint, so show no deltas here.
+- [x] **Step 4:** Run it. Expect PASS.
+- [x] **Step 5: Commit** `feat(dashboard): show org insights for members`
 
 ### Task 6: Grouped feature cards
 
