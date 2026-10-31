@@ -28,47 +28,61 @@
           class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
           aria-label="App modules"
         >
-          <router-link
-            v-for="entry in entries"
-            :key="entry.to"
-            v-prefetch="entry.to"
-            :to="entry.to"
-            :title="collapsed ? entry.label : undefined"
-            class="relative flex items-center gap-3 rounded-xl py-2.5 text-base font-medium transition"
-            :class="[
-              collapsed ? 'justify-center px-0' : 'px-3',
-              isActive(entry)
-                ? 'bg-primary/15 text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-            ]"
-            :aria-current="isActive(entry) ? 'page' : undefined"
+          <div
+            v-for="(group, index) in groups"
+            :key="group.group"
+            :data-nav-group="group.group"
+            class="flex flex-col gap-1"
+            :class="index > 0 ? (collapsed ? 'mt-1 border-t border-border pt-2' : 'mt-3') : ''"
           >
-            <component
-              :is="entry.icon"
-              class="size-5 shrink-0"
-              :class="isActive(entry) ? 'text-primary' : ''"
-              aria-hidden="true"
-            />
-            <span
-              class="min-w-0 flex-1 truncate"
-              :class="collapsed ? 'sr-only' : ''"
-            >{{ entry.label }}</span>
-            <Badge
-              v-if="entry.to === '/invites' && inviteCount > 0"
-              :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
-              :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
+            <h2
+              data-nav-group-heading
+              :class="collapsed ? 'sr-only' : 'px-3 text-xs font-medium text-muted-foreground'"
             >
-              {{ inviteCount }}
-            </Badge>
-            <Badge
-              v-if="entry.to === '/tickets' && ticketCount > 0"
-              data-ticket-updates
-              :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
+              {{ group.label }}
+            </h2>
+            <router-link
+              v-for="entry in group.entries"
+              :key="entry.to"
+              v-prefetch="entry.to"
+              :to="entry.to"
+              :title="collapsed ? entry.label : undefined"
+              class="relative flex items-center gap-3 rounded-xl py-2.5 text-base font-medium transition"
+              :class="[
+                collapsed ? 'justify-center px-0' : 'px-3',
+                isActive(entry)
+                  ? 'bg-primary/15 text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              ]"
+              :aria-current="isActive(entry) ? 'page' : undefined"
             >
-              <span aria-hidden="true">{{ ticketBadge }}</span>
-              <span class="sr-only">{{ ticketLabel }}</span>
-            </Badge>
-          </router-link>
+              <component
+                :is="entry.icon"
+                class="size-5 shrink-0"
+                :class="isActive(entry) ? 'text-primary' : ''"
+                aria-hidden="true"
+              />
+              <span
+                class="min-w-0 flex-1 truncate"
+                :class="collapsed ? 'sr-only' : ''"
+              >{{ entry.label }}</span>
+              <Badge
+                v-if="entry.to === '/invites' && inviteCount > 0"
+                :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
+                :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
+              >
+                {{ inviteCount }}
+              </Badge>
+              <Badge
+                v-if="entry.to === '/tickets' && ticketCount > 0"
+                data-ticket-updates
+                :class="collapsed ? 'absolute right-1 top-1 h-4 min-w-4 px-1 text-[10px]' : ''"
+              >
+                <span aria-hidden="true">{{ ticketBadge }}</span>
+                <span class="sr-only">{{ ticketLabel }}</span>
+              </Badge>
+            </router-link>
+          </div>
         </nav>
 
         <div
@@ -136,6 +150,7 @@
             <AccountMenu
               variant="header"
               :overflow="overflow"
+              :org-entries="orgNav"
             />
           </div>
         </header>
@@ -156,7 +171,7 @@
         >
           <div
             data-tab-grid
-            class="grid h-[4.5rem] grid-cols-4"
+            class="grid h-[4.5rem] grid-cols-5"
           >
             <router-link
               v-for="entry in tabs"
@@ -173,6 +188,13 @@
                   class="size-5"
                   aria-hidden="true"
                 />
+                <Badge
+                  v-if="entry.to === '/invites' && inviteCount > 0"
+                  class="absolute -right-3 -top-2 h-4 min-w-4 px-1 text-[10px]"
+                  :aria-label="`${inviteCount} pending ${inviteCount === 1 ? 'invite' : 'invites'}`"
+                >
+                  {{ inviteBadge }}
+                </Badge>
                 <Badge
                   v-if="entry.to === '/tickets' && ticketCount > 0"
                   data-ticket-updates
@@ -228,7 +250,7 @@ import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
 import { PanelLeftClose, PanelLeftOpen, Search } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useActiveOrg } from '@/composables/useActiveOrg'
+import { clearOrgHint, useActiveOrg } from '@/composables/useActiveOrg'
 import { installPaneScroll } from '@/composables/paneScroll'
 import { useRailCollapsed } from '@/composables/useRailCollapsed'
 import { useScrollContainer } from '@/composables/useScrollContainer'
@@ -236,14 +258,14 @@ import { isAppShellRoute } from '@/config/nav'
 import { lazyHost } from '@/lib/lazyHost'
 import { useSession } from '@/stores/session'
 import AccountMenu from './AccountMenu.vue'
-import { appNav, isAppNavEntryActive, overflowEntries, tabEntries, type AppNavEntry } from './appNav'
+import { appNav, groupedEntries, isAppNavEntryActive, orgEntries, overflowEntries, tabEntries, type AppNavEntry } from './appNav'
 import SiteNavSheet from './SiteNavSheet.vue'
 
 const route = useRoute()
 const router = useRouter()
 const session = useSession()
 const { container } = useScrollContainer()
-const { orgs, activeOrg, fetchOrgs } = useActiveOrg()
+const { orgs, activeOrg, hasOrg, fetchOrgs } = useActiveOrg()
 
 const { collapsed, toggle: toggleRail } = useRailCollapsed()
 const paneRef = ref<HTMLElement | null>(null)
@@ -258,9 +280,12 @@ const inviteCount = computed(() => session.pendingInviteCount.value)
 const ticketCount = computed(() => session.ticketUpdates.value)
 const ticketBadge = computed(() => (ticketCount.value > 9 ? '9+' : String(ticketCount.value)))
 const ticketLabel = computed(() => `${ticketCount.value} new ${ticketCount.value === 1 ? 'update' : 'updates'}`)
-const entries = computed(() => appNav({ admin: isAdmin.value, org: orgs.value.length > 0 }))
+const inviteBadge = computed(() => (inviteCount.value > 9 ? '9+' : String(inviteCount.value)))
+const entries = computed(() => appNav({ admin: isAdmin.value, org: hasOrg.value }))
+const groups = computed(() => groupedEntries(entries.value))
 const tabs = computed(() => tabEntries(entries.value))
 const overflow = computed(() => overflowEntries(entries.value))
+const orgNav = computed(() => orgEntries(entries.value))
 const appShell = computed(() =>
   isAppShellRoute({
     authenticated: isAuthenticated.value,
@@ -303,6 +328,7 @@ watch(isAuthenticated, (signedIn) => {
   } else {
     orgs.value = []
     activeOrg.value = null
+    clearOrgHint()
   }
 })
 

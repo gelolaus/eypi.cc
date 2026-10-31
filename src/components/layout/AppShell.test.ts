@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createApp } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import AppShell from './AppShell.vue'
 import MarketingHeader from '@/components/marketing/MarketingHeader.vue'
+import { useActiveOrg } from '@/composables/useActiveOrg'
 import { useSession } from '@/stores/session'
 
 const stub = { template: '<div />' }
@@ -13,6 +15,8 @@ const router = createRouter({
     { path: '/', component: stub },
     { path: '/login', component: stub },
     { path: '/orgs', component: stub },
+    { path: '/orgs/modify/:slug?', component: stub, meta: { requiresAuth: true } },
+    { path: '/wallpaper', component: stub, meta: { requiresAuth: true } },
     { path: '/dashboard', component: stub, meta: { requiresAuth: true } },
     { path: '/links', component: stub, meta: { requiresAuth: true } },
     { path: '/manage/tix', component: stub, meta: { requiresAuth: true } },
@@ -79,6 +83,11 @@ beforeEach(() => {
   })))
   localStorage.clear()
   useSession().reset()
+  // Org state is module-level and shared; put it back to "never loaded".
+  const { orgs, activeOrg, orgsLoaded } = createApp({}).use(router).runWithContext(() => useActiveOrg())
+  orgs.value = []
+  activeOrg.value = null
+  orgsLoaded.value = false
 })
 
 afterEach(() => {
@@ -128,6 +137,128 @@ describe('AppShell (signed in)', () => {
     wrapper.unmount()
   })
 
+  describe('grouped rail', () => {
+    const rail = (wrapper: Awaited<ReturnType<typeof mountAt>>) => wrapper.get('aside nav[aria-label="App modules"]')
+    const headings = (wrapper: Awaited<ReturnType<typeof mountAt>>) =>
+      rail(wrapper).findAll('[data-nav-group-heading]').map((h) => h.text())
+    const ORG_HREFS = ['/manage/tix', '/manage/frames', '/forms', '/orgs/modify']
+
+    function respondWithOrgs(orgs: unknown[]) {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ orgs }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })))
+    }
+
+    const memberOrg = { org_id: 'ccs', org_name: 'CCS', owner_id: 'user-1', is_owner: 1, created_at: '2026-01-01' }
+
+    it('shows only Rams to a non-member and keeps the Orgs directory link', async () => {
+      signIn()
+      const wrapper = await mountAt('/links')
+      expect(headings(wrapper)).toEqual(['Rams'])
+      for (const href of ORG_HREFS) expect(rail(wrapper).find(`a[href="${href}"]`).exists()).toBe(false)
+      expect(rail(wrapper).find('a[href="/orgs"]').exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('shows Rams then Orgs, with the four org links, to a member', async () => {
+      respondWithOrgs([memberOrg])
+      signIn()
+      const wrapper = await mountAt('/links')
+      expect(headings(wrapper)).toEqual(['Rams', 'Orgs'])
+      for (const href of ORG_HREFS) expect(rail(wrapper).find(`a[href="${href}"]`).exists()).toBe(true)
+      const sections = rail(wrapper).findAll('[data-nav-group]')
+      expect(sections.map((s) => s.attributes('data-nav-group'))).toEqual(['rams', 'orgs'])
+      expect(sections[1].findAll('a').map((a) => a.text())).toEqual(['Tix', 'Frames', 'Forms', 'My org'])
+      wrapper.unmount()
+    })
+
+    it('renders the Orgs section from the stored hint before orgs load', async () => {
+      localStorage.setItem('eypi.hasOrg', '1')
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
+      signIn()
+      const wrapper = await mountAt('/links')
+      expect(headings(wrapper)).toEqual(['Rams', 'Orgs'])
+      wrapper.unmount()
+    })
+
+    it.each([['0'], [null]])('leaves the Orgs section out for hint %s before orgs load', async (hint) => {
+      if (hint !== null) localStorage.setItem('eypi.hasOrg', hint)
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
+      signIn()
+      const wrapper = await mountAt('/links')
+      expect(headings(wrapper)).toEqual(['Rams'])
+      wrapper.unmount()
+    })
+
+    it('drops the stored hint when signed out', async () => {
+      localStorage.setItem('eypi.hasOrg', '1')
+      signIn()
+      const wrapper = await mountAt('/links')
+      useSession().user.value = null
+      await flushPromises()
+      expect(localStorage.getItem('eypi.hasOrg')).toBeNull()
+      wrapper.unmount()
+    })
+
+    it('styles expanded headings as muted labels', async () => {
+      respondWithOrgs([memberOrg])
+      signIn()
+      const wrapper = await mountAt('/links')
+      for (const heading of rail(wrapper).findAll('[data-nav-group-heading]')) {
+        expect(heading.classes()).toEqual(expect.arrayContaining(['text-xs', 'font-medium', 'text-muted-foreground', 'px-3']))
+        expect(heading.classes()).not.toContain('sr-only')
+      }
+      wrapper.unmount()
+    })
+
+    it('keeps an sr-only heading and a divider per group when collapsed', async () => {
+      respondWithOrgs([memberOrg])
+      localStorage.setItem('eypi.rail.collapsed', 'true')
+      signIn()
+      const wrapper = await mountAt('/links')
+      const sections = rail(wrapper).findAll('[data-nav-group]')
+      expect(sections).toHaveLength(2)
+      for (const section of sections) {
+        const heading = section.get('[data-nav-group-heading]')
+        expect(heading.classes()).toContain('sr-only')
+        expect(heading.text()).toMatch(/^(Rams|Orgs)$/)
+      }
+      expect(sections[1].classes()).toContain('border-t')
+      wrapper.unmount()
+    })
+
+    it('marks only My org as current at /orgs/modify/x', async () => {
+      respondWithOrgs([memberOrg])
+      signIn()
+      const wrapper = await mountAt('/orgs/modify/x')
+      const current = rail(wrapper).findAll('[aria-current="page"]')
+      expect(current).toHaveLength(1)
+      expect(current[0].text()).toBe('My org')
+      wrapper.unmount()
+    })
+  })
+
+  describe('tab bar badges', () => {
+    it('puts the invite badge inside the Invites tab only', async () => {
+      signIn(3)
+      const wrapper = await mountAt('/links')
+      const tabs = wrapper.get('nav[aria-label="Primary"]').findAll('a')
+      expect(tabs).toHaveLength(5)
+      for (const tab of tabs) {
+        const badge = tab.find('[data-slot="badge"]')
+        if (tab.attributes('href') === '/invites') {
+          expect(badge.exists()).toBe(true)
+          expect(badge.attributes('aria-label')).toBe('3 pending invites')
+          expect(badge.text()).toBe('3')
+        } else {
+          expect(tab.html()).not.toContain('data-slot=\"badge\"')
+        }
+      }
+      wrapper.unmount()
+    })
+  })
+
   it('collapses the sidebar to icons, labels them for assistive tech and remembers the choice', async () => {
     signIn()
     const wrapper = await mountAt('/links')
@@ -172,13 +303,14 @@ describe('AppShell (signed in)', () => {
   })
 
   it('shows the five tab links in the Primary bottom nav', async () => {
-    signIn()
+    signIn(0)
     const wrapper = await mountAt('/invites')
     const nav = wrapper.get('nav[aria-label="Primary"]')
     for (const cls of ['fixed', 'inset-x-0', 'bottom-0', 'lg:hidden']) expect(nav.classes()).toContain(cls)
     const tabs = nav.findAll('a')
     expect(tabs.map((tab) => tab.text())).toEqual(['Dashboard', 'Links', 'My tickets', 'Wallpaper', 'Invites'])
-    expect(nav.get('[data-tab-grid]').classes()).toEqual(expect.arrayContaining(['grid', 'h-[4.5rem]', 'grid-cols-4']))
+    expect(nav.get('[data-tab-grid]').classes()).toEqual(expect.arrayContaining(['grid', 'h-[4.5rem]', 'grid-cols-5']))
+    expect(nav.get('[data-tab-grid]').classes()).not.toContain('grid-cols-4')
     expect(nav.get('[aria-current="page"]').text()).toBe('Invites')
     wrapper.unmount()
   })
@@ -535,3 +667,4 @@ describe('AppShell (public)', () => {
     wrapper.unmount()
   })
 })
+
