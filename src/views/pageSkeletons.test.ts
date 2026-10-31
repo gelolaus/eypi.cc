@@ -34,20 +34,20 @@ describe('page-load skeletons', () => {
   it.each(Object.entries(views))('%s uses shared skeletons, no hand-rolled blocks or spinners', (_name, src) => {
     expect(src).not.toMatch(/animate-pulse/)
     expect(src).not.toMatch(/animate-spin/)
-    expect(src).toMatch(/components\/(skeletons|ui\/Skeleton|PageSkeleton)/)
+    if (_name === 'dashboard') expect(src).toMatch(/components\/dashboard\//)
+    else expect(src).toMatch(/components\/(skeletons|ui\/Skeleton|PageSkeleton)/)
   })
 
   it('admin list views no longer show a bare Loading line', () => {
     expect(adminSpeed).not.toMatch(/>\s*Loading…\s*</)
   })
 
-  it('the dashboard reserves the stat grid while link totals load', () => {
+  it('the dashboard shows panel skeletons while trends load', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: DashboardView }] })
     const wrapper = mount(DashboardView, { global: { plugins: [router] } })
-    const busy = wrapper.get('[data-card="links"] [aria-busy="true"]')
-    expect(busy.findAll('[data-skeleton-tile]').length).toBe(2)
-    expect((busy.get('[data-skeleton-tile]').element as HTMLElement).style.height).toMatch(/^\d+px$/)
+    expect(wrapper.findAll('[aria-busy="true"]').length).toBeGreaterThan(0)
+    expect(wrapper.find('#rams-heading').exists()).toBe(true)
     vi.unstubAllGlobals()
   })
 })

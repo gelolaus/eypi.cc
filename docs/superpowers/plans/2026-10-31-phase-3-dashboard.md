@@ -159,12 +159,12 @@ Rams cards: Links, My tickets, Wallpaper, Invites, Orgs. Orgs cards: Tix, Frames
 
 Layout (top to bottom): greeting and invite banner; `<section aria-labelledby="rams-heading">` heading "Rams" with `PeriodPicker`, `LinkKpis`, `ClicksTrend`, `TopLinks`, `AudiencePanels`, `BestHours`, `UpcomingTickets`, `AcrossApc`, Rams `FeatureCards`; then, for members, `<section aria-labelledby="orgs-heading">` heading "Orgs" with `OrgInsightsSection` and Orgs `FeatureCards`. Two columns from `lg`, one column below.
 
-- [ ] **Step 1: Update tests first.** Stub `fetch` for `/api/links/summary/trends`, `/api/tickets/upcoming`, `/api/stats`, `/api/orgs/jpcs-apc/insights`. Assert: a non-member sees "Rams" and no "Orgs" heading and no org requests are made; a member sees both; the old "Your org" text and `LiveClicks` are absent; the invite banner still shows for `pendingInviteCount > 0`; one failing endpoint leaves the other panels rendered (error text only in its own panel); a user with no links, no tickets and no org sees the welcome empty states and the five Rams cards (Review Focus 5); period switch re-requests with `range=7` and shows the 7-day data after a slower 30-day response resolves late (Review Focus 3).
-- [ ] **Step 2:** Run `npx vitest run src/views/DashboardView.test.ts`. Expect FAIL.
-- [ ] **Step 3: Implement** the composition. One `useQuery` for trends keyed by the range, one each for tickets and stats; pass results down as props. Heading ids for the two landmarks.
-- [ ] **Step 4:** Run the view test, then `npm test`, `npm run typecheck`, `npm run build`.
-- [ ] **Step 5:** Run `npm run release:check`; if the entry budget fails, find the import that leaked into the entry chunk and make it lazy (`defineAsyncComponent`) before committing.
-- [ ] **Step 6: Commit** `feat(dashboard): compose rams and orgs sections with descriptive analytics`
+- [x] **Step 1: Update tests first.** Stub `fetch` for `/api/links/summary/trends`, `/api/tickets/upcoming`, `/api/stats`, `/api/orgs/jpcs-apc/insights`. Assert: a non-member sees "Rams" and no "Orgs" heading and no org requests are made; a member sees both; the old "Your org" text and `LiveClicks` are absent; the invite banner still shows for `pendingInviteCount > 0`; one failing endpoint leaves the other panels rendered (error text only in its own panel); a user with no links, no tickets and no org sees the welcome empty states and the five Rams cards (Review Focus 5); period switch re-requests with `range=7` and shows the 7-day data after a slower 30-day response resolves late (Review Focus 3).
+- [x] **Step 2:** Run `npx vitest run src/views/DashboardView.test.ts`. Expect FAIL.
+- [x] **Step 3: Implement** the composition. One `useQuery` for trends keyed by the range, one each for tickets and stats; pass results down as props. Heading ids for the two landmarks.
+- [x] **Step 4:** Run the view test, then `npm test`, `npm run typecheck`, `npm run build`.
+- [x] **Step 5:** Run `npm run release:check`; if the entry budget fails, find the import that leaked into the entry chunk and make it lazy (`defineAsyncComponent`) before committing.
+- [x] **Step 6: Commit** `feat(dashboard): compose rams and orgs sections with descriptive analytics`
   - bullets: replace the org card and live clicks with trends, audience, best hours and tickets; split the page into Rams and Orgs sections; keep the dashboard in its lazy chunk; cover member, non-member, empty and partial-failure cases with Vitest.
 
 ### Task 8: Docs

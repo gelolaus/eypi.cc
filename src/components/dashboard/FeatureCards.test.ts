@@ -73,4 +73,22 @@ describe('FeatureCards', () => {
     })
     expect(withBadge.find('[data-slot="badge"]').text()).toContain('2')
   })
+
+  it('filters to a single group when group is set', () => {
+    const rams = mount(FeatureCards, {
+      props: { admin: false, org: true, group: 'rams' },
+      global: { plugins: [router] },
+    })
+    expect(rams.find('[data-group="rams"]').exists()).toBe(true)
+    expect(rams.find('[data-group="orgs"]').exists()).toBe(false)
+    expect(rams.findAll('a > [data-slot="card"]')).toHaveLength(5)
+
+    const orgs = mount(FeatureCards, {
+      props: { admin: false, org: true, group: 'orgs' },
+      global: { plugins: [router] },
+    })
+    expect(orgs.find('[data-group="rams"]').exists()).toBe(false)
+    expect(orgs.find('[data-group="orgs"]').exists()).toBe(true)
+    expect(orgs.findAll('a > [data-slot="card"]')).toHaveLength(4)
+  })
 })

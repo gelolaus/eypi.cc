@@ -52,13 +52,15 @@ describe('mobile-first auth and static pages', () => {
   })
 
   it('dashboard modules form a 1/2/3 column grid of 44px+ links', () => {
-    const src = read('views/DashboardView.vue')
-    expect(src).toContain('grid-cols-1')
-    expect(src).toContain('sm:grid-cols-2')
-    expect(src).toContain('lg:grid-cols-3')
-    expect(src).toContain('min-h-11')
-    expect(src).toContain('<AppPage')
-    expect(src).not.toContain('paintCardBorder')
+    const view = read('views/DashboardView.vue')
+    expect(view).toContain('FeatureCards')
+    expect(view).toContain('<AppPage')
+    expect(view).not.toContain('paintCardBorder')
+    const cards = read('components/dashboard/FeatureCards.vue')
+    expect(cards).toContain('grid-cols-1')
+    expect(cards).toContain('sm:grid-cols-2')
+    expect(cards).toContain('lg:grid-cols-3')
+    expect(cards).toContain('min-h-11')
   })
 
   it.each(['views/AccountView.vue', 'views/InvitesView.vue'])('%s uses AppPage', (file) => {

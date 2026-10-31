@@ -6,7 +6,7 @@ import { appNav, groupedEntries } from '@/components/layout/appNav'
 import { CARD_DESCRIPTIONS } from '@/config/dashboardCards'
 import { useSession } from '@/stores/session'
 
-const props = defineProps<{ admin: boolean; org: boolean }>()
+const props = defineProps<{ admin: boolean; org: boolean; group?: 'rams' | 'orgs' }>()
 
 const session = useSession()
 const pendingInviteCount = computed(() => session.pendingInviteCount.value)
@@ -17,7 +17,8 @@ const groups = computed(() =>
       ...group,
       entries: group.entries.filter((entry) => entry.to !== '/dashboard'),
     }))
-    .filter((group) => group.entries.length > 0),
+    .filter((group) => group.entries.length > 0)
+    .filter((group) => !props.group || group.group === props.group),
 )
 </script>
 
