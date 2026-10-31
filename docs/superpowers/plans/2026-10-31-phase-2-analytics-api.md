@@ -54,12 +54,12 @@ export const loadLinkPeriod = (database, linkId, from, to, today?) => loadPeriod
 ```
 `totals.uniques` and `totals.qr` are added (sums over the period); existing fields are unchanged.
 
-- [ ] **Step 1:** Run the current link analytics tests to confirm green: `npx vitest run backend/src/routes/links backend/src/jobs/rollups.test.ts`.
-- [ ] **Step 2: Write a failing test** in a new `backend/src/lib/links/analyticsQuery.test.ts`: seed two links of one user and one of another, with `analytics_daily` rows, call `loadPeriod(db, userScope('u1'), ...)` and expect the clicks to be the sum of the two links only; expect `totals.uniques` and `totals.qr` to be the sums.
-- [ ] **Step 3:** Run it. Expect FAIL (`loadPeriod` undefined).
-- [ ] **Step 4: Implement.** Replace every `link_id = ?` and `[linkId, ...]` in the module's SQL with the scope's `sql` and `args`, spreading `scope.args` before the date args. `rawDimSql` takes the scope too. Keep `loadLinkPeriod` as the thin wrapper.
-- [ ] **Step 5:** Run the new test and the link analytics tests. Expect PASS.
-- [ ] **Step 6: Commit** `refactor(links): load analytics periods for any link scope`
+- [x] **Step 1:** Run the current link analytics tests to confirm green: `npx vitest run backend/src/routes/links backend/src/jobs/rollups.test.ts`.
+- [x] **Step 2: Write a failing test** in a new `backend/src/lib/links/analyticsQuery.test.ts`: seed two links of one user and one of another, with `analytics_daily` rows, call `loadPeriod(db, userScope('u1'), ...)` and expect the clicks to be the sum of the two links only; expect `totals.uniques` and `totals.qr` to be the sums.
+- [x] **Step 3:** Run it. Expect FAIL (`loadPeriod` undefined).
+- [x] **Step 4: Implement.** Replace every `link_id = ?` and `[linkId, ...]` in the module's SQL with the scope's `sql` and `args`, spreading `scope.args` before the date args. `rawDimSql` takes the scope too. Keep `loadLinkPeriod` as the thin wrapper.
+- [x] **Step 5:** Run the new test and the link analytics tests. Expect PASS.
+- [x] **Step 6: Commit** `refactor(links): load analytics periods for any link scope`
   - bullets: add `LinkScope`, `linkScope` and `userScope`; return period unique and qr sums; cover the user scope with Vitest.
 
 ### Task 2: User-wide trends endpoint
