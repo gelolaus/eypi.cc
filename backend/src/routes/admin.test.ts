@@ -250,12 +250,19 @@ describe('admin routes', () => {
     const secondCookie = await cookieFor(client, env, secondAdmin.id)
 
     const originalExecute = client.execute.bind(client)
+    // Hold both role writes until both requests have reached them, so both have
+    // passed the admin check before either write lands, whatever the machine load.
+    let arrived = 0
+    let release: () => void = () => {}
+    const bothArrived = new Promise<void>((resolve) => {
+      release = resolve
+    })
     client.execute = (async (stmt: { sql?: string } | string) => {
       const sql = typeof stmt === 'string' ? stmt : String(stmt.sql ?? '')
       if (sql.includes('UPDATE users SET role')) {
-        // The admin check has already run. Yield so the other demotion can pass it
-        // before either role write lands.
-        await new Promise((resolve) => setTimeout(resolve, 0))
+        arrived += 1
+        if (arrived === 2) release()
+        await bothArrived
       }
       return originalExecute(stmt as never)
     }) as typeof client.execute
