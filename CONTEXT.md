@@ -134,11 +134,15 @@ Removed in the wantap port: the glass-card (mica) surfaces and the Geist fonts. 
 | Tix public event page | `/tix/:slug` |
 | My tickets (signed in) | `/tickets` |
 | Guest ticket (private link) | `/t/:token` |
-| Orgs | `/orgs`, `/orgs/:slug`, `/orgs/modify`, `/invites` |
+| Orgs | `/orgs`, `/orgs/:slug` |
+| My org | `/orgs/modify` |
+| Invites | `/invites` |
 | Account | `/account` |
 | Admin panel | `/admin`, `/admin/users`, `/admin/links`, `/admin/reports`, `/admin/audit`, `/admin/orgs`, `/admin/speed`, `/admin/maintenance` |
 | Legal and reports | `/privacy`, `/terms`, `/acceptable-use`, `/report` |
 | Short-link catch-all | `/:slug` (must stay late in router) |
+
+The signed-in rail has two groups, Rams and Orgs. Rams: Dashboard (`/dashboard`), Links, My tickets, Wallpaper, Invites, Orgs (`/orgs`). Orgs, members only: Tix, Frames, Forms, My org (`/orgs/modify`), hidden when `useActiveOrg().hasOrg` is false. Phone tabs, exactly five: Dashboard, Links, My tickets, Wallpaper, Invites.
 
 ---
 
@@ -234,3 +238,4 @@ Schema changes are versioned SQL in `backend/migrations/`, applied with `npm run
 - The product is called **Eypi** in the UI; `eypi.cc` is the domain and appears only in URLs and legal text.
 - **Platform totals** (`GET /api/stats`, public aggregates) show on the landing page and in Admin → Overview. They are not on the member dashboard.
 - The side rail collapses to icons; the org switcher shows the capitalised org slug only.
+- The signed-in rail has two groups, Rams and Orgs. Rams: Dashboard, Links, My tickets, Wallpaper, Invites, Orgs (`/orgs`). Orgs, members only: Tix, Frames, Forms, My org (`/orgs/modify`), hidden when `useActiveOrg().hasOrg` is false. Phone tabs, exactly five: Dashboard, Links, My tickets, Wallpaper, Invites. On phones the profile menu is a bottom sheet. The command palette and the site sheet use the same membership gate.
