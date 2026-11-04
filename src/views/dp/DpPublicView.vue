@@ -47,6 +47,7 @@
         <Card class="relative gap-0 rounded-3xl p-4 sm:p-8">
           <!-- Preview container only; the canvas below is composited from the photo and frame alone -->
           <div
+            v-if="!isBooth"
             class="relative mx-auto w-full overflow-hidden border border-border bg-muted bg-dot-grid motion-safe:transition-all motion-safe:duration-300 has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 lg:max-w-[70dvh]"
             :class="previewShape === 'circle' ? 'rounded-full' : 'rounded-3xl'"
             :style="{ aspectRatio: frameAspect }"
@@ -68,6 +69,13 @@
               @keydown="onKeydown"
             />
           </div>
+          <BoothStudio
+            v-else-if="selectedFrame"
+            ref="studio"
+            :frame="selectedFrame"
+            :windows="selectedWindows"
+            @update:ready="boothReady = $event"
+          />
 
           <!-- Frame switcher -->
           <div
@@ -108,13 +116,23 @@
             </Button>
           </div>
 
-          <p class="mt-3 text-center font-mono text-xs text-muted-foreground">
+          <p
+            v-if="isBooth && frameImgs.length > 1"
+            class="mt-3 text-center font-mono text-xs text-muted-foreground"
+          >
+            Frame {{ selectedIndex + 1 }} of {{ frameImgs.length }}
+          </p>
+          <p
+            v-else-if="!isBooth"
+            class="mt-3 text-center font-mono text-xs text-muted-foreground"
+          >
             {{ frameImgs.length > 1 ? `Frame ${selectedIndex + 1} of ${frameImgs.length} · ` : '' }}Drag to reposition · scroll or pinch to zoom · arrow keys and +/- on the photo
           </p>
 
           <!-- Controls -->
           <div class="mt-6 flex flex-col gap-4">
             <Button
+              v-if="!isBooth"
               as-child
               variant="outline"
               class="w-full cursor-pointer font-semibold focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50"
@@ -132,7 +150,7 @@
             </Button>
 
             <div
-              v-if="headshot"
+              v-if="!isBooth && headshot"
               class="flex items-center gap-4"
             >
               <span class="font-mono text-xs text-muted-foreground">Zoom</span>
@@ -155,7 +173,10 @@
             </div>
 
             <!-- Preview shape toggler -->
-            <div class="grid grid-cols-2 gap-3">
+            <div
+              v-if="!isBooth"
+              class="grid grid-cols-2 gap-3"
+            >
               <Button
                 type="button"
                 :variant="previewShape === 'square' ? 'default' : 'outline'"
@@ -179,7 +200,7 @@
             <Button
               type="button"
               size="lg"
-              :disabled="exporting"
+              :disabled="exportDisabled"
               class="w-full font-semibold"
               @click="download"
             >
@@ -190,7 +211,7 @@
               type="button"
               variant="outline"
               size="lg"
-              :disabled="exporting"
+              :disabled="exportDisabled"
               class="w-full font-semibold"
               @click="share"
             >
@@ -248,10 +269,11 @@ import { useToast } from '@/composables/useToast'
 import { useDpCanvas } from '@/composables/useDpCanvas'
 import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
+import BoothStudio from '@/components/dp/booth/BoothStudio.vue'
 import CaptionFields from '@/components/dp/CaptionFields.vue'
 import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
 import { fillCaption, missingRequired } from '@shared/captionFields'
-import type { DpFrame } from '@/types/dp'
+import type { DpFrame, DpKind } from '@/types/dp'
 
 const route = useRoute()
 const toast = useToast()
@@ -265,6 +287,8 @@ interface Campaign {
   description: string | null
   captionTemplate: string | null
   downloadCount: number
+  /** Missing on an older cached payload, which means `profile`. */
+  kind?: DpKind
   frames: DpFrame[]
 }
 
@@ -288,6 +312,14 @@ const frameImgs = ref<HTMLImageElement[]>([])
 const selectedIndex = ref(0)
 const headshot = ref<PhotoSource | null>(null)
 const previewShape = ref<'square' | 'circle'>('square')
+
+// ── Photo booth ──────────────────────────────────────────────────────────────
+const isBooth = computed(() => campaign.kind === 'booth')
+const studio = ref<{ renderPng: () => Promise<Blob | null> } | null>(null)
+const boothReady = ref(false)
+const selectedFrame = computed(() => frameImgs.value[selectedIndex.value])
+const selectedWindows = computed(() => campaign.frames[selectedIndex.value]?.windows ?? [])
+const exportDisabled = computed(() => exporting.value || (isBooth.value && !boothReady.value))
 
 const frameAspect = computed(() => {
   const frame = frameImgs.value[selectedIndex.value]
@@ -393,14 +425,26 @@ async function onHeadshotPicked(e: Event) {
 // ── Export ───────────────────────────────────────────────────────────────────
 /** Renders the canvas to a png named after the campaign, or tells the visitor what is missing. */
 async function renderPng(): Promise<{ blob: Blob; filename: string } | null> {
-  const canvas = canvasRef.value
-  if (!headshot.value) { toast.error('Upload a photo first.'); return null }
-  if (!canvas) return null
-  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+  const blob = isBooth.value ? await renderBoothPng() : await renderProfilePng()
+  if (blob === undefined) return null
   if (!blob) { toast.error('Could not render the image. Try again.'); return null }
   const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
   const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
   return { blob, filename: `eypi-dp-${safe}${suffix}.png` }
+}
+
+/** `undefined` when the visitor still has a step to take (already told), `null` when rendering failed. */
+async function renderProfilePng(): Promise<Blob | null | undefined> {
+  const canvas = canvasRef.value
+  if (!headshot.value) { toast.error('Upload a photo first.'); return undefined }
+  if (!canvas) return undefined
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+}
+
+/** The studio's strip: 1080×1920, unmirrored, filter applied. */
+async function renderBoothPng(): Promise<Blob | null | undefined> {
+  if (!studio.value || !boothReady.value) { toast.error('Take all 3 photos first.'); return undefined }
+  return studio.value.renderPng()
 }
 
 function sendDownloadBeacon() {
@@ -414,7 +458,7 @@ async function download() {
     const png = await renderPng()
     if (!png) return
     saveAs(png.blob, png.filename)
-    toast.success('Downloaded. Share your new profile picture.')
+    toast.success(isBooth.value ? 'Downloaded. Share your photo strip.' : 'Downloaded. Share your new profile picture.')
     sendDownloadBeacon()
     promptForDetails()
   } catch {

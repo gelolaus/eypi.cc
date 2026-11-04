@@ -649,3 +649,157 @@ describe('DpPublicView details dialog', () => {
     wrapper.unmount()
   })
 })
+
+describe('DpPublicView photo booth', () => {
+  const WINDOWS = [
+    { x: 90, y: 120, w: 900, h: 500 },
+    { x: 90, y: 700, w: 900, h: 500 },
+    { x: 90, y: 1280, w: 900, h: 500 },
+  ]
+
+  class BoothImage extends FakeImage {
+    naturalWidth = 1080
+    naturalHeight = 1920
+    width = 1080
+    height = 1920
+  }
+
+  function boothResponse(options: { frames?: number; caption?: string | null } = {}) {
+    const frames = Array.from({ length: options.frames ?? 1 }, (_, i) => ({
+      id: `frame-${i + 1}`,
+      url: `/media/frames/camp-1/booth-${i + 1}.png`,
+      label: null,
+      width: 1080,
+      height: 1920,
+      position: i,
+      windows: WINDOWS,
+    }))
+    return new Response(JSON.stringify({
+      status: 'ok',
+      campaign: {
+        id: 'camp-1', title: 'Booth', slug: 'booth', kind: 'booth', description: null,
+        captionTemplate: options.caption ?? null, downloadCount: 0, frames,
+      },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('Image', BoothImage)
+    vi.stubGlobal('requestAnimationFrame', () => 1)
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 1080, height: 1440, close: vi.fn() })))
+    HTMLCanvasElement.prototype.getContext = vi.fn(function getContext(this: HTMLCanvasElement) {
+      return {
+        canvas: this,
+        clearRect: vi.fn(),
+        drawImage: vi.fn(),
+        putImageData: vi.fn(),
+        getImageData: (_x: number, _y: number, w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }),
+      }
+    }) as unknown as typeof HTMLCanvasElement.prototype.getContext
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  async function mountBooth(options: { frames?: number; caption?: string | null } = {}) {
+    vi.stubGlobal('fetch', vi.fn(async () => boothResponse(options)))
+    return mountReady()
+  }
+
+  const downloadButton = (wrapper: Awaited<ReturnType<typeof mountReady>>) =>
+    wrapper.findAll('button').find((b) => b.text() === 'Download')!
+
+  async function fillStrip(wrapper: Awaited<ReturnType<typeof mountReady>>) {
+    const input = wrapper.get('[data-booth-studio] input[type="file"]')
+    vi.spyOn(input.element as HTMLInputElement, 'click').mockImplementation(() => {})
+    await wrapper.findAll('button').find((b) => b.text() === 'Choose photos instead')!.trigger('click')
+    const files = [0, 1, 2].map((i) => new File([new Uint8Array([i])], `p${i}.jpg`, { type: 'image/jpeg' }))
+    Object.defineProperty(input.element, 'files', { configurable: true, value: files })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  it('a booth campaign shows the studio and no profile upload controls', async () => {
+    const wrapper = await mountBooth()
+    expect(wrapper.find('[data-booth-studio]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Upload Your Photo')
+    expect(wrapper.text()).not.toContain('Circle Preview')
+    expect(wrapper.text()).not.toContain('Drag to reposition')
+    expect(wrapper.find('canvas[aria-label^="Photo preview"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('Download is disabled until the strip is ready', async () => {
+    const wrapper = await mountBooth()
+    expect(downloadButton(wrapper).attributes('disabled')).toBeDefined()
+    await fillStrip(wrapper)
+    expect(downloadButton(wrapper).attributes('disabled')).toBeUndefined()
+    await downloadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(saveAs).toHaveBeenCalledTimes(1)
+    const [blob, filename] = vi.mocked(saveAs).mock.calls[0]
+    expect((blob as Blob).type).toBe('image/png')
+    expect(filename).toBe('eypi-dp-booth.png')
+    wrapper.unmount()
+  })
+
+  it('after Download the caption form opens when a required field is empty', async () => {
+    const wrapper = await mountBooth({ caption: 'Hi {{Name}}' })
+    await fillStrip(wrapper)
+    await downloadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(saveAs).toHaveBeenCalled()
+    expect(document.body.textContent).toContain('Add your details')
+    wrapper.unmount()
+  })
+
+  it('switching frames keeps the shots', async () => {
+    const wrapper = await mountBooth({ frames: 2 })
+    await fillStrip(wrapper)
+    await wrapper.get('button[aria-label="Next frame"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('button').filter((b) => /^Replace photo \d$/.test(b.attributes('aria-label') ?? ''))).toHaveLength(3)
+    expect(downloadButton(wrapper).attributes('disabled')).toBeUndefined()
+    await downloadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(vi.mocked(saveAs).mock.calls[0]![1]).toBe('eypi-dp-booth-2.png')
+    expect(vi.mocked(sendModuleBeacon).mock.calls).toContainEqual(['frames', 'camp-1:frame-2', 'download'])
+    wrapper.unmount()
+  })
+
+  it('no beacon body ever contains photo data', async () => {
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share })
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true })
+    const wrapper = await mountBooth()
+    await fillStrip(wrapper)
+    await downloadButton(wrapper).trigger('click')
+    await flushPromises()
+    await wrapper.findAll('button').find((b) => b.text() === 'Share')!.trigger('click')
+    await flushPromises()
+    expect(share).toHaveBeenCalledTimes(1)
+    const calls = vi.mocked(sendModuleBeacon).mock.calls
+    expect(calls).toEqual([
+      ['frames', 'camp-1', 'view'],
+      ['frames', 'camp-1:frame-1', 'download'],
+      ['frames', 'camp-1:frame-1', 'download'],
+    ])
+    for (const call of calls) for (const arg of call) expect(typeof arg).toBe('string')
+    // The only request is the campaign load: no photo leaves the page.
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('a profile campaign renders exactly as before', async () => {
+    vi.stubGlobal('Image', FakeImage)
+    const wrapper = await mountReady()
+    expect(wrapper.find('[data-booth-studio]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Upload Your Photo')
+    expect(wrapper.text()).toContain('Circle Preview')
+    expect(wrapper.get('canvas').attributes('aria-label')).toBe('Photo preview. Use arrow keys to move and plus or minus to zoom.')
+    expect(downloadButton(wrapper).attributes('disabled')).toBeUndefined()
+    wrapper.unmount()
+  })
+})
