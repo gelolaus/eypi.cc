@@ -107,7 +107,7 @@ function checkFrameWindows(kind: FrameKind, bytes: Uint8Array, windows: unknown)
   assertBoothSize(bytes)
   const issue = validateBoothWindows(windows, BOOTH_WIDTH, BOOTH_HEIGHT)
   if (issue) throw new ApiError(422, 'invalid_windows', issue)
-  return sortWindows(windows as BoothWindow[])
+  return sortWindows(windows as BoothWindow[]).map(({ x, y, w, h }) => ({ x, y, w, h }))
 }
 
 function frameLabel(label: unknown): string | null {

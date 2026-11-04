@@ -27,7 +27,11 @@
         @drop.prevent="onDropThumb(i)"
         @dragend="onDragEnd"
       >
-        <div class="relative overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
+        <div
+          class="relative overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid"
+          :role="isBooth && frame.windows ? 'group' : undefined"
+          :aria-label="isBooth && frame.windows ? `${frame.windows.length} photo windows` : undefined"
+        >
           <AppImage
             :src="frame.src"
             :meta="frame.meta"
@@ -164,7 +168,7 @@
         {{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}
       </p>
       <p class="mt-1 text-xs text-muted-foreground">
-        {{ isBooth ? `${BOOTH_WIDTH}×${BOOTH_HEIGHT} PNG with 3 transparent photo windows, up to 10 MB` : 'transparent PNG, up to 10 MB' }}
+        <span data-upload-hint>{{ isBooth ? `${BOOTH_WIDTH}×${BOOTH_HEIGHT} transparent PNG, with 3 photo windows` : 'transparent PNG' }}</span><span>, up to 10 MB</span>
       </p>
     </div>
 
@@ -188,7 +192,7 @@ import AppImage from '@/components/AppImage.vue'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/composables/useToast'
 import { detectWindowsFromDataUrl } from '@/lib/booth/detectWindows'
-import { BOOTH_HEIGHT, BOOTH_WIDTH, BOOTH_WINDOW_COUNT, type BoothWindow } from '@shared/boothWindows'
+import { BOOTH_HEIGHT, BOOTH_WIDTH, validateBoothWindows, type BoothWindow } from '@shared/boothWindows'
 import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpKind, type DpUploaderFrame } from '@/types/dp'
 
 const props = defineProps<{
@@ -294,8 +298,9 @@ async function addSerial(list: File[]) {
           uploadError.value = `Use a ${BOOTH_WIDTH}×${BOOTH_HEIGHT} PNG.`
           continue
         }
-        if (found.windows.length !== BOOTH_WINDOW_COUNT) {
-          uploadError.value = `We found ${found.windows.length} photo windows. A booth frame needs exactly ${BOOTH_WINDOW_COUNT} separate transparent areas.`
+        const issue = validateBoothWindows(found.windows, found.width, found.height)
+        if (issue) {
+          uploadError.value = issue
           continue
         }
         await emitAdd(dataUrl, file, found.windows)

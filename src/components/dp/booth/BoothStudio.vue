@@ -3,15 +3,6 @@
     class="relative flex flex-col gap-4"
     data-booth-studio
   >
-    <!-- The camera feeds this hidden video; the visible preview is the filtered canvas. -->
-    <video
-      ref="videoRef"
-      class="pointer-events-none absolute size-px opacity-0"
-      aria-hidden="true"
-      muted
-      playsinline
-      autoplay
-    />
     <p
       class="sr-only"
       aria-live="polite"
@@ -48,6 +39,15 @@
       :class="state.phase === 'flash' ? 'ring-4 ring-primary' : ''"
       :style="{ aspectRatio: `${activeWindow.w} / ${activeWindow.h}` }"
     >
+      <!-- The camera feeds this full-size video (iOS Safari stops decoding tiny or hidden ones); the filtered canvas covers it. -->
+      <video
+        ref="videoRef"
+        class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        aria-hidden="true"
+        muted
+        playsinline
+        autoplay
+      />
       <canvas
         ref="previewRef"
         data-booth-preview
@@ -89,6 +89,14 @@
         {{ cameraState === 'opening' ? 'Opening camera…' : 'Open camera' }}
       </Button>
     </div>
+
+    <p
+      v-if="missingShot"
+      role="status"
+      class="rounded-2xl border border-border bg-muted p-4 text-sm text-foreground"
+    >
+      {{ MISSING_SHOT_MESSAGE }}
+    </p>
 
     <BoothStrip
       v-if="showStrip"
@@ -199,6 +207,7 @@ const deps = { ...defaultBoothDeps, ...inject(boothDepsKey, {}) }
 
 const PREVIEW_EDGE = 360
 const HIDDEN_STOP_MS = 30_000
+const MISSING_SHOT_MESSAGE = "That photo didn't come out. Tap it to retake."
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
 const FAILURE_MESSAGES: Record<CameraFailure, string> = {
   denied: 'Camera access is blocked. Allow the camera for this site in your browser settings and try again, or choose photos instead.',
@@ -250,6 +259,7 @@ const activeIndex = computed(() => {
 const activeWindow = computed(() => props.windows[activeIndex.value] ?? { x: 0, y: 0, w: 3, h: 4 })
 const showViewfinder = computed(() => mode.value === 'camera' && cameraState.value === 'live' && state.value.phase !== 'review')
 const showCameraPrompt = computed(() => mode.value === 'camera' && cameraState.value !== 'live' && state.value.phase !== 'review')
+const missingShot = computed(() => mode.value === 'camera' && state.value.phase === 'review' && state.value.shots.some((s) => !s))
 const showStrip = computed(() => state.value.phase === 'review' || mode.value === 'gallery')
 
 const announcement = computed(() => {
@@ -264,6 +274,8 @@ const announcement = computed(() => {
 watch(ready, (value) => emit('update:ready', value), { immediate: true })
 
 // ── Camera ───────────────────────────────────────────────────────────────────
+let openToken = 0
+
 async function startCamera(): Promise<boolean> {
   if (cameraState.value === 'live') return true
   if (cameraState.value === 'opening') return false
@@ -271,41 +283,52 @@ async function startCamera(): Promise<boolean> {
   photoError.value = false
   if (!deps.isSecureContext()) { failure.value = 'insecure'; return false }
   cameraState.value = 'opening'
+  const token = ++openToken
   let next: MediaStream
   try {
     next = await deps.openCamera(facing.value)
   } catch (err: unknown) {
+    if (token !== openToken) return false
     failure.value = classifyCameraError(err)
     cameraState.value = 'off'
     return false
   }
-  if (disposed || mode.value !== 'camera') { stopStream(next); cameraState.value = 'off'; return false }
-  stream.value = next
-  cameraState.value = 'live'
-  try {
-    const video = videoRef.value
-    if (video) {
-      video.srcObject = next
-      video.muted = true
-      void Promise.resolve(video.play()).catch(() => { /* the autoplay attribute covers it */ })
-    }
-  } catch {
-    // Never keep a stream we cannot show.
-    stopCamera()
-    failure.value = 'other'
+  // Stopped (or left) while the camera was opening: never go live with this stream.
+  if (token !== openToken || disposed || mode.value !== 'camera') {
+    stopStream(next)
+    if (token === openToken) cameraState.value = 'off'
     return false
   }
+  stream.value = next
+  cameraState.value = 'live'
   await nextTick()
   startPreview()
   return true
 }
 
+// The video lives inside the viewfinder, so attach the stream whenever both exist.
+watch([videoRef, stream], () => {
+  const video = videoRef.value
+  const current = stream.value
+  if (!video || !current || video.srcObject === current) return
+  try {
+    video.srcObject = current
+    video.muted = true
+    void Promise.resolve(video.play()).catch(() => { /* the autoplay attribute covers it */ })
+  } catch {
+    // Never keep a stream we cannot show.
+    stopCamera()
+    failure.value = 'other'
+  }
+}, { flush: 'post' })
+
 function stopCamera() {
+  openToken++
   stopPreview()
   stopStream(stream.value)
   stream.value = null
   if (videoRef.value) videoRef.value.srcObject = null
-  if (cameraState.value === 'live') cameraState.value = 'off'
+  if (cameraState.value !== 'off') cameraState.value = 'off'
 }
 
 async function flip() {

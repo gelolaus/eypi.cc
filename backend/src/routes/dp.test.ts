@@ -503,6 +503,19 @@ describe('photo booth campaigns', () => {
     expect(edit.campaign.frames[0]?.windows).toHaveLength(3)
   })
 
+  it('stores and returns only x, y, w, h for each window', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const id = await createBooth(app)
+    const noisy = WINDOWS.map((win) => ({ ...win, evil: 'x', extra: { a: 1 } }))
+    const added = await app.request(`/api/dp/${id}/frames`, json('POST', { imageData: boothDataUrl(), windows: noisy }))
+    expect(added.status).toBe(201)
+    const frame = ((await added.json()) as { frame: { windows: Record<string, unknown>[] } }).frame
+    for (const win of frame.windows) expect(Object.keys(win).sort()).toEqual(['h', 'w', 'x', 'y'])
+    const rows = await app.client.execute({ sql: 'SELECT windows FROM dp_frames WHERE id = ?', args: [(frame as unknown as { id: string }).id] })
+    const stored = JSON.parse(String(rows.rows[0]?.windows)) as Record<string, unknown>[]
+    for (const win of stored) expect(Object.keys(win).sort()).toEqual(['h', 'w', 'x', 'y'])
+  })
+
   it('rejects a booth frame that is not 1080x1920', async () => {
     const app = await createTestApp({ user: member, seed: seedOrg })
     const res = await app.request('/api/dp', json('POST', {

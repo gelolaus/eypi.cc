@@ -62,7 +62,7 @@ Use these terms. Prefer them over invented synonyms.
 | **frame** | PNG overlay image (`dp_frames`). Max 10 per campaign. Stored in R2. |
 | **caption field** | A `{{Label}}` placeholder in a campaign caption (`caption_template`, parsed by `shared/captionFields.ts`). After a visitor downloads, a form asks for each field and fills the caption. Answers stay in the browser and are never stored. Fields are required unless written `{{Label?}}`: a required blank blocks copying and reopens the form, an optional blank is dropped from the caption. Max 10 distinct fields. |
 | **campaign `kind`** | `dp_campaigns.kind`: `profile` (one photo placed in a frame, the default) or `booth` (a camera strip). A missing `kind` in an older payload means `profile`. |
-| **booth frame** | A `dp_frames` PNG in a `booth` campaign: a transparent 1080×1920 overlay with one to three transparent photo windows. Stored in R2 like any frame. |
+| **booth frame** | A `dp_frames` PNG in a `booth` campaign: a transparent 1080×1920 overlay with exactly three transparent photo windows. Stored in R2 like any frame. |
 | **photo window** | A transparent rectangle in a booth frame (`windows`, detected in the owner's browser on upload, `src/lib/booth`). Each window takes one camera shot, top to bottom. |
 | **media** | Org logos and banners, QR logos and frames, in the R2 bucket `eypi-media` (binding `MEDIA`). |
 | **RUM** | Real-user monitoring. The SPA sends Web Vitals batches to `POST /api/rum` (`rum_samples`); hourly rollups write p75 per day, route, metric and device to `rum_daily`. Read in Admin → Speed. |

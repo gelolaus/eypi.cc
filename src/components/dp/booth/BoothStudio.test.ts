@@ -212,6 +212,56 @@ describe('BoothStudio camera', () => {
   })
 })
 
+describe('BoothStudio hardening', () => {
+  it('keeps the camera video full-size inside the viewfinder, under the preview canvas', async () => {
+    const { deps } = makeDeps()
+    const wrapper = mountStudio(deps)
+    await openCamera(wrapper)
+    const video = wrapper.get('[data-booth-viewfinder] video')
+    expect(video.classes()).toEqual(expect.arrayContaining(['absolute', 'inset-0', 'h-full', 'w-full']))
+    expect(video.classes()).not.toContain('opacity-0')
+    expect(video.classes()).not.toContain('size-px')
+    wrapper.unmount()
+  })
+
+  it('stopping while the camera opens stops the stream once it arrives', async () => {
+    let resolveOpen: (s: MediaStream) => void = () => {}
+    const s = fakeStream()
+    const { deps } = makeDeps({ openCamera: vi.fn(() => new Promise<MediaStream>((r) => { resolveOpen = r })) })
+    const wrapper = mountStudio(deps)
+    await button(wrapper, 'Open camera')!.trigger('click')
+    window.dispatchEvent(new Event('pagehide'))
+    resolveOpen(s.stream)
+    await flushPromises()
+    expect(s.track.stop).toHaveBeenCalled()
+    expect(wrapper.find('[data-booth-viewfinder]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('tells the person when a photo came back empty and labels the empty slot', async () => {
+    const { deps } = makeDeps({ capture: () => null })
+    const wrapper = mountStudio(deps)
+    await openCamera(wrapper)
+    await button(wrapper, 'Start')!.trigger('click')
+    await runAllShots()
+    const status = wrapper.find('[role="status"]')
+    expect(status.text()).toBe("That photo didn't come out. Tap it to retake.")
+    expect(button(wrapper, 'Take shot 1')!.text()).toBe('Take shot')
+    expect(button(wrapper, 'Retake shot 1')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('shows no empty-photo message after a good run', async () => {
+    const { deps } = makeDeps()
+    const wrapper = mountStudio(deps)
+    await openCamera(wrapper)
+    await button(wrapper, 'Start')!.trigger('click')
+    await runAllShots()
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
 describe('BoothStudio filters', () => {
   it('filter chips change the filter and the label of the active one is announced', async () => {
     const { deps } = makeDeps()

@@ -94,8 +94,38 @@ describe('DpFrameUploader booth mode', () => {
 
   it('shows the 1080x1920 hint', () => {
     const wrapper = mount(DpFrameUploader, { props: { frames: [], mode: 'booth' } })
-    expect(wrapper.text()).toContain('1080×1920')
-    expect(wrapper.text()).toContain('3 transparent')
+    expect(wrapper.text()).toContain('1080×1920 transparent PNG, with 3 photo windows')
+  })
+
+  it('blocks three windows that overlap, with the overlap message', async () => {
+    const overlapping = [
+      { x: 0, y: 0, w: 1080, h: 1920 },
+      { x: 100, y: 100, w: 880, h: 500 },
+      { x: 100, y: 700, w: 880, h: 500 },
+    ]
+    detectWindowsFromDataUrl.mockResolvedValue({ width: 1080, height: 1920, windows: overlapping })
+    const wrapper = mount(DpFrameUploader, { props: { frames: [], mode: 'booth' } })
+    await pick(wrapper)
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+    expect(wrapper.get('[role="alert"]').text()).toBe('Two photo windows overlap. Each window must be a separate transparent area.')
+    expect(wrapper.emitted('add')).toBeUndefined()
+  })
+
+  it('blocks a window under 5% of the frame height', async () => {
+    const small = [threeWindows[0], threeWindows[1], { x: 100, y: 1300, w: 880, h: 40 }]
+    detectWindowsFromDataUrl.mockResolvedValue({ width: 1080, height: 1920, windows: small })
+    const wrapper = mount(DpFrameUploader, { props: { frames: [], mode: 'booth' } })
+    await pick(wrapper)
+    await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
+    expect(wrapper.get('[role="alert"]').text()).toContain('too small')
+    expect(wrapper.emitted('add')).toBeUndefined()
+  })
+
+  it('gives the thumbnail outlines a text alternative', () => {
+    const wrapper = mount(DpFrameUploader, {
+      props: { frames: [{ id: 'a', src: 'data:image/png;base64,aaaa', windows: threeWindows }], mode: 'booth' },
+    })
+    expect(wrapper.get('[aria-label="3 photo windows"]').findAll('[data-booth-window]')).toHaveLength(3)
   })
 
   it('emits add with the detected windows when exactly 3 are found', async () => {

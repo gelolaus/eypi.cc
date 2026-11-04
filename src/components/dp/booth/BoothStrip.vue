@@ -27,7 +27,7 @@
         aria-hidden="true"
         class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-background/80 px-2 py-0.5 text-xs font-medium whitespace-nowrap text-foreground"
       >
-        {{ mode === 'camera' ? 'Retake' : shots[i] ? 'Replace' : 'Add photo' }}
+        {{ visibleLabel(i) }}
       </span>
     </button>
   </div>
@@ -62,8 +62,13 @@ function windowStyle(win: BoothWindow) {
   }
 }
 
+function visibleLabel(i: number) {
+  if (props.mode === 'camera') return props.shots[i] ? 'Retake' : 'Take shot'
+  return props.shots[i] ? 'Replace' : 'Add photo'
+}
+
 function slotLabel(i: number) {
-  if (props.mode === 'camera') return `Retake shot ${i + 1}`
+  if (props.mode === 'camera') return props.shots[i] ? `Retake shot ${i + 1}` : `Take shot ${i + 1}`
   return props.shots[i] ? `Replace photo ${i + 1}` : `Choose photo ${i + 1}`
 }
 
