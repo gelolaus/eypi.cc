@@ -21,6 +21,8 @@ Entry point for any coding agent (Cursor, Claude Code, Codex, Grok, …) working
 | Frame caption fields, task-by-task | `docs/superpowers/plans/2026-10-30-frame-caption-fields.md` |
 | Schedule wallpaper (paste a class schedule, get a phone wallpaper), what and why | `docs/superpowers/specs/2026-10-30-schedule-wallpaper-design.md` |
 | Schedule wallpaper, task-by-task | `docs/superpowers/plans/2026-10-30-schedule-wallpaper.md` |
+| Photo booth frames (camera strips in Frames campaigns, `kind: booth`), what and why | `docs/superpowers/specs/2026-11-04-photo-booth-frames-design.md` |
+| Photo booth frames, task-by-task | `docs/superpowers/plans/2026-11-04-photo-booth-frames.md` |
 | Nav groups (Rams / Orgs), org-only gating, five phone tabs, descriptive dashboard, what and why | `docs/superpowers/specs/2026-10-31-nav-groups-dashboard-design.md` |
 | Nav and dashboard, task-by-task (build in order) | `docs/superpowers/plans/2026-10-31-phase-{1-nav,2-analytics-api,3-dashboard,4-extras}.md` |
 | Handover prompt for the agent building the nav and dashboard round | `docs/handover-nav-dashboard.md` |

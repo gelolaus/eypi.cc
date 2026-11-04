@@ -61,6 +61,9 @@ Use these terms. Prefer them over invented synonyms.
 | **Frames** | Product UI name for DP campaigns (`/manage/frames`, `/frames/:slug`). Prefer **Frames** in UI talk; **DP** in API/DB talk. |
 | **frame** | PNG overlay image (`dp_frames`). Max 10 per campaign. Stored in R2. |
 | **caption field** | A `{{Label}}` placeholder in a campaign caption (`caption_template`, parsed by `shared/captionFields.ts`). After a visitor downloads, a form asks for each field and fills the caption. Answers stay in the browser and are never stored. Fields are required unless written `{{Label?}}`: a required blank blocks copying and reopens the form, an optional blank is dropped from the caption. Max 10 distinct fields. |
+| **campaign `kind`** | `dp_campaigns.kind`: `profile` (one photo placed in a frame, the default) or `booth` (a camera strip). A missing `kind` in an older payload means `profile`. |
+| **booth frame** | A `dp_frames` PNG in a `booth` campaign: a transparent 1080×1920 overlay with one to three transparent photo windows. Stored in R2 like any frame. |
+| **photo window** | A transparent rectangle in a booth frame (`windows`, detected in the owner's browser on upload, `src/lib/booth`). Each window takes one camera shot, top to bottom. |
 | **media** | Org logos and banners, QR logos and frames, in the R2 bucket `eypi-media` (binding `MEDIA`). |
 | **RUM** | Real-user monitoring. The SPA sends Web Vitals batches to `POST /api/rum` (`rum_samples`); hourly rollups write p75 per day, route, metric and device to `rum_daily`. Read in Admin → Speed. |
 | **click row** | One `analytics` row per counted link click: country, OS, `device` (mobile/tablet/desktop), `browser` family, `app`, referrer host, `source` (qr/direct) and a `visitor_hash`. Parsed from the user agent at click time; the UA string is never stored (`shared/linkAnalytics.ts`). Raw rows are deleted once older than 400 days and their Manila day has a rollup. |
@@ -190,6 +193,7 @@ Good deepening targets (seams that already exist): link resolve (KV vs API), org
 3. **Org** — admin creates org → owner invites email (Resend) → invitee accepts in `/invites` → activated membership → active org context.
 4. **Tix** — create event as `draft` (builder: mode, capacity, questions, dates) → publish → people register at `/tix/:slug` (or an organiser imports a CSV and finalizes, or adds guests) → status per admission mode (fcfs, lottery draw, approval inbox) → ticket on `/tickets` or a private `/t/:token` guest link, with QR and Google Wallet pass → check-in in door mode (offline-capable) → close or cancel.
 5. **Frames** — create campaign + frames (R2) → public `/frames/:slug` → canvas merge → download count.
+   Booth campaigns (`kind: booth`) keep photos on the device: the camera strip is composed in the browser, nothing is uploaded and no sign-in is needed.
 6. **Forms** — org-gated catalog → fetch template from R2 → client DOCX fill → download.
    **Wallpaper** — paste the RAMS page → browser parses it → pick layout, theme, photo and size → canvas draw → download or share the PNG.
 7. **Abuse** — public report → admin reports view → disable link / resolve.
