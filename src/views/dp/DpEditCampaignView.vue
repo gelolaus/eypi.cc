@@ -34,9 +34,14 @@
 
         <template v-else>
           <div class="mb-6 flex items-center justify-between gap-3">
-            <p class="min-w-0 break-all font-mono text-sm text-muted-foreground">
-              eypi.cc/frames/{{ form.slug }}
-            </p>
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <p class="min-w-0 break-all font-mono text-sm text-muted-foreground">
+                eypi.cc/frames/{{ form.slug }}
+              </p>
+              <Badge variant="secondary">
+                {{ kind === 'booth' ? 'Photo booth' : 'Profile picture' }}
+              </Badge>
+            </div>
             <Button
               as-child
               variant="outline"
@@ -158,6 +163,7 @@
                   <DpFrameUploader
                     :frames="frames"
                     :busy-index="frameBusyIndex"
+                    :mode="kind"
                     @add="onAddFrame"
                     @remove="onRemoveFrame"
                     @reorder="onReorderFrame"
@@ -191,6 +197,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from '@/composables/useToast'
 import { activeOrgHeaders, previousKey, reinsert, runWithUndo } from '@/composables/useUndoToast'
 import { useDialog } from '@/composables/useDialog'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -199,7 +206,8 @@ import CaptionEditor from '@/components/dp/CaptionEditor.vue'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import { onTabKeydown } from '@/lib/tix/tabKeys'
 import { uploadVariants } from '@/lib/images/uploadVariants'
-import type { DpUploaderFrame, DpFrame } from '@/types/dp'
+import type { BoothWindow } from '@shared/boothWindows'
+import type { DpKind, DpUploaderFrame, DpFrame } from '@/types/dp'
 
 const FramesInsights = defineAsyncComponent(() => import('@/components/insights/FramesInsights.vue'))
 type CampaignTab = 'details' | 'insights'
@@ -224,6 +232,7 @@ const frameBusyIndex = ref<number | null>(null)
 
 const form = reactive({ title: '', slug: '', description: '', captionTemplate: '' })
 const frames = ref<DpUploaderFrame[]>([])
+const kind = ref<DpKind>('profile')
 
 function sanitizeSlug(e: Event) {
   const t = e.target as HTMLInputElement
@@ -260,16 +269,16 @@ async function saveDetails() {
   }
 }
 
-async function onAddFrame(dataUrl: string, file?: File) {
+async function onAddFrame(dataUrl: string, file?: File, windows?: BoothWindow[]) {
   frameBusyIndex.value = frames.value.length
   try {
     const res = await api.raw(`/api/dp/${campaignId.value}/frames`, {
       method: 'POST',
-      body: JSON.stringify({ imageData: dataUrl }),
+      body: JSON.stringify(windows ? { imageData: dataUrl, windows } : { imageData: dataUrl }),
     })
     const data = await res.json() as { status: string; message?: string; frame?: { id: string; key?: string } }
     if (!res.ok || !data.frame) throw new Error(data.message ?? 'Could not add frame.')
-    frames.value.push({ id: data.frame.id, src: dataUrl })
+    frames.value.push({ id: data.frame.id, src: dataUrl, windows })
     toast.success('Frame added.')
     // Best-effort: the frame is saved, so variants never fail the add.
     const key = data.frame.key
@@ -352,15 +361,16 @@ async function removeCampaign() {
 onMounted(async () => {
   try {
     const res = await api.raw(`/api/dp/${slug}/edit`)
-    let data: { status?: string; message?: string; campaign?: { id: string; title: string; slug: string; description: string | null; captionTemplate: string | null; frames: DpFrame[] } } = {}
+    let data: { status?: string; message?: string; campaign?: { id: string; kind?: DpKind; title: string; slug: string; description: string | null; captionTemplate: string | null; frames: DpFrame[] } } = {}
     try { data = await res.json() } catch { /* non-JSON */ }
     if (!res.ok || !data.campaign) throw new Error(data.message ?? 'Campaign not found.')
     campaignId.value = data.campaign.id
+    kind.value = data.campaign.kind ?? 'profile'
     form.title = data.campaign.title
     form.slug = data.campaign.slug
     form.description = data.campaign.description ?? ''
     form.captionTemplate = data.campaign.captionTemplate ?? ''
-    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url, meta: f.imageMeta ?? null }))
+    frames.value = data.campaign.frames.map(f => ({ id: f.id, src: f.url, meta: f.imageMeta ?? null, windows: f.windows ?? undefined }))
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Campaign not found.'
   } finally {

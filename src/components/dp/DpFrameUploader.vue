@@ -27,15 +27,27 @@
         @drop.prevent="onDropThumb(i)"
         @dragend="onDragEnd"
       >
-        <div class="overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
+        <div class="relative overflow-hidden rounded-xl border border-border bg-muted bg-dot-grid">
           <AppImage
             :src="frame.src"
             :meta="frame.meta"
             sizes="(min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
             alt=""
             draggable="false"
-            class="block aspect-square w-full object-contain"
+            class="block w-full object-contain"
+            :class="isBooth ? 'aspect-[9/16]' : 'aspect-square'"
           />
+          <template v-if="isBooth && frame.windows">
+            <div
+              v-for="(win, wi) in frame.windows"
+              :key="wi"
+              data-booth-window
+              class="pointer-events-none absolute flex items-start justify-start border-2 border-dashed border-primary bg-primary/10"
+              :style="windowStyle(win)"
+            >
+              <span class="m-0.5 rounded-sm bg-background px-1 font-mono text-xs font-bold text-foreground">{{ wi + 1 }}</span>
+            </div>
+          </template>
         </div>
         <span class="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-xs font-bold text-foreground">{{ i + 1 }}</span>
         <span
@@ -152,7 +164,7 @@
         {{ frames.length ? 'Add another frame' : 'Drop your PNG frame(s) here' }}
       </p>
       <p class="mt-1 text-xs text-muted-foreground">
-        transparent PNG, up to 10 MB
+        {{ isBooth ? `${BOOTH_WIDTH}×${BOOTH_HEIGHT} PNG with 3 transparent photo windows, up to 10 MB` : 'transparent PNG, up to 10 MB' }}
       </p>
     </div>
 
@@ -171,22 +183,26 @@
 </template>
 
 <script setup lang="ts">
-import { getCurrentInstance, ref } from 'vue'
+import { computed, getCurrentInstance, ref } from 'vue'
 import AppImage from '@/components/AppImage.vue'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/composables/useToast'
-import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpUploaderFrame } from '@/types/dp'
+import { detectWindowsFromDataUrl } from '@/lib/booth/detectWindows'
+import { BOOTH_HEIGHT, BOOTH_WIDTH, BOOTH_WINDOW_COUNT, type BoothWindow } from '@shared/boothWindows'
+import { DP_MAX_FRAMES, DP_FRAME_MAX_BYTES, type DpKind, type DpUploaderFrame } from '@/types/dp'
 
 const props = defineProps<{
   frames: DpUploaderFrame[]
   /** Index currently being persisted/removed (shows a spinner, disables its button). */
   busyIndex?: number | null
   max?: number
+  /** Booth mode checks the 1080×1920 size and detects the three photo windows. */
+  mode?: DpKind
 }>()
 
 const emit = defineEmits<{
   /** Emitted with a fresh PNG data-URL for each accepted file. */
-  (e: 'add', dataUrl: string, file?: File): void
+  (e: 'add', dataUrl: string, file?: File, windows?: BoothWindow[]): void
   (e: 'remove', index: number): void
   /** Emitted when a frame is dragged from one position to another. */
   (e: 'reorder', from: number, to: number): void
@@ -199,6 +215,16 @@ let addQueue: Promise<void> = Promise.resolve()
 const dragging = ref(false)
 const uploadError = ref('')
 const max = props.max ?? DP_MAX_FRAMES
+const isBooth = computed(() => props.mode === 'booth')
+
+function windowStyle(win: BoothWindow) {
+  return {
+    left: `${(win.x / BOOTH_WIDTH) * 100}%`,
+    top: `${(win.y / BOOTH_HEIGHT) * 100}%`,
+    width: `${(win.w / BOOTH_WIDTH) * 100}%`,
+    height: `${(win.h / BOOTH_HEIGHT) * 100}%`,
+  }
+}
 
 // Drag-to-reorder state (thumbnail-to-thumbnail; distinct from file drops).
 const dragIndex = ref<number | null>(null)
@@ -231,17 +257,16 @@ function readFile(file: File): Promise<string> {
   })
 }
 
-async function emitAdd(dataUrl: string, file: File) {
-  const raw = instance?.vnode.props?.onAdd as
-    | ((value: string, file?: File) => unknown)
-    | Array<(value: string, file?: File) => unknown>
-    | undefined
+type AddHandler = (value: string, file?: File, windows?: BoothWindow[]) => unknown
+
+async function emitAdd(dataUrl: string, file: File, windows?: BoothWindow[]) {
+  const raw = instance?.vnode.props?.onAdd as AddHandler | AddHandler[] | undefined
   const handlers = Array.isArray(raw) ? raw : raw ? [raw] : []
   if (handlers.length === 0) {
-    emit('add', dataUrl, file)
+    emit('add', dataUrl, file, windows)
     return
   }
-  await Promise.all(handlers.map((handler) => handler(dataUrl, file)))
+  await Promise.all(handlers.map((handler) => handler(dataUrl, file, windows)))
 }
 
 async function addSerial(list: File[]) {
@@ -263,7 +288,20 @@ async function addSerial(list: File[]) {
     }
     try {
       const dataUrl = await readFile(file)
-      await emitAdd(dataUrl, file)
+      if (isBooth.value) {
+        const found = await detectWindowsFromDataUrl(dataUrl)
+        if (found.width !== BOOTH_WIDTH || found.height !== BOOTH_HEIGHT) {
+          uploadError.value = `Use a ${BOOTH_WIDTH}×${BOOTH_HEIGHT} PNG.`
+          continue
+        }
+        if (found.windows.length !== BOOTH_WINDOW_COUNT) {
+          uploadError.value = `We found ${found.windows.length} photo windows. A booth frame needs exactly ${BOOTH_WINDOW_COUNT} separate transparent areas.`
+          continue
+        }
+        await emitAdd(dataUrl, file, found.windows)
+      } else {
+        await emitAdd(dataUrl, file)
+      }
     } catch {
       toast.error(`Could not read "${file.name}".`)
     }

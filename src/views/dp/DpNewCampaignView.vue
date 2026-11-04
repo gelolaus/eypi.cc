@@ -51,6 +51,40 @@
             class="flex flex-col gap-5"
             @submit.prevent="submit"
           >
+            <!-- Kind (locked once a frame is added) -->
+            <fieldset class="space-y-1.5">
+              <legend class="text-base font-medium">
+                What are you making?
+              </legend>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label
+                  v-for="option in kindOptions"
+                  :key="option.value"
+                  class="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-input px-3.5 py-3 transition-colors has-[:checked]:border-primary has-[:checked]:bg-muted has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+                  :class="frames.length ? 'cursor-not-allowed opacity-60' : ''"
+                >
+                  <input
+                    v-model="kind"
+                    type="radio"
+                    name="campaign-kind"
+                    :value="option.value"
+                    :disabled="frames.length > 0"
+                    class="mt-1 size-4 shrink-0 accent-primary"
+                  >
+                  <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-foreground">{{ option.label }}</span>
+                    <span class="block text-xs text-muted-foreground">{{ option.hint }}</span>
+                  </span>
+                </label>
+              </div>
+              <p
+                v-if="frames.length"
+                class="text-xs font-medium text-muted-foreground"
+              >
+                Remove all frames to change this.
+              </p>
+            </fieldset>
+
             <!-- Title -->
             <div class="space-y-1.5">
               <Label for="new-campaign-title">Title</Label>
@@ -117,6 +151,7 @@
               </p>
               <DpFrameUploader
                 :frames="frames"
+                :mode="kind"
                 @add="onAddFrame"
                 @remove="onRemoveFrame"
                 @reorder="onReorderFrame"
@@ -151,7 +186,8 @@ import { Label } from '@/components/ui/label'
 import CaptionEditor from '@/components/dp/CaptionEditor.vue'
 import DpFrameUploader from '@/components/dp/DpFrameUploader.vue'
 import { uploadVariants } from '@/lib/images/uploadVariants'
-import type { DpUploaderFrame } from '@/types/dp'
+import type { BoothWindow } from '@shared/boothWindows'
+import type { DpKind, DpUploaderFrame } from '@/types/dp'
 
 const toast = useToast()
 
@@ -163,6 +199,11 @@ const form = reactive({
 })
 
 const frames = ref<DpUploaderFrame[]>([])
+const kind = ref<DpKind>('profile')
+const kindOptions: { value: DpKind; label: string; hint: string }[] = [
+  { value: 'profile', label: 'Profile picture', hint: 'Square frames people put over their photo.' },
+  { value: 'booth', label: 'Photo booth', hint: 'A 1080×1920 strip with 3 photo windows.' },
+]
 const submitting = ref(false)
 const created = ref(false)
 const createdSlug = ref('')
@@ -175,8 +216,8 @@ function sanitizeSlug(e: Event) {
   form.slug = t.value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-{2,}/g, '-')
 }
 
-function onAddFrame(dataUrl: string, file?: File) {
-  frames.value.push({ src: dataUrl, file })
+function onAddFrame(dataUrl: string, file?: File, windows?: BoothWindow[]) {
+  frames.value.push({ src: dataUrl, file, windows })
 }
 function onRemoveFrame(index: number) {
   frames.value.splice(index, 1)
@@ -195,11 +236,12 @@ async function submit() {
     const res = await api.raw(`/api/dp`, {
       method: 'POST',
       body: JSON.stringify({
+        kind: kind.value,
         title: form.title.trim(),
         slug: form.slug.trim().replace(/^-+|-+$/g, ''),
         description: form.description.trim(),
         captionTemplate: form.captionTemplate.trim(),
-        frames: frames.value.map(f => ({ imageData: f.src })),
+        frames: frames.value.map(f => (kind.value === 'booth' ? { imageData: f.src, windows: f.windows } : { imageData: f.src })),
       }),
     })
     const data = await res.json() as {

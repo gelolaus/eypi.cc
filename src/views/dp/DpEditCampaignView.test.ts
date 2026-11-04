@@ -106,3 +106,38 @@ describe('DpEditCampaignView insights tab', () => {
     wrapper.unmount()
   })
 })
+
+describe('DpEditCampaignView booth campaigns', () => {
+  const windows = [{ x: 1, y: 2, w: 3, h: 4 }]
+
+  it('shows the kind badge', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      status: 'ok',
+      campaign: { id: 'camp-1', kind: 'booth', title: 'B', slug: 'launch-night', description: '', captionTemplate: '', frames: [] },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(DpEditCampaignView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Photo booth')
+    wrapper.unmount()
+  })
+
+  it('uses booth mode for a booth campaign and posts windows with the frame', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = init?.method === 'POST'
+        ? { status: 'ok', frame: { id: 'f-new', key: 'k', url: '/m', position: 0 } }
+        : { status: 'ok', campaign: { id: 'camp-1', kind: 'booth', title: 'B', slug: 'launch-night', description: '', captionTemplate: '', frames: [] } }
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = mount(DpEditCampaignView, { global: { stubs: { RouterLink: true } } })
+    await flushPromises()
+    const uploader = wrapper.getComponent(DpFrameUploader)
+    expect(uploader.props('mode')).toBe('booth')
+    uploader.vm.$emit('add', 'data:image/png;base64,AA', undefined, windows)
+    await flushPromises()
+    const post = fetchMock.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST') as unknown as [string, RequestInit]
+    expect(JSON.parse(post[1].body as string).windows).toEqual(windows)
+    expect(uploader.props('frames')[0].windows).toEqual(windows)
+    wrapper.unmount()
+  })
+})

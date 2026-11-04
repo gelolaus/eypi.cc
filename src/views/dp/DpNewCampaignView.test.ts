@@ -66,3 +66,45 @@ describe('DpNewCampaignView', () => {
     expect(m?.[1]).toContain('min-w-11')
   })
 })
+
+describe('DpNewCampaignView kinds', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('asks Profile picture or Photo booth first', () => {
+    const wrapper = mount(DpNewCampaignView, { global: { stubs: { RouterLink: true } } })
+    expect(wrapper.findAll('input[type="radio"]')).toHaveLength(2)
+    expect(wrapper.text()).toContain('Profile picture')
+    expect(wrapper.text()).toContain('Photo booth')
+    expect(wrapper.getComponent(DpFrameUploader).props('mode')).toBe('profile')
+  })
+
+  it('sends kind and per-frame windows on submit', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: 'ok', campaign: { id: 'c', slug: 'b', frames: [] } }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = mount(DpNewCampaignView, { global: { stubs: { RouterLink: true } } })
+    await wrapper.findAll('input[type="radio"]')[1].setValue(true)
+    expect(wrapper.getComponent(DpFrameUploader).props('mode')).toBe('booth')
+    const windows = [{ x: 1, y: 2, w: 3, h: 4 }]
+    wrapper.getComponent(DpFrameUploader).vm.$emit('add', 'data:image/png;base64,AA', undefined, windows)
+    await wrapper.get('input[type="text"]').setValue('Booth')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)
+    expect(body.kind).toBe('booth')
+    expect(body.frames[0].windows).toEqual(windows)
+    wrapper.unmount()
+  })
+
+  it('locks the kind once a frame is added', async () => {
+    const wrapper = mount(DpNewCampaignView, { global: { stubs: { RouterLink: true } } })
+    wrapper.getComponent(DpFrameUploader).vm.$emit('add', 'data:image/png;base64,AA')
+    await flushPromises()
+    expect(wrapper.findAll('input[type="radio"]')).toHaveLength(2)
+    for (const radio of wrapper.findAll('input[type="radio"]')) {
+      expect(radio.attributes('disabled')).toBeDefined()
+    }
+  })
+})

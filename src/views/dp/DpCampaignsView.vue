@@ -66,6 +66,11 @@
           <h2 class="text-lg leading-tight font-semibold">
             {{ c.title }}
           </h2>
+          <div v-if="c.kind === 'booth'">
+            <Badge variant="secondary">
+              Photo booth
+            </Badge>
+          </div>
           <p
             v-if="c.description"
             class="line-clamp-2 text-sm leading-relaxed text-muted-foreground"
@@ -150,6 +155,7 @@ import DownloadPill from '@/components/dp/DownloadPill.vue'
 const CampaignQrDialog = defineAsyncComponent(() => import('@/components/dp/CampaignQrDialog.vue'))
 import AppPage from '@/components/layout/AppPage.vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

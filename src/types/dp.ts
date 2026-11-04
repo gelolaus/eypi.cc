@@ -1,5 +1,9 @@
 // Shared DP Blast types.
 import type { ImageMeta } from '@/lib/images/variants'
+import type { BoothWindow } from '@shared/boothWindows'
+
+/** A campaign is a profile-picture frame set or a three-shot photo booth. Fixed at creation. */
+export type DpKind = 'profile' | 'booth'
 
 // A frame as handled by the uploader UI. `id` is present only for frames already
 // persisted on the server (edit mode); `src` is a displayable image URL — a
@@ -10,6 +14,8 @@ export interface DpUploaderFrame {
   meta?: ImageMeta | null
   /** The picked file, kept only until its variants are uploaded after the first save. */
   file?: File
+  /** Booth frames only: the three photo windows in frame pixels. */
+  windows?: BoothWindow[]
 }
 
 // Campaign list item (no heavy image payloads).
@@ -17,6 +23,7 @@ export interface DpCampaignSummary {
   id: string
   title: string
   slug: string
+  kind?: DpKind
   description: string | null
   frameCount: number
   downloadCount: number
@@ -32,6 +39,7 @@ export interface DpFrame {
   width: number
   height: number
   position: number
+  windows: BoothWindow[] | null
 }
 
 export const DP_MAX_FRAMES = 10

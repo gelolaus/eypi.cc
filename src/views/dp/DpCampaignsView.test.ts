@@ -130,3 +130,21 @@ describe('DpCampaignsView', () => {
     wrapper.unmount()
   })
 })
+
+describe('DpCampaignsView kinds', () => {
+  it('shows a "Photo booth" badge only for booth campaigns', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      status: 'ok',
+      campaigns: [
+        { id: 'a', slug: 'a', title: 'Alpha', kind: 'booth', description: null, downloadCount: 0, frameCount: 1 },
+        { id: 'b', slug: 'b', title: 'Beta', kind: 'profile', description: null, downloadCount: 0, frameCount: 1 },
+      ],
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+    const wrapper = mount(DpCampaignsView, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+    await flushPromises()
+    const badges = wrapper.findAll('[data-slot="badge"]')
+    expect(badges).toHaveLength(1)
+    expect(badges[0].text()).toBe('Photo booth')
+    wrapper.unmount()
+  })
+})
