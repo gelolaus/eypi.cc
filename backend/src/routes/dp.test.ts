@@ -461,3 +461,135 @@ describe('frame campaigns', () => {
     })
   })
 })
+
+function boothDataUrl(): string {
+  return frameDataUrl(1080, 1920)
+}
+
+const WINDOWS = [
+  { x: 100, y: 1200, w: 800, h: 400 },
+  { x: 100, y: 100, w: 800, h: 400 },
+  { x: 100, y: 650, w: 800, h: 400 },
+]
+
+async function r2Count(env: { MEDIA: unknown }): Promise<number> {
+  return (await (env.MEDIA as { list(): Promise<{ objects: unknown[] }> }).list()).objects.length
+}
+
+describe('photo booth campaigns', () => {
+  type Frame = { windows: { x: number; y: number; w: number; h: number }[] | null }
+  type Payload = { campaign: { id: string; kind: string; frames: Frame[] } }
+
+  async function createBooth(app: Awaited<ReturnType<typeof createTestApp>>, slug = 'booth') {
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Booth', slug, kind: 'booth', frames: [{ imageData: boothDataUrl(), windows: WINDOWS }],
+    }))
+    expect(res.status).toBe(201)
+    return ((await res.json()) as { campaign: { id: string } }).campaign.id
+  }
+
+  it('creates a booth campaign with 3 windows and returns kind and windows on the public payload', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    await createBooth(app)
+    const body = (await (await app.request('/api/dp/booth')).json()) as Payload
+    expect(body.campaign.kind).toBe('booth')
+    expect(body.campaign.frames[0]?.windows).toEqual([
+      { x: 100, y: 100, w: 800, h: 400 },
+      { x: 100, y: 650, w: 800, h: 400 },
+      { x: 100, y: 1200, w: 800, h: 400 },
+    ])
+    const edit = (await (await app.request('/api/dp/booth/edit')).json()) as Payload
+    expect(edit.campaign.kind).toBe('booth')
+    expect(edit.campaign.frames[0]?.windows).toHaveLength(3)
+  })
+
+  it('rejects a booth frame that is not 1080x1920', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Booth', kind: 'booth', frames: [{ imageData: frameDataUrl(1080, 1080), windows: WINDOWS }],
+    }))
+    expect(res.status).toBe(422)
+    expect(((await res.json()) as { message: string }).message).toBe('Use a 1080×1920 PNG.')
+    expect(await r2Count(app.env)).toBe(0)
+  })
+
+  it('rejects a booth frame with 2 windows, with the plain-language count message', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Booth', kind: 'booth', frames: [{ imageData: boothDataUrl(), windows: WINDOWS.slice(0, 2) }],
+    }))
+    expect(res.status).toBe(422)
+    expect(((await res.json()) as { message: string }).message).toContain('We found 2 photo windows')
+    expect(await r2Count(app.env)).toBe(0)
+  })
+
+  it('rejects windows on a profile campaign', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Profile', frames: [{ imageData: frameDataUrl(), windows: WINDOWS }],
+    }))
+    expect(res.status).toBe(400)
+    expect(await r2Count(app.env)).toBe(0)
+  })
+
+  it('rejects a booth frame with no windows', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Booth', kind: 'booth', frames: [{ imageData: boothDataUrl() }],
+    }))
+    expect(res.status).toBe(422)
+    expect(await r2Count(app.env)).toBe(0)
+  })
+
+  it('rejects an unknown kind', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const res = await app.request('/api/dp', json('POST', {
+      title: 'Odd', kind: 'poster', frames: [{ imageData: frameDataUrl() }],
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it('profile campaigns still require square 1080px PNGs and return kind "profile"', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const bad = await app.request('/api/dp', json('POST', { title: 'P', frames: [{ imageData: boothDataUrl() }] }))
+    expect(bad.status).toBe(422)
+    const ok = await app.request('/api/dp', json('POST', { title: 'P', slug: 'plain', frames: [{ imageData: frameDataUrl() }] }))
+    expect(ok.status).toBe(201)
+    const body = (await (await app.request('/api/dp/plain')).json()) as Payload
+    expect(body.campaign.kind).toBe('profile')
+    expect(body.campaign.frames[0]?.windows).toBeNull()
+  })
+
+  it('adds a booth frame to a booth campaign and rejects a profile-shaped frame there', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const id = await createBooth(app)
+    const added = await app.request(`/api/dp/${id}/frames`, json('POST', { imageData: boothDataUrl(), windows: WINDOWS }))
+    expect(added.status).toBe(201)
+    expect(await frameCount(app.client, id)).toBe(2)
+    const before = await r2Count(app.env)
+    const bad = await app.request(`/api/dp/${id}/frames`, json('POST', { imageData: frameDataUrl() }))
+    expect(bad.status).toBe(422)
+    expect(await r2Count(app.env)).toBe(before)
+  })
+
+  it('duplicate copies kind and windows', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    const id = await createBooth(app)
+    const res = await app.request(`/api/dp/${id}/duplicate`, json('POST', {}))
+    expect(res.status).toBe(201)
+    const copy = ((await res.json()) as { campaign: { slug: string; kind: string } }).campaign
+    expect(copy.kind).toBe('booth')
+    const body = (await (await app.request(`/api/dp/${copy.slug}`)).json()) as Payload
+    expect(body.campaign.kind).toBe('booth')
+    expect(body.campaign.frames[0]?.windows).toHaveLength(3)
+  })
+
+  it('list returns kind', async () => {
+    const app = await createTestApp({ user: member, seed: seedOrg })
+    await createBooth(app)
+    await app.request('/api/dp', json('POST', { title: 'P', slug: 'plain', frames: [{ imageData: frameDataUrl() }] }))
+    const list = (await (await app.request('/api/dp', { headers: { Origin: ORIGIN, 'X-Active-Org-Id': 'org-1' } })).json()) as { campaigns: { slug: string; kind: string }[] }
+    expect(list.campaigns.find((c) => c.slug === 'booth')?.kind).toBe('booth')
+    expect(list.campaigns.find((c) => c.slug === 'plain')?.kind).toBe('profile')
+  })
+})

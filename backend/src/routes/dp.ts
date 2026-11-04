@@ -8,6 +8,7 @@ import { reportError } from '../lib/reportError'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
 import { captionFieldError } from '../../../shared/captionFields'
+import { BOOTH_HEIGHT, BOOTH_WIDTH, parseWindows, sortWindows, validateBoothWindows, type BoothWindow } from '../../../shared/boothWindows'
 
 // Profile-frame campaigns. Frames are validated PNGs in R2. The public page
 // merges a visitor photo on a canvas. The server stores object keys.
@@ -33,6 +34,7 @@ function frameMessage(err: ApiError): string {
   if (err.code === 'not_square') return 'Use a square PNG.'
   if (err.code === 'too_small') return 'Use a PNG at least 1080 px on each side.'
   if (err.code === 'file_too_large') return 'Use a PNG under 10 MB.'
+  if (err.code === 'wrong_size') return 'Use a 1080×1920 PNG.'
   if (err.code === 'invalid_image') return 'Use a transparent PNG.'
   return err.message
 }
@@ -84,6 +86,30 @@ function readFrameBytes(imageData: unknown): Uint8Array {
   return bytes
 }
 
+function assertBoothSize(bytes: Uint8Array) {
+  const size = pngSize(bytes)
+  if (!size || size.width !== BOOTH_WIDTH || size.height !== BOOTH_HEIGHT) {
+    throw new ApiError(422, 'wrong_size', 'Use a 1080×1920 PNG.')
+  }
+}
+
+type FrameKind = 'profile' | 'booth'
+
+// Validates one incoming frame before anything is written to R2.
+// Returns the sorted windows for a booth frame, or null for a profile frame.
+function checkFrameWindows(kind: FrameKind, bytes: Uint8Array, windows: unknown): BoothWindow[] | null {
+  if (kind === 'profile') {
+    if (windows !== undefined && windows !== null) {
+      throw new ApiError(400, 'windows_not_allowed', 'Photo windows only belong on a photo booth campaign.')
+    }
+    return null
+  }
+  assertBoothSize(bytes)
+  const issue = validateBoothWindows(windows, BOOTH_WIDTH, BOOTH_HEIGHT)
+  if (issue) throw new ApiError(422, 'invalid_windows', issue)
+  return sortWindows(windows as BoothWindow[])
+}
+
 function frameLabel(label: unknown): string | null {
   if (typeof label !== 'string') return null
   const trimmed = label.trim().slice(0, LABEL_MAX)
@@ -112,16 +138,17 @@ async function storeFrame(
   campaignId: string,
   bytes: Uint8Array,
   label: string | null,
+  booth = false,
 ): Promise<StoredFrame> {
   const id = crypto.randomUUID()
+  if (booth) assertBoothSize(bytes)
   const image = await putImage(env, {
     prefix: `frames/${campaignId}`,
     id,
     bytes,
     allowed: ['png'],
     maxBytes: MAX_FRAME_BYTES,
-    requireSquare: true,
-    minSize: MIN_FRAME_PX,
+    ...(booth ? {} : { requireSquare: true, minSize: MIN_FRAME_PX }),
   })
   return { id, key: image.key, label }
 }
@@ -150,7 +177,7 @@ async function presentFrame(env: Bindings, stored: string): Promise<{ url: strin
 
 async function loadFrames(env: Bindings, client: Client, campaignId: string) {
   const frames = await client.execute({
-    sql: 'SELECT id, image_url, image_meta, label, position FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    sql: 'SELECT id, image_url, image_meta, label, position, windows FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
     args: [campaignId],
   })
   return Promise.all(frames.rows.map(async (frame) => {
@@ -163,6 +190,7 @@ async function loadFrames(env: Bindings, client: Client, campaignId: string) {
       width: presented.width,
       height: presented.height,
       position: Number(frame.position ?? 0),
+      windows: parseWindows(frame.windows),
     }
   }))
 }
@@ -237,7 +265,8 @@ app.post('/api/dp', isOrgFeature, async (c) => {
     slug?: string
     description?: string
     captionTemplate?: string
-    frames?: { imageData?: string; label?: string }[]
+    kind?: string
+    frames?: { imageData?: string; label?: string; windows?: unknown }[]
   }
 
   const title = (body.title ?? '').trim()
@@ -252,18 +281,23 @@ app.post('/api/dp', isOrgFeature, async (c) => {
   const captionFieldIssue = captionFieldError(captionTemplate)
   if (captionFieldIssue) return c.json({ status: 'error', message: captionFieldIssue }, 400)
 
+  if (body.kind !== undefined && body.kind !== 'profile' && body.kind !== 'booth') {
+    return c.json({ status: 'error', message: 'Kind must be profile or booth.' }, 400)
+  }
+  const kind: FrameKind = body.kind === 'booth' ? 'booth' : 'profile'
+
   const frames = Array.isArray(body.frames) ? body.frames : []
   if (frames.length === 0) return c.json({ status: 'error', message: 'Add at least one frame.' }, 400)
   if (frames.length > MAX_FRAMES) return c.json({ status: 'error', message: `A campaign can have at most ${MAX_FRAMES} frames.` }, 400)
 
-  let decoded: { bytes: Uint8Array; label: string | null }[]
+  let decoded: { bytes: Uint8Array; label: string | null; windows: BoothWindow[] | null }[]
   try {
-    decoded = frames.map((frame) => ({
-      bytes: readFrameBytes(frame.imageData),
-      label: frameLabel(frame.label),
-    }))
+    decoded = frames.map((frame) => {
+      const bytes = readFrameBytes(frame.imageData)
+      return { bytes, label: frameLabel(frame.label), windows: checkFrameWindows(kind, bytes, frame.windows) }
+    })
   } catch (err) {
-    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, err.status === 400 ? 400 : 422)
     throw err
   }
 
@@ -280,16 +314,16 @@ app.post('/api/dp', isOrgFeature, async (c) => {
   const stored: StoredFrame[] = []
   try {
     for (const frame of decoded) {
-      stored.push(await storeFrame(c.env, id, frame.bytes, frame.label))
+      stored.push(await storeFrame(c.env, id, frame.bytes, frame.label, kind === 'booth'))
     }
     await client.batch([
       {
-        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        args: [id, user.id, orgId, title, slug, description || null, '', captionTemplate || null],
+        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [id, user.id, orgId, title, slug, description || null, '', captionTemplate || null, kind],
       },
       ...stored.map((frame, index) => ({
-        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
-        args: [frame.id, id, frame.key, frame.label, index],
+        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position, windows) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [frame.id, id, frame.key, frame.label, index, decoded[index]?.windows ? JSON.stringify(decoded[index].windows) : null],
       })),
     ], 'write')
   } catch (err) {
@@ -305,6 +339,7 @@ app.post('/api/dp', isOrgFeature, async (c) => {
       id,
       title,
       slug,
+      kind,
       frames: stored.map((frame) => ({ id: frame.id, key: frame.key, url: mediaUrl(frame.key) })),
     },
   }, 201)
@@ -322,7 +357,7 @@ app.get('/api/dp', isOrgFeature, async (c) => {
 
   const result = await client.execute({
     // Downloads plus shares from module_events, so this agrees with Insights and the public page.
-    sql: `SELECT c.id, c.title, c.slug, c.description, c.created_at,
+    sql: `SELECT c.id, c.title, c.slug, c.description, c.created_at, c.kind,
                  (SELECT COUNT(*) FROM dp_frames f WHERE f.campaign_id = c.id) AS frame_count,
                  (SELECT COUNT(*) FROM module_events e
                    WHERE e.module = 'frames' AND e.action IN ('download', 'share')
@@ -338,6 +373,7 @@ app.get('/api/dp', isOrgFeature, async (c) => {
       title: r.title,
       slug: r.slug,
       description: r.description,
+      kind: r.kind === 'booth' ? 'booth' : 'profile',
       frameCount: Number(r.frame_count ?? 0),
       downloadCount: Number(r.saved_count ?? 0),
       createdAt: r.created_at,
@@ -354,7 +390,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
   const slug = c.req.param('slug')!
   const client = db(c)
 
-  const camp = await client.execute({ sql: 'SELECT id, org_id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?', args: [slug] })
+  const camp = await client.execute({ sql: 'SELECT id, org_id, title, slug, description, caption_template, kind FROM dp_campaigns WHERE slug = ?', args: [slug] })
   if (camp.rows.length === 0) return c.json({ status: 'error', message: 'Campaign not found.' }, 404)
   const row = camp.rows[0]
 
@@ -369,6 +405,7 @@ app.get('/api/dp/:slug/edit', isOrgFeature, async (c) => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
+      kind: row.kind === 'booth' ? 'booth' : 'profile',
       frames: await loadFrames(c.env, client, String(row.id)),
     },
   })
@@ -384,28 +421,32 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   const owner = await requireOwner(client, id, c.var.orgId)
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
-  const body = await c.req.json() as { imageData?: string; label?: string }
+  const body = await c.req.json() as { imageData?: string; label?: string; windows?: unknown }
+  const campaignKind = (await client.execute({ sql: 'SELECT kind FROM dp_campaigns WHERE id = ?', args: [id] })).rows[0]?.kind
+  const kind: FrameKind = campaignKind === 'booth' ? 'booth' : 'profile'
   let bytes: Uint8Array
+  let windows: BoothWindow[] | null
   try {
     bytes = readFrameBytes(body.imageData)
+    windows = checkFrameWindows(kind, bytes, body.windows)
   } catch (err) {
-    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
+    if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, err.status === 400 ? 400 : 422)
     throw err
   }
 
   let stored: StoredFrame
   try {
-    stored = await storeFrame(c.env, id, bytes, frameLabel(body.label))
+    stored = await storeFrame(c.env, id, bytes, frameLabel(body.label), kind === 'booth')
   } catch (err) {
     if (err instanceof ApiError) return c.json({ status: 'error', message: frameMessage(err) }, 422)
     throw err
   }
 
   const inserted = await client.execute({
-    sql: `INSERT INTO dp_frames (id, campaign_id, image_url, label, position)
-          SELECT ?, ?, ?, ?, COALESCE((SELECT MAX(position) FROM dp_frames WHERE campaign_id = ?), -1) + 1
+    sql: `INSERT INTO dp_frames (id, campaign_id, image_url, label, position, windows)
+          SELECT ?, ?, ?, ?, COALESCE((SELECT MAX(position) FROM dp_frames WHERE campaign_id = ?), -1) + 1, ?
           WHERE (SELECT COUNT(*) FROM dp_frames WHERE campaign_id = ?) < ?`,
-    args: [stored.id, id, stored.key, stored.label, id, id, MAX_FRAMES],
+    args: [stored.id, id, stored.key, stored.label, id, windows ? JSON.stringify(windows) : null, id, MAX_FRAMES],
   })
   if (Number(inserted.rowsAffected) !== 1) {
     await discardKeys(c.env, [stored.key])
@@ -414,7 +455,7 @@ app.post('/api/dp/:id/frames', isOrgFeature, async (c) => {
   await client.execute({ sql: 'UPDATE dp_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', args: [id] })
   const placed = await client.execute({ sql: 'SELECT position FROM dp_frames WHERE id = ?', args: [stored.id] })
 
-  return c.json({ status: 'ok', frame: { id: stored.id, key: stored.key, url: mediaUrl(stored.key), position: Number(placed.rows[0]?.position ?? 0) } }, 201)
+  return c.json({ status: 'ok', frame: { id: stored.id, key: stored.key, url: mediaUrl(stored.key), position: Number(placed.rows[0]?.position ?? 0), windows } }, 201)
 })
 
 // ── DELETE /api/dp/:id/frames/:frameId ────────────────────────────────────────
@@ -582,11 +623,11 @@ app.post('/api/dp/:id/duplicate', isOrgFeature, async (c) => {
   if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
 
   const source = (await client.execute({
-    sql: 'SELECT title, description, caption_template FROM dp_campaigns WHERE id = ?',
+    sql: 'SELECT title, description, caption_template, kind FROM dp_campaigns WHERE id = ?',
     args: [id],
   })).rows[0]
   const sourceFrames = (await client.execute({
-    sql: 'SELECT image_url, label FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
+    sql: 'SELECT image_url, label, windows FROM dp_frames WHERE campaign_id = ? ORDER BY position, created_at',
     args: [id],
   })).rows
 
@@ -594,31 +635,34 @@ app.post('/api/dp/:id/duplicate', isOrgFeature, async (c) => {
   const title = `${String(source?.title ?? '').slice(0, TITLE_MAX - COPY_SUFFIX.length)}${COPY_SUFFIX}`
   const slug = await uniqueSlug(client, slugify(title))
 
-  const stored: { id: string; image: string; label: string | null }[] = []
+  const kind: FrameKind = source?.kind === 'booth' ? 'booth' : 'profile'
+  const stored: { id: string; image: string; label: string | null; windows: string | null }[] = []
   const ownedKeys: string[] = []
   try {
     for (const frame of sourceFrames) {
       const reference = String(frame.image_url ?? '')
       const label = frame.label == null ? null : String(frame.label)
+      const copiedWindows = parseWindows(frame.windows)
+      const windows = copiedWindows ? JSON.stringify(copiedWindows) : null
       if (!isFrameKey(reference)) {
         // Legacy frames that are not R2 files are never deleted with the campaign, so they can be shared.
-        stored.push({ id: crypto.randomUUID(), image: reference, label })
+        stored.push({ id: crypto.randomUUID(), image: reference, label, windows })
         continue
       }
       const object = await c.env.MEDIA.get(reference)
       if (!object) throw new Error(`Missing frame file ${reference}`)
-      const copy = await storeFrame(c.env, copyId, new Uint8Array(await object.arrayBuffer()), label)
+      const copy = await storeFrame(c.env, copyId, new Uint8Array(await object.arrayBuffer()), label, kind === 'booth')
       ownedKeys.push(copy.key)
-      stored.push({ id: copy.id, image: copy.key, label })
+      stored.push({ id: copy.id, image: copy.key, label, windows })
     }
     await client.batch([
       {
-        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        args: [copyId, user.id, orgId!, title, slug, source?.description == null ? null : String(source.description), '', source?.caption_template == null ? null : String(source.caption_template)],
+        sql: 'INSERT INTO dp_campaigns (id, creator_id, org_id, title, slug, description, frame_image_url, caption_template, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [copyId, user.id, orgId!, title, slug, source?.description == null ? null : String(source.description), '', source?.caption_template == null ? null : String(source.caption_template), kind],
       },
       ...stored.map((frame, index) => ({
-        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position) VALUES (?, ?, ?, ?, ?)',
-        args: [frame.id, copyId, frame.image, frame.label, index],
+        sql: 'INSERT INTO dp_frames (id, campaign_id, image_url, label, position, windows) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [frame.id, copyId, frame.image, frame.label, index, frame.windows],
       })),
     ], 'write')
   } catch (err) {
@@ -627,7 +671,7 @@ app.post('/api/dp/:id/duplicate', isOrgFeature, async (c) => {
     return c.json({ status: 'error', message: 'Could not duplicate the campaign.' }, 500)
   }
 
-  return c.json({ status: 'ok', campaign: { id: copyId, title, slug } }, 201)
+  return c.json({ status: 'ok', campaign: { id: copyId, title, slug, kind } }, 201)
 })
 
 // ── DELETE /api/dp/:id ────────────────────────────────────────────────────────
@@ -663,7 +707,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
   const slug = c.req.param('slug')!
   const client = db(c)
   let result = await client.execute({
-    sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE slug = ?',
+    sql: 'SELECT id, title, slug, description, caption_template, kind FROM dp_campaigns WHERE slug = ?',
     args: [slug],
   })
   if (result.rows.length === 0) {
@@ -673,7 +717,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
     })
     if (history.rows.length > 0) {
       result = await client.execute({
-        sql: 'SELECT id, title, slug, description, caption_template FROM dp_campaigns WHERE id = ?',
+        sql: 'SELECT id, title, slug, description, caption_template, kind FROM dp_campaigns WHERE id = ?',
         args: [history.rows[0]?.campaign_id],
       })
     }
@@ -697,6 +741,7 @@ app.get('/api/dp/:slug', (c) => withEdgeCache(c, 30, async () => {
       slug: row.slug,
       description: row.description,
       captionTemplate: row.caption_template,
+      kind: row.kind === 'booth' ? 'booth' : 'profile',
       downloadCount: Number(saved.rows[0]?.n ?? 0),
       frames: await loadFrames(c.env, client, String(row.id)),
     },
