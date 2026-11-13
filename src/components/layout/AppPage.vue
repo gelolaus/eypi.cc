@@ -1,7 +1,8 @@
 <template>
   <div
     data-app-page
-    class="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8"
+    class="mx-auto w-full space-y-6 px-4 py-6 sm:px-6 lg:px-8"
+    :class="wide ? 'max-w-none' : 'max-w-6xl'"
   >
     <header
       class="space-y-1.5"
@@ -29,5 +30,7 @@ defineProps<{
   title: string
   description?: string
   centered?: boolean
+  /** Lifts the page width cap; the caller sizes its own content. */
+  wide?: boolean
 }>()
 </script>

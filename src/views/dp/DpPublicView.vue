@@ -35,10 +35,11 @@
       :title="campaign.title"
       :description="campaign.description ?? undefined"
       centered
+      :wide="isBooth"
     >
       <div
         class="mx-auto w-full"
-        :class="isBooth ? 'max-w-6xl' : 'max-w-3xl'"
+        :class="isBooth ? 'max-w-none lg:max-w-[80vw]' : 'max-w-3xl'"
       >
         <div
           v-if="campaign.downloadCount >= 1"
