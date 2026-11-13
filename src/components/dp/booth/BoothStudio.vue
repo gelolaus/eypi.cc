@@ -64,20 +64,12 @@
       <p class="absolute top-3 left-3 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-foreground">
         Shot {{ activeIndex + 1 }} of {{ SHOT_COUNT }}
       </p>
-      <!-- Camera flash: a full-frame white burst that fades out, replayed for every shot. -->
-      <div
-        v-if="state.phase === 'flash'"
-        :key="`flash-${activeIndex}`"
-        data-booth-flash
-        aria-hidden="true"
-        class="booth-flash pointer-events-none absolute inset-0 bg-white"
-      />
       <p
-        v-if="state.phase === 'counting' || state.phase === 'flash'"
+        v-if="state.phase === 'counting'"
         aria-hidden="true"
         class="absolute inset-0 m-auto grid h-24 min-w-24 place-items-center justify-self-center rounded-full bg-background/80 px-6 text-5xl font-semibold text-foreground"
       >
-        {{ state.phase === 'flash' ? 'Smile!' : state.secondsLeft }}
+        {{ state.secondsLeft }}
       </p>
     </div>
 
@@ -192,6 +184,16 @@
         @change="onFilesPicked"
       >
     </div>
+    <!-- Camera flash: the whole screen goes white the moment the shot is taken, then fades. -->
+    <Teleport to="body">
+      <div
+        v-if="state.phase === 'flash'"
+        :key="`flash-${activeIndex}`"
+        data-booth-flash
+        aria-hidden="true"
+        class="booth-flash pointer-events-none fixed inset-0 z-[100] bg-white"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -487,11 +489,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .booth-flash {
-  animation: booth-flash 700ms ease-out forwards;
+  animation: booth-flash 900ms ease-out forwards;
 }
 @keyframes booth-flash {
   0% { opacity: 1; }
-  15% { opacity: 1; }
+  30% { opacity: 1; }
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
