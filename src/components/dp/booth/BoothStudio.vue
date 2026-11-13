@@ -35,7 +35,7 @@
     <div
       v-if="showViewfinder"
       data-booth-viewfinder
-      class="relative mx-auto w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-muted"
+      class="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-border bg-muted"
       :class="state.phase === 'flash' ? 'ring-4 ring-primary' : ''"
       :style="{ aspectRatio: `${activeWindow.w} / ${activeWindow.h}` }"
     >
@@ -75,7 +75,7 @@
 
     <div
       v-else-if="showCameraPrompt"
-      class="mx-auto flex w-full max-w-sm flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-muted p-6 text-center"
+      class="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-muted p-6 text-center"
       :style="{ aspectRatio: `${activeWindow.w} / ${activeWindow.h}` }"
     >
       <p class="text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ const emit = defineEmits<{ 'update:ready': [ready: boolean] }>()
 
 const deps = { ...defaultBoothDeps, ...inject(boothDepsKey, {}) }
 
-const PREVIEW_EDGE = 360
+const PREVIEW_EDGE = 720
 const HIDDEN_STOP_MS = 30_000
 const MISSING_SHOT_MESSAGE = "That photo didn't come out. Tap it to retake."
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
