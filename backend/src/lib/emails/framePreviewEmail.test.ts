@@ -18,7 +18,7 @@ describe('renderFramePreviewEmail', () => {
     expect(rendered.html).not.toContain('<b>Orientation</b>')
     expect(rendered.html).toContain('&lt;b&gt;Orientation&lt;/b&gt;')
     expect(rendered.text).toContain('attached')
-    expect(rendered.html).toContain('href="https://eypi.cc/login"')
+    expect(rendered.html).toContain('href="https://eypi.cc"')
     expect(rendered.text).toContain('Join Eypi.cc by registering today')
   })
 })

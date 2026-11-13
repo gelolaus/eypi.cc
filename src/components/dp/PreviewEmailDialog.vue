@@ -11,7 +11,7 @@
         <DialogHeader>
           <DialogTitle>Get your photo by email</DialogTitle>
           <DialogDescription>
-            Enter your email and we will send your photo to it. We do not store your email.
+            Enter your email and we will send a copy of your photo to it. We do not store your email.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-1.5">

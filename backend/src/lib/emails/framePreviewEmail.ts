@@ -9,7 +9,7 @@ import {
   renderEmailShell,
 } from './emailLayout'
 
-export const JOIN_URL = 'https://eypi.cc/login'
+export const JOIN_URL = 'https://eypi.cc'
 
 export type FramePreviewEmail = {
   subject: string
@@ -22,10 +22,10 @@ export function renderFramePreviewEmail(input: { campaignTitle: string }): Frame
   const subject = `Your ${input.campaignTitle} photo from Eypi`
   const html = renderEmailShell({
     title: subject,
-    preheader: `Your ${title} photo is attached.`,
+    preheader: `A copy of your ${title} photo is attached.`,
     body: [
       emailHeading(`Your ${title} photo`),
-      emailParagraph('Thanks for stopping by. Your photo is attached to this email.'),
+      emailParagraph('Thanks for stopping by. A copy of your photo is attached to this email.'),
       emailParagraph('Join Eypi.cc by registering today.'),
       `<div style="padding:8px 0 16px;">${emailButton('Join Eypi.cc', JOIN_URL)}</div>`,
     ].join(''),
@@ -35,7 +35,7 @@ export function renderFramePreviewEmail(input: { campaignTitle: string }): Frame
     ].join(''),
   })
   const text = [
-    `Your ${input.campaignTitle} photo is attached.`,
+    `A copy of your ${input.campaignTitle} photo is attached.`,
     '',
     `Join Eypi.cc by registering today: ${JOIN_URL}`,
     '',
