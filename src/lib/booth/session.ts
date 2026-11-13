@@ -1,7 +1,7 @@
 // Framework-free photo booth session: 3-2-1 before every shot, a short pause
 // after each, then review. No Vue and no DOM so the timing is unit-testable.
 
-export const COUNTDOWN_SECONDS = 3
+export const COUNTDOWN_SECONDS = 10
 export const SHOT_PAUSE_MS = 1000
 export const SHOT_COUNT = 3
 

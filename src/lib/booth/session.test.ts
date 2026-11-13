@@ -126,7 +126,7 @@ describe('booth session', () => {
     let resolve!: (v: Shot) => void
     const { session, states } = setup(() => new Promise<Shot>((r) => (resolve = r)))
     session.startAll()
-    await vi.advanceTimersByTimeAsync(3000)
+    await vi.advanceTimersByTimeAsync(COUNTDOWN_SECONDS * 1000)
     session.dispose()
     const count = states.length
     resolve(fakeShot('late'))
