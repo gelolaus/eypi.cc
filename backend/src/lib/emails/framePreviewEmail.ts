@@ -19,23 +19,23 @@ export type FramePreviewEmail = {
 
 export function renderFramePreviewEmail(input: { campaignTitle: string }): FramePreviewEmail {
   const title = escapeHtml(input.campaignTitle)
-  const subject = `Your ${input.campaignTitle} preview from Eypi`
+  const subject = `Your ${input.campaignTitle} photo from Eypi`
   const html = renderEmailShell({
     title: subject,
-    preheader: `Your ${title} preview is attached.`,
+    preheader: `Your ${title} photo is attached.`,
     body: [
-      emailHeading(`Your ${title} preview`),
-      emailParagraph('The image you just made is attached to this email.'),
+      emailHeading(`Your ${title} photo`),
+      emailParagraph('Thanks for stopping by. Your photo is attached to this email.'),
       emailParagraph('Join Eypi.cc by registering today.'),
       `<div style="padding:8px 0 16px;">${emailButton('Join Eypi.cc', JOIN_URL)}</div>`,
     ].join(''),
     footer: [
-      emailFootnote('You received this because you tested a frame in admin preview on Eypi.'),
+      emailFootnote('You received this because you entered your email to get your photo from an Eypi frame.'),
       emailFootnote("If you weren't expecting this, you can ignore this email."),
     ].join(''),
   })
   const text = [
-    `Your ${input.campaignTitle} preview is attached.`,
+    `Your ${input.campaignTitle} photo is attached.`,
     '',
     `Join Eypi.cc by registering today: ${JOIN_URL}`,
     '',

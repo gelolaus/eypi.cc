@@ -9,9 +9,9 @@
         @submit.prevent="submit"
       >
         <DialogHeader>
-          <DialogTitle>Enter your email</DialogTitle>
+          <DialogTitle>Get your photo by email</DialogTitle>
           <DialogDescription>
-            Admin preview only. The email is used as the file name, and the image is also emailed to it from invites@eypi.cc. Nothing is stored.
+            Enter your email and we will send your photo to it. We do not store your email.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-1.5">

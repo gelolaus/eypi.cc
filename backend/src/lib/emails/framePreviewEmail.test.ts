@@ -14,7 +14,7 @@ describe('renderFramePreviewEmail', () => {
   it('names the campaign and escapes it in the html', () => {
     const rendered = renderFramePreviewEmail({ campaignTitle: '<b>Orientation</b>' })
 
-    expect(rendered.subject).toBe('Your <b>Orientation</b> preview from Eypi')
+    expect(rendered.subject).toBe('Your <b>Orientation</b> photo from Eypi')
     expect(rendered.html).not.toContain('<b>Orientation</b>')
     expect(rendered.html).toContain('&lt;b&gt;Orientation&lt;/b&gt;')
     expect(rendered.text).toContain('attached')
