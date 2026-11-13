@@ -475,6 +475,31 @@ function downloadWithEmail(email: string) {
   return runDownload(email)
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** Admin preview: also mails the image. A failure only toasts, the download already happened. */
+async function emailPreview(email: string, blob: Blob) {
+  try {
+    const res = await api.raw(`/api/dp/${campaign.id}/preview-email`, {
+      method: 'POST',
+      body: JSON.stringify({ email, imageData: await blobToDataUrl(blob) }),
+    })
+    const data = await res.json() as { emailSent?: boolean; message?: string }
+    if (!res.ok) throw new Error(data.message ?? 'Could not email the image.')
+    if (data.emailSent) toast.success('Emailed to your address.')
+    else toast.error('Downloaded, but the email could not be sent.')
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : 'Could not email the image.')
+  }
+}
+
 async function runDownload(email?: string) {
   exporting.value = true
   try {
@@ -483,6 +508,7 @@ async function runDownload(email?: string) {
     saveAs(png.blob, png.filename)
     toast.success(isBooth.value ? 'Downloaded. Share your photo strip.' : 'Downloaded. Share your new profile picture.')
     sendDownloadBeacon()
+    if (email) await emailPreview(email, png.blob)
     promptForDetails()
   } catch {
     toast.error('Export failed. Try again.')

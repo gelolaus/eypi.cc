@@ -4,6 +4,8 @@ import { db, type Bindings } from '../lib/db'
 import { withEdgeCache } from '../lib/edgeCache'
 import { ApiError } from '../lib/errors'
 import { deleteWithVariants, mediaUrl, parseImageMeta, putImage, type ImageMeta } from '../lib/media'
+import { checkRateLimit } from '../lib/rateLimit'
+import { deliverFramePreviewEmail } from '../lib/emails/framePreviewEmail'
 import { reportError } from '../lib/reportError'
 import { isOrgFeature } from '../middleware/orgGuard'
 import { noOrgBody } from '../middleware/orgContext'
@@ -697,6 +699,55 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
   )
 
   return c.json({ status: 'ok', message: 'Campaign deleted.' })
+})
+
+// ── POST /api/dp/:id/preview-email ────────────────────────────────────────────
+// Admin preview only: emails the rendered PNG to an address the org member types.
+// Owner-only, rate limited, and nothing is stored.
+const PREVIEW_EMAIL_LIMIT = 10
+const PREVIEW_EMAIL_MAX_BYTES = 8 * 1024 * 1024
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+app.post('/api/dp/:id/preview-email', isOrgFeature, async (c) => {
+  const user = c.var.user
+  if (!user) return c.json({ status: 'error', message: 'Authentication required.' }, 401)
+
+  const id = c.req.param('id')!
+  const client = db(c)
+  const owner = await requireOwner(client, id, c.var.orgId)
+  if (!owner.ok) return c.json({ status: 'error', message: owner.message }, owner.status)
+
+  const body = await c.req.json().catch(() => ({})) as { email?: unknown; imageData?: unknown }
+  const email = typeof body.email === 'string' ? body.email.trim() : ''
+  if (email.length > 200 || !EMAIL_RE.test(email)) {
+    return c.json({ status: 'error', message: 'Enter a valid email address.' }, 400)
+  }
+  const bytes = typeof body.imageData === 'string' ? decodeDataUrl(body.imageData) : null
+  const isPng = !!bytes && bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
+  if (!bytes || !isPng || bytes.length > PREVIEW_EMAIL_MAX_BYTES) {
+    return c.json({ status: 'error', message: 'Could not read the image. Try again.' }, 400)
+  }
+
+  const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, {
+    bucket: 'dp-preview-email',
+    subject: user.id,
+    limit: PREVIEW_EMAIL_LIMIT,
+    windowSec: 3600,
+  })
+  if (!decision.ok) {
+    c.header('Retry-After', String(decision.retryAfter))
+    return c.json({ status: 'error', message: 'Too many preview emails. Try again later.' }, 429)
+  }
+
+  const titleRes = await client.execute({ sql: 'SELECT title FROM dp_campaigns WHERE id = ?', args: [id] })
+  const emailSent = await deliverFramePreviewEmail({
+    apiKey: c.env.RESEND_API_KEY,
+    to: email,
+    campaignTitle: String(titleRes.rows[0]?.title ?? 'frame'),
+    png: bytes,
+    replyTo: c.env.ORG_INVITE_REPLY_TO,
+  })
+  return c.json({ status: 'ok', emailSent })
 })
 
 // ── GET /api/dp/:slug ─────────────────────────────────────────────────────────

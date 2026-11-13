@@ -11,7 +11,7 @@
         <DialogHeader>
           <DialogTitle>Enter your email</DialogTitle>
           <DialogDescription>
-            Admin preview only. For now the email is used as the file name. It is not saved or sent anywhere.
+            Admin preview only. The email is used as the file name, and the image is also emailed to it from invites@eypi.cc. Nothing is stored.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-1.5">
