@@ -243,6 +243,11 @@
             :template="campaign.captionTemplate"
           />
         </Card>
+        <PreviewEmailDialog
+          v-if="isAdminPreview"
+          v-model:open="emailOpen"
+          @submit="downloadWithEmail"
+        />
         <CaptionFormDialog
           v-if="campaign.captionTemplate"
           v-model:open="detailsOpen"
@@ -271,6 +276,7 @@ import { sendModuleBeacon } from '@/lib/beacon'
 import DownloadPill from '@/components/dp/DownloadPill.vue'
 import BoothStudio from '@/components/dp/booth/BoothStudio.vue'
 import CaptionFields from '@/components/dp/CaptionFields.vue'
+import PreviewEmailDialog from '@/components/dp/PreviewEmailDialog.vue'
 import CaptionFormDialog from '@/components/dp/CaptionFormDialog.vue'
 import { fillCaption, missingRequired } from '@shared/captionFields'
 import type { DpFrame, DpKind } from '@/types/dp'
@@ -279,6 +285,9 @@ const route = useRoute()
 const toast = useToast()
 
 const slug = route.params.slug as string
+/** The edit page's View link adds `?preview=1`; only then does Download ask for an email. */
+const isAdminPreview = route.query.preview === '1'
+const emailOpen = ref(false)
 
 interface Campaign {
   id: string
@@ -424,13 +433,14 @@ async function onHeadshotPicked(e: Event) {
 
 // ── Export ───────────────────────────────────────────────────────────────────
 /** Renders the canvas to a png named after the campaign, or tells the visitor what is missing. */
-async function renderPng(): Promise<{ blob: Blob; filename: string } | null> {
+async function renderPng(emailName?: string): Promise<{ blob: Blob; filename: string } | null> {
   const blob = isBooth.value ? await renderBoothPng() : await renderProfilePng()
   if (blob === undefined) return null
   if (!blob) { toast.error('Could not render the image. Try again.'); return null }
   const safe = (campaign.slug || campaign.title || 'frame').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'frame'
   const suffix = frameImgs.value.length > 1 ? `-${selectedIndex.value + 1}` : ''
-  return { blob, filename: `eypi-dp-${safe}${suffix}.png` }
+  const fromEmail = emailName?.toLowerCase().replace(/[^a-z0-9@._+-]+/g, '')
+  return { blob, filename: fromEmail ? `${fromEmail}.png` : `eypi-dp-${safe}${suffix}.png` }
 }
 
 /** `undefined` when the visitor still has a step to take (already told), `null` when rendering failed. */
@@ -452,10 +462,19 @@ function sendDownloadBeacon() {
   sendModuleBeacon('frames', frameId ? `${campaign.id}:${frameId}` : campaign.id, 'download')
 }
 
-async function download() {
+function download() {
+  if (isAdminPreview) { emailOpen.value = true; return }
+  return runDownload()
+}
+
+function downloadWithEmail(email: string) {
+  return runDownload(email)
+}
+
+async function runDownload(email?: string) {
   exporting.value = true
   try {
-    const png = await renderPng()
+    const png = await renderPng(email)
     if (!png) return
     saveAs(png.blob, png.filename)
     toast.success(isBooth.value ? 'Downloaded. Share your photo strip.' : 'Downloaded. Share your new profile picture.')

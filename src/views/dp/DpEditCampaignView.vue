@@ -47,7 +47,7 @@
               variant="outline"
               class="shrink-0"
             >
-              <router-link :to="`/frames/${form.slug}`">
+              <router-link :to="`/frames/${form.slug}?preview=1`">
                 View →
               </router-link>
             </Button>
