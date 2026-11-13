@@ -1,12 +1,15 @@
 import { Resend } from 'resend'
 import { ORG_INVITE_FROM } from './orgInviteEmail'
 import {
+  emailButton,
   emailFootnote,
   emailHeading,
   emailParagraph,
   escapeHtml,
   renderEmailShell,
 } from './emailLayout'
+
+export const JOIN_URL = 'https://eypi.cc/login'
 
 export type FramePreviewEmail = {
   subject: string
@@ -23,6 +26,8 @@ export function renderFramePreviewEmail(input: { campaignTitle: string }): Frame
     body: [
       emailHeading(`Your ${title} preview`),
       emailParagraph('The image you just made is attached to this email.'),
+      emailParagraph('Join Eypi.cc by registering today.'),
+      `<div style="padding:8px 0 16px;">${emailButton('Join Eypi.cc', JOIN_URL)}</div>`,
     ].join(''),
     footer: [
       emailFootnote('You received this because you tested a frame in admin preview on Eypi.'),
@@ -31,6 +36,8 @@ export function renderFramePreviewEmail(input: { campaignTitle: string }): Frame
   })
   const text = [
     `Your ${input.campaignTitle} preview is attached.`,
+    '',
+    `Join Eypi.cc by registering today: ${JOIN_URL}`,
     '',
     "If you weren't expecting this, you can ignore this email.",
   ].join('\n')

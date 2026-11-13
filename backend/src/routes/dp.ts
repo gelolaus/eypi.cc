@@ -703,8 +703,11 @@ app.delete('/api/dp/:id', isOrgFeature, async (c) => {
 
 // ── POST /api/dp/:id/preview-email ────────────────────────────────────────────
 // Admin preview only: emails the rendered PNG to an address the org member types.
-// Owner-only, rate limited, and nothing is stored.
-const PREVIEW_EMAIL_LIMIT = 10
+// Owner-only, rate limited per recipient, and nothing is stored.
+// A real photo booth: one signed-in device mails many different guests, so the per-user cap is high.
+// The tight cap is per recipient, which stops one address being spammed.
+const PREVIEW_EMAIL_USER_LIMIT = 1000
+const PREVIEW_EMAIL_RECIPIENT_LIMIT = 5
 const PREVIEW_EMAIL_MAX_BYTES = 8 * 1024 * 1024
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -728,15 +731,18 @@ app.post('/api/dp/:id/preview-email', isOrgFeature, async (c) => {
     return c.json({ status: 'error', message: 'Could not read the image. Try again.' }, 400)
   }
 
-  const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, {
-    bucket: 'dp-preview-email',
-    subject: user.id,
-    limit: PREVIEW_EMAIL_LIMIT,
-    windowSec: 3600,
-  })
-  if (!decision.ok) {
-    c.header('Retry-After', String(decision.retryAfter))
-    return c.json({ status: 'error', message: 'Too many preview emails. Try again later.' }, 429)
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email.toLowerCase()))
+  const recipientKey = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
+  const limits = [
+    { bucket: 'dp-preview-email-user', subject: user.id, limit: PREVIEW_EMAIL_USER_LIMIT },
+    { bucket: 'dp-preview-email-to', subject: recipientKey, limit: PREVIEW_EMAIL_RECIPIENT_LIMIT },
+  ]
+  for (const rule of limits) {
+    const decision = await checkRateLimit(c.env.RATE_LIMIT_KV, { ...rule, windowSec: 3600 })
+    if (!decision.ok) {
+      c.header('Retry-After', String(decision.retryAfter))
+      return c.json({ status: 'error', message: 'Too many emails sent. Try again later.' }, 429)
+    }
   }
 
   const titleRes = await client.execute({ sql: 'SELECT title FROM dp_campaigns WHERE id = ?', args: [id] })
