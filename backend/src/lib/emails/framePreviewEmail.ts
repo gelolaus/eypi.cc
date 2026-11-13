@@ -63,7 +63,7 @@ export async function deliverFramePreviewEmail(input: {
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
-      attachments: [{ filename: 'eypi-preview.png', content: Buffer.from(input.png) }],
+      attachments: [{ filename: 'eypi-photo.png', content: Buffer.from(input.png) }],
     })
     return result.error == null
   } catch {

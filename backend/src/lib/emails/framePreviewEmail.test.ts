@@ -40,7 +40,7 @@ describe('deliverFramePreviewEmail', () => {
     const arg = send.mock.calls[0]![0]
     expect(arg.from).toBe('Eypi <invites@eypi.cc>')
     expect(arg.to).toBe('a@b.co')
-    expect(arg.attachments[0].filename).toBe('eypi-preview.png')
+    expect(arg.attachments[0].filename).toBe('eypi-photo.png')
   })
 
   it('returns false when Resend rejects or throws', async () => {
