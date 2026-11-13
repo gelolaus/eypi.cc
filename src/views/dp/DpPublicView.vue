@@ -36,7 +36,10 @@
       :description="campaign.description ?? undefined"
       centered
     >
-      <div class="mx-auto w-full max-w-3xl">
+      <div
+        class="mx-auto w-full"
+        :class="isBooth ? 'max-w-6xl' : 'max-w-3xl'"
+      >
         <div
           v-if="campaign.downloadCount >= 1"
           class="mb-4 flex justify-center"

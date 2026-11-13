@@ -35,9 +35,9 @@
     <div
       v-if="showViewfinder"
       data-booth-viewfinder
-      class="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-border bg-muted"
+      class="relative mx-auto w-full overflow-hidden rounded-3xl border border-border bg-muted"
       :class="state.phase === 'flash' ? 'ring-4 ring-primary' : ''"
-      :style="{ aspectRatio: `${activeWindow.w} / ${activeWindow.h}` }"
+      :style="viewfinderStyle"
     >
       <!-- The camera feeds this full-size video (iOS Safari stops decoding tiny or hidden ones); the filtered canvas covers it. -->
       <video
@@ -75,8 +75,8 @@
 
     <div
       v-else-if="showCameraPrompt"
-      class="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-muted p-6 text-center"
-      :style="{ aspectRatio: `${activeWindow.w} / ${activeWindow.h}` }"
+      class="mx-auto flex w-full flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-border bg-muted p-6 text-center"
+      :style="viewfinderStyle"
     >
       <p class="text-sm text-muted-foreground">
         Take {{ SHOT_COUNT }} photos for your strip. They stay on this device.
@@ -205,7 +205,7 @@ const emit = defineEmits<{ 'update:ready': [ready: boolean] }>()
 
 const deps = { ...defaultBoothDeps, ...inject(boothDepsKey, {}) }
 
-const PREVIEW_EDGE = 720
+const PREVIEW_EDGE = 1080
 const HIDDEN_STOP_MS = 30_000
 const MISSING_SHOT_MESSAGE = "That photo didn't come out. Tap it to retake."
 const PHOTO_ERROR = "We couldn't read that photo. Try a JPG or PNG."
@@ -217,6 +217,11 @@ const FAILURE_MESSAGES: Record<CameraFailure, string> = {
   other: "The camera couldn't start. Try again, or choose photos instead.",
 }
 
+/** As wide as the card allows, but never taller than 80% of the screen, whatever the window's shape. */
+const viewfinderStyle = computed(() => {
+  const { w, h } = activeWindow.value
+  return { aspectRatio: `${w} / ${h}`, width: `min(100%, calc(80dvh * ${w} / ${h}))` }
+})
 const videoRef = ref<HTMLVideoElement | null>(null)
 const previewRef = ref<HTMLCanvasElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
