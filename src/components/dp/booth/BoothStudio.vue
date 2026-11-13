@@ -64,6 +64,14 @@
       <p class="absolute top-3 left-3 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-foreground">
         Shot {{ activeIndex + 1 }} of {{ SHOT_COUNT }}
       </p>
+      <!-- Camera flash: a full-frame white burst that fades out, replayed for every shot. -->
+      <div
+        v-if="state.phase === 'flash'"
+        :key="`flash-${activeIndex}`"
+        data-booth-flash
+        aria-hidden="true"
+        class="booth-flash pointer-events-none absolute inset-0 bg-white"
+      />
       <p
         v-if="state.phase === 'counting' || state.phase === 'flash'"
         aria-hidden="true"
@@ -476,3 +484,17 @@ onBeforeUnmount(() => {
   held = []
 })
 </script>
+
+<style scoped>
+.booth-flash {
+  animation: booth-flash 700ms ease-out forwards;
+}
+@keyframes booth-flash {
+  0% { opacity: 1; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booth-flash { animation-duration: 250ms; }
+}
+</style>
